@@ -303,24 +303,19 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   private def getVectorType(dt: DataType, n: Nat): Type = {
-    if (n.eval > 0 && n.eval <= 4)
-      dt match {
-        case DataType.u8 => BasicType(s"uchar$n")
-        case DataType.i8 => BasicType(s"char$n")
-        case DataType.u16 => BasicType(s"ushort$n")
-        case DataType.i16 => BasicType(s"short$n")
-        case DataType.int | DataType.i32 => BasicType(s"int$n")
-        case DataType.u32 => BasicType(s"uint$n")
-        case DataType.f32 => BasicType(s"float$n")
-        case DataType.f64 => BasicType(s"double$n")
-        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
-      }
-    else
-      dt match {
-        case DataType.f16 if (n.eval > 0 && n.eval <= 8) => BasicType(s"float${n/2}")
-        case DataType.f16 if (n.eval > 0 && n.eval <= 16) => BasicType(s"double${n/4}")
-        case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
-      }
+    dt match {
+      case DataType.u8 => BasicType(s"uchar$n")
+      case DataType.i8 => BasicType(s"char$n")
+      case DataType.u16 => BasicType(s"ushort$n")
+      case DataType.i16 => BasicType(s"short$n")
+      case DataType.int | DataType.i32 => BasicType(s"int$n")
+      case DataType.u32 => BasicType(s"uint$n")
+      case DataType.f32 => BasicType(s"float$n")
+      case DataType.f64 => BasicType(s"double$n")
+      case DataType.f16 if (n.eval <= 8) => BasicType(s"int${n/2}")
+      case DataType.f16 if (n.eval <= 16) => BasicType(s"double${n/4}")
+      case _ => throw new Exception(s"Can't create vector type from: ($dt, $n)")
+    }
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt =

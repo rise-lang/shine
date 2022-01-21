@@ -33,8 +33,8 @@ object KernelExecutor {
       FromKernelModule(ktu, compilerOptions).as[F](localSize, globalSize)
     }
 
-    def benchmark(creator: KernelArgCreator, numberOfIterations: Integer, dataSizesBytes: Array[Long]) : BenchmarkResult =
-      FromKernelModule(ktu, compilerOptions).benchmark(creator, numberOfIterations, dataSizesBytes)
+    def benchmark[DataSize](creator: KernelArgCreator[DataSize], numberOfIterations: Integer, dataSizes: Array[DataSize]) : BenchmarkResult[DataSize] =
+      FromKernelModule(ktu, compilerOptions).benchmark(creator, numberOfIterations, dataSizes)
 
     def code: String = util.gen.cuda.kernel.asString(ktu)
 
@@ -58,8 +58,8 @@ object KernelExecutor {
       }
     }
 
-    def benchmark(creator: KernelArgCreator, numberOfIterations: Integer, dataSizesBytes: Array[Long]) : BenchmarkResult =
-      FromKernelModule(ktu, compilerOptions).benchmark(creator, numberOfIterations, dataSizesBytes)
+    def benchmark[DataSize](creator: KernelArgCreator[DataSize], numberOfIterations: Integer, dataSizes: Array[DataSize]) : BenchmarkResult[DataSize] =
+      FromKernelModule(ktu, compilerOptions).benchmark(creator, numberOfIterations, dataSizes)
 
     def code: String = util.gen.cuda.kernel.asString(ktu)
   }
@@ -69,14 +69,12 @@ object KernelExecutor {
       KernelNoSizes(ktu)
   }
 
-  abstract class KernelArgCreator {
-    def getDataLength(dataSizeBytes: Long): Int
+  abstract class KernelArgCreator[DataSize] {
+    def createArgs(dataSize: DataSize): Array[Any]
 
-    def createArgs(dataLength: Int): Array[Any]
+    def getGridDim(dataSize: DataSize) : NDRange
 
-    def getGridDim(dataLength: Int) : NDRange
-
-    def getBlockDim(dataLength: Int) : LocalSize
+    def getBlockDim(dataSize: DataSize) : LocalSize
   }
 
   case class FromKernelModule(ktu: KernelModule,
@@ -85,7 +83,7 @@ object KernelExecutor {
     assert(ktu.kernels.size == 1)
 
     val kernel: Kernel = ktu.kernels.head
-    val dynamicSharedMemory = kernel.dynamicSharedMemory
+    val dynamicSharedMemory: Long = kernel.dynamicSharedMemory
     val code: String = gen.cuda.kernel.asString(ktu)
     val outputParam: (ParamDecl, ParamKind) = kernel.outputParams.head
 
@@ -180,9 +178,9 @@ object KernelExecutor {
       val blocksX = ArithExpr.substitute(globalSize.size.x /^ localSize.size.x, sizeVarMapping).eval
       val blocksY = ArithExpr.substitute(globalSize.size.y /^ localSize.size.y, sizeVarMapping).eval
       val blocksZ = ArithExpr.substitute(globalSize.size.z /^ localSize.size.z, sizeVarMapping).eval
-      val threadsX = ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval
-      val threadsY = ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval
-      val threadsZ = ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval
+      val threadsX = ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval
+      val threadsY = ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval
+      val threadsZ = ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval
 
       val device = Devices.findDevice()
       println(device)
@@ -223,61 +221,62 @@ object KernelExecutor {
       kernelArgs.foreach(_.dispose())
     }
 
-    def benchmark(creator: KernelArgCreator, numberOfIterations: Integer, dataSizesBytes: Array[Long]) : BenchmarkResult = {
+    def benchmark[DataSize](creator: KernelArgCreator[DataSize], numberOfIterations: Integer, dataSizes: Array[DataSize]) : BenchmarkResult[DataSize] = {
       val device = Devices.findDevice()
 
       if (device.getSharedMemPerMultiprocessor < dynamicSharedMemory)
         throw new OutOfMemoryError(s"not enough shared memory found: ${dynamicSharedMemory} available: <= ${device.getSharedMemPerMultiprocessor}")
 
-      val creatorYacx: Executor.KernelArgCreator = new Executor.KernelArgCreator {
-        private var lastDataLength = -1
+      val creatorYacx: Executor.KernelArgCreator[DataSize] = new Executor.KernelArgCreator[DataSize] {
+        private var lastDataLength: DataSize = _
         private var gridX, gridY, gridZ, blockX, blockY, blockZ = 0
         private var kernelArgs: List[KernelArg] = _
 
-        override def getDataLength(dataSizeBytes: Long): Int = {
-          val dataLength = creator.getDataLength(dataSizeBytes)
-          setParams(dataLength)
-          dataLength
-        }
-
-        override def createArgs(dataLength: Int): Array[yacx.KernelArg] = {
+        override def createArgs(dataSize: DataSize): Array[yacx.KernelArg] = {
+          setParams(dataSize)
           kernelArgs.toArray
         }
 
-        override def getGrid0(dataLength: Int): Int = {
+        override def getGrid0(dataSize: DataSize): Int = {
+          setParams(dataSize)
           gridX
         }
 
-        override def getGrid1(dataLength: Int): Int = {
+        override def getGrid1(dataSize: DataSize): Int = {
+          setParams(dataSize)
           gridY
         }
 
-        override def getGrid2(dataLength: Int): Int = {
+        override def getGrid2(dataSize: DataSize): Int = {
+          setParams(dataSize)
           gridZ
         }
 
-        override def getBlock0(dataLength: Int): Int = {
+        override def getBlock0(dataSize: DataSize): Int = {
+          setParams(dataSize)
           blockX
         }
 
-        override def getBlock1(dataLength: Int): Int = {
+        override def getBlock1(dataSize: DataSize): Int = {
+          setParams(dataSize)
           blockY
         }
 
-        override def getBlock2(dataLength: Int): Int = {
+        override def getBlock2(dataSize: DataSize): Int = {
+          setParams(dataSize)
           blockZ
         }
 
-        override def getSharedMemory(dataSizeBytes: Long): Long = dynamicSharedMemory
+        override def getSharedMemory(dataSize: DataSize): Long = dynamicSharedMemory
 
-        def setParams(dataLength: Int): Unit = {
-          if (lastDataLength != dataLength) {
-            lastDataLength = dataLength
+        def setParams(dataSize: DataSize): Unit = {
+          if (!dataSize.equals(lastDataLength)) {
+            lastDataLength = dataSize
 
-            val gridDim = creator.getGridDim(dataLength)
-            val localSize = creator.getBlockDim(dataLength)
+            val gridDim = creator.getGridDim(dataSize)
+            val localSize = creator.getBlockDim(dataSize)
             val globalSize = GlobalSize(gridDim.x * localSize.size.x, gridDim.y * localSize.size.y, gridDim.z * localSize.size.z)
-            val args = creator.createArgs(dataLength)
+            val args = creator.createArgs(dataSize)
 
             val arguments = constructArguments(kernel.inputParams zip args, kernel.temporaryParams, kernel.params.tail)
 
@@ -296,7 +295,7 @@ object KernelExecutor {
         }
       }
 
-      Executor.benchmark(code, this.kernel.name, Options.createOptions(compilerOptions.toSeq:_*), device, numberOfIterations, creatorYacx, dataSizesBytes.toArray:_*)
+      Executor.benchmark(code, this.kernel.name, Options.createOptions(compilerOptions:_*), device, numberOfIterations, creatorYacx, dataSizes.toSeq:_*)
     }
 
     private def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArg = {

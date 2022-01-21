@@ -2,6 +2,7 @@ package apps
 
 import apps.gemmTensor._
 import apps.mmCheckUtils._
+import apps.mmTensor.mmConfig
 import rise.core.Expr
 import shine.OpenCL._
 import shine.cuda.KernelExecutor.{KernelNoSizes, KernelWithSizes}
@@ -11,6 +12,14 @@ import util._
 //Running each test individually should be successfull
 class gemmTensorCheck extends test_util.TestWithCUDA {
 
+  test("sequential gemm produces expected result") {
+    executeGEMM(seqGEMMNoTensorCores, false, false)
+  }
+
+  test("naive gemm produces expected result") {
+    executeGEMM(naiveGEMMNoTensorCores, false, false)
+  }
+
   test("gemm with tensor cores produces expected result") {
     executeGEMM(simpleGemm)
   }
@@ -19,18 +28,17 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
     executeGEMM(gemmMultipleFragmentsPerWarp)
   }
 
-  //TODO fix this tests
-  ignore("gemm with tensor cores and shared memory produces expected result 1") {
+  test("gemm with tensor cores and shared memory produces expected result 1") {
     executeGEMMWithSizes(gemmSharedMemory(config1),4)
     executeGEMMWithSizes(gemmSharedMemory(config2),4)
   }
 
-  ignore("gemm with tensor cores and shared memory produces expected result 2") {
+  test("gemm with tensor cores and shared memory produces expected result 2") {
     executeGEMMWithSizes(gemmSharedMemory(config3),8)
     executeGEMMWithSizes(gemmSharedMemory(config4),8)
   }
 
-  ignore("gemm with tensor cores and shared memory produces expected result 3") {
+  test("gemm with tensor cores and shared memory produces expected result 3") {
     executeGEMMWithSizes(gemmSharedMemory(config6),16)
     executeGEMMWithSizes(gemmSharedMemory(config7),16)
   }
@@ -49,6 +57,7 @@ class gemmTensorCheck extends test_util.TestWithCUDA {
     executeGEMMWithSizes(gemmSharedMemoryV2(config6),16)
     executeGEMMWithSizes(gemmSharedMemoryV2(config7),16)
   }
+
 
   private def executeGEMM(gemmKernel: Expr, matrixBTranspose: Boolean = true, matrixATranspose: Boolean = false) : Unit = {
     val (alpha, beta, a, b, c, gold) = generateGold(m, n, k)

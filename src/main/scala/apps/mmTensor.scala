@@ -1,7 +1,8 @@
 package apps
 
+import apps.mmTensor.config
 import rise.Cuda.DSL.{mapBlock, mapThreads, _}
-import rise.Cuda.primitives.{asFragment, asMatrix, generateFragment}
+import rise.Cuda.primitives.{asFragment, asMatrix, generateFragment, globalToShared}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
@@ -9,7 +10,7 @@ import rise.core.primitives.{let => _, _}
 import rise.core.types.{AddressSpace, _}
 import rise.core.types.DataType._
 import rise.openCL.DSL.{toLocal, toPrivate}
-import rise.openCL.primitives.{oclReduceSeq, oclReduceSeqUnroll}
+import rise.openCL.primitives.{oclIterate, oclReduceSeq, oclReduceSeqUnroll}
 
 //Matrixmultiplications (mm) with tensor cores
 //Multiply a m.k a-matrix with a k.n b-matrix
@@ -18,7 +19,7 @@ object mmTensor {
   def id: ToBeTyped[Expr] = fun(x => x)
   def generate2D: ToBeTyped[Expr] = generate(fun(_ => generate(fun(_ => lf32(0f)))))
 
-  val simpleMatMulWithoutTensorCores: Expr = {
+  val simpleMatMulWithoutTensorCores: ToBeTyped[Expr] = {
     val dotproduct =
       fun((aRow, bColumn) =>
         zip(aRow)(bColumn) |>
@@ -41,10 +42,8 @@ object mmTensor {
 
   //Matrix multiplication with a single fragment (e.g. 16x16-tile)
   //Can only executed by a single warp calculates a single tensor-Core-MMA-instuction
-  val simpleMatMulTile: Expr = {
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+  val simpleMatMulTile: ToBeTyped[Expr] = {
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
     fun(
       (mTileFrag `.` kTileFrag `.` f16) ->: (kTileFrag `.` nTileFrag `.` f16) ->: (mTileFrag `.` nTileFrag `.` f32)
@@ -62,10 +61,8 @@ object mmTensor {
 
   //Simple matrix multiplication with any matrix dimensions divisible by fragment sizes
   //Can be executed with any number of blocks and warps
-  val simpleMatMul: Expr = {
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+  val simpleMatMul: ToBeTyped[Expr] = {
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
     depFun((m: Nat, n: Nat, k: Nat) => fun(
       (m `.` k `.` f16) ->: (k `.` n `.` f16) ->: (m `.` n `.` f32)
@@ -98,10 +95,8 @@ object mmTensor {
 
 
   //Same as simpleMatMul just pass matrix b transposed to this kernel for coalesced global memory access
-  val simpleMatMulBMatrixTransposed: Expr = {
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+  val simpleMatMulBMatrixTransposed: ToBeTyped[Expr] = {
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
     //b-matrix is transposed
     depFun((m: Nat, n: Nat, k: Nat) => fun(
@@ -135,10 +130,8 @@ object mmTensor {
 
 
   //Same as simpleMatMul just other loop order for coalesced global memory access
-  val simpleMatMulLoopsSwaped: Expr = {
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+  val simpleMatMulLoopsSwaped: ToBeTyped[Expr] = {
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
     depFun((m: Nat, n: Nat, k: Nat) => fun(
       (m `.` k `.` f16) ->: (k `.` n `.` f16) ->: (m `.` n `.` f32)
@@ -178,13 +171,11 @@ object mmTensor {
   //Every block calculate a 128x128-tile (per iteration)
   //Every warp calculates a 64x32-tile to reduce number of global memory accesses
   //Matrix dimensions must be divisible by block-tile-size (128x128)
-  def matMulMultipleFragmentsPerWarp(mTileWarp: Int = 64, nTileWarp: Int = 32, mTileBlock: Int = 128, nTileBlock: Int = 128): Expr = {
+  def matMulMultipleFragmentsPerWarp(mTileWarp: Int = 64, nTileWarp: Int = 32, mTileBlock: Int = 128, nTileBlock: Int = 128): ToBeTyped[Expr] = {
     assert(mTileBlock % mTileWarp == 0)
     assert(nTileBlock % nTileWarp == 0)
 
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
 
     //b-matrix is transposed
@@ -267,10 +258,8 @@ object mmTensor {
   // //reducing over k-dimension
   //Matrix dimensions must be divisible by block-tile-size
   //Block-tile-size must be divisible by warp-tile-size (64x32)
-  def matMulShared0(mTileBlock: Int, nTileBlock: Int, kTileBlock: Int): Expr = {
-    val mTileFrag = 16
-    val nTileFrag = 16
-    val kTileFrag = 16
+  def matMulShared0(mTileBlock: Int, nTileBlock: Int, kTileBlock: Int): ToBeTyped[Expr] = {
+    val (mTileFrag, nTileFrag, kTileFrag) = (16, 16, 16)
 
     val mTileWarp = 4*mTileFrag
     val nTileWarp = 2*nTileFrag
@@ -394,18 +383,28 @@ object mmTensor {
   //  --dimensions of warp tile (size of the tile caluculated by a single warp in one iteration)
   //    this tile will be loaded into fragments (of a single warp)
   //  --dimensions for a single fragment
-  case class mmConfig(mTileBlock: Nat, nTileBlock: Nat, kTileBlock: Nat, //dimension of a block tile
-                      mTileWarp: Nat, nTileWarp: Nat, //dimensions of a warp tile (same k dimension as block tile)
-                      mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat //dimensions for a fragments
+  case class mmConfig(mTileBlock: Int, nTileBlock: Int, kTileBlock: Int, //dimension of a block tile
+                      mTileWarp: Int, nTileWarp: Int, //dimensions of a warp tile (same k dimension as block tile)
+                      mTileFrag: Int, nTileFrag: Int, kTileFrag: Int //dimensions for a fragments
                       ) {
+    assert(mTileBlock % mTileWarp == 0)
+    assert(nTileBlock % nTileWarp == 0)
+
+    assert(mTileWarp % mTileFrag == 0)
+    assert(nTileWarp % nTileFrag == 0)
+    assert(kTileBlock % kTileFrag == 0)
+
     //the warps within a single thread block are in a 2D formation
-    def mNumberOfFragsWarp: Nat = mTileWarp /^ mTileFrag
-    def nNumberOfFragsWarp: Nat = nTileWarp /^ nTileFrag
+    val mNumberOfFragsWarp: Int = mTileWarp / mTileFrag
+    val nNumberOfFragsWarp: Int = nTileWarp / nTileFrag
     //number of warps within a single thread block
-    def mNumberOfWarps: Nat = mTileBlock /^ mTileWarp
-    def nNumberOfWarps: Nat = nTileBlock /^ nTileWarp
+    val mNumberOfWarps: Int = mTileBlock / mTileWarp
+    val nNumberOfWarps: Int = nTileBlock / nTileWarp
     //total number of warps within a single thread block
-    def numberOfWarps: Nat = mNumberOfWarps * nNumberOfWarps
+    val numberOfWarps: Int = mNumberOfWarps * nNumberOfWarps
+    //number of elements padding between two consecutive rows of a-matrix/b-matrix/result-matrix in shared memory to
+    //avoid bank conflicts when acessed by wmma-primitives
+    val paddingBytes: Int = 16
   }
 
   object mmConfig {
@@ -417,19 +416,6 @@ object mmTensor {
 
     def apply(mTileBlock: Int, nTileBlock: Int, kTileBlock: Int, mTileWarp: Int, nTileWarp: Int) : mmConfig =
       apply(mTileBlock, nTileBlock, kTileBlock, mTileWarp, nTileWarp, 16, 16, 16)
-
-    def apply(mTileBlock: Int, nTileBlock: Int, kTileBlock: Int, mTileWarp: Int, nTileWarp: Int,
-              mTileFrag: Int, nTileFrag: Int, kTileFrag: Int) : mmConfig = {
-      assert(mTileBlock % mTileWarp == 0)
-      assert(nTileBlock % nTileWarp == 0)
-
-      assert(mTileWarp % mTileFrag == 0)
-      assert(nTileWarp % nTileFrag == 0)
-      assert(kTileBlock % kTileFrag == 0)
-
-      mmConfig(mTileBlock: Nat, nTileBlock: Nat, kTileBlock: Nat, mTileWarp: Nat, nTileWarp: Nat,
-        mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat)
-    }
   }
 
   //config of the kernels
@@ -506,18 +492,6 @@ object mmTensor {
 
 
   //Generates Array with pairs of mTile row-blocks of matrix a and nTile column-blocks of matrix b
-  //       _____________________        ______               _________________________________________
-  //       |                   |        |    |               |    |    |    |    |    |    |    |    |
-  //       |                   |        |    |               |    |    |    |    |    |    |    |    |
-  //       |                   |        |    |               |    |    |    |    |    |    |    |    |
-  //       |                   |        |____|               |____|____|____|____|____|____|____|____|
-  //       |                   |
-  //       |                   |       matrixTile     -->                    result
-  //       |                   |
-  //       |___________________|
-  //
-  //            matrix
-  //
   def crossProductOfMatrixTiles(mTile: Nat, nTile: Nat): ToBeTyped[Expr] =
     fun((a, b) =>
       a |> split(mTile) |>
@@ -531,22 +505,37 @@ object mmTensor {
   //Parallel copy-function for a matrix distributed over warps and located therein threads
   //Copy a m.n.dt matrix with an vector size of vSize elements and full loop unrolling
   //Result: m.n.dt matrix
-  def copyMatrix(m: Nat, n: Nat, vSize: Nat) : ToBeTyped[Expr] =
+  def copyMatrix(m: Int, n: Int, elemSizeBytes: Int) : ToBeTyped[Expr] = {
+    val warpTileSizeBytes = elemSizeBytes * m*n / config.numberOfWarps
+
+    val copyCountBytes =
+      if (warpTileSizeBytes % (32*16) == 0)
+        16
+      else if (warpTileSizeBytes % (32*8) == 0)
+        8
+      else if (warpTileSizeBytes % (32*4) == 0)
+        4
+      else
+        throw new ArithmeticException()
+
+    assert(copyCountBytes % elemSizeBytes == 0)
+
     fun(matrix =>
       matrix |>
       join |>
-      split(m*n /^ config.numberOfWarps) |>
+      split(m*n / config.numberOfWarps) |>
       mapWarp(fun(warpTile =>
         warpTile |>
-        split(32*vSize) |>
+        split(32*copyCountBytes/elemSizeBytes) |>
         mapSeqUnroll(fun(x =>
           x |>
-          asVectorAligned(vSize) |>
+          asVectorAligned(copyCountBytes/elemSizeBytes) |>
           mapLane(id) |>
           asScalar)) |>
         join)) |>
       join |>
       split(n))
+  }
 
 
   //Write a matrix to shared memory with pad elements spacing between two consecutive rows
@@ -555,10 +544,21 @@ object mmTensor {
       matrix |>
       map(fun(row =>
         row |> padEmpty(pad))) |>
-      toLocal |>
+        toLocal |>
       map(fun(row =>
         row |> take(numberOfColumns)))
     )
+
+//  //Write a matrix to shared memory with pad elements spacing between two consecutive rows
+//  def toSharedWithPadding(numberOfColumns: Nat, pad: Nat): ToBeTyped[Expr] =
+//    fun(matrix =>
+//      matrix |>
+//        map(fun(row =>
+//          row |> padEmpty(pad))) |>
+//        globalToShared |>
+//        map(fun(row =>
+//          row |> take(numberOfColumns)))
+//    )
 
 
   //Warp-level (executed by a single warp)
@@ -569,7 +569,7 @@ object mmTensor {
         zip
           (aTileWarp |> transpose |> split(config.kTileFrag))
           (bTileWarp |> split(config.kTileFrag)) |>
-          //kTileBlock/kTileFrag.(kTileBlock.mTileWarp.f16, kTileBlock.nTileWarp.f16)
+          //kTileBlock/kTileFrag.(kTileFrag.mTileWarp.f16, kTileFrag.nTileWarp.f16)
 
         //This reduce should not allocate memory!!!
         oclReduceSeq(AddressSpace.Private)(fun((cFrags, aTbTilesFragments) =>
@@ -610,7 +610,7 @@ object mmTensor {
   //Multiply a mTileBlock rows of a-matrix with nTileBlock columns of b-matrix
   //epilog: Load matrix elements from fragments which are distributed over different warps (into global memory)
   //Result: mTileBlock.nTileBlock.f32
-  private def blockMM(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
+   def blockMM(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     fun((aRowsBlock, bColumnsBlock) =>
       zip
         (aRowsBlock |> transpose |> split(config.kTileBlock))
@@ -658,54 +658,55 @@ object mmTensor {
 
   //Same as function before but avoid bank conflicts during load tiles into shared memory and use
   //better copy function to copy from global memory to shared memory (unroll all loops)
-  private def blockMMV2(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
+  def blockMMV2(epilog: ToBeTyped[Expr]): ToBeTyped[Expr] = {
     fun((aRowsBlock, bColumnsBlock) =>
       zip
-        (aRowsBlock |> transpose |> split(config.kTileBlock))
-        (bColumnsBlock |> split(config.kTileBlock)) |> // k/kTileBlock.(kTileBlock.mTileBlock.f16, kTileBlock.nTileBlock.f16)
+      (aRowsBlock |> transpose |> split(config.kTileBlock))
+      (bColumnsBlock |> split(config.kTileBlock)) |> // k/kTileBlock.(kTileBlock.mTileBlock.f16, kTileBlock.nTileBlock.f16)
 
-      oclReduceSeq(AddressSpace.Private)(fun((cFragsBlock, aTbTileBlock) =>
+        oclReduceSeq(AddressSpace.Private)(fun((cFragsBlock, aTbTileBlock) =>
 
-        //Load aTile to shared memory
-        let(aTbTileBlock._1 |>
-          transpose |>
-          copyMatrix(config.mTileBlock, config.kTileBlock, 8) |>
-          toSharedWithPadding(config.kTileBlock, 8))
-        be(aTile =>
-
-          //Load bTile transposed (like it is in global memory) to shared memory
-          let(aTbTileBlock._2 |>
+          //Load aTile to shared memory
+          let(aTbTileBlock._1 |>
             transpose |>
-            copyMatrix(config.nTileBlock, config.kTileBlock, 8) |>
-            toSharedWithPadding(config.kTileBlock, 8))
-          be(bTileT =>
+            copyMatrix(config.mTileBlock, config.kTileBlock, 2) |>
+            toSharedWithPadding(config.kTileBlock, config.paddingBytes / 2))
+            be(aTile =>
 
-            zip
+            //Load bTile transposed (like it is in global memory) to shared memory
+            let(aTbTileBlock._2 |>
+              transpose |>
+              copyMatrix(config.nTileBlock, config.kTileBlock, 2) |>
+              toSharedWithPadding(config.kTileBlock, config.paddingBytes / 2))
+              be(bTileT =>
+
+              zip
               (crossProductOfMatrixTiles(config.mTileWarp, config.nTileWarp)(aTile, bTileT |> transpose))
               (cFragsBlock) |>
 
-              mapWarp(fun(abWarpC =>
-                warpMMA(
-                  abWarpC._1._1,
-                  abWarpC._1._2,
-                  abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
+                mapWarp(fun(abWarpC =>
+                  warpMMA(
+                    abWarpC._1._1,
+                    abWarpC._1._2,
+                    abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
 
-                  mapSeq(mapSeq(id)))) |>
-              join |>
-              join |>
-              split(config.mNumberOfFragsWarp * config.nNumberOfFragsWarp)))))
+                    mapSeq(mapSeq(id)))) |>
+                join |>
+                join |>
+                split(config.mNumberOfFragsWarp * config.nNumberOfFragsWarp)))))
 
-      (generate2D |>
-        mapWarp(
-          mapSeqUnroll(fun(z =>
-            generateFragment(z))))) |>
+        (generate2D |>
+          mapWarp(
+            mapSeqUnroll(fun(z =>
+              generateFragment(z))))) |>
 
-    epilog)
+        epilog)
   }
+
 
   //Store matrix elements from fragments which are distributed over different warps (into global memory)
   //Simply use from-fragment-primitiv to load from fragments into global memory
-  private def epilog: ToBeTyped[Expr] =
+   def epilog: ToBeTyped[Expr] =
     fun(resultFragsBlock =>
       resultFragsBlock |>
       mapWarp(fun(resultFragsWarp =>
@@ -732,7 +733,7 @@ object mmTensor {
 
   //First store data to shared memory and then coalesced to global memory
   //Complete result must fit into shared memory!
-  private def epilogV2: ToBeTyped[Expr] =
+   def epilogV2: ToBeTyped[Expr] =
     fun(resultFragsBlock =>
       //First calculate result
       //This is necessary so the shared memory it can be reused, because of this the code for the epilog
@@ -770,18 +771,20 @@ object mmTensor {
         copyMatrix(config.mTileBlock, config.nTileBlock, 4)))
 
 
-  //First store data to shared memory avoiding bank conflicts and then coalesced to global memory
-  //Complete result must NOT fit into shared memory (multple iterations possible)
-  private def epilogV3: ToBeTyped[Expr] = {
-    //Number of fragments that fit into shared memory and is divisible by numberOfWarps
-    val fragmentsPerIteration = 32
-
+   //First store data to shared memory avoiding bank conflicts and then coalesced to global memory
+   //Complete result does not have to fit into shared memory (multple iterations possible)
+   //fragmentsPerIteration: Number of fragments that fit into shared memory and is divisible by numberOfWarps
+   def epilogV3(fragmentsPerIteration: Int = 32): ToBeTyped[Expr] = {
     //Number of fragments that store a single warp into shared memory
-    val fragmentsPerIterationPerWarp = fragmentsPerIteration / config.numberOfWarps.eval
+    val fragmentsPerIterationPerWarp = Math.min(fragmentsPerIteration / config.nNumberOfWarps, config.mNumberOfFragsWarp * config.nNumberOfFragsWarp)
     //the fragments within a single warp is in a 2D formation
     val mNumberOfFragmentsPerIteration = fragmentsPerIterationPerWarp / config.nNumberOfFragsWarp
     //number of rows that can be stored in global memory in a single iteration
     val matrixMDimensionPerIteration = mNumberOfFragmentsPerIteration * config.mTileFrag * config.mNumberOfWarps
+
+    assert(fragmentsPerIteration % config.nNumberOfWarps == 0)
+    assert(fragmentsPerIterationPerWarp % config.nNumberOfFragsWarp == 0)
+    assert(matrixMDimensionPerIteration > 0)
 
     fun(resultFragsBlock =>
       let(resultFragsBlock)
@@ -815,7 +818,7 @@ object mmTensor {
           join |>
 
           //Write this result to shared memory
-          toSharedWithPadding(config.nTileBlock, 4) |>
+          toSharedWithPadding(config.nTileBlock, config.paddingBytes / 4) |>
 
           //And then coalesced to global memory
           copyMatrix(matrixMDimensionPerIteration, config.nTileBlock, 4) |>
@@ -826,12 +829,67 @@ object mmTensor {
       join))
   }
 
+  def epilogV4(fragmentsPerIteration: Int = 32): ToBeTyped[Expr] = {
+    //Number of fragments that store a single warp into shared memory
+    val fragmentsPerIterationPerWarp = Math.min(fragmentsPerIteration / config.nNumberOfWarps, config.mNumberOfFragsWarp * config.nNumberOfFragsWarp)
+    //the fragments within a single warp is in a 2D formation
+    val mNumberOfFragmentsPerIteration = fragmentsPerIterationPerWarp / config.nNumberOfFragsWarp
+    //number of rows that can be stored in global memory in a single iteration
+    val matrixMDimensionPerIteration = mNumberOfFragmentsPerIteration * config.mTileFrag * config.mNumberOfWarps
+
+    assert(fragmentsPerIteration % config.nNumberOfWarps == 0)
+    assert(fragmentsPerIterationPerWarp % config.nNumberOfFragsWarp == 0)
+    assert(matrixMDimensionPerIteration > 0)
+
+    fun(resultFragsBlock =>
+      let(resultFragsBlock)
+        //First write result into fragments, so the scope of the allocated shared memory for aBlockTile and bBlockTile ends
+        be(resultFragsBlock =>
+
+        resultFragsBlock |>
+          transpose |>
+          split(fragmentsPerIterationPerWarp) |>
+          mapSeqUnroll(fun(resultFragsT =>
+            resultFragsT |>
+              transpose |>
+              mapWarp(fun(fragsTile =>
+                //Result from a single warp
+                fragsTile |>
+                  mapSeqUnroll(fun(resultFrag =>
+                    resultFrag |>
+                      asMatrix |>
+                      transpose)) |>
+                  join |>
+                  split(config.nTileWarp) |>
+                  map(fun(x =>
+                    x |> transpose)) |>
+                  join |>
+                  transpose)) |>
+
+              join |>
+              split(config.nTileBlock) |>
+              map(fun(x =>
+                x |> transpose)) |>
+              join |>
+
+              //Write this result to shared memory
+              toLocal |>
+
+              //And then coalesced to global memory
+              copyMatrix(matrixMDimensionPerIteration, config.nTileBlock, 4) |>
+
+              split(config.mTileFrag * mNumberOfFragmentsPerIteration))) |>
+          transpose |>
+          join |>
+          join))
+  }
+
 
   //Multiply m.k.f16 a-matrix with k.n.f16 b-matrix
   //Matrix-dimensions must be divisible by configured block-size!
   //Result: m.n.f32 matrix
   //b-matrix is transposed
-  private def deviceMM(blockMM: ToBeTyped[Expr]): ToBeTyped[Expr] =
+   def deviceMM(blockMM: ToBeTyped[Expr]): ToBeTyped[Expr] =
     depFun((m: Nat, n: Nat, k: Nat) => fun(
       (m `.` k `.` f16) ->: (n `.` k `.` f16) ->: (m `.` n `.` f32)
     )((a, bT) =>
@@ -852,28 +910,47 @@ object mmTensor {
 
 
   //Kernel for mm using shared memory
-  def matMulSharedMemory(config: mmConfig): Expr = {
+  def matMulSharedMemory(config: mmConfig): ToBeTyped[Expr] = {
     this.config = config
     deviceMM(blockMM(epilog))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
-  def matMulSharedMemoryV2(config: mmConfig): Expr = {
+  def matMulSharedMemoryV2(config: mmConfig): ToBeTyped[Expr] = {
     this.config = config
     deviceMM(blockMMV2(epilog))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
   //and better epilog
-  def matMulSharedMemoryV3(config: mmConfig): Expr = {
+  def matMulSharedMemoryV3(config: mmConfig): ToBeTyped[Expr] = {
     this.config = config
     deviceMM(blockMMV2(epilogV2))
   }
 
   //Kernel for mm using shared memory avoiding bank conflicts while loading blockTiles into shared memory
   //and even better epilog
-  def matMulSharedMemoryV4(config: mmConfig): Expr = {
+  def matMulSharedMemoryV4(config: mmConfig, numberOfFragments: Int = 32): ToBeTyped[Expr] = {
     this.config = config
-    deviceMM(blockMMV2(epilogV3))
+    deviceMM(blockMMV2(epilogV3(numberOfFragments)))
+  }
+
+  def matMulSharedMemoryV5(config: mmConfig, numberOfFragments: Int = 32): ToBeTyped[Expr] = {
+    //Number of fragments that store a single warp into shared memory
+    val fragmentsPerIterationPerWarp = numberOfFragments / config.nNumberOfWarps
+    //the fragments within a single warp is in a 2D formation
+    val mNumberOfFragmentsPerIteration = fragmentsPerIterationPerWarp / config.nNumberOfFragsWarp
+    //number of rows that can be stored in global memory in a single iteration
+    val matrixMDimensionPerIteration = mNumberOfFragmentsPerIteration * config.mTileFrag * config.mNumberOfWarps
+
+    assert(numberOfFragments % config.nNumberOfWarps == 0)
+    assert(fragmentsPerIterationPerWarp % config.nNumberOfFragsWarp == 0)
+    assert(matrixMDimensionPerIteration > 0)
+    println(numberOfFragments % config.nNumberOfWarps == 0)
+    println(fragmentsPerIterationPerWarp % config.nNumberOfFragsWarp == 0)
+    println(matrixMDimensionPerIteration > 0)
+
+    this.config = config
+    deviceMM(blockMMV2(epilogV4(numberOfFragments)))
   }
 }

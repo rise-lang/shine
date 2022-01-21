@@ -422,19 +422,5 @@ object ContinuationTranslation {
       // TODO should be removed
       `new`(n `.` dt2, λ(varT(n `.` dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
-
-    case m@cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
-      val fragType = FragmentType(rows, columns, layers, dt, frag, layout)
-      shine.OpenCL.primitives.imperative.New(AddressSpace.Private, fragType,
-        λ(VarType(fragType))(fragmentAcc =>
-          (if (input.t.accessType.toString == write.toString)
-            acc(input)(fragmentAcc.wr) `;`
-              cudaIm.ForFragment(rows, columns, layers, dt, frag, layout, fragmentAcc.rd, fragmentAcc.wr,
-                λ(expT(dt, read))(x =>
-                  λ(accT(dt))(o =>
-                    acc(fun(x))(o))))
-          else
-            acc(m)(fragmentAcc.wr)) `;`
-            C(fragmentAcc.rd)))
   }
 }
