@@ -366,15 +366,15 @@ object gemm {
                 containsReduceSeq(cst(kTileFrag), containsAddMul)))))))
 
   private val splitFragments =
-    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
-      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
-          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
-            containsMap(cst(mTileWarp / mTileFrag)`.`(aTileFrag x (cst(mTileFrag)`.`(cst(nTileWarp)`.`f32))),
-              containsMap(cst(mTileFrag)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
-                containsMap(cst(nTileWarp / nTileFrag)`.`(bTileFragT x (cst(nTileFrag)`.`f32)),
-                  containsMap(cst(nTileFrag)`.`((cst(kTileFrag)`.`f32) x f32),
-                    containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))))
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
+      containsReduceSeq(k /^ cst(kTileBlock),
+        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp),
+          containsReduceSeq(cst(kTileBlock / kTileFrag),
+            containsMap(cst(mTileWarp / mTileFrag),
+              containsMap(cst(mTileFrag),
+                containsMap(cst(nTileWarp / nTileFrag),
+                  containsMap(cst(nTileFrag),
+                    containsReduceSeq(cst(kTileFrag), containsAddMul)))))))))
 
   private val useTensorCores =
     containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
@@ -394,16 +394,13 @@ object gemm {
       rules.reduceSeqMapFusion,
       rules.splitJoin(mTileBlock.toInt),
       rules.splitJoin(nTileBlock.toInt),
-      // rules.splitJoin1M(32),
-      rules.splitJoin2M(mTileBlock.toInt),
-      rules.splitJoin2M(nTileBlock.toInt),
       rules.blockedReduce(kTileBlock.toInt),
       rules.splitBeforeMap,
     )
 
+    //Which rules should be used?
     val reorderRules = emptyStep withRules Seq(
       rules.mapFission,
-      // rules.reduceSeq,
       rules.reduceSeqMapFusion,
       rules.reduceSeqMapFission,
       rules.eliminateMapIdentity,
@@ -411,12 +408,75 @@ object gemm {
       rules.liftReduceSeq,
       rules.liftReduceSeq2,
       rules.liftReduceSeq3,
-      // rules.transposeAroundMapMapF,
       rules.transposeAroundMapMapF1M,
+      rules.transposeAroundMapMapF2M,
+    )
+
+    val steps = Seq(splitRules withSketch splitBlock, //Works until here
+      reorderRules withSketch reorderBlock, //Find no solution
+      //      reorder2Rules withSketch reorderBlock2,
+      //      splitRules withSketch splitWarp,
+      //      reorderRules withSketch reorderWarp,
+      //      reorderRules withSketch reorderWarp2,
+      //      splitRules withSketch splitFragments,
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def testmm(): GuidedSearch.Result = {
+    val start = mm.mm
+
+    val splitRules = emptyStep withRules Seq(
+      rules.mapFission,
+      rules.reduceSeq,
+      rules.eliminateMapIdentity,
+      rules.reduceSeqMapFusion,
+      rules.splitJoin(mTileBlock.toInt),
+      rules.splitJoin(nTileBlock.toInt),
+      rules.blockedReduce(kTileBlock.toInt),
+      rules.splitBeforeMap,
+    )
+
+    val reorderRules = emptyStep withRules Seq(
+      rules.mapFission,
+      rules.reduceSeqMapFusion,
+      rules.reduceSeqMapFission,
+      rules.eliminateMapIdentity,
+      rules.splitBeforeMap,
+      rules.liftReduceSeq,
+      rules.liftReduceSeq2,
+      rules.liftReduceSeq3,
+      rules.transposeAroundMapMapF1M,
+      rules.transposeAroundMapMapF2M,
+    )
+
+    //Which rules should be used?
+    val reorder2Rules = emptyStep withRules Seq(
+      rules.mapFusion,
+      rules.mapFission,
+      rules.eliminateMapIdentity,
+      rules.splitBeforeMap,
+      rules.liftReduceSeq,
+      rules.liftReduceSeq2,
+      rules.liftReduceSeq3,
+      rules.transposeAroundMapMapF,
+      rules.transposeAroundMapMapF1M,
+      rules.transposeAroundMapMapF2M,
     )
 
     val steps = Seq(splitRules withSketch splitBlock,
-      reorderRules withSketch reorderBlock)
+      reorderRules withSketch reorderBlock, //Works until here
+      reorder2Rules withSketch reorderBlock2, //Find no solution
+//      splitRules withSketch splitWarp,
+//      reorderRules withSketch reorderWarp,
+//      reorderRules withSketch reorderWarp2,
+//      splitRules withSketch splitFragments,
+    )
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
@@ -493,8 +553,9 @@ object gemm {
 
     val fs = Seq(
 //      "baseline" -> baseline _,
-      "gemm" -> testGemm _,
-//      "mm" -> mmTest _,
+//      "mm" -> testmm _,
+//      "gemm" -> testGemm _,
+      "mm" -> mmTest _,
     )
     val rs = fs.map { case (n, f) =>
       System.gc() // hint garbage collection to get more precise memory usage statistics

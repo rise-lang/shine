@@ -670,6 +670,7 @@ object rules {
 //    Seq(vectorizeScalarFun("f", "n", "fV"))
 
     //TODO dont use f32
+    //TODO dont work
     def tensorMMA(mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat) = NamedRewrite.init(s"cuda-tensorMMA",
         app(app(map, lam("a",
           app(app(map, lam("b",
