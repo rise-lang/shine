@@ -1,6 +1,7 @@
 package benchmarks.eqsat
 
 import rise.core.{types => rct}
+import rise.Cuda.{primitives => rcup}
 import rise.core.types.{AddressSpace, DataType => rcdt}
 import rise.eqsat._
 import rise.elevate.rules.lowering.lowerToC
@@ -81,6 +82,10 @@ object gemm {
   val containsAddMul = contains(
     (app(app(add, ?), contains(mul)) : Sketch)/* or
     (contains(mul) >> contains(add))*/
+  )
+
+  val containsTensorMMA = contains(
+    app(prim(rcup.tensorMMA.primitive), ?)
   )
 
   val emptyStep = GuidedSearch.Step.init(BENF) /* withExtractor
@@ -220,6 +225,9 @@ object gemm {
   val aTileWarp: DataTypePattern = cst(mTileWarp) `.` (cst(kTileBlock) `.` f32)
   val bTileWarp: DataTypePattern = cst(kTileBlock) `.` (cst(nTileWarp) `.` f32)
   val cTileWarp: DataTypePattern = cst(mTileWarp) `.` (cst(nTileWarp) `.` f32)
+  val aTileFrag: DataTypePattern = cst(mTileFrag) `.` (cst(kTileFrag)`.`f32)
+  val bTileFragT: DataTypePattern = cst(nTileFrag) `.` (cst(kTileFrag)`.`f32)
+  val cTileFrag: DataTypePattern = cst(mTileFrag) `.` (cst(kTileFrag)`.`f32)
   val blockTile_t: DataTypePattern = aTileBlockT_t x bTileBlock_t
   val warpTile_t1: DataTypePattern = cst(kTileBlock)`.`((cst(mTileWarp)`.`f32) x (cst(nTileWarp)`.`f32))
 
@@ -279,6 +287,25 @@ object gemm {
             containsMap(cst(mTileWarp)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
               containsMap(cst(nTileWarp)`.`((cst(kTileFrag)`.`f32) x f32),
                 containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))
+
+  private val splitFragments =
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
+          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+            containsMap(cst(mTileWarp / mTileFrag)`.`(aTileFrag x (cst(mTileFrag)`.`(cst(nTileWarp)`.`f32))),
+              containsMap(cst(mTileFrag)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
+                containsMap(cst(nTileWarp / nTileFrag)`.`(bTileFragT x (cst(nTileFrag)`.`f32)),
+                  containsMap(cst(nTileFrag)`.`((cst(kTileFrag)`.`f32) x f32),
+                    containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))))
+
+  private val useTensorCores =
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
+          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+            containsMap(cst(mTileWarp / mTileFrag)`.`aTileFrag,
+              containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
 
 
   private val initMMA =
