@@ -620,6 +620,7 @@ object rules {
 
   object cuda {
     import rise.Cuda.{primitives => rcup}
+    import rise.openCL.{primitives => roclp}
 
     def mapGlobal(dim: Int) = NamedRewrite.init(s"cuda-map-global-$dim",
       map --> rcup.mapGlobal(dim).primitive
@@ -663,9 +664,31 @@ object rules {
     //
     //tensorPrimitives only inside of a mapWarp
 
-//    def tensorMMA(mTileFrag: Int, nTileFrag: Int, kTileFrag: Int) = NamedRewrite.init(s"cuda-tensorMMA",
-//
-//    )
+//    app(nApp(asVector, "n"), app(app(map, "f" :: f32 ->: f32), ("in": Pattern)))
+//    -->
+//    app(app(map, "fV"), app(nApp(asVector, "n"), "in")),
+//    Seq(vectorizeScalarFun("f", "n", "fV"))
+
+    //TODO dont use f32
+    def tensorMMA(mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat) = NamedRewrite.init(s"cuda-tensorMMA",
+        app(app(map, lam("a",
+          app(app(map, lam("b",
+            app(app(app(reduce,
+              lam("ac", lam("ab", app(app(add, "ac"), app(app(mul, app(fst, "ab")), app(snd, "ab")))))),
+              lf32(0f)),
+              app(app(zip, "a"), "b")))),
+            "bTile" :: (kTileFrag`.`(nTileFrag`.`f32))))),
+          "aTile" :: (mTileFrag`.`(kTileFrag`.`f32)))
+      -->
+          app(rcup.asMatrix.primitive,
+            app(aApp(roclp.oclToMem.primitive, AddressSpace.Private),
+              app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), "aTile")),
+                lam("aFrag",
+                  app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), "bTile")),
+                    lam("bFrag",
+                      app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.generateFragment.primitive, lf32(0f)))),
+                        lam("cFrag",
+                          app(app(app(rcup.tensorMMA.primitive, "aFrag"), "bFrag"), "cFrag"))))))))))
   }
 
   object ocl {

@@ -206,8 +206,9 @@ object gemm {
   //  val nTileWarp = `%n`(7)
   //  val kTileWarp = `%n`(8)
 
-  val mTileBlock: Long = 128
-  val nTileBlock: Long = 128
+  //Value 128 not allowed?
+  val mTileBlock: Long = 64
+  val nTileBlock: Long = 64
   val kTileBlock: Long = 64
   val mTileWarp: Long = 32
   val nTileWarp: Long = 32
@@ -383,57 +384,68 @@ object gemm {
             containsMap(cst(mTileWarp / mTileFrag)`.`aTileFrag,
               containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
 
-  private val splitBlockA =
-    containsMap(m /^ cst(mTileBlock),
-      containsMap(cst(mTileBlock),
-        containsMap(n /^ cst(nTileBlock),
-          containsMap(cst(nTileBlock),
-            containsReduceSeq(k, containsAddMul)))))
-
-  private val splitBlockB =
-    containsMap(m /^ cst(mTileBlock),
-      containsMap(cst(mTileBlock),
-        containsMap(n /^ cst(nTileBlock),
-          containsMap(cst(nTileBlock),
-            containsReduceSeq(k /^ cst(kTileBlock),
-              containsReduceSeq(cst(kTileBlock), containsAddMul))))))
-
   private def testGemm(): GuidedSearch.Result = {
     val start = mma
 
-    //Does not found a solution
-    val steps = Seq(
-      (emptyStep withRules Seq(
-        rules.reduceSeq,
-        rules.reduceSeqMapFusion,
-        rules.splitJoin(mTileBlock.toInt),
-        rules.splitJoin(nTileBlock.toInt),
-        rules.reduceSeq)) withSketch
-        splitBlockA, //Works until here
-      (emptyStep withRules Seq(
-        rules.blockedReduce(kTileBlock.toInt),
-          rules.combinatory.blockedReduce(kTileBlock.toInt))) withSketch
-        splitBlockB
+    val splitRules = emptyStep withRules Seq(
+      rules.mapFission,
+      rules.reduceSeq,
+      rules.eliminateMapIdentity,
+      rules.reduceSeqMapFusion,
+      rules.splitJoin(mTileBlock.toInt),
+      rules.splitJoin(nTileBlock.toInt),
+      // rules.splitJoin1M(32),
+      rules.splitJoin2M(mTileBlock.toInt),
+      rules.splitJoin2M(nTileBlock.toInt),
+      rules.blockedReduce(kTileBlock.toInt),
+      rules.splitBeforeMap,
     )
 
-//    //type error: NotDataTypeId(669) != NotDataTypeId(977):
-//    //         (((268435456 ^ -1) * %n0).128.128.128.128.(f32 x f32) -> ((2147483647 ^ -1) * %n0).128.128.128.128.128.(f32 x f32))
-//    //((%n0 * ((2147483647 ^ -1) * 128)).128.128.128.128.(f32 x f32) -> ((2147483647 ^ -1) * %n0).128.128.128.128.128.(f32 x f32))
-//    val steps = Seq(
-//      (emptyStep withRules Seq(
-//        rules.mapFission,
-//        rules.reduceSeq,
-//        rules.eliminateMapIdentity,
-//        rules.reduceSeqMapFusion,
-//        rules.splitJoin(mTileBlock.toInt),
-//        rules.splitJoin(nTileBlock.toInt),
-//        // rules.splitJoin1M(32),
-//        rules.splitJoin2M(mTileBlock.toInt),
-//        rules.splitJoin2M(nTileBlock.toInt),
-//        rules.combinatory.blockedReduce(kTileBlock.toInt),
-//        rules.splitBeforeMap)) withSketch
-//        splitBlockB,
-//    )
+    val reorderRules = emptyStep withRules Seq(
+      rules.mapFission,
+      // rules.reduceSeq,
+      rules.reduceSeqMapFusion,
+      rules.reduceSeqMapFission,
+      rules.eliminateMapIdentity,
+      rules.splitBeforeMap,
+      rules.liftReduceSeq,
+      rules.liftReduceSeq2,
+      rules.liftReduceSeq3,
+      // rules.transposeAroundMapMapF,
+      rules.transposeAroundMapMapF1M,
+    )
+
+    val steps = Seq(splitRules withSketch splitBlock,
+      reorderRules withSketch reorderBlock)
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def mmTest(): GuidedSearch.Result = {
+    val start: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
+      import rise.core.DSL._
+      import rise.core.types._
+      import rise.core.types.DataType._
+      import rise.core.primitives._
+
+      fun(ArrayType(16, ArrayType(16, f32)))(A =>
+        fun(ArrayType(16, ArrayType(16, f32)))(B =>
+          A |> map(fun(rowA =>
+            B |> map(fun(colB =>
+              zip(rowA)(colB) |>
+                reduce(fun((accum, x) => accum + fst(x) * snd(x))(lf32(0f)))))))))
+    }
+
+    //Error: cannot unify (dt1941, dt1941) and f32...
+    val steps = Seq(
+      (emptyStep withRules Seq(
+        rules.cuda.tensorMMA(16, 16, 16))) withSketch
+        containsTensorMMA,
+    )
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
@@ -482,6 +494,7 @@ object gemm {
     val fs = Seq(
 //      "baseline" -> baseline _,
       "gemm" -> testGemm _,
+//      "mm" -> mmTest _,
     )
     val rs = fs.map { case (n, f) =>
       System.gc() // hint garbage collection to get more precise memory usage statistics
