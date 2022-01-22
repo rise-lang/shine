@@ -618,6 +618,48 @@ object rules {
     )
   }
 
+  object cuda {
+    import rise.Cuda.{primitives => rcup}
+
+    def mapGlobal(dim: Int) = NamedRewrite.init(s"cuda-map-global-$dim",
+      map --> rcup.mapGlobal(dim).primitive
+    )
+
+    def mapBlock(dim: Int) = NamedRewrite.init(s"cuda-map-block-$dim",
+      map --> rcup.mapBlock(dim).primitive
+    )
+
+    def mapThreads(dim: Int) = NamedRewrite.init(s"cuda-map-threads-$dim",
+      map --> rcup.mapThreads(dim).primitive
+    )
+
+    def mapWarp(dim: Int) = NamedRewrite.init(s"cuda-map-warp-$dim",
+      map --> rcup.mapWarp(dim).primitive
+    )
+
+    //Tensor Cores rules?
+    //for mm
+    //if reduce with zero as initial value:
+    //map(mTileFrag.kTileFrag.dt, map(nTileFrag.kTileFrag.dt, reduce(kTileFrag.(dt x dt), containsAddMul))
+    //  -->
+    //let(toPrivate(generateFragment(lf32(0f)))(be(accumFrag
+    // let(toPrivate(aTile |> asFragment)(be(aFrag =>
+    //  let(toPrivate(bTile |> asFragment(be(bFrag =>
+    //    tenorMMA(aFrag, bFrag, accumFrag)))) |> asMatrix
+    //
+    //for mma
+    //map(mTileFrag.(kTileFrag.dt x nTileFrag.dt2), map(nTileFrag.(kTileFrag.dt x dt2), reduce(kTileFrag.(dt x dt), containsAddMul))
+    //  -->
+    //let(toPrivate(cTile |> asFragment)(be(accumFrag
+    // let(toPrivate(aTile |> asFragment)(be(aFrag =>
+    //  let(toPrivate(bTile |> asFragment(be(bFrag =>
+    //    tenorMMA(aFrag, bFrag, accumFrag)))) |> asMatrix
+
+//    def tensorMMA(mTileFrag: Int, nTileFrag: Int, kTileFrag: Int) = NamedRewrite.init(s"cuda-tensorMMA",
+//
+//    )
+  }
+
   object ocl {
     import rise.openCL.{primitives => roclp}
     def mapGlobal(dim: Int) = NamedRewrite.init(s"ocl-map-global-$dim",
