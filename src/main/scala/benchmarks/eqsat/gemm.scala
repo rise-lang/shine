@@ -29,7 +29,6 @@ object gemm {
                       fun(r => (alpha * r) + (beta * snd(colBC))) ))))))))))
   }
 
-  //Same with other way to describe dot product
   val mma: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
     import rise.core.DSL._
     import rise.core.types._
@@ -231,18 +230,18 @@ object gemm {
   val blockTile_t: DataTypePattern = aTileBlockT_t x bTileBlock_t
   val warpTile_t1: DataTypePattern = cst(kTileBlock)`.`((cst(mTileWarp)`.`f32) x (cst(nTileWarp)`.`f32))
 
-//  private val initMMA =
-//    containsMap(m`.`((k`.`f32) x (n`.`f32)),
-//      containsMap(n`.`((k`.`f32) x f32),
-//        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
-//
-//  private val splitBlock =
-//    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
-//      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
-//        containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x (cst(nTileBlock)`.`f32)),
-//          containsMap(cst(nTileBlock)`.`((k`.`f32) x f32),
-//            containsReduceSeq((k /^ cst(kTileBlock))`.`((cst(kTileBlock)`.`f32) x (cst(kTileBlock)`.`f32)),
-//              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
+  private val initMMA =
+    containsMap(m`.`((k`.`f32) x (n`.`f32)),
+      containsMap(n`.`((k`.`f32) x f32),
+        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
+
+  private val splitBlock =
+    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
+      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
+        containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x (cst(nTileBlock)`.`f32)),
+          containsMap(cst(nTileBlock)`.`((k`.`f32) x f32),
+            containsReduceSeq((k /^ cst(kTileBlock))`.`((cst(kTileBlock)`.`f32) x (cst(kTileBlock)`.`f32)),
+              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
 
   private val reorderBlock =
     containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
@@ -308,26 +307,18 @@ object gemm {
               containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
 
 
-  private val initMMA =
-    containsMap(m`.`((k`.`f32) x (n`.`f32)),
-      containsMap(n`.`((k`.`f32) x f32),
-        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
+//  private val initMMA =
+//    containsMap(m`.`((k`.`f32) x (n`.`f32)),
+//      containsMap(n`.`((k`.`f32) x f32),
+//        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
 
-  private val splitBlock =
+  private val splitBlockTest =
     containsMap((m /^ cst(mTileBlock))`.`(cst(mTileBlock)`.`(k`.`f32)) x (cst(mTileBlock)`.`(n`.`f32)),
       containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
         containsMap(n`.`((k`.`f32) x f32),
           containsReduceSeq(k`.`(f32 x f32), containsAddMul))))
 
-//  private val splitBlock =
-//    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
-//      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
-//        containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x (cst(nTileBlock)`.`f32)),
-//          containsMap(cst(nTileBlock)`.`((k`.`f32) x f32),
-//            containsReduceSeq((k /^ cst(kTileBlock))`.`((cst(kTileBlock)`.`f32) x (cst(kTileBlock)`.`f32)),
-//              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
-
-  private def fastGemm(): GuidedSearch.Result = {
+  private def testGemm(): GuidedSearch.Result = {
     val start = mma
 
     val steps = Seq(
@@ -336,37 +327,46 @@ object gemm {
           rules.reduceSeqMapFusion)) withSketch
         initMMA,
 
+      //Which rules can be used?
       (emptyStep withRules
-        Seq(rules.mapFission,
-          rules.zipSame,
+        Seq(rules.splitBeforeMap,
           rules.reduceSeq,
-          rules.eliminateMapIdentity,
-          rules.reduceSeqMapFusion,
-          rules.splitJoin(mTileBlock.toInt),
-          //        rules.splitJoin(nTileBlock.toInt),
-          //        rules.splitJoin(kTileBlock.toInt),
-          // rules.splitJoin1M(32),
-          rules.splitJoin2M(mTileBlock.toInt),
-          //        rules.splitJoin2M(nTileBlock.toInt),
-          //        rules.splitJoin2M(kTileBlock.toInt),
-          rules.blockedReduce(mTileBlock.toInt),
-          rules.splitBeforeMap)) withSketch
-        splitBlock,
-
-//      reorderBlock withSketch
-//      reorderBlock2 withSketch
-//      splitWarp withSketch
-//      reorderWarp withSketch
-//      reorderWarp2
+          rules.reduceSeqMapFusion)) withSketch
+        splitBlockTest,
     )
 
-//    val steps = Seq(
-//      emptyStep withRules Seq(rules.reduceSeq, rules.reduceSeqMapFusion)
-//        withSketch
-//        containsMap(m,
-//          containsMap(n,
-//            containsReduceSeq(k, containsAddMul))),
-//    )
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def fastGemm(): GuidedSearch.Result = {
+    val start = mma
+
+    //TODO what rules should be used
+    val splitRules = emptyStep
+    val reorderRules1 = emptyStep
+    val reorderRules2 = emptyStep
+    //TODO Add Tensor Core rules
+    val tensorRules = emptyStep
+    //TODO kernel should use shared memory for block tiles
+    //TODO kernel should minimize number of asFragment/asMatrix operations e.g. save block tile of c matrix in fragments
+
+    val steps = Seq(
+      (emptyStep withRules
+        Seq(rules.reduceSeq,
+          rules.reduceSeqMapFusion)) withSketch initMMA,
+      splitRules withSketch splitBlock,
+      reorderRules1 withSketch reorderBlock,
+      reorderRules2 withSketch reorderBlock2,
+      splitRules withSketch splitWarp,
+      reorderRules1 withSketch reorderWarp,
+      reorderRules2 withSketch reorderWarp2,
+      splitRules withSketch splitFragments,
+      tensorRules withSketch useTensorCores,
+    )
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
@@ -381,7 +381,7 @@ object gemm {
 
     val fs = Seq(
 //      "baseline" -> baseline _,
-      "gemm" -> fastGemm _,
+      "gemm" -> testGemm _,
     )
     val rs = fs.map { case (n, f) =>
       System.gc() // hint garbage collection to get more precise memory usage statistics

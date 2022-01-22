@@ -654,6 +654,8 @@ object rules {
     // let(toPrivate(aTile |> asFragment)(be(aFrag =>
     //  let(toPrivate(bTile |> asFragment(be(bFrag =>
     //    tenorMMA(aFrag, bFrag, accumFrag)))) |> asMatrix
+    //
+    //rules for reduing number of asFragment/asMatrix operations
 
 //    def tensorMMA(mTileFrag: Int, nTileFrag: Int, kTileFrag: Int) = NamedRewrite.init(s"cuda-tensorMMA",
 //

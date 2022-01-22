@@ -170,6 +170,13 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
       pipe |> exp(env, Nil, pipe =>
         C.AST.ExprStmt(C.AST.StructMemberAccess(pipe, C.AST.DeclRef("commit_and_wait()"))))
 
+    //Remove this!!!!
+    //Hacky way to avoid using oclReduceSeq in elevate
+    case shine.OpenCL.primitives.imperative.New(a, dt, Lambda(v, p)) =>
+      OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
+    case shine.DPIA.primitives.imperative.New(dt, Lambda(v, p)) =>
+      OpenCLCodeGen.codeGenOpenCLNew(AddressSpace.Private, dt, v, p, env)
+
     case phrase => phrase |> super.cmd(env)
   }
 
