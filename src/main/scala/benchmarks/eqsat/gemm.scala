@@ -230,62 +230,139 @@ object gemm {
   val blockTile_t: DataTypePattern = aTileBlockT_t x bTileBlock_t
   val warpTile_t1: DataTypePattern = cst(kTileBlock)`.`((cst(mTileWarp)`.`f32) x (cst(nTileWarp)`.`f32))
 
+  //With types
+//  private val initMMA =
+//    containsMap(m`.`((k`.`f32) x (n`.`f32)),
+//      containsMap(n`.`((k`.`f32) x f32),
+//        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
+//
+//  private val splitBlock =
+//    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
+//      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
+//        containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x (cst(nTileBlock)`.`f32)),
+//          containsMap(cst(nTileBlock)`.`((k`.`f32) x f32),
+//            containsReduceSeq((k /^ cst(kTileBlock))`.`((cst(kTileBlock)`.`f32) x (cst(kTileBlock)`.`f32)),
+//              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
+//
+//  private val reorderBlock =
+//    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
+//      containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x cTileBlock_t),
+//        containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//          containsMap(cst(mTileBlock)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
+//            containsMap(cst(nTileBlock)`.`((cst(kTileBlock)`.`f32) x f32),
+//              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
+//
+//  private val reorderBlock2 =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
+//          containsMap(cst(nTileBlock)`.`((cst(kTileBlock)`.`f32) x f32),
+//            containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul)))))
+//
+//  private val splitWarp =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock / mTileWarp)`.`((cst(mTileWarp)`.`(cst(kTileBlock)`.`f32)) x (cst(mTileWarp)`.`(cst(nTileBlock)`.`f32))),
+//          containsMap(cst(mTileWarp)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
+//            containsMap(cst(nTileBlock / nTileWarp)`.`((cst(nTileWarp)`.`(cst(kTileBlock)`.`f32)) x (cst(nTileWarp)`.`f32)),
+//              containsMap(cst(nTileWarp)`.`((cst(kTileBlock)`.`f32) x f32),
+//                containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag)`.`f32) x (cst(kTileBlock)`.`f32)),
+//                  containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul))))))))
+//
+//  private val reorderWarp =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock / mTileWarp)`.`(aTileWarp x (cst(mTileWarp)`.`(cst(nTileBlock)`.`f32))),
+//          containsMap(cst(nTileBlock / nTileWarp)`.`(bTileWarp x (cst(nTileWarp)`.`(cst(mTileWarp)`.`f32))),
+//            containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+//              containsMap(cst(mTileWarp)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
+//                containsMap(cst(nTileWarp)`.`((cst(kTileFrag)`.`f32) x f32),
+//                  containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul))))))))
+//
+//  private val reorderWarp2 =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
+//          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+//            containsMap(cst(mTileWarp)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
+//              containsMap(cst(nTileWarp)`.`((cst(kTileFrag)`.`f32) x f32),
+//                containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))
+//
+//  private val splitFragments =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
+//          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+//            containsMap(cst(mTileWarp / mTileFrag)`.`(aTileFrag x (cst(mTileFrag)`.`(cst(nTileWarp)`.`f32))),
+//              containsMap(cst(mTileFrag)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
+//                containsMap(cst(nTileWarp / nTileFrag)`.`(bTileFragT x (cst(nTileFrag)`.`f32)),
+//                  containsMap(cst(nTileFrag)`.`((cst(kTileFrag)`.`f32) x f32),
+//                    containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))))
+//
+//  private val useTensorCores =
+//    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
+//      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
+//        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
+//          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
+//            containsMap(cst(mTileWarp / mTileFrag)`.`aTileFrag,
+//              containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
+
   private val initMMA =
     containsMap(m`.`((k`.`f32) x (n`.`f32)),
       containsMap(n`.`((k`.`f32) x f32),
         containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
 
   private val splitBlock =
-    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
-      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
-        containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x (cst(nTileBlock)`.`f32)),
-          containsMap(cst(nTileBlock)`.`((k`.`f32) x f32),
-            containsReduceSeq((k /^ cst(kTileBlock))`.`((cst(kTileBlock)`.`f32) x (cst(kTileBlock)`.`f32)),
-              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
+    containsMap(m /^ cst(mTileBlock),
+      containsMap(cst(mTileBlock),
+        containsMap(n /^ cst(nTileBlock),
+          containsMap(cst(nTileBlock),
+            containsReduceSeq(k /^ cst(kTileBlock),
+              containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
   private val reorderBlock =
-    containsMap((m /^ cst(mTileBlock))`.`(aRowBlock_t x cRowBlock_t),
-      containsMap((n /^ cst(nTileBlock))`.`(bColumnBlock_t x cTileBlock_t),
-        containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-          containsMap(cst(mTileBlock)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
-            containsMap(cst(nTileBlock)`.`((cst(kTileBlock)`.`f32) x f32),
-              containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul))))))
+    containsMap(m /^ cst(mTileBlock),
+      containsMap(n /^ cst(nTileBlock),
+        containsReduceSeq(k /^ cst(kTileBlock),
+          containsMap(cst(mTileBlock),
+            containsMap(cst(nTileBlock),
+              containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
   private val reorderBlock2 =
-    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
-      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-        containsMap(cst(mTileBlock)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
-          containsMap(cst(nTileBlock)`.`((cst(kTileBlock)`.`f32) x f32),
-            containsReduceSeq(cst(kTileBlock)`.`(f32 x f32), containsAddMul)))))
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
+      containsReduceSeq(k /^ cst(kTileBlock),
+        containsMap(cst(mTileBlock),
+          containsMap(cst(nTileBlock),
+            containsReduceSeq(cst(kTileBlock), containsAddMul)))))
 
   private val splitWarp =
-    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
-      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-        containsMap(cst(mTileBlock / mTileWarp)`.`((cst(mTileWarp)`.`(cst(kTileBlock)`.`f32)) x (cst(mTileWarp)`.`(cst(nTileBlock)`.`f32))),
-          containsMap(cst(mTileWarp)`.`((cst(kTileBlock)`.`f32) x (cst(nTileBlock)`.`f32)),
-            containsMap(cst(nTileBlock / nTileWarp)`.`((cst(nTileWarp)`.`(cst(kTileBlock)`.`f32)) x (cst(nTileWarp)`.`f32)),
-              containsMap(cst(nTileWarp)`.`((cst(kTileBlock)`.`f32) x f32),
-                containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag)`.`f32) x (cst(kTileBlock)`.`f32)),
-                  containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul))))))))
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
+      containsReduceSeq(k /^ cst(kTileBlock),
+        containsMap(cst(mTileBlock / mTileWarp),
+          containsMap(cst(mTileWarp),
+            containsMap(cst(nTileBlock / nTileWarp),
+              containsMap(cst(nTileWarp),
+                containsReduceSeq(cst(kTileBlock / kTileFrag),
+                  containsReduceSeq(cst(kTileFrag), containsAddMul))))))))
 
   private val reorderWarp =
-    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
-      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-        containsMap(cst(mTileBlock / mTileWarp)`.`(aTileWarp x (cst(mTileWarp)`.`(cst(nTileBlock)`.`f32))),
-          containsMap(cst(nTileBlock / nTileWarp)`.`(bTileWarp x (cst(nTileWarp)`.`(cst(mTileWarp)`.`f32))),
-            containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
-              containsMap(cst(mTileWarp)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
-                containsMap(cst(nTileWarp)`.`((cst(kTileFrag)`.`f32) x f32),
-                  containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul))))))))
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
+      containsReduceSeq(k /^ cst(kTileBlock),
+        containsMap(cst(mTileBlock / mTileWarp),
+          containsMap(cst(nTileBlock / nTileWarp),
+            containsReduceSeq(cst(kTileBlock / kTileFrag),
+              containsMap(cst(mTileWarp),
+                containsMap(cst(nTileWarp),
+                  containsReduceSeq(cst(kTileFrag), containsAddMul))))))))
 
   private val reorderWarp2 =
-    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
-      containsReduceSeq((k /^ cst(kTileBlock))`.`blockTile_t,
-        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp)`.`(aTileWarp x bTileWarp),
-          containsReduceSeq(cst(kTileBlock / kTileFrag)`.`((cst(kTileFrag) `.` (cst(mTileWarp) `.` f32)) x (cst(kTileFrag)`.`(cst(nTileWarp)`.`f32))),
-            containsMap(cst(mTileWarp)`.`((cst(kTileFrag)`.`f32) x (cst(nTileWarp)`.`f32)),
-              containsMap(cst(nTileWarp)`.`((cst(kTileFrag)`.`f32) x f32),
-                containsReduceSeq(cst(kTileFrag)`.`(f32 x f32), containsAddMul)))))))
+    containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
+      containsReduceSeq(k /^ cst(kTileBlock),
+        containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp),
+          containsReduceSeq(cst(kTileBlock / kTileFrag),
+            containsMap(cst(mTileWarp),
+              containsMap(cst(nTileWarp),
+                containsReduceSeq(cst(kTileFrag), containsAddMul)))))))
 
   private val splitFragments =
     containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock))`.`((aRowBlock_t x bColumnBlock_t) x cTileBlock_t),
@@ -306,34 +383,57 @@ object gemm {
             containsMap(cst(mTileWarp / mTileFrag)`.`aTileFrag,
               containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
 
+  private val splitBlockA =
+    containsMap(m /^ cst(mTileBlock),
+      containsMap(cst(mTileBlock),
+        containsMap(n /^ cst(nTileBlock),
+          containsMap(cst(nTileBlock),
+            containsReduceSeq(k, containsAddMul)))))
 
-//  private val initMMA =
-//    containsMap(m`.`((k`.`f32) x (n`.`f32)),
-//      containsMap(n`.`((k`.`f32) x f32),
-//        containsReduceSeq(k`.`(f32 x f32), containsAddMul)))
-
-  private val splitBlockTest =
-    containsMap((m /^ cst(mTileBlock))`.`(cst(mTileBlock)`.`(k`.`f32)) x (cst(mTileBlock)`.`(n`.`f32)),
-      containsMap(cst(mTileBlock)`.`((k`.`f32) x (n`.`f32)),
-        containsMap(n`.`((k`.`f32) x f32),
-          containsReduceSeq(k`.`(f32 x f32), containsAddMul))))
+  private val splitBlockB =
+    containsMap(m /^ cst(mTileBlock),
+      containsMap(cst(mTileBlock),
+        containsMap(n /^ cst(nTileBlock),
+          containsMap(cst(nTileBlock),
+            containsReduceSeq(k /^ cst(kTileBlock),
+              containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
   private def testGemm(): GuidedSearch.Result = {
     val start = mma
 
+    //Does not found a solution
     val steps = Seq(
-      (emptyStep withRules
-        Seq(rules.reduceSeq,
-          rules.reduceSeqMapFusion)) withSketch
-        initMMA,
-
-      //Which rules can be used?
-      (emptyStep withRules
-        Seq(rules.splitBeforeMap,
-          rules.reduceSeq,
-          rules.reduceSeqMapFusion)) withSketch
-        splitBlockTest,
+      (emptyStep withRules Seq(
+        rules.reduceSeq,
+        rules.reduceSeqMapFusion,
+        rules.splitJoin(mTileBlock.toInt),
+        rules.splitJoin(nTileBlock.toInt),
+        rules.reduceSeq)) withSketch
+        splitBlockA, //Works until here
+      (emptyStep withRules Seq(
+        rules.blockedReduce(kTileBlock.toInt),
+          rules.combinatory.blockedReduce(kTileBlock.toInt))) withSketch
+        splitBlockB
     )
+
+//    //type error: NotDataTypeId(669) != NotDataTypeId(977):
+//    //         (((268435456 ^ -1) * %n0).128.128.128.128.(f32 x f32) -> ((2147483647 ^ -1) * %n0).128.128.128.128.128.(f32 x f32))
+//    //((%n0 * ((2147483647 ^ -1) * 128)).128.128.128.128.(f32 x f32) -> ((2147483647 ^ -1) * %n0).128.128.128.128.128.(f32 x f32))
+//    val steps = Seq(
+//      (emptyStep withRules Seq(
+//        rules.mapFission,
+//        rules.reduceSeq,
+//        rules.eliminateMapIdentity,
+//        rules.reduceSeqMapFusion,
+//        rules.splitJoin(mTileBlock.toInt),
+//        rules.splitJoin(nTileBlock.toInt),
+//        // rules.splitJoin1M(32),
+//        rules.splitJoin2M(mTileBlock.toInt),
+//        rules.splitJoin2M(nTileBlock.toInt),
+//        rules.combinatory.blockedReduce(kTileBlock.toInt),
+//        rules.splitBeforeMap)) withSketch
+//        splitBlockB,
+//    )
 
     GuidedSearch.init()
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&

@@ -629,6 +629,7 @@ object rules {
       map --> rcup.mapBlock(dim).primitive
     )
 
+    //What about restrictions e.g. a mapThreads is only allowed in a mapBlock
     def mapThreads(dim: Int) = NamedRewrite.init(s"cuda-map-threads-$dim",
       map --> rcup.mapThreads(dim).primitive
     )
@@ -656,6 +657,11 @@ object rules {
     //    tenorMMA(aFrag, bFrag, accumFrag)))) |> asMatrix
     //
     //rules for reduing number of asFragment/asMatrix operations
+    //
+    //rule for alpha * fragment
+    // --> mapFragment(fun(x => x * alpha))
+    //
+    //tensorPrimitives only inside of a mapWarp
 
 //    def tensorMMA(mTileFrag: Int, nTileFrag: Int, kTileFrag: Int) = NamedRewrite.init(s"cuda-tensorMMA",
 //
