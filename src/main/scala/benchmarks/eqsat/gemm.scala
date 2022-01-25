@@ -25,7 +25,7 @@ object gemm {
                 zip(A)(C) |> map(fun(rowAC =>
                   zip(B |> transpose)(snd(rowAC)) |> map(fun(colBC =>
                     zip(fst(rowAC))(fst(colBC)) |>
-                      reduce(fun((acc,ab) => acc + fst(ab) * snd(ab)))(lf32(0f)) |>
+                      reduceSeq(fun((acc,ab) => acc + fst(ab) * snd(ab)))(lf32(0f)) |>
                       fun(r => (alpha * r) + (beta * snd(colBC))) ))))))))))
   }
 
@@ -52,6 +52,24 @@ object gemm {
 //              zip(B |> transpose)(snd(rowAC)) |> map(fun(colBC =>
 //                zip(fst(rowAC))(fst(colBC)) |>
 //                  reduce(fun((acc,ab) => acc + fst(ab) * snd(ab)))(snd(colBC))))))))))
+  }
+
+  // MMA with initial transposed b-Matrix
+  val mmaBT: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
+    import rise.core.DSL._
+    import rise.core.types._
+    import rise.core.types.DataType._
+    import rise.core.primitives._
+
+    depFun((m: Nat, n: Nat, k: Nat) =>
+      fun(ArrayType(m, ArrayType(k, f32)))(A =>
+        fun(ArrayType(n, ArrayType(k, f32)))(B =>
+          fun(ArrayType(m, ArrayType(n, f32)))(C =>
+            zip(A)(C) |> map(fun(rowAC =>
+              zip(B)(snd(rowAC)) |> map(fun(colBC =>
+                zip(fst(rowAC))(fst(colBC)) |>
+                  map(fun(x => fst(x) * snd(x))) |>
+                  reduce(add)(snd(colBC))))))))))
   }
 
   //Copy pasted from mm
@@ -384,36 +402,36 @@ object gemm {
             containsMap(cst(mTileWarp / mTileFrag)`.`aTileFrag,
               containsMap(cst(nTileWarp / nTileFrag)`.`bTileFragT, containsTensorMMA))))))
 
-  private def testGemm(): GuidedSearch.Result = {
+  val splitRules = emptyStep withRules Seq(
+    rules.mapFission,
+    rules.reduceSeq,
+    rules.eliminateMapIdentity,
+    rules.reduceSeqMapFusion,
+    rules.splitJoin(mTileBlock.toInt),
+    rules.splitJoin(nTileBlock.toInt),
+    rules.blockedReduce(kTileBlock.toInt),
+    rules.splitBeforeMap,
+  )
+
+  //Which rules should be used?
+  val reorderRules = emptyStep withRules Seq(
+    rules.mapFission,
+    rules.reduceSeqMapFusion,
+    rules.reduceSeqMapFission,
+    rules.eliminateMapIdentity,
+    rules.splitBeforeMap,
+    rules.liftReduceSeq,
+    rules.liftReduceSeq2,
+    rules.liftReduceSeq3,
+    rules.transposeAroundMapMapF1M,
+    rules.transposeAroundMapMapF2M,
+  )
+
+  private def testMMA(): GuidedSearch.Result = {
     val start = mma
 
-    val splitRules = emptyStep withRules Seq(
-      rules.mapFission,
-      rules.reduceSeq,
-      rules.eliminateMapIdentity,
-      rules.reduceSeqMapFusion,
-      rules.splitJoin(mTileBlock.toInt),
-      rules.splitJoin(nTileBlock.toInt),
-      rules.blockedReduce(kTileBlock.toInt),
-      rules.splitBeforeMap,
-    )
-
-    //Which rules should be used?
-    val reorderRules = emptyStep withRules Seq(
-      rules.mapFission,
-      rules.reduceSeqMapFusion,
-      rules.reduceSeqMapFission,
-      rules.eliminateMapIdentity,
-      rules.splitBeforeMap,
-      rules.liftReduceSeq,
-      rules.liftReduceSeq2,
-      rules.liftReduceSeq3,
-      rules.transposeAroundMapMapF1M,
-      rules.transposeAroundMapMapF2M,
-    )
-
     val steps = Seq(splitRules withSketch splitBlock, //Works until here
-      reorderRules withSketch reorderBlock, //Find no solution
+            reorderRules withSketch reorderBlock, //Find no solution
       //      reorder2Rules withSketch reorderBlock2,
       //      splitRules withSketch splitWarp,
       //      reorderRules withSketch reorderWarp,
@@ -428,7 +446,26 @@ object gemm {
       .run(start, steps)
   }
 
-  private def testmm(): GuidedSearch.Result = {
+  private def testGEMM(): GuidedSearch.Result = {
+    val start = gemm
+
+    val steps = Seq(splitRules withSketch splitBlock, //Find no solution
+//      reorderRules withSketch reorderBlock,
+      //      reorder2Rules withSketch reorderBlock2,
+      //      splitRules withSketch splitWarp,
+      //      reorderRules withSketch reorderWarp,
+      //      reorderRules withSketch reorderWarp2,
+      //      splitRules withSketch splitFragments,
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  private def testMM(): GuidedSearch.Result = {
     val start = mm.mm
 
     val splitRules = emptyStep withRules Seq(
@@ -485,7 +522,7 @@ object gemm {
       .run(start, steps)
   }
 
-  private def mmTest(): GuidedSearch.Result = {
+  private def testTensorMMARewriteRule(): GuidedSearch.Result = {
     val start: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
       import rise.core.DSL._
       import rise.core.types._
@@ -514,38 +551,38 @@ object gemm {
       .run(start, steps)
   }
 
-  private def fastGemm(): GuidedSearch.Result = {
-    val start = mma
-
-    //TODO what rules should be used
-    val splitRules = emptyStep
-    val reorderRules1 = emptyStep
-    val reorderRules2 = emptyStep
-    //TODO Add Tensor Core rules
-    val tensorRules = emptyStep
-    //TODO kernel should use shared memory for block tiles
-    //TODO kernel should minimize number of asFragment/asMatrix operations e.g. save block tile of c matrix in fragments
-
-    val steps = Seq(
-      (emptyStep withRules
-        Seq(rules.reduceSeq,
-          rules.reduceSeqMapFusion)) withSketch initMMA,
-      splitRules withSketch splitBlock,
-      reorderRules1 withSketch reorderBlock,
-      reorderRules2 withSketch reorderBlock2,
-      splitRules withSketch splitWarp,
-      reorderRules1 withSketch reorderWarp,
-      reorderRules2 withSketch reorderWarp2,
-      splitRules withSketch splitFragments,
-      tensorRules withSketch useTensorCores,
-    )
-
-    GuidedSearch.init()
-      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
-        StandardConstraintsPredicate)
-      .withRunnerTransform(runnerTrans)
-      .run(start, steps)
-  }
+//  private def testRewriteToFastGEMMKernel(): GuidedSearch.Result = {
+//    val start = gemm
+//
+//    //TODO what rules should be used
+//    val splitRules = emptyStep
+//    val reorderRules1 = emptyStep
+//    val reorderRules2 = emptyStep
+//    //TODO Add Tensor Core rules
+//    val tensorRules = emptyStep
+//    //TODO kernel should use shared memory for block tiles
+//    //TODO kernel should minimize number of asFragment/asMatrix operations e.g. save block tile of c matrix in fragments
+//
+//    val steps = Seq(
+//      (emptyStep withRules
+//        Seq(rules.reduceSeq,
+//          rules.reduceSeqMapFusion)) withSketch initMMA,
+//      splitRules withSketch splitBlock,
+//      reorderRules1 withSketch reorderBlock,
+//      reorderRules2 withSketch reorderBlock2,
+//      splitRules withSketch splitWarp,
+//      reorderRules1 withSketch reorderWarp,
+//      reorderRules2 withSketch reorderWarp2,
+//      splitRules withSketch splitFragments,
+//      tensorRules withSketch useTensorCores,
+//    )
+//
+//    GuidedSearch.init()
+//      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+//        StandardConstraintsPredicate)
+//      .withRunnerTransform(runnerTrans)
+//      .run(start, steps)
+//  }
 
   def main(args: Array[String]): () = {
     // val names = Set(args(0))
@@ -553,10 +590,12 @@ object gemm {
 
     val fs = Seq(
 //      "baseline" -> baseline _,
-//      "mm" -> testmm _,
-//      "gemm" -> testGemm _,
-      "mm" -> mmTest _,
+//      "mm" -> testMM _,
+      "mma" -> testMMA _,
+//      "gemm" -> testGEMM _,
+//      "tensorRuleTest" -> testTensorMMARewriteRule _,
     )
+
     val rs = fs.map { case (n, f) =>
       System.gc() // hint garbage collection to get more precise memory usage statistics
       (n, util.time(f()))
