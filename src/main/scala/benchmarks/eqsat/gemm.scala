@@ -17,15 +17,16 @@ object gemm {
     import rise.core.primitives._
 
     depFun((m: Nat, n: Nat, k: Nat) =>
-      fun(ArrayType(m, ArrayType(k, f32)))(A =>
-        fun(ArrayType(k, ArrayType(n, f32)))(B =>
+      fun(ArrayType(m, ArrayType(k, f16)))(A =>
+        fun(ArrayType(n, ArrayType(k, f16)))(BT =>
           fun(ArrayType(m, ArrayType(n, f32)))(C =>
             fun(f32)(alpha =>
               fun(f32)(beta =>
                 zip(A)(C) |> map(fun(rowAC =>
-                  zip(B |> transpose)(snd(rowAC)) |> map(fun(colBC =>
+                  zip(BT)(snd(rowAC)) |> map(fun(colBC =>
                     zip(fst(rowAC))(fst(colBC)) |>
-                      reduceSeq(fun((acc,ab) => acc + fst(ab) * snd(ab)))(lf32(0f)) |>
+                      map(fun(x => cast(fst(x) * snd(x))::f32)) |>
+                      reduce(add)(lf32(0f)) |>
                       fun(r => (alpha * r) + (beta * snd(colBC))) ))))))))))
   }
 
@@ -44,14 +45,6 @@ object gemm {
                 zip(fst(rowAC))(fst(colBC)) |>
                   map(fun(x => fst(x) * snd(x))) |>
                   reduce(add)(snd(colBC))))))))))
-//    depFun((m: Nat, n: Nat, k: Nat) =>
-//      fun(ArrayType(m, ArrayType(k, f32)))(A =>
-//        fun(ArrayType(k, ArrayType(n, f32)))(B =>
-//          fun(ArrayType(m, ArrayType(n, f32)))(C =>
-//            zip(A)(C) |> map(fun(rowAC =>
-//              zip(B |> transpose)(snd(rowAC)) |> map(fun(colBC =>
-//                zip(fst(rowAC))(fst(colBC)) |>
-//                  reduce(fun((acc,ab) => acc + fst(ab) * snd(ab)))(snd(colBC))))))))))
   }
 
   // MMA with initial transposed b-Matrix
@@ -63,10 +56,10 @@ object gemm {
 
     depFun((m: Nat, n: Nat, k: Nat) =>
       fun(ArrayType(m, ArrayType(k, f32)))(A =>
-        fun(ArrayType(n, ArrayType(k, f32)))(B =>
+        fun(ArrayType(n, ArrayType(k, f32)))(BT =>
           fun(ArrayType(m, ArrayType(n, f32)))(C =>
             zip(A)(C) |> map(fun(rowAC =>
-              zip(B)(snd(rowAC)) |> map(fun(colBC =>
+              zip(BT)(snd(rowAC)) |> map(fun(colBC =>
                 zip(fst(rowAC))(fst(colBC)) |>
                   map(fun(x => fst(x) * snd(x))) |>
                   reduce(add)(snd(colBC))))))))))
@@ -339,6 +332,30 @@ object gemm {
             containsReduceSeq(k /^ cst(kTileBlock),
               containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
+//  beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 λx2 join
+//  ┕ map
+//    ┝ map
+//    │ ┕ λx3 join
+//    │       ┕ map
+//  │         ┝ map
+//  │         │ ┕ λx4 reduceSeq
+//  │         │       ┝ λx5 λx6 add x5
+//  │         │       │         ┕ reduceSeq <λx7. λx8. add x7 (mul (fst x8) (snd x8))>
+//  │         │       │           ┝ snd x4
+//    │         │       │           ┕ x6
+//  │         │       ┝ snd x4
+//  │         │       ┕ split 64 (zip (fst x3) (fst x4))
+//  │         ┕ split 64 (zip (transpose x1) (snd x3))
+//  ┕ split 64 (zip x0 x2)
+
+  private val reorderBlock1 =
+    containsMap(m /^ cst(mTileBlock),
+      containsMap(cst(mTileBlock),
+        containsMap(n /^ cst(nTileBlock),
+          containsReduceSeq(k /^ cst(kTileBlock),
+            containsMap(cst(nTileBlock),
+              containsReduceSeq(cst(kTileBlock), containsAddMul))))))
+
   private val reorderBlock =
     containsMap(m /^ cst(mTileBlock),
       containsMap(n /^ cst(nTileBlock),
@@ -347,7 +364,7 @@ object gemm {
             containsMap(cst(nTileBlock),
               containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
-  private val reorderBlock2 =
+  private val fusionMapBlock =
     containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
       containsReduceSeq(k /^ cst(kTileBlock),
         containsMap(cst(mTileBlock),
@@ -374,7 +391,7 @@ object gemm {
                 containsMap(cst(nTileWarp),
                   containsReduceSeq(cst(kTileFrag), containsAddMul))))))))
 
-  private val reorderWarp2 =
+  private val fusionMapWarp =
     containsMap(mulNP(m /^ cst(mTileBlock), n /^ cst(nTileBlock)),
       containsReduceSeq(k /^ cst(kTileBlock),
         containsMap(cst(mTileBlock / mTileWarp * nTileBlock / nTileWarp),
@@ -431,7 +448,7 @@ object gemm {
     val start = mma
 
     val steps = Seq(splitRules withSketch splitBlock, //Works until here
-            reorderRules withSketch reorderBlock, //Find no solution
+            reorderRules withSketch reorderBlock1, //Find no solution
       //      reorder2Rules withSketch reorderBlock2,
       //      splitRules withSketch splitWarp,
       //      reorderRules withSketch reorderWarp,
@@ -449,8 +466,8 @@ object gemm {
   private def testGEMM(): GuidedSearch.Result = {
     val start = gemm
 
-    val steps = Seq(splitRules withSketch splitBlock, //Find no solution
-//      reorderRules withSketch reorderBlock,
+    val steps = Seq(splitRules withSketch splitBlock,
+      reorderRules withSketch reorderBlock, //Find no solution
       //      reorder2Rules withSketch reorderBlock2,
       //      splitRules withSketch splitWarp,
       //      reorderRules withSketch reorderWarp,
@@ -459,7 +476,7 @@ object gemm {
     )
 
     GuidedSearch.init()
-      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
       .run(start, steps)
@@ -508,7 +525,7 @@ object gemm {
 
     val steps = Seq(splitRules withSketch splitBlock,
       reorderRules withSketch reorderBlock, //Works until here
-      reorder2Rules withSketch reorderBlock2, //Find no solution
+      reorder2Rules withSketch fusionMapBlock, //Find no solution
 //      splitRules withSketch splitWarp,
 //      reorderRules withSketch reorderWarp,
 //      reorderRules withSketch reorderWarp2,
@@ -522,19 +539,38 @@ object gemm {
       .run(start, steps)
   }
 
-  private def testTensorMMARewriteRule(): GuidedSearch.Result = {
-    val start: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
+  private def testTensorMMRewriteRule(): GuidedSearch.Result = {
+    val mm: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
       import rise.core.DSL._
       import rise.core.types._
       import rise.core.types.DataType._
       import rise.core.primitives._
 
-      fun(ArrayType(16, ArrayType(16, f32)))(A =>
-        fun(ArrayType(16, ArrayType(16, f32)))(B =>
+      fun(ArrayType(16, ArrayType(16, f16)))(A =>
+        fun(ArrayType(16, ArrayType(16, f16)))(BT =>
           A |> map(fun(rowA =>
-            B |> map(fun(colB =>
+            BT |> map(fun(colB =>
               zip(rowA)(colB) |>
-                reduce(fun((accum, x) => accum + fst(x) * snd(x))(lf32(0f)))))))))
+                reduce(fun((accum, x) => accum + cast(fst(x) * snd(x))::f32)(lf32(0f)))))))))
+
+//      tensorMMA(asFragement(A) |> toPrivate, asFragemnt(BT |> transpose) |> toPrivate, generateFragment(lf32(0f) |> toPrivate) |> toPrivate |> asMatrix
+    }
+
+    val mma: rise.core.DSL.ToBeTyped[rise.core.Expr] = {
+      import rise.core.DSL._
+      import rise.core.types._
+      import rise.core.types.DataType._
+      import rise.core.primitives._
+
+      fun(ArrayType(16, ArrayType(16, f16)))(A =>
+        fun(ArrayType(16, ArrayType(16, f16)))(BT =>
+          fun(ArrayType(16, ArrayType(16, f32)))(C =>
+            zip(A)(C) |> map(fun(rowAC =>
+            zip(BT)(snd(rowAC)) |> map(fun(colBC =>
+              zip(fst(rowAC))(fst(colBC)) |>
+                reduce(fun((accum, x) => accum + cast(fst(x) * snd(x))::f32)(lf32(0f))) + snd(colBC))))))))
+
+      //      tensorMMA(asFragement(aTile), asFragemnt(bTile), asFragment) |> toPrivate |> asMatrix
     }
 
     //Error: cannot unify (dt1941, dt1941) and f32...
@@ -548,7 +584,7 @@ object gemm {
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
-      .run(start, steps)
+      .run(mm, steps)
   }
 
 //  private def testRewriteToFastGEMMKernel(): GuidedSearch.Result = {
@@ -593,7 +629,7 @@ object gemm {
 //      "mm" -> testMM _,
       "mma" -> testMMA _,
 //      "gemm" -> testGEMM _,
-//      "tensorRuleTest" -> testTensorMMARewriteRule _,
+//      "tensorRuleTest" -> testTensorMMRewriteRule _,
     )
 
     val rs = fs.map { case (n, f) =>

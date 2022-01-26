@@ -672,20 +672,20 @@ object rules {
     //TODO dont use f32
     //TODO dont work
     def tensorMMA(mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat) = NamedRewrite.init(s"cuda-tensorMMA",
-        app(app(map, lam("a",
-          app(app(map, lam("b",
+        app(app(map, lam("aRow",
+          app(app(map, lam("bCol",
             app(app(app(reduce,
               lam("ac", lam("ab", app(app(add, "ac"), app(app(mul, app(fst, "ab")), app(snd, "ab")))))),
               lf32(0f)),
-              app(app(zip, "a"), "b")))),
-            "bTile" :: (kTileFrag`.`(nTileFrag`.`f32))))),
-          "aTile" :: (mTileFrag`.`(kTileFrag`.`f32)))
+              app(app(zip, "aRow"), "bCol")))),
+            "A" :: (kTileFrag`.`(nTileFrag`.`f16))))),
+          "B" :: (mTileFrag`.`(kTileFrag`.`f16)))
       -->
           app(rcup.asMatrix.primitive,
             app(aApp(roclp.oclToMem.primitive, AddressSpace.Private),
               app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), "aTile")),
                 lam("aFrag",
-                  app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), "bTile")),
+                  app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(transpose, "bTile"))),
                     lam("bFrag",
                       app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.generateFragment.primitive, lf32(0f)))),
                         lam("cFrag",
