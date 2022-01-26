@@ -315,9 +315,9 @@ class mmTuning extends test_util.Tests {
   test("run mm autotuning"){
 
     val configs = Seq(
-      "autotuning/config/mm/rs_cot_1024.json",
-      "autotuning/config/mm/rs_emb_1024.json",
-      "autotuning/config/mm/ls_cot_1024.json",
+//      "autotuning/config/mm/rs_cot_1024.json",
+//      "autotuning/config/mm/rs_emb_1024.json",
+//      "autotuning/config/mm/ls_cot_1024.json",
       "autotuning/config/mm/atf_emb_1024.json"
     )
 
