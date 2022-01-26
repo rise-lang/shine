@@ -339,6 +339,40 @@ object gemm {
             containsReduceSeq(k /^ cst(kTileBlock),
               containsReduceSeq(cst(kTileBlock), containsAddMul))))))
 
+  // beam head: Λn0:nat Λn1:nat Λn2:nat λx0 λx1 λx2 join
+  // ┕ map
+  // ┝ map
+  // │ ┕ λx3 join
+  // │ ┕ map
+  // │ ┝ map
+  // │ │ ┕ λx4 reduceSeq
+  // │ │ ┝ λx5 λx6 add x5
+  // │ │ │ ┕ reduceSeq <λx7. λx8. add x7 (mul (fst x8) (snd x8))>
+  // │ │ │ ┝ snd x4
+  // │ │ │ ┕ x6
+  // │ │ ┝ snd x4
+  // │ │ ┕ split 64 (zip (fst x3) (fst x4))
+  // │ ┕ split 64 (zip (transpose x1) (snd x3))
+  // ┕ split 64 (zip x0 x2)
+
+  // │ │ ┕ λx4 reduceSeq
+  // │ │ ┝ λx5 λx6 add x5
+  // │ │ │ ┕ reduceSeq <λx7. λx8. add x7 (mul (fst x8) (snd x8))>
+  // │ │ │ ┝ snd x4
+  // │ │ │ ┕ x6
+  // -->
+  // │ │ ┕ λx4 reduceSeq
+  // │ │ ┝ λx5 λx6 add (add x5 (snd x4))
+  // │ │ │ ┕ reduceSeq <λx7. λx8. add x7 (mul (fst x8) (snd x8))>
+  // │ │ │ ┝ "0"
+  // │ │ │ ┕ x6
+  // -->
+  // │ │ ┕ λx4 (add (mul N (snd x4)) reduceSeq
+  // │ │ ┝ λx5 λx6 add x5
+  // │ │ │ ┕ reduceSeq <λx7. λx8. add x7 (mul (fst x8) (snd x8))>
+  // │ │ │ ┝ "0"
+  // │ │ │ ┕ x6
+
   private val reorderBlock =
     containsMap(m /^ cst(mTileBlock),
       containsMap(n /^ cst(nTileBlock),
@@ -585,6 +619,7 @@ object gemm {
 //  }
 
   def main(args: Array[String]): () = {
+    testTensorMMARewriteRule()
     // val names = Set(args(0))
     // fs.filter { case (k, _) => names(k) }
 
