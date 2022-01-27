@@ -124,7 +124,7 @@ package object autotune {
       val totalStart = System.currentTimeMillis()
 
       val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
-        NatIdentifier(h) -> (p.toInt: Nat)
+        NatIdentifier(h) -> (p.toFloat.toInt: Nat)
       }.toMap
       if (checkConstraints(constraints, parametersValuesMap)) {
         // execute
