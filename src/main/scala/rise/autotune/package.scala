@@ -175,11 +175,11 @@ package object autotune {
     println("configFile: " + configFile)
 
     // check if hypermapper is installed and config file exists
-    assert(
-      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
-        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
-        && os.isFile(configFile)
-    )
+//    assert(
+//      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
+//        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
+//        && os.isFile(configFile)
+//    )
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
@@ -278,14 +278,16 @@ package object autotune {
           case e: NoSuchElementException => "hypermapper_logfile.log"
         }
 
-        // move logfile
-        ("mv " + logfile + " " + tuner.output !!)
+        // move logfile to unique filename
+        val logfilePath = getUniqueFilepath(tuner.output + "/" + logfile, ".log")
+        ("mv " + logfile + logfilePath !!)
 
         // move config file
         ("cp " + tuner.configFile.get + " " + tuner.output !!)
       } else {
         // save log file (generated, so we know the name)
-        ("mv " + tuner.name + ".log" + " " + tuner.output !!)
+        val logfilePath = getUniqueFilepath(tuner.output + "/" + tuner.name + ".log", ".log")
+        ("mv " + tuner.name + ".log" + " " + logfilePath !!) // get unique filename
 
         // save generated config file
         ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
@@ -301,6 +303,13 @@ package object autotune {
     println("samples: " + samples)
 
     TuningResult(samples.toSeq, tuner)
+  }
+
+  def getUniqueFilepath(path: String, ending: String): String = {
+    new File(path).exists() match {
+      case true => path.substring(0, path.length - ending.length) + "_" + System.currentTimeMillis() + ending
+      case false => path
+    }
   }
 
   // wrap ocl run to a function
