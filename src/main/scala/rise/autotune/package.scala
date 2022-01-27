@@ -224,9 +224,12 @@ package object autotune {
             samples += sample
             // append response
             sample.runtime match {
-              case Left(value) => response += s"${parametersValues.mkString(",")},-1,False\n"
+              case Left(value) =>
+                // make sure to response int values
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},-1,False\n"
               case Right(value) =>
-                response += s"${parametersValues.mkString(",")},${value.value},True\n"
+                // make sure to response int values
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
           print(s"Response: $response")
