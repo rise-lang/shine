@@ -12,8 +12,8 @@
     "false_value" : "False"
   },
   "optimization_method": "local_search",
-  "local_search_random_points" : 5,
-  "local_search_evaluation_limit": 10,
+  "local_search_random_points" : 125,
+  "local_search_evaluation_limit": 1000,
   "input_parameters" : {
     "tuned_v3" : {
       "parameter_type" : "ordinal",

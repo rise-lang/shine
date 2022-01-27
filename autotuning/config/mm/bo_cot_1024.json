@@ -13,10 +13,10 @@
   },
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 10
+    "number_of_samples" : 100
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 10,
+  "optimization_iterations": 900,
   "input_parameters" : {
     "tuned_v3" : {
       "parameter_type" : "ordinal",

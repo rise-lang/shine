@@ -227,7 +227,8 @@ package object autotune {
             sample.runtime match {
               case Left(value) =>
                 // make sure to response int values
-                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},-1,False\n"
+//                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},-1,False\n"
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},2147483647,False\n"
               case Right(value) =>
                 // make sure to response int values
                 response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
@@ -244,6 +245,7 @@ package object autotune {
     println("tuning finished")
 
 
+    // todo clean this up
     if(tuner.saveToFile) {
 
       // save samples to file
