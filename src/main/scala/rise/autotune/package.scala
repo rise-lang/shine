@@ -246,7 +246,7 @@ package object autotune {
     if(tuner.saveToFile) {
 
       // save samples to file
-      val destination = saveSamples(
+      val (destination, timeAppendix) = saveSamples(
         tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv",
         TuningResult(samples.toSeq, tuner)
       )
@@ -254,6 +254,8 @@ package object autotune {
       // copy hm output file to output folder
       ("mv " + tuner.name + "_output_samples.csv"  + " " +
         destination.substring(0, destination.length - 4) + "_hm.csv" !!)
+
+//      tuner.name + "_output_samples" + "_" + destination + "_hm.csv" !!)
 
       // mv hm output file to hm output folder
       ("mv " + destination.substring(0, destination.length - 4) + "_hm.csv" + " " +
@@ -268,6 +270,9 @@ package object autotune {
       // config file is generated in the output folder if we want to save it, no action needed
       // config file is generated in /tmp/ and removed after tuning
 
+      // dest for logfile
+//      val dest = destination.substring(0, destination.length - 4) + "log"
+
       // copy config and logfile
       if(tuner.configFile.isDefined){
 
@@ -278,15 +283,26 @@ package object autotune {
           case e: NoSuchElementException => "hypermapper_logfile.log"
         }
 
+
+
         // move logfile to unique filename
-        val logfilePath = getUniqueFilepath(tuner.output + "/" + logfile, ".log")
+        val logfilePath = timeAppendix match {
+          case Some(value) => tuner.output + "/" + logfile.substring(0, logfile.length - 4) + "_" + value + ".log"
+          case None => tuner.output + "/" + logfile
+        }
+//        val logfilePath = getUniqueFilepath(tuner.output + "/" + logfile, ".log")
         ("mv " + logfile + " " + logfilePath !!)
 
         // move config file
         ("cp " + tuner.configFile.get + " " + tuner.output !!)
       } else {
         // save log file (generated, so we know the name)
-        val logfilePath = getUniqueFilepath(tuner.output + "/" + tuner.name + ".log", ".log")
+
+        val logfilePath = timeAppendix match {
+          case Some(value) => tuner.output + "/" + tuner.name + "_" + value + ".log"
+          case None => tuner.output + "/" + tuner.name + ".log"
+        }
+//        val logfilePath = getUniqueFilepath(tuner.output + "/" + tuner.name + ".log", ".log")
         ("mv " + tuner.name + ".log" + " " + logfilePath !!) // get unique filename
 
         // save generated config file
@@ -364,17 +380,18 @@ package object autotune {
     val meta = saveMeta(path, tuningResult, tuner)
 
     // return unique filenames
-    (samples, meta)
+    (samples._1, meta)
   }
 
   // write tuning results into csv file
-  def saveSamples(path: String, tuningResult: TuningResult): String = {
+  def saveSamples(path: String, tuningResult: TuningResult): (String, Option[String]) = {
     // create unique filepath
     val file = new File(path)
-    val uniqueFilepath = if (file.exists()) {
-      path.substring(0, path.length - 4) + "_" + System.currentTimeMillis() + ".csv"
+    val (uniqueFilepath, timeAppendix) = if (file.exists()) {
+      val timeAppendix = System.currentTimeMillis().toString
+      (path.substring(0, path.length - 4) + "_" + timeAppendix + ".csv", Some(timeAppendix))
     } else {
-      path
+      (path, None)
     }
 
     // write header
@@ -441,7 +458,8 @@ package object autotune {
 
     writeToPath(uniqueFilepath, header + content)
 
-    uniqueFilepath
+
+    (uniqueFilepath, timeAppendix)
   }
 
   // todo finish implementation
