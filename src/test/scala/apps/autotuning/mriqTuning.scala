@@ -256,7 +256,7 @@ class mriqTuning extends test_util.Tests {
   }
 
   def runTuningPhiMag(configFile: String) = {
-    val version = autotuning.parseName(configFile)
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
       hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
@@ -276,7 +276,7 @@ class mriqTuning extends test_util.Tests {
   }
 
   def runTuningQ(configFile: String) = {
-    val version = autotuning.parseName(configFile)
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
       hostCode = HostCode(initQ(256, 512), computeQ, finishQ),

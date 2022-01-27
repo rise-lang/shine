@@ -5,6 +5,8 @@ import rise.core.types.{NatIdentifier, TuningParameter}
 
 import scala.collection.mutable.ListBuffer
 import constraints._
+import exploration.explorationUtil.jsonParser.readFile
+import play.api.libs.json.Json
 
 object configFileGeneration {
 
@@ -30,6 +32,7 @@ object configFileGeneration {
          | "hypermapper_mode" : {
          |   "mode" : "client-server"
          | },
+         | "log_file" : "${tuner.name}.log",
          | "feasible_output" : {
          |   "enable_feasible_predictor" : true,
          |   "name" : "Valid",
@@ -165,6 +168,10 @@ object configFileGeneration {
     println("file: " + file)
 
     file
+  }
+
+  def parseFromJson(filePath: String, word: String) = {
+    Json.parse(readFile(filePath)).apply(word).toString().replaceAll("\"", "")
   }
 
   def constraintsToString(constraints: Set[Constraint]): String = {

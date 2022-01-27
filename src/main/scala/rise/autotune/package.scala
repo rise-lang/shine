@@ -268,9 +268,27 @@ package object autotune {
       // config file is generated in the output folder if we want to save it, no action needed
       // config file is generated in /tmp/ and removed after tuning
 
-      // copy output file
+      // copy config and logfile
       if(tuner.configFile.isDefined){
+
+        // parse logfile name from json or use default name
+        val logfile = try {
+          parseFromJson(tuner.configFile.get, "log_file")
+        } catch {
+          case e: NoSuchElementException => "hypermapper_logfile.log"
+        }
+
+        // move logfile
+        ("mv " + logfile + " " + tuner.output !!)
+
+        // move config file
         ("cp " + tuner.configFile.get + " " + tuner.output !!)
+      } else {
+        // save log file (generated, so we know the name)
+        ("mv " + tuner.name + ".log" + " " + tuner.output !!)
+
+        // save generated config file
+        ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
       }
 
     } else {

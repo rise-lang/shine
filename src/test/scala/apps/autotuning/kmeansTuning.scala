@@ -136,7 +136,7 @@ class kmeansTuning extends test_util.Tests {
   }
 
   def runTuning(configFile: String) = {
-    val version = autotuning.parseName(configFile)
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),

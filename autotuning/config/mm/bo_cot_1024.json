@@ -4,6 +4,7 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
+  "log_file" : "bo_cot_1024.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",

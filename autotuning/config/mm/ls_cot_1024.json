@@ -4,6 +4,7 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
+  "log_file" : "ls_cot_1024.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
@@ -11,8 +12,8 @@
     "false_value" : "False"
   },
   "optimization_method": "local_search",
-  "local_search_random_points" : 25,
-  "local_search_evaluation_limit": 100,
+  "local_search_random_points" : 5,
+  "local_search_evaluation_limit": 10,
   "input_parameters" : {
     "tuned_v3" : {
       "parameter_type" : "ordinal",
