@@ -96,6 +96,7 @@ package object autotune {
     if(tuner.saveToFile){
       ("mkdir -p " + tuner.output + "/" + tuner.name !!)
       ("mkdir -p " + tuner.output + "/" + tuner.name + "_hm" !!)
+      ("mkdir -p " + tuner.output + "/" + "log" !!)
     }
 
     // generate json if necessary
@@ -283,12 +284,10 @@ package object autotune {
           case e: NoSuchElementException => "hypermapper_logfile.log"
         }
 
-
-
         // move logfile to unique filename
         val logfilePath = timeAppendix match {
-          case Some(value) => tuner.output + "/" + logfile.substring(0, logfile.length - 4) + "_" + value + ".log"
-          case None => tuner.output + "/" + logfile
+          case Some(value) => tuner.output + "/log/" + logfile.substring(0, logfile.length - 4) + "_" + value + ".log"
+          case None => tuner.output + "/log/" + logfile
         }
 //        val logfilePath = getUniqueFilepath(tuner.output + "/" + logfile, ".log")
         ("mv " + logfile + " " + logfilePath !!)
@@ -299,8 +298,8 @@ package object autotune {
         // save log file (generated, so we know the name)
 
         val logfilePath = timeAppendix match {
-          case Some(value) => tuner.output + "/" + tuner.name + "_" + value + ".log"
-          case None => tuner.output + "/" + tuner.name + ".log"
+          case Some(value) => tuner.output + "/log/" + tuner.name + "_" + value + ".log"
+          case None => tuner.output + "/log/" + tuner.name + ".log"
         }
 //        val logfilePath = getUniqueFilepath(tuner.output + "/" + tuner.name + ".log", ".log")
         ("mv " + tuner.name + ".log" + " " + logfilePath !!) // get unique filename
