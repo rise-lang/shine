@@ -280,7 +280,7 @@ package object autotune {
 
         // move logfile to unique filename
         val logfilePath = getUniqueFilepath(tuner.output + "/" + logfile, ".log")
-        ("mv " + logfile + logfilePath !!)
+        ("mv " + logfile + " " + logfilePath !!)
 
         // move config file
         ("cp " + tuner.configFile.get + " " + tuner.output !!)
