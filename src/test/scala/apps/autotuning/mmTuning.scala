@@ -328,16 +328,20 @@ class mmTuning extends test_util.Tests {
     runExperiments(configFiles = configs, iterations = 1)
 
     // plot
-    ("hm-plot-optimization-results " + // command
+    val command = ("hm-plot-optimization-results " + // command
       "-j autotuning/config/mm/rs_cot_1024.json " + // config file
       "-i " + // input folders
       "autotuning/mm_1024_test/rs_cot_1024/rs_cot_1024_hm " +
       "autotuning/mm_1024_test/rs_emb_1024/rs_emb_1024_hm " +
-      "autotuning/mm_1024_test/ls_cot_1024/ls_cot_1024_hm/ " +
+      "autotuning/mm_1024_test/ls_cot_1024/ls_cot_1024_hm " +
       "autotuning/mm_1024_test/bo_cot_1024/bo_cot_1024_hm " +
       "autotuning/mm_1024_test/atf_emb_1024/atf_emb_1024_hm " +
       "-o autotuning/mm_1024_test/mmTuning.pdf" + // output file
-      "-log --y_label \"Log Runtime(ms)\"" !!) // flags
+      "-log --y_label \"Log Runtime(ms)\"" ) // flags
+
+    println("command: \n" + command)
+
+    command !!
 
   }
 
