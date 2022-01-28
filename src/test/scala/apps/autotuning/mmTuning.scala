@@ -312,34 +312,6 @@ class mmTuning extends test_util.Tests {
     autotune.search(tuner)(mm)
   }
 
-  test("test double conversion"){
-
-    val a = 10.0
-    val b = a.toInt
-
-    println("a: " + a)
-    println("b: " + b)
-
-    val c = "10"
-    val d = "10.0"
-
-    val e = c.toInt
-    println("e: " + e)
-
-    val f = d.toInt
-    println("f: " + f)
-
-  }
-
-  test("parse logfile "){
-
-    val log_file = rise.autotune.configFileGeneration.parseFromJson("/home/jo/development/rise-lang/shine/autotuning/config/mm/rs_cot_1024.json", "log_file")
-
-    println("log_file: " + log_file)
-
-
-  }
-
   test("run mm autotuning"){
 
     val configs = Seq(
