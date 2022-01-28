@@ -11,6 +11,9 @@ import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
 
+import scala.language.postfixOps
+import scala.sys.process._
+
 class mmTuning extends test_util.Tests {
 
   val mmTuning: ToBeTyped[Expr] =
@@ -322,7 +325,20 @@ class mmTuning extends test_util.Tests {
       "autotuning/config/mm/bo_cot_1024.json"
     )
 
-    runExperiments(configFiles = configs, iterations = 2)
+    runExperiments(configFiles = configs, iterations = 1)
+
+    // plot
+    ("hm-plot-optimization-results " + // command
+      "-j autotuning/config/mm/rs_cot_1024.json " + // config file
+      "-i " + // input folders
+      "autotuning/mm_1024_test/rs_cot_1024/rs_cot_1024_hm " +
+      "autotuning/mm_1024_test/rs_emb_1024/rs_emb_1024_hm " +
+      "autotuning/mm_1024_test/ls_cot_1024/ls_cot_1024_hm/ " +
+      "autotuning/mm_1024_test/bo_cot_1024/bo_cot_1024_hm " +
+      "autotuning/mm_1024_test/atf_emb_1024/atf_emb_1024_hm " +
+      "-o autotuning/mm_1024_test/mmTuning.pdf" + // output file
+      "-log --y_label \"Log Runtime(ms)\"" !!) // flags
+
   }
 
 }

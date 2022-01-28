@@ -361,6 +361,7 @@ package object autotune {
         ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
       }
 
+      // create plots
       plotTuning(tuner)
 
     } else {
