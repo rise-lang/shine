@@ -333,7 +333,7 @@ package object autotune {
 
       // save hm output file
       ("mv " + tuner.name + "_output_samples.csv"  + " " +
-        tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + ".csv" !!)
+        tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
 
       // save logfile and configfile
       if(tuner.configFile.isDefined) {
