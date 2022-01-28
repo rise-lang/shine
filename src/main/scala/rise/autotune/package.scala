@@ -361,6 +361,8 @@ package object autotune {
         ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
       }
 
+      plotTuning(tuner)
+
     } else {
       // remove logfile and generated config file
       if(tuner.configFile.isDefined){
@@ -462,6 +464,21 @@ package object autotune {
 
 
     uniqueFilepath
+  }
+
+  def plotTuning(tuner: Tuner) = {
+
+    // get config file
+    val configFile: String = tuner.configFile match {
+      case Some(value) => value
+      case None => tuner.output + "/" + tuner.name + ".json"
+    }
+
+    // plot results using hypermapper
+    ("hm-plot-optimization-results " +
+      "-j " + configFile + " " +
+      "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
+      "-log --y_label \"Log Runtime(ms)\"" !!)
   }
 
   // todo finish implementation
