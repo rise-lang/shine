@@ -478,6 +478,7 @@ package object autotune {
     ("hm-plot-optimization-results " +
       "-j " + configFile + " " +
       "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
+      "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
       "-log --y_label \"Log Runtime(ms)\"" !!)
   }
 
