@@ -25,7 +25,7 @@ pip install .
 cd ..
 
 # install opentuner
-pip install -y opentuner
+pip install opentuner
 
 # install shine
 git clone https://github.com/rise-lang/shine.git
