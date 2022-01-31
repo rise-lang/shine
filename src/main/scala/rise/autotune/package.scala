@@ -175,14 +175,11 @@ package object autotune {
 
     println("configFile: " + configFile)
 
-    // todo adjust this check
-    // call `hypermapper` for testing installation?
-    // check if hypermapper is installed and config file exists
-//    assert(
-//      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
-//        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
-//        && os.isFile(configFile)
-//    )
+    // check if hypermapper is installed
+    ("which hypermapper" !!)
+
+    // check if config file exists
+    assert(os.isFile(configFile))
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
