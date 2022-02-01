@@ -22,8 +22,6 @@ class TestExecution extends test_util.Tests {
     result
   }
 
-
-
   test("execute convolution") {
     val goodParameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
@@ -109,7 +107,12 @@ class TestExecution extends test_util.Tests {
       val result = executeConfig(mm, params, util.hostcode.mm(1024, 1024, 1024))
 
       println("result: " + result.runtime)
-      assert(result.runtime.isRight)
+
+      // check for execution error
+      result.runtime match {
+        case Left(value) => value.errorLevel.equals(EXECUTION_ERROR)
+        case Right(_) => // do nothing result is fine
+      }
     })
   }
 
