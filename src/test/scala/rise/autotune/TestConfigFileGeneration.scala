@@ -279,5 +279,6 @@ class TestConfigFileGeneration extends test_util.Tests {
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
 
     assert(util.compareConfigFiles(json, gold))
+
   }
 }
