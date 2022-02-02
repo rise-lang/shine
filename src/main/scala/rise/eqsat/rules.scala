@@ -178,6 +178,14 @@ object rules {
   )
 
   val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
+    // in: [[p11, p12, ..], [p21, p22, ..], ..]
+    // out: [r([p11, p12, ..]), r([p21, p22, ..]), ..]
+
+    // transpose in: [[p11, p21, ..], [p12, p22, ..], ..]
+    // init2: [r0, r0, ..]
+    // acc: [rt, rt, ..]
+    // y: [p1N, p2N, ..]
+    // op(rt, pMN)
     app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
       -->
     lam("in",
@@ -187,7 +195,22 @@ object rules {
       ))), app(rcp.generate.primitive, lam("i", "init"))),
       app(transpose, "in")))
   )
-
+/*
+  // map (\x4. (add f(x4) (reduceSeq op init (split 64 (zip (fst x3) (fst x4))))))
+  val liftReduceSeq4 = NamedRewrite.init("lift-reduce-seq-4",
+    // in: [[p11, p12, ..], [p21, p22, ..], ..]
+    //      ^~ x1           ^~ x2
+    // transpose in: [[p11, p21, ..], [p12, p22, ..], ..]
+    app(map, lam("x", app(app(app(rcp.reduceSeq.primitive, "op"), "init"), "y"(x))))
+      -->
+    lam("in",
+      app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+        app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+          app(app(zip, "acc"), "y"))
+      ))), app(app(map, lam("x", "init")), "in")),
+        app(transpose, "in")))
+  )
+*/
   // FIXME: very specific ..
   val liftReduceSeq2 = NamedRewrite.init("lift-reduce-seq-2",
     app(map, lam("x", app(app(add, app(fst, "x")),
@@ -672,22 +695,22 @@ object rules {
     //TODO dont use f32
     //TODO dont work
     def tensorMMA(mTileFrag: Nat, nTileFrag: Nat, kTileFrag: Nat) = NamedRewrite.init(s"cuda-tensorMMA",
-        app(app(map, lam("aRow",
-          app(app(map, lam("bCol",
-            app(app(app(reduce,
+        app(app(map, lam("aRow", // kTileFrag`.`f32
+          app(app(map, lam("bColumn", // kTileFrag`.`f32
+            app(app(app(rcp.reduceSeq.primitive,
               lam("ac", lam("ab", app(app(add, "ac"), app(app(mul, app(fst, "ab")), app(snd, "ab")))))),
-              lf32(0f)),
-              app(app(zip, "aRow"), "bCol")))),
-            "A" :: (kTileFrag`.`(nTileFrag`.`f16))))),
-          "B" :: (mTileFrag`.`(kTileFrag`.`f16)))
+              "acc"),
+              app(app(zip, "aRow"), "bColumn")))), // kTileFrag`.`(f32 x f32)
+            "BtileT" :: (nTileFrag`.`(kTileFrag`.`f16))))),
+          "aTile" :: (mTileFrag`.`(kTileFrag`.`f16)))
       -->
           app(rcup.asMatrix.primitive,
             app(aApp(roclp.oclToMem.primitive, AddressSpace.Private),
-              app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), "aTile")),
+              app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.asFragment.primitive, "aTile"))),
                 lam("aFrag",
-                  app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(transpose, "bTile"))),
+                  app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.asFragment.primitive, app(transpose, "BtileT")))),
                     lam("bFrag",
-                      app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.generateFragment.primitive, lf32(0f)))),
+                      app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, AddressSpace.Private), app(rcup.generateFragment.primitive, "acc"))),
                         lam("cFrag",
                           app(app(app(rcup.tensorMMA.primitive, "aFrag"), "bFrag"), "cFrag"))))))))))
   }

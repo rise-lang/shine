@@ -75,6 +75,9 @@ object NamedRewrite {
     val dataTypePatVars: PatternVarMap[Type.Shift, DataTypePatternVar] = HashMap()
     val typePatVars: PatternVarMap[Type.Shift, TypePatternVar] = HashMap()
     val addrPatVars: PatternVarMap[Address.Shift, AddressPatternVar] = HashMap()
+    val fKindPatVars: PatternVarMap[Int, FragmentKindPatternVar] = HashMap()
+    val mlPatVars: PatternVarMap[Int, MatrixLayoutPatternVar] = HashMap()
+
 
     // nats which we need to pivot to avoid matching over certain nat constructs
     val natsToPivot = Vec[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)]()
@@ -128,6 +131,10 @@ object NamedRewrite {
           PatternNode(DataLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(rct.AddressSpaceKind, x: rct.AddressSpaceIdentifier, e) =>
           PatternNode(AddrLambda(makePat(e, bound + x, isRhs, matchType = false)))
+        case rc.DepLambda(rct.FragmentKind, x: rct.FragmentIdentifier, e) =>
+          PatternNode(FragemtKindLambda(makePat(e, bound + x, isRhs, matchType = false)))
+        case rc.DepLambda(rct.MatrixLayoutKind, x: rct.MatrixLayoutIdentifier, e) =>
+          PatternNode(MatrixLayoutLambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(_, _, _) => ???
 
         case rc.App(rc.App(NamedRewriteDSL.Composition(_), f), g) =>
@@ -206,8 +213,12 @@ object NamedRewrite {
           DataTypePatternNode(PairType(makeDTPat(dt1, bound, isRhs), makeDTPat(dt2, bound, isRhs)))
         case rcdt.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
+        case rcdt.FragmentType(rows, columns, d3, dataType, fragmentKind, layout) =>
+          DataTypePatternNode(FragmentType(makeNPat(rows, bound, isRhs), makeNPat(columns, bound, isRhs),
+            makeNPat(d3, bound, isRhs), makeDTPat(dataType, bound, isRhs),
+            makeFKind(fragmentKind, bound, isRhs), makeML(layout, bound, isRhs)))
         case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
-             _: rcdt.NatToDataApply | _: rcdt.FragmentType =>
+             _: rcdt.NatToDataApply =>
           throw new Exception(s"did not expect $dt")
       }
 
@@ -222,6 +233,10 @@ object NamedRewrite {
           TypePatternNode(DataFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(rct.AddressSpaceKind, x: rct.AddressSpaceIdentifier, t) =>
           TypePatternNode(AddrFunType(makeTPat(t, bound + x, isRhs)))
+        case rct.DepFunType(rct.FragmentKind, x: rct.FragmentIdentifier, t) =>
+          TypePatternNode(FragmentKindFunType(makeTPat(t, bound + x, isRhs)))
+        case rct.DepFunType(rct.MatrixLayoutKind, x: rct.MatrixLayoutIdentifier, t) =>
+          TypePatternNode(MatrixLayoutFunType(makeTPat(t, bound + x, isRhs)))
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
           assert(freeT(rct.TypeKind.IDWrapper(i)))
@@ -243,6 +258,30 @@ object NamedRewrite {
         case rct.AddressSpace.Private => AddressPatternNode(Private)
         case rct.AddressSpace.Constant => AddressPatternNode(Constant)
       }
+
+    def makeFKind(a: rct.Fragment, bound: Expr.Bound, isRhs: Boolean) : FragmentKindPattern =
+      a match {
+        case i: rct.FragmentIdentifier if freeT(rct.FragmentKind.IDWrapper(i)) =>
+          makePatVar(i.name, bound.addr.size, fKindPatVars,
+            FragmentKindPatternVar, if (isRhs) { Unknown } else { Known })
+        case i: rct.FragmentIdentifier =>
+          FragmentKindPatternNode(FragmentKindVar(bound.indexOf(i)))
+        case rct.Fragment.AMatrix => FragmentKindPatternNode(AMatrix)
+        case rct.Fragment.BMatrix => FragmentKindPatternNode(BMatrix)
+        case rct.Fragment.Accumulator => FragmentKindPatternNode(Accumulator)
+      }
+
+    def makeML(a: rct.MatrixLayout, bound: Expr.Bound, isRhs: Boolean) : MatrixLayoutPattern =
+      a match {
+        case i: rct.MatrixLayoutIdentifier if freeT(rct.MatrixLayoutKind.IDWrapper(i)) =>
+          makePatVar(i.name, bound.addr.size, mlPatVars,
+            MatrixLayoutPatternVar, if (isRhs) { Unknown } else { Known })
+        case i: rct.MatrixLayoutIdentifier =>
+          MatrixLayoutPatternNode(MatrixLayoutVar(bound.indexOf(i)))
+        case rct.MatrixLayout.Row_Major => MatrixLayoutPatternNode(Row_Major)
+        case rct.MatrixLayout.Col_Major => MatrixLayoutPatternNode(Column_Major)
+      }
+
 
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
     val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
@@ -612,6 +651,7 @@ object NamedRewriteDSL {
 
   val int: DataTypePattern = rcdt.int
   val f32: DataTypePattern = rcdt.f32
+  val f16: DataTypePattern = rcdt.f16
 
   implicit final class TypeAnnotation(private val t: TypePattern) extends AnyVal {
     @inline def ::(p: Pattern): Pattern = rc.TypeAnnotation(p, t)

@@ -66,6 +66,8 @@ object Type {
       case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
       case rct.DepFunType(rct.DataKind, x: rcdt.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
       case rct.DepFunType(rct.AddressSpaceKind, x: rct.AddressSpaceIdentifier, t) => AddrFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.FragmentKind, x: rct.FragmentIdentifier, t) => FragmentKindFunType(fromNamed(t, bound + x))
+      case rct.DepFunType(rct.MatrixLayoutKind, x: rct.MatrixLayoutIdentifier, t) => MatrixLayoutFunType(fromNamed(t, bound + x))
       case rct.DepFunType(_, _, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
@@ -85,6 +87,12 @@ object Type {
       case AddrFunType(t) =>
         val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}")
         rct.DepFunType(rct.AddressSpaceKind, i, toNamed(t, bound + i))
+      case FragmentKindFunType(t) =>
+        val i = rct.FragmentIdentifier(s"ml${bound.data.size}")
+        rct.DepFunType(rct.FragmentKind, i, toNamed(t, bound + i))
+      case MatrixLayoutFunType(t) =>
+        val i = rct.MatrixLayoutIdentifier(s"ml${bound.data.size}")
+        rct.DepFunType(rct.MatrixLayoutKind, i, toNamed(t, bound + i))
     }
   }
 
@@ -117,6 +125,10 @@ object DataType {
       case IndexType(s) => rcdt.IndexType(Nat.toNamed(s, bound))
       case PairType(dt1, dt2) => rcdt.PairType(toNamed(dt1, bound), toNamed(dt2, bound))
       case ArrayType(s, et) => rcdt.ArrayType(Nat.toNamed(s, bound), toNamed(et, bound))
+      case FragmentType(rows, columns, d3, dataType, fragmentKind, layout) =>
+        rcdt.FragmentType(Nat.toNamed(rows, bound), Nat.toNamed(columns, bound), Nat.toNamed(d3, bound),
+          toNamed(dataType, bound),FragmentKind.toNamed(fragmentKind.asInstanceOf[FragmentKindNode], bound),
+          MatrixLayout.toNamed(layout.asInstanceOf[MatrixLayoutNode], bound))
     }
   }
 
@@ -148,6 +160,8 @@ sealed trait TypeNode[+T, +N, +DT] {
       case DataFunType(t) => DataFunType(ft(t))
       case AddrFunType(t) => AddrFunType(ft(t))
       case dt: DataTypeNode[N, DT] => dt.map(fn, fdt)
+      case FragmentKindFunType(t) => FragmentKindFunType(ft(t))
+      case MatrixLayoutFunType(t) => MatrixLayoutFunType(ft(t))
     }
 
   final def childrenCount(): Int = {
@@ -169,6 +183,12 @@ final case class DataFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
 final case class AddrFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
   override def toString: String = s"(addr) -> $t"
 }
+final case class FragmentKindFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
+  override def toString: String = s"(frag) -> $t"
+}
+final case class MatrixLayoutFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
+  override def toString: String = s"(ml) -> $t"
+}
 
 sealed trait DataTypeNode[+N, +DT] extends TypeNode[Nothing, N, DT] {
   def map[NO, DTO](fn: N => NO,
@@ -181,6 +201,8 @@ sealed trait DataTypeNode[+N, +DT] extends TypeNode[Nothing, N, DT] {
       case IndexType(s) => IndexType(fn(s))
       case PairType(a, b) => PairType(fdt(a), fdt(b))
       case ArrayType(s, dt) => ArrayType(fn(s), fdt(dt))
+      case FragmentType(rows, columns, d3, dataType, fragmentKind, layout) =>
+        FragmentType(fn(rows), fn(columns), fn(d3), fdt(dataType), fragmentKind, layout)
     }
 }
 final case class DataTypeVar(index: Int) extends DataTypeNode[Nothing, Nothing] {
@@ -204,6 +226,18 @@ final case class PairType[DT](dt1: DT, dt2: DT) extends DataTypeNode[Nothing, DT
 final case class ArrayType[N, DT](size: N, elemType: DT) extends DataTypeNode[N, DT] {
   override def toString: String = s"$size.$elemType"
 }
+final case class FragmentType[N, DT, FKIND, LAYOUT](rows: N,
+                                    columns: N,
+                                    d3: N,
+                                    dataType: DT,
+                                    fragmentKind: FKIND,
+                                    layout: LAYOUT) extends DataTypeNode[N, DT] {
+  override def toString: String =
+    if (fragmentKind == Accumulator)
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind]"
+    else
+      s"Fragment[$rows,$columns,$d3,$dataType,$fragmentKind,$layout]"
+}
 
 object TypeNode {
   def collect[T](n: TypeNode[T, T, T]): Seq[T] = n match {
@@ -211,6 +245,8 @@ object TypeNode {
     case NatFunType(t) => Seq(t)
     case DataFunType(t) => Seq(t)
     case AddrFunType(t) => Seq(t)
+    case FragmentKindFunType(t) => Seq(t)
+    case MatrixLayoutFunType(t) => Seq(t)
     case dt: DataTypeNode[T, T] => DataTypeNode.collect(dt)
   }
 }
@@ -224,5 +260,7 @@ object DataTypeNode {
     case IndexType(size) => Seq(size)
     case PairType(dt1, dt2) => Seq(dt1, dt2)
     case ArrayType(size, elemType) => Seq(size, elemType)
+    case FragmentType(rows, columns, d3, dataType, fragmentKind, layout) =>
+      Seq(rows, columns, d3, dataType, fragmentKind.asInstanceOf[T], layout.asInstanceOf[T])
   }
 }

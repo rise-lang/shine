@@ -101,7 +101,7 @@ object Expr {
 
   object Bound {
     def empty: Bound =
-      Bound(Seq(), Seq(), Seq(), Seq(), allowFreeIndices = false)
+      Bound(Seq(), Seq(), Seq(), Seq(), Seq(), Seq(), allowFreeIndices = false)
   }
 
   sealed trait NotBoundException extends Exception
@@ -116,6 +116,8 @@ object Expr {
                    nat: Seq[rct.NatIdentifier],
                    data: Seq[rcdt.DataTypeIdentifier],
                    addr: Seq[rct.AddressSpaceIdentifier],
+                   frag: Seq[rct.FragmentIdentifier],
+                   ml: Seq[rct.MatrixLayoutIdentifier],
                    allowFreeIndices: Boolean) {
     private def get[T](s: Seq[T], i: Int, free: => T): T =
       s.lift(i).getOrElse {
@@ -129,6 +131,10 @@ object Expr {
       get(data, i, rcdt.DataTypeIdentifier(s"%dt$i"))
     def getAddr(i: Int): rct.AddressSpaceIdentifier =
       get(addr, i, rct.AddressSpaceIdentifier(s"%a$i"))
+    def getFrag(i: Int): rct.FragmentIdentifier =
+      get(frag, i, rct.FragmentIdentifier(s"%f$i"))
+    def getML(i: Int): rct.MatrixLayoutIdentifier =
+      get(ml, i, rct.MatrixLayoutIdentifier(s"ml$i"))
 
     private def indexOf[T](s: Seq[T], x: T): Int = {
       val i = s.indexOf(x)
@@ -138,6 +144,8 @@ object Expr {
     def indexOf(i: rct.NatIdentifier): Int = indexOf(nat, i)
     def indexOf(i: rcdt.DataTypeIdentifier): Int = indexOf(data, i)
     def indexOf(i: rct.AddressSpaceIdentifier): Int = indexOf(addr, i)
+    def indexOf(i: rct.FragmentIdentifier): Int = indexOf(frag, i)
+    def indexOf(i: rct.MatrixLayoutIdentifier): Int = indexOf(ml, i)
 
     def +(i: core.Identifier): Bound =
       this.copy(expr = i +: expr)
@@ -147,6 +155,10 @@ object Expr {
       this.copy(data = i +: data)
     def +(i: rct.AddressSpaceIdentifier): Bound =
       this.copy(addr = i +: addr)
+    def +(i: rct.FragmentIdentifier): Bound =
+      this.copy(frag = i +: frag)
+    def +(i: rct.MatrixLayoutIdentifier): Bound =
+      this.copy(ml = i +: ml)
   }
 
   def fromNamed(expr: core.Expr, bound: Bound = Bound.empty): Expr = {
@@ -167,6 +179,10 @@ object Expr {
         DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(rct.AddressSpaceKind, a: rct.AddressSpaceIdentifier, e) =>
         AddrLambda(fromNamed(e, bound + a))
+      case core.DepLambda(rct.FragmentKind, a: rct.FragmentIdentifier, e) =>
+        FragemtKindLambda(fromNamed(e, bound + a))
+      case core.DepLambda(rct.MatrixLayoutKind, a: rct.MatrixLayoutIdentifier, e) =>
+        MatrixLayoutLambda(fromNamed(e, bound + a))
       case core.DepLambda(_, _, _) => ???
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
@@ -200,6 +216,12 @@ object Expr {
       case AddrLambda(e) =>
         val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}")
         core.DepLambda(rct.AddressSpaceKind, i, toNamed(e, bound + i)) _
+      case FragemtKindLambda(e) =>
+        val i = rct.FragmentIdentifier(s"f${bound.data.size}")
+        core.DepLambda(rct.FragmentKind, i, toNamed(e, bound + i)) _
+      case MatrixLayoutLambda(e) =>
+        val i = rct.MatrixLayoutIdentifier(s"ml${bound.data.size}")
+        core.DepLambda(rct.MatrixLayoutKind, i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
 
@@ -250,6 +272,12 @@ object Expr {
         case AddrLambda(e) =>
           val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}")
           core.DepLambda(rct.AddressSpaceKind, i, rec(e, bound + i)) _
+        case FragemtKindLambda(e) =>
+          val i = rct.FragmentIdentifier(s"f${bound.data.size}")
+          core.DepLambda(rct.FragmentKind, i, rec(e, bound + i)) _
+        case MatrixLayoutLambda(e) =>
+          val i = rct.MatrixLayoutIdentifier(s"ml${bound.data.size}")
+          core.DepLambda(rct.MatrixLayoutKind, i, rec(e, bound + i)) _
         case Literal(d) => core.Literal(d).setType _
         case Primitive(p) => p.setType _
 

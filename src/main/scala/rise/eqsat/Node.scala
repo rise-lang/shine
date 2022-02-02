@@ -24,6 +24,8 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(e) => DataLambda(fe(e))
     case AddrApp(f, x) => AddrApp(fe(f), fa(x))
     case AddrLambda(e) => AddrLambda(fe(e))
+    case FragemtKindLambda(e) => FragemtKindLambda(fe(e))
+    case MatrixLayoutLambda(e) => MatrixLayoutLambda(fe(e))
 
     case Composition(f, g) => Composition(fe(f), fe(g))
   }
@@ -40,6 +42,8 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(e) => Iterator(e)
     case AddrApp(f, _) => Iterator(f)
     case AddrLambda(e) => Iterator(e)
+    case FragemtKindLambda(e) => Iterator(e)
+    case MatrixLayoutLambda(e) => Iterator(e)
 
     case Composition(f, g) => Iterator(f, g)
   }
@@ -74,6 +78,8 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(_) => 6
     case AddrApp(_, _) => 7
     case AddrLambda(_) => 8
+    case FragemtKindLambda(_) => 10
+    case MatrixLayoutLambda(_) => 11
     case Literal(d) => 17 * d.hashCode()
     case Primitive(p) => 19 * p.setType(rct.TypePlaceholder).hashCode()
 
@@ -113,6 +119,8 @@ case class AddrApp[E, A](f: E, x: A) extends Node[E, Nothing, Nothing, A]
 case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class AddrLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class FragemtKindLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class MatrixLayoutLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = d.toString
 }
@@ -137,6 +145,8 @@ object Node {
     case NatLambda(e) => Seq(e)
     case DataLambda(e) => Seq(e)
     case AddrLambda(e) => Seq(e)
+    case FragemtKindLambda(e) => Seq(e)
+    case MatrixLayoutLambda(e) => Seq(e)
     case Literal(_) => Seq()
     case Primitive(_) => Seq()
 
