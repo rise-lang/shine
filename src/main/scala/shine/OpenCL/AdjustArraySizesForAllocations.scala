@@ -96,6 +96,10 @@ object AdjustArraySizesForAllocations {
 
       case Map(_, _, _, _, _, a) => visitAndGatherInformation(a, parallInfo)
 
+      // TODO: think more about these two, what about the indices?
+      case Gather(_, _, _, indices, a) => visitAndGatherInformation(a, parallInfo)
+      case Scatter(_, _, _, indices, a) => visitAndGatherInformation(a, parallInfo)
+
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
     }
   }
