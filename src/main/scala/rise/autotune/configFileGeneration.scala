@@ -19,8 +19,6 @@ object configFileGeneration {
     val parametersWDCImmutable = distributeConstraints(p, c)
 
     // number of samples for design of experiment phase
-//    val doe = p.size * 10
-//    val optimization_iterations = tuner.samples
     val doe = p.size * 10
     val optimization_iterations = tuner.samples
 

@@ -169,6 +169,10 @@ class TestConfigFileGeneration extends test_util.Tests {
         |""".stripMargin
     // scalastyle:on
 
+    println("json: \n" + json)
+
+    println("gold : \n" + gold)
+
     assert(util.compareConfigFiles(json, gold))
   }
 
@@ -277,6 +281,10 @@ class TestConfigFileGeneration extends test_util.Tests {
       hmConstraints = false
     )
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
+
+    println("json: \n" + json)
+
+    println("gold : \n" + gold)
 
     assert(util.compareConfigFiles(json, gold))
 
