@@ -69,7 +69,8 @@ class TestAutotuning extends test_util.Tests {
 
     val tuner = Tuner(
       hostCode = util.hostcode.convolution(32),
-      inputSizes = Seq(32)
+      inputSizes = Seq(32),
+      saveToFile = true
     )
 
     val tuningResult = autotune.search(tuner)(e)
@@ -79,8 +80,6 @@ class TestAutotuning extends test_util.Tests {
 
     val bestSample = autotune.getBest(tuningResult.samples)
     println("bestSample: \n" + bestSample)
-
-    autotune.saveSamples("autotuning/RISE.csv", tuningResult)
   }
 
   // test Hypermapper constraints support
