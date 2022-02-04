@@ -1,5 +1,5 @@
   {
-      "name" : "mv",
+      "name" : "mv_autotuner",
       "output" : "exploration",
       "inputSize" : 1024,
       "metaheuristic" : [{

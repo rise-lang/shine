@@ -391,32 +391,32 @@ object mvExploration {
 
   def main(args: Array[String]): Unit = {
 
-//    mvHighLevel
-
-    println("highLevel: " + mvHighLevel)
-
-    val sj = strategy.apply(mvHighLevel).get
-//    val l1 = defaultStrategiesGPU.lowering.apply(sj).get
-//    val l1OCL = wrapOclRun(LocalSize(32), GlobalSize(1024))(l1)
+////    mvHighLevel
 //
-    println("sj: \n" + sj)
-//    println("l1: " + l1)
-
-
-    val sj2 = strategy.apply(sj).get
-//    val l2 = defaultStrategiesGPU.lowering.apply(sj2)
-    println("sj2: \n" + sj2)
-//    println("l2: " + l2)
-
-    val sj3 = strategy.apply(sj2).get
-//    val l3 = defaultStrategiesGPU.lowering.apply(sj3)
-//    println("sj3: " + sj3)
-//    println("l3: " + l3)
-    val sj4 = strategy.apply(sj3).get
-    val sj5 = strategy.apply(sj4).get
-    val sj6 = strategy.apply(sj5).get
-
-    val hostcode = HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)
+//    println("highLevel: " + mvHighLevel)
+//
+//    val sj = strategy.apply(mvHighLevel).get
+////    val l1 = defaultStrategiesGPU.lowering.apply(sj).get
+////    val l1OCL = wrapOclRun(LocalSize(32), GlobalSize(1024))(l1)
+////
+//    println("sj: \n" + sj)
+////    println("l1: " + l1)
+//
+//
+//    val sj2 = strategy.apply(sj).get
+////    val l2 = defaultStrategiesGPU.lowering.apply(sj2)
+//    println("sj2: \n" + sj2)
+////    println("l2: " + l2)
+//
+//    val sj3 = strategy.apply(sj2).get
+////    val l3 = defaultStrategiesGPU.lowering.apply(sj3)
+////    println("sj3: " + sj3)
+////    println("l3: " + l3)
+//    val sj4 = strategy.apply(sj3).get
+//    val sj5 = strategy.apply(sj4).get
+//    val sj6 = strategy.apply(sj5).get
+//
+//    val hostcode = HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)
 
 //    checkExpression(sj, hostcode)
 //    checkExpression(sj2, hostcode)
@@ -485,6 +485,7 @@ object mvExploration {
     // add strategies as arguments
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(init(1024, 1024), compute, finish)))
 //        riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies2, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv_exhaustive.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
     riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 

@@ -1,10 +1,10 @@
   {
-      "name" : "mv",
+      "name" : "mv_exhaustive",
       "output" : "exploration",
       "inputSize" : 1024,
       "metaheuristic" : [{
         "heuristic" : "exhaustive",
-        "depth" : 500,
+        "depth" : 10,
         "iterations" : 1
       }],
       "executor" : {
