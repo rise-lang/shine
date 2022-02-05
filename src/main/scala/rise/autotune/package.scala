@@ -241,7 +241,7 @@ package object autotune {
                 response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
-          print(s"Response: $response")
+
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
