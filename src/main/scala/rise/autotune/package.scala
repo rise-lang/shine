@@ -357,8 +357,6 @@ package object autotune {
         ("mv " + tuner.name + ".log" + " " +
           tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
 
-        // move generated config file to output folder
-        ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
       }
 
       // create plots
