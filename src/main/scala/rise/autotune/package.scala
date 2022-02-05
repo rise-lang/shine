@@ -107,7 +107,10 @@ package object autotune {
 
         val filePath = tuner.saveToFile match{
           case true => tuner.output + "/" + tuner.name + ".json"
-          case false => "/tmp/" + tuner.name + ".json"
+          case false => {
+            ("mkdir -p tmp" !!)
+            "/tmp/" + tuner.name + ".json"
+          }
         }
 
         val file = new PrintWriter(
