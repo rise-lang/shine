@@ -68,8 +68,10 @@ class TestAutotuning extends test_util.Tests {
     val e: Expr = util.expressions.convolution.convolutionOcl
 
     val tuner = Tuner(
+      name = "convolution",
       hostCode = util.hostcode.convolution(32),
       inputSizes = Seq(32),
+      output = "autotuning/convolution", // folder to store output files in
       saveToFile = true
     )
 
