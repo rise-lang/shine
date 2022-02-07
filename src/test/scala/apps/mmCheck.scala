@@ -47,8 +47,8 @@ class mmCheck extends test_util.TestsWithExecutor {
   ignore("nvidia matrix multplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
-      "original" -> runOriginal("CGO17_MMNVIDIA.cl",
-        LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
+//      "original" -> runOriginal("CGO17_MMNVIDIA.cl",
+//        LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b),
       "dpia" -> runKernel(gen.opencl.kernel.fromExpr(mmNVIDIA),
         LocalSize((32, 8)), GlobalSize((M/4, N/8)), at, b)
     )
