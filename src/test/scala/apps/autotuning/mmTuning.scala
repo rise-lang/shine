@@ -347,6 +347,34 @@ class mmTuning extends test_util.Tests {
     )
     println("result0: " + result0.runtime)
     assert(result0.runtime.isRight)
+
+    // expert config for 128x64 * 128x128
+    val params1:Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("v3") -> (1: Nat),
+      TuningParameter("v4") -> (1: Nat),
+      TuningParameter("v5") -> (32: Nat), // tile-width A
+      TuningParameter("v6") -> (32: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (32: Nat), // tile-width B
+      TuningParameter("v8") -> (32: Nat) // tile-height A,B
+    )
+
+    val mm1 = rise.core.substitute.natsInExpr(params1, mm)
+    val result1 = autotune.execution.execute(
+      expression = mm1,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Median
+    )
+    println("result1: " + result1.runtime)
+    assert(result1.runtime.isRight)
+
+
   }
 
   ignore("run mm autotuning"){
