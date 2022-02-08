@@ -57,6 +57,53 @@ class Barriers extends test_util.Tests {
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
   }
 
+  test("1D mapLocal toLocal seq with thread sharing -- MAPSEQ 1") {
+    val e = depFun((n: Nat, m: Nat, o: Nat) => fun(n`.`m`.`o`.`f32)(in =>
+      in |> mapSeq(mapWorkGroup(0)(
+        mapLocal(0)(id) >>
+        toLocal >>
+        slide(3)(1) >>
+        mapLocal(0)(sum)
+      ))
+    ))
+    val code = gen.opencl.kernel.asStringFromExpr(e)
+    println(code)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
+  }
+
+  test("1D mapLocal toLocal seq with thread sharing -- MAPSEQ 2") {
+    val e = depFun((n: Nat, m: Nat, o: Nat) => fun(n`.`m`.`o`.`f32)(in =>
+      in |> mapWorkGroup(0)(mapSeq(
+        mapLocal(0)(id) >>
+        toLocal >>
+        slide(3)(1) >>
+        mapLocal(0)(sum)
+      ))
+    ))
+    val code = gen.opencl.kernel.asStringFromExpr(e)
+    println(code)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
+  }
+
+  // NOTE: by generating barriers at the end of mapSeq patterns,
+  // we do a better job than Lift, which generates barriers at the end of mapLocal patterns
+  test("1D mapLocal toLocal seq with thread sharing -- MAPSEQ 3") {
+    val e = depFun((n: Nat, m: Nat, o: Nat) => fun(n`.`m`.`o`.`f32)(in =>
+      in |> mapWorkGroup(0)(
+        mapSeq(mapLocal(0)(id)) >>
+        toLocal >>
+        map(slide(3)(1)) >>
+        mapSeq(mapLocal(0)(sum))
+      )
+    ))
+    val code = gen.opencl.kernel.asStringFromExpr(e)
+    println(code)
+    "barrier".r.findAllIn(code).length shouldBe 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 2
+  }
+
   test("1D mapLocal toGlobal seq with thread sharing") {
     val e = depFun((n: Nat, m: Nat) => fun(n`.`m`.`f32)(in =>
       in |> mapWorkGroup(0)(
@@ -304,7 +351,7 @@ class Barriers extends test_util.Tests {
     """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 3 // 2
   }
 
-  // NOTE: does not pass in Lift either
+  // NOTE: Lift also fails to eliminate the right barriers
   // FIXME: one barrier could be removed, dependency analysis needs to be more precise
   test("copyToLocalAndReorderBothInZip") {
     val e = depFun((n: Nat) => fun(n`.`n`.`f32)(a => fun(n`.`n`.`f32)(b =>
@@ -315,8 +362,8 @@ class Barriers extends test_util.Tests {
       ))
     )))
     val code = gen.opencl.kernel.asStringFromExpr(e)
-    "barrier".r.findAllIn(code).length shouldBe 3
-    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 3
+    "barrier".r.findAllIn(code).length shouldBe 3 // 2
+    """barrier\(CLK_LOCAL_MEM_FENCE\)""".r.findAllIn(code).length shouldBe 3 // 2
   }
 
   // NOTE: Lift generates a GLOBAL barrier instead of a LOCAL one at the end of workgroup loop
