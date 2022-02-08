@@ -324,10 +324,10 @@ class mmTuning extends test_util.Tests {
 
     // expert config for 128x64 * 128x128
     val params0:Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1024: Nat),
-      TuningParameter("ls1") -> (1024: Nat),
-      TuningParameter("gs0") -> (32: Nat),
-      TuningParameter("gs1") -> (32: Nat),
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
       TuningParameter("v3") -> (8: Nat),
       TuningParameter("v4") -> (8: Nat),
       TuningParameter("v5") -> (32: Nat), // tile-width A
