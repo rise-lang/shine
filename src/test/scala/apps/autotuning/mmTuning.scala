@@ -315,7 +315,41 @@ class mmTuning extends test_util.Tests {
     autotune.search(tuner)(mm)
   }
 
-  test("run mm autotuning"){
+  test("execute expert configuration"){
+    // execute config with "expert parameter configuration"
+    val mm: Expr =
+      tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
+        tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
+          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
+
+    // expert config for 128x64 * 128x128
+    val params0:Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (8: Nat),
+      TuningParameter("gs0") -> (32: Nat),
+      TuningParameter("gs1") -> (8: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("v5") -> (64: Nat),
+      TuningParameter("v6") -> (128: Nat),
+      TuningParameter("v7") -> (128: Nat),
+      TuningParameter("v8") -> (16: Nat)
+    )
+
+    val mm0 = rise.core.substitute.natsInExpr(params0, mm)
+    val result0 = autotune.execution.execute(
+      expression = mm0,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Median
+    )
+    println("result0: " + result0.runtime)
+    assert(result0.runtime.isRight)
+  }
+
+  ignore("run mm autotuning"){
 
     val configs = Seq(
       "autotuning/config/mm/rs_cot_1024.json",
