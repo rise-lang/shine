@@ -11,7 +11,7 @@
     "true_value" : "True",
     "false_value" : "False"
   },
-  "optimization_iterations": 1000,
+  "optimization_iterations": 10,
   "optimization_method": "opentuner",
   "input_parameters" : {
     "tuned_v3" : {

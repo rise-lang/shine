@@ -1,6 +1,5 @@
 package apps.autotuning
 
-import apps.autotuning
 import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.core._
@@ -288,7 +287,7 @@ class mmTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("execute expert configuration"){
+  ignore("execute expert configuration"){
     // execute config with "expert parameter configuration"
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
@@ -347,77 +346,27 @@ class mmTuning extends test_util.Tests {
     println("result1: " + result1.runtime)
     assert(result1.runtime.isRight)
 
-
-  }
-
-  def runExperiments(configFiles: Seq[String], iterations: Int, output: String) = {
-    for(i <- 1 to iterations) {
-      configFiles.foreach(configFile => runTuning(configFile, output))
-    }
-  }
-
-  def runTuning(configFile: String, output: String) = {
-    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 20, // defined by config file, value is ignored
-      name = version,
-      output = s"${output}/${version}",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some(configFile),
-      hmConstraints = true,
-      runtimeStatistic = Minimum,
-      saveToFile = true
-    )
-
-    autotune.search(tuner)(mm)
   }
 
 
-  ignore("run mm autotuning"){
+  test("run mm autotuning"){
 
     val configs = Seq(
       "autotuning/config/mm/rs_cot_1024.json",
       "autotuning/config/mm/rs_emb_1024.json",
-      "autotuning/config/mm/ls_cot_1024.json",
+      //      "autotuning/config/mm/ls_cot_1024.json",
       "autotuning/config/mm/atf_emb_1024.json",
-      "autotuning/config/mm/bo_cot_1024.json"
+      "autotuning/config/mm/borf_cot_1024.json",
+      "autotuning/config/mm/bogp_cot_1024.json"
     )
 
-    runExperiments(configFiles = configs, iterations = 1, "autotuning/mm_1024_test")
-
-    // todo parse information from seq of configs to make plot generic
-    // get name from json
-    // get output
-    // append name from json + "_hm"
-
-    // get name from json
-
-    // plot
-    val command = "hm-plot-optimization-results " +
-      "-j autotuning/config/mm/rs_cot_1024.json " +
-      "-i " +
-      "autotuning/mm_1024_test/rs_cot_1024/rs_cot_1024_hm " +
-      "autotuning/mm_1024_test/rs_emb_1024/rs_emb_1024_hm " +
-      "autotuning/mm_1024_test/ls_cot_1024/ls_cot_1024_hm " +
-      "autotuning/mm_1024_test/bo_cot_1024/bo_cot_1024_hm " +
-      "autotuning/mm_1024_test/atf_emb_1024/atf_emb_1024_hm " +
-      "-l " +
-      "rs_cot " +
-      "rs_emb " +
-      "ls_cot " +
-      "bo_cot " +
-      "atf_emb " +
-      "-o autotuning/mm_1024_test/mmTuning.pdf " +
-      "-log --y_label \"Log Runtime(ms)\" "  +
-      "--title MM "
-
-    command !!
-
+    runExperiment(
+      configFiles = configs,
+      iterations = 2,
+      "autotuning/mm_1024_test",
+      mm,
+      HostCode(init(1024, 1024, 1024), compute, finish),
+      Seq(1024, 1024, 1024)
+    )
   }
-
 }

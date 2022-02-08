@@ -1,10 +1,10 @@
 {
-  "application_name" : "rs_cot_1024",
+  "application_name" : "borf_cot_1024",
   "optimization_objectives" : ["runtime"],
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "rs_cot_1024.log",
+  "log_file" : "borf_cot_1024.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
@@ -15,7 +15,8 @@
     "doe_type" : "random sampling",
     "number_of_samples" : 10
   },
-  "optimization_iterations" : 0,
+  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 10,
   "input_parameters" : {
     "tuned_v3" : {
       "parameter_type" : "ordinal",

@@ -13,7 +13,7 @@
   },
   "design_of_experiment": {
     "doe_type": "embedding random sampling",
-    "number_of_samples": 1000
+    "number_of_samples": 10
   },
   "optimization_iterations" : 0,
   "input_parameters" : {
