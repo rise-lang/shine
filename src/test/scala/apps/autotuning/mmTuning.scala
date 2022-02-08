@@ -288,33 +288,6 @@ class mmTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  def runExperiments(configFiles: Seq[String], iterations: Int) = {
-    for(i <- 1 to iterations) {
-      configFiles.foreach(runTuning)
-    }
-  }
-
-  def runTuning(configFile: String) = {
-    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 20, // defined by config file
-      name = version,
-      output = s"autotuning/mm_1024_test/${version}",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some(configFile),
-      hmConstraints = true,
-      runtimeStatistic = Minimum,
-      saveToFile = true
-    )
-
-    autotune.search(tuner)(mm)
-  }
-
   test("execute expert configuration"){
     // execute config with "expert parameter configuration"
     val mm: Expr =
@@ -346,12 +319,12 @@ class mmTuning extends test_util.Tests {
       execution = Median
     )
     println("result0: " + result0.runtime)
-    assert(result0.runtime.isRight)
+    //    assert(result0.runtime.isRight)
 
     // expert config for 128x64 * 128x128
     val params1:Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("ls0") -> (16: Nat),
+      TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1024: Nat),
       TuningParameter("v3") -> (1: Nat),
@@ -377,6 +350,34 @@ class mmTuning extends test_util.Tests {
 
   }
 
+  def runExperiments(configFiles: Seq[String], iterations: Int, output: String) = {
+    for(i <- 1 to iterations) {
+      configFiles.foreach(configFile => runTuning(configFile, output))
+    }
+  }
+
+  def runTuning(configFile: String, output: String) = {
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      samples = 20, // defined by config file, value is ignored
+      name = version,
+      output = s"${output}/${version}",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(configFile),
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
+    )
+
+    autotune.search(tuner)(mm)
+  }
+
+
   ignore("run mm autotuning"){
 
     val configs = Seq(
@@ -387,7 +388,14 @@ class mmTuning extends test_util.Tests {
       "autotuning/config/mm/bo_cot_1024.json"
     )
 
-    runExperiments(configFiles = configs, iterations = 1)
+    runExperiments(configFiles = configs, iterations = 1, "autotuning/mm_1024_test")
+
+    // todo parse information from seq of configs to make plot generic
+    // get name from json
+    // get output
+    // append name from json + "_hm"
+
+    // get name from json
 
     // plot
     val command = "hm-plot-optimization-results " +
