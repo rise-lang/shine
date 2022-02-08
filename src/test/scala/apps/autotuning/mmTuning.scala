@@ -325,15 +325,15 @@ class mmTuning extends test_util.Tests {
     // expert config for 128x64 * 128x128
     val params0:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (32: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-      TuningParameter("v3") -> (8: Nat),
+      TuningParameter("ls1") -> (8: Nat),
+      TuningParameter("gs0") -> (256: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("v3") -> (4: Nat),
       TuningParameter("v4") -> (8: Nat),
-      TuningParameter("v5") -> (32: Nat), // tile-width A
-      TuningParameter("v6") -> (8: Nat), // divides v8 x v5
-      TuningParameter("v7") -> (8: Nat), // tile-width B
-      TuningParameter("v8") -> (32: Nat) // tile-height A,B
+      TuningParameter("v5") -> (64: Nat), // tile-width A
+      TuningParameter("v6") -> (128: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (128: Nat), // tile-width B
+      TuningParameter("v8") -> (16: Nat) // tile-height A,B
     )
 
     val mm0 = rise.core.substitute.natsInExpr(params0, mm)
