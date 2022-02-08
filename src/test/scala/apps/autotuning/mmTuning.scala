@@ -9,6 +9,7 @@ import rise.core.DSL.Type._
 import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import apps.autotuning._
 
 import scala.language.postfixOps
 import scala.sys.process._
