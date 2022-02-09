@@ -155,12 +155,12 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs= Seq(
-      "autotuning/config/harris/harris_rs_cot_1024.json",
-      "autotuning/config/harris/harris_rs_emb_1024.json",
-      "autotuning/config/harris/harris_atf_emb_1024.json",
-//      "autotuning/config/harris/harris_ls_cot_1024.json",
-      "autotuning/config/harris/harris_borf_cot_1024.json",
-      "autotuning/config/harris/harris_bogp_cot_1024.json",
+      "autotuning/config/harris/harris_rs_cot.json",
+      "autotuning/config/harris/harris_rs_emb.json",
+      "autotuning/config/harris/harris_atf_emb.json",
+//      "autotuning/config/harris/harris_ls_cot.json",
+      "autotuning/config/harris/harris_borf_cot.json",
+      "autotuning/config/harris/harris_bogp_cot.json",
     )
 
     runExperiment(
