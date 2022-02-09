@@ -134,18 +134,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-
-  test("harris hierarchical experiments"){
-    val iterations = 2
-    for(i <- 1 to iterations) {
-      runExperiment("harris_rs_cot")
-      runExperiment("harris_rs_emb")
-      runExperiment("harris_ls_cot")
-      runExperiment("harris_atf_emb")
-    }
-  }
-
-  def runExperiment(version: String) = {
+  test("run mm autotuning"){
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -165,20 +154,22 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             ))))
 
 
-    val tuner = Tuner(
-      hostCode = HostCode(init(128, 256), compute, finish),
-      inputSizes = Seq(128, 256),
-      samples = 100,
-      name = version,
-      output = s"autotuning/harris/${version}",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some(s"/home/jo/development/rise-lang/shine/autotuning/config/harris/${version}.json"),
-      //      configFile = None,
-      hmConstraints = true
+    val configs= Seq(
+      "autotuning/config/harris/harris_rs_cot_1024.json",
+      "autotuning/config/harris/harris_rs_emb_1024.json",
+      "autotuning/config/harris/harris_atf_emb_1024.json",
+//      "autotuning/config/harris/harris_ls_cot_1024.json",
+      "autotuning/config/harris/harris_borf_cot_1024.json",
+      "autotuning/config/harris/harris_bogp_cot_1024.json",
     )
 
-    autotune.search(tuner)(harrisOCLTuning)
+    runExperiment(
+      configFiles = configs,
+      iterations = 2,
+      "autotuning/harris_test",
+      harrisOCLTuning,
+      HostCode(init(128, 256), compute, finish),
+      inputSizes = Seq(128, 256)
+    )
   }
 }

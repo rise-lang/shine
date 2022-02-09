@@ -4,6 +4,7 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
+  "log_file" : "harris_rs_cot_broken_order.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",

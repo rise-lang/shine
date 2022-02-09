@@ -1,9 +1,10 @@
 {
-  "application_name" : "harris_rs_emb",
+  "application_name" : "harris_rs_exh",
   "optimization_objectives" : ["runtime"],
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
+  "log_file" : "harris_rs_exh.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",

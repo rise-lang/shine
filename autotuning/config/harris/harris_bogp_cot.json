@@ -1,18 +1,24 @@
 {
-  "application_name" : "harris_atf_emb",
+  "application_name" : "harris_bogp_cot",
   "optimization_objectives" : ["runtime"],
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "harris_atf_emb.log",
+  "log_file" : "harris_bogp_cot.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
     "true_value" : "True",
     "false_value" : "False"
   },
-  "optimization_iterations": 10,
-  "optimization_method": "opentuner",
+  "design_of_experiment" : {
+    "doe_type" : "random sampling",
+    "number_of_samples" : 10
+  },
+  "optimization_iterations" : 10,
+  "models": {
+    "model": "gaussian_process"
+  },
   "input_parameters" : {
     "tuned_vec" : {
       "parameter_type" : "ordinal",
