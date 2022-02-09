@@ -13,9 +13,9 @@
   },
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 10
+    "number_of_samples" : 80
   },
-  "optimization_iterations" : 10,
+  "optimization_iterations" : 920,
   "input_parameters" : {
     "tuned_vec" : {
       "parameter_type" : "ordinal",
