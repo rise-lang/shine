@@ -362,6 +362,7 @@ class mmTuning extends test_util.Tests {
     )
 
     runExperiment(
+      name = "mm_1024",
       configFiles = configs,
       iterations = 2,
       "autotuning/mm_1024_test",

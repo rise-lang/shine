@@ -164,6 +164,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     )
 
     runExperiment(
+      name = "harris",
       configFiles = configs,
       iterations = 2,
       "autotuning/harris_test",

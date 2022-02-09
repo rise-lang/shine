@@ -10,7 +10,7 @@ import scala.sys.process._
 
 package object autotuning {
 
-  def runExperiment(configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
+  def runExperiment(name: String, configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
 
     // run tuning
     for(i <- 1 to iterations) {
@@ -18,7 +18,7 @@ package object autotuning {
     }
 
     // plot experiments
-    plotExperiment(configFiles, output)
+    plotExperiment(name, configFiles, output)
   }
 
   def runTuning(configFile: String, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
@@ -42,7 +42,7 @@ package object autotuning {
     autotune.search(tuner)(e)
   }
 
-  def plotExperiment(configs: Seq[String], output: String) = {
+  def plotExperiment(name: String, configs: Seq[String], output: String) = {
 
     // parse names from configuration files
     var names = ""
@@ -55,14 +55,14 @@ package object autotuning {
 
     // plot
     val command = "hm-plot-optimization-results " +
-      "-j autotuning/config/mm/rs_cot_1024.json " +
+      s"-j ${configs(0)} " +
       "-i " +
       folders +
       "-l " +
       names +
-      "-o autotuning/mm_1024_test/mmTuning.pdf " +
+      s"-o ${output}/${name}.pdf " +
       "-log --y_label \"Log Runtime(ms)\" "  +
-      "--title MM "
+      s"--title ${name} "
 
     command !!
   }
