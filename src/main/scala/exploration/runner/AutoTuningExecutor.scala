@@ -46,7 +46,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   var number = 0
   val random = new scala.util.Random
 
-  def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
+  def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
     number = number + 1
 
     // throw the dices
@@ -83,7 +83,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       (solution.expression, runtime)
   }
 
-  def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
     val totalDurationStart = System.currentTimeMillis()
 
 
@@ -114,7 +114,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       speedupFactor = threshold,
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
-      hmConstraints = true,
+//      hmConstraints = true,
+      hmConstraints = false,
       saveToFile = false
     )
 
