@@ -8,7 +8,7 @@ import rise.elevate.rules.traversal.default
 
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
-import exploration.runner.{AutoTuningExecutor, CExecutor}
+import exploration.runner.{AutoTuningExecutor, CExecutor, DebugExecutor}
 import elevate.heuristic_search.Metaheuristic
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
@@ -136,6 +136,7 @@ object riseExploration {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
       case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode.get, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")
@@ -147,10 +148,14 @@ object riseExploration {
 //    val strategies = convolutionStrategies.strategies
 //    val strategies = scalStrategies.strategies
 
+
+    // todo fix hard coded changes here!
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
       rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[AutoTuningExecutor], strategies, nameList.reverse.apply(index))
+//    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
+//      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[DebugExecutor], strategies, nameList.reverse.apply(index))
     index = index + 1
 
     // iterate reverse direction
