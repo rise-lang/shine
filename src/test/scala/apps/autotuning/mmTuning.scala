@@ -159,7 +159,7 @@ class mmTuning extends test_util.Tests {
   }
 
   // standard hypermapper
-  ignore("mm tuning 128") {
+  test("mm tuning 128") {
     val mm: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -170,12 +170,9 @@ class mmTuning extends test_util.Tests {
     val tuner = Tuner(
       hostCode = HostCode(init(64, 128, 128), compute, finish),
       inputSizes = Seq(64, 128, 128),
-      samples = 100,
       name = "rs_cot_128",
       output = "autotuning/mm_128",
       timeouts = Timeouts(5000, 5000, 1000),
-      executionIterations = 10,
-      speedupFactor = 100,
       configFile = None,
       hmConstraints = false
     )
@@ -350,22 +347,45 @@ class mmTuning extends test_util.Tests {
   }
 
 
-  test("run mm autotuning"){
+  test("tune mm 128"){
 
     val configs = Seq(
-      "autotuning/config/mm/rs_cot_1024.json",
-      "autotuning/config/mm/rs_emb_1024.json",
-      //      "autotuning/config/mm/ls_cot_1024.json",
-      "autotuning/config/mm/atf_emb_1024.json",
-      "autotuning/config/mm/borf_cot_1024.json",
-      "autotuning/config/mm/bogp_cot_1024.json"
+      "autotuning/config/mm/128/rs_cot_128.json",
+      "autotuning/config/mm/128/rs_emb_128.json",
+      "autotuning/config/mm/128/ls_cot_128.json",
+      "autotuning/config/mm/128/atf_emb_128.json",
+      "autotuning/config/mm/128/borf_cot_128.json",
+      "autotuning/config/mm/128/bogp_cot_128.json"
+    )
+
+    runExperiment(
+      name = "mm_128",
+      configFiles = configs,
+      iterations = 2,
+      "autotuning/mm_128",
+      mm,
+      HostCode(init(128, 128, 128), compute, finish),
+      Seq(128, 128, 128)
+    )
+  }
+
+
+  ignore("tune mm 1024"){
+
+    val configs = Seq(
+      "autotuning/config/mm/1024/rs_cot_1024.json",
+      "autotuning/config/mm/1024/rs_emb_1024.json",
+      "autotuning/config/mm/1024/ls_cot_1024.json",
+      "autotuning/config/mm/1024/atf_emb_1024.json",
+      "autotuning/config/mm/1024/borf_cot_1024.json",
+      "autotuning/config/mm/1024/bogp_cot_1024.json"
     )
 
     runExperiment(
       name = "mm_1024",
       configFiles = configs,
       iterations = 2,
-      "autotuning/mm_1024_test",
+      "autotuning/mm_1024",
       mm,
       HostCode(init(1024, 1024, 1024), compute, finish),
       Seq(1024, 1024, 1024)
