@@ -3,7 +3,7 @@ package rise.elevate
 import java.io.{File, FileInputStream, FileOutputStream}
 import elevate.core._
 import elevate.core.strategies.basic.normalize
-import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
+import rise.elevate.rules.lowering.{addRequiredCopies, lowerToC, parallel, vectorize}
 import _root_.util.gen
 import elevate.core.strategies.traversal._
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D, zipND}
@@ -21,11 +21,14 @@ import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
 import _root_.util.gen.c.function
 import _root_.util.writeToTempFile
+import elevate.core.strategies.basic
+import exploration.runner.CExecutor
 import rise.core.DSL.Type.ArrayTypeConstructorsFromInt
+import rise.core.types.DataType.{ArrayType, int}
 import rise.elevate.strategies.tiling.tile
-import rise.elevate.util.{**!, makeClosed, λ}
+import rise.elevate.util.{**!, λ}
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
-import shine.OpenCL.{ScalaFunction, `(`, `,`, `)=>`}
+import shine.OpenCL.{ScalaFunction, `(`, `)=>`, `,`}
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -34,19 +37,18 @@ import scala.util.Random
 // scalastyle:off
 class gauss extends test_util.Tests {
   //private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
-  def LCNFrewrite(a: Rise, s: Strategy[Rise]): Rise = {
-    val (closedA, nA) = makeClosed(a)
-    val na = DFNF()(RiseTraversable)(closedA).get
-    println(s"base: $a")
-    println(s"DFNF: $na")
-    val reordered = position(nA)(s).apply(na).get
-    println(s"reordered: $reordered")
-    reordered
-  }
+
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.outermost(default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.innermost(default.RiseTraversable)
+
+  val lowering =
+    addRequiredCopies() `;`
+      fuseReduceMap2 `;` // fuse map and reduce
+      rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
+      reduceMapFission2 `;` // fission map and reduce
+      rise.elevate.rules.lowering.specializeSeqReduce()
 
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
 
@@ -69,7 +71,19 @@ class gauss extends test_util.Tests {
         in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
           |> slide2D(5, 1) // -> MxN of 5x5 slides
           |> map(map(fun(sector => // sector:5x5
-            zip(sector |> join)(weights |> join) |> map(mulPair) |> reduce(add)(l(0)) |> fun(x => x/l(256))
+            zip(sector |> join)(weights |> join) |> map(mulPair) |> map(fun(x => x)) |> reduce(add)(l(0)) |> fun(x => x/l(256))
+        )))
+      )
+    )
+  }
+
+  val gaussReordered: Rise = {
+    fun(N `.` M `.` int)(in =>
+      fun( 5 `.` 5 `.` int)(weights =>
+        in |> padClamp2D(2) // in: NxM -> (N+4) x (M+4)
+          |> slide2D(5, 1) // -> MxN of 5x5 slides
+          |> map(map(fun(sector => // // sector:5x5
+          zip(sector |> transpose |> join)(weights |> transpose |> join) |> map(mulPair) |> mapSeq(fun(x => x)) |> reduce(add)(l(0)) |> fun(x => x/l(256))
         )))
       )
     )
@@ -91,7 +105,7 @@ class gauss extends test_util.Tests {
   )
 
 
-  val lowering = DFNF() `;` lowerToC
+  //val lowering = DFNF() `;` lowerToC
 
   // -- CPU ---------------------------------------------------------------
 
@@ -99,7 +113,22 @@ class gauss extends test_util.Tests {
     fuseReduceMap `@` topDown[Rise]
 
   test("gauss") {
-    run("cpu", gauss, cpu)
+    val cpuPar: Strategy[Rise] =
+      (vectorize(32) `@` bottomUp[Rise])
+
+    run("cpu", gauss, cpuPar)
+  }
+
+  test("rerdered"){
+    run("reordered", gaussReordered, cpu)
+  }
+
+  test("par"){
+    val cpuPar: Strategy[Rise] =
+      (vectorize(25) `@` bottomUp[Rise])  //`;;`
+      //(parallel()    `@` outermost(isApplied(isMap)))
+
+    run("reordered", gaussReordered, cpuPar)
   }
 
   test("gaussGPU") {
@@ -123,6 +152,7 @@ class gauss extends test_util.Tests {
   }
 
 
+  /*
   test("sMulM reorder"){
     val reordered = LCNFrewrite(
       sMulM,
@@ -137,6 +167,7 @@ class gauss extends test_util.Tests {
     println("code: " + c)
     //run("test", test, cpu)
   }
+  */
 
   test("mAddM"){
     val lowered = lowerToC.apply(mAddM).get
@@ -147,21 +178,22 @@ class gauss extends test_util.Tests {
   }
 
 
-    /*
-    val cpuPar: Strategy[Rise] = cpu `;;`
+  /*
+  val cpuPar: Strategy[Rise] = cpu `;;`
 
-      //(vectorize(32) `@` innermost(isApplied(isMap)))  `;;`
-      (parallel()    `@` outermost(isApplied(isMap)))
+    //(vectorize(32) `@` innermost(isApplied(isMap)))  `;;`
+    (parallel()    `@` outermost(isApplied(isMap)))
 
-      //parallel() //`;`
-      //(vectorize(64) `@` bottomUp[Rise])
+    //parallel() //`;`
+    //(vectorize(64) `@` bottomUp[Rise])
 
-      //(parallel()    `@` outermost(isApplied(isMap))) `;;`
-      /*splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce)))) `;;`
-      reorder(List(1,3,4,2)) `;;`
-      vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
-      */
-  */
+    //(parallel()    `@` outermost(isApplied(isMap))) `;;`
+    splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce)))) `;;`
+    reorder(List(1,3,4,2)) `;;`
+    vectorize(64) `@` innermost(isApplied(isApplied(isMap)))
+   */
+
+  /*
   test("CPU reorder") {
     LCNFrewrite(
       gauss,
@@ -170,6 +202,7 @@ class gauss extends test_util.Tests {
     //println(LCNFrewrite(gauss, body(body(reorder(Seq(1,3,2))))))
     //run("CPU par", gauss, cpuPar)
   }
+  */
 
   /*
   val splitReduce = splitStrategy(1024)   `@` innermost(isApplied(isApplied(isApplied(isReduce))))
@@ -207,7 +240,8 @@ class gauss extends test_util.Tests {
   }
 */
 
-/*
+
+  /*
   test("Executor test"){
     val executor = new CExecutor(cpu, 1, List((N,N),(5,5)), (N,N))
     executor.setInputs(List(
@@ -217,18 +251,18 @@ class gauss extends test_util.Tests {
 
     executor.genCode(gauss)
   }
-*/
+  */
+
 
   /// UTILS ////////////////////////////////////////////////////////////////////
   def run(version: String, expresion:Rise, strategy: Strategy[Rise]): Unit ={
     println(version + ":")
 
-    val lowered = (strategy`;` lowerToC)(expresion)
+    val lowered = (strategy`;` lowering)(expresion)
     println("lowered: " + lowered.get)
 
     val c = gen.openmp.function("gaussian").asStringFromExpr(lowered.get)
     println("code: " + c)
-
 
     def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
       import java.io._
@@ -255,7 +289,7 @@ class gauss extends test_util.Tests {
 
 
     def genCode(strategy: Strategy[Rise], pgm: Rise): String = {
-      val lowered = (strategy`;` lowerToC).apply(gauss)
+      val lowered = (strategy`;` lowering).apply(gauss)
       val p = gen.openmp.function("gaussian").fromExpr(lowered.get)
 
 
@@ -297,6 +331,7 @@ int main(void){
       s"gcc -Wall -o ${bin.getAbsolutePath} ${code.getAbsolutePath}" !!
     }
 */
+
     def compile(path: String, name: String, ending: String = ".c"): Unit = {
       val srcFile = new File(s"$path/$name$ending")
       val binFile = new File(s"$path/$name")

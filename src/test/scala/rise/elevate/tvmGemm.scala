@@ -204,6 +204,7 @@ class tvmGemm extends test_util.Tests {
     } else {
       gen.c.function(version).asStringFromExpr(rewritten.get)
     }
+    println(program)
     val time3 = currentTimeSec
     logger.debug(s"[$versionUC] codegen time: ${time3 - time2}s")
     logger.debug(s"Program:\n${program}")

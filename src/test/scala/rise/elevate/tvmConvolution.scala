@@ -9,6 +9,7 @@ import rise.core.DSL.Type.ArrayTypeConstructorsFromInt
 import rise.core.DSL.{ToBeTyped, fun, l, lf32}
 import rise.core.Lambda
 import rise.core.primitives.{reduce, _}
+import rise.core.types.DataType.f32
 import rise.core.types._
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering.lowerToC
@@ -18,7 +19,6 @@ import rise.elevate.strategies.halide.reorder
 import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
-import rise.elevate.util.makeClosed
 
 import java.io.{File, FileInputStream, FileOutputStream}
 import scala.language.postfixOps
@@ -27,16 +27,6 @@ import scala.util.Random
 
 // scalastyle:off
 class tvmConvolution extends test_util.Tests {
-  //private val DFNF = rise.elevate.strategies.normalForm.DFNF()(RiseTraversable)
-  def LCNFrewrite(a: Rise, s: Strategy[Rise]): Rise = {
-    val (closedA, nA) = makeClosed(a)
-    val na = DFNF()(RiseTraversable)(closedA).get
-    println(s"base: $a")
-    println(s"DFNF: $na")
-    val reordered = position(nA)(s).apply(na).get
-    println(s"reordered: $reordered")
-    reordered
-  }
   val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
     traversal.outermost(default.RiseTraversable)
   val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
@@ -122,6 +112,7 @@ class tvmConvolution extends test_util.Tests {
 
   val cpu: Strategy[Rise] = DFNF()(default.RiseTraversable) //`;`
     fuseReduceMap `@` topDown[Rise]
+
 
   test("convolution") {
     run("cpu", convolution, cpu)

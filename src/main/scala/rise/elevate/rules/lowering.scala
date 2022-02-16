@@ -198,6 +198,11 @@ object lowering {
     // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce
     tryAll(copyAfterReduce) `;` DFNF() `;` materializeInitOfReduce()
 
+  // requires expr to be in LCNF
+  def specializeSeqReduce()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+    normalize(ev)(lowering.reduceSeq)
+  }
+
   // todo gotta use a normalform for introducing copies! e.g., if we have two reduce primitives
   def lowerToC(implicit ev: Traversable[Rise]): Strategy[Rise] =
     addRequiredCopies() `;` specializeSeq()

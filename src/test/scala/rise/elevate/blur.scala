@@ -7,7 +7,7 @@ import elevate.core.strategies.traversal._
 import rise.core.DSL.HighLevelConstructs.{padClamp2D, slide2D}
 import rise.core.DSL.{fun, l, lf64}
 import rise.core.primitives._
-import rise.core.types._
+import rise.core.types.DataType.{ArrayType, f64}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering.{lowerToC, parallel, vectorize}
 import rise.elevate.rules.traversal._
