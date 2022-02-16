@@ -347,7 +347,7 @@ class mmTuning extends test_util.Tests {
   }
 
 
-  test("tune mm 128"){
+  ignore("tune mm 128"){
 
     val configs = Seq(
       "autotuning/config/mm/128/rs_cot_128.json",
@@ -374,17 +374,17 @@ class mmTuning extends test_util.Tests {
 
     val configs = Seq(
       "autotuning/config/mm/1024/rs_cot_1024.json",
-      "autotuning/config/mm/1024/rs_emb_1024.json",
-      "autotuning/config/mm/1024/ls_cot_1024.json",
-      "autotuning/config/mm/1024/atf_emb_1024.json",
-      "autotuning/config/mm/1024/borf_cot_1024.json",
-      "autotuning/config/mm/1024/bogp_cot_1024.json"
+//      "autotuning/config/mm/1024/rs_emb_1024.json",
+//      "autotuning/config/mm/1024/ls_cot_1024.json",
+//      "autotuning/config/mm/1024/atf_emb_1024.json",
+//      "autotuning/config/mm/1024/borf_cot_1024.json",
+//      "autotuning/config/mm/1024/bogp_cot_1024.json"
     )
 
     runExperiment(
       name = "mm_1024",
       configFiles = configs,
-      iterations = 2,
+      iterations = 1,
       "autotuning/mm_1024",
       mm,
       HostCode(init(1024, 1024, 1024), compute, finish),

@@ -193,7 +193,7 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("tune computePhiMag"){
+  ignore("tune computePhiMag"){
 
     val tuner = Tuner(
       hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
@@ -220,7 +220,7 @@ class mriqTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("tune computeQ"){
+  ignore("tune computeQ"){
 
     val tuner = Tuner(
     hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
@@ -295,7 +295,7 @@ class mriqTuning extends test_util.Tests {
     autotune.search(tuner)(computeQTuning)
   }
 
-  test("run mriq autotuning"){
+  ignore("run mriq autotuning"){
 
     // PhiMag
     val configsPhiMag = Seq(

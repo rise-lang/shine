@@ -139,7 +139,7 @@ class gemvTuning extends test_util.Tests {
     executeGemv(gemvKeplerBestTuning, 128)
   }
 
-  test("tune gemv version"){
+  ignore("tune gemv version"){
     runTuning(gemvBlastNTuning)
     runTuning(gemvBlastTTuning)
     runTuning(gemvFusedTuning) // ignore s0 in this case
