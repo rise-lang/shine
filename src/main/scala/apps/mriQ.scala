@@ -20,21 +20,11 @@ object mriQ {
       i ->: i ->: i ->: o
   }
 
-//  private val qFun = foreignFun("computeQ",
-//    Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
-//    """{
-//      |  #define PIx2 6.2831853071795864769252867665590058f
-//      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
-//      |  acc._fst = acc._fst + PhiMag * cos(expArg);
-//      |  acc._snd = acc._snd + PhiMag * sin(expArg);
-//      |  return acc;
-//      |}""".stripMargin,
-//    f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
-
   private val qFun = foreignFun("computeQ",
     Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
     """{
-      |  float expArg = 6.2831853071795864769252867665590058f * (Kx * sX + Ky * sY + Kz * sZ);
+      |  #define PIx2 6.2831853071795864769252867665590058f
+      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
       |  acc._fst = acc._fst + PhiMag * cos(expArg);
       |  acc._snd = acc._snd + PhiMag * sin(expArg);
       |  return acc;
@@ -62,19 +52,6 @@ object mriQ {
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
-
-  // can we do 2D stuff?
-  def computePhiMagOcl2(s0: Nat): ToBeTyped[Expr] = {
-    depFun((k: Nat) => fun(
-      (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
-    )((phiR, phiI) =>
-      zip(phiR)(phiI) |>
-        split(s0) |>
-        mapWorkGroup(
-          mapLocal(fun(t => phiMag(t._1)(t._2)))
-        ) |> join
-    ))
-  }
 
   // FIXME: could not find original Lift expression, this is made up
   val computeQHighLevel: Expr = depFun((k: Nat, x: Nat) => fun(

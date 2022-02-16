@@ -4,7 +4,6 @@ import mriQ._
 import util.gen
 
 class MRIQ extends test_util.TestsWithExecutor {
-
   private val K = 256
   private val X = 512
 
