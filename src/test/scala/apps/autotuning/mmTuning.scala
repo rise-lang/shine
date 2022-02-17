@@ -374,11 +374,11 @@ class mmTuning extends test_util.Tests {
 
     val configs = Seq(
       "autotuning/config/mm/1024/rs_cot_1024.json",
-//      "autotuning/config/mm/1024/rs_emb_1024.json",
-//      "autotuning/config/mm/1024/ls_cot_1024.json",
-//      "autotuning/config/mm/1024/atf_emb_1024.json",
-//      "autotuning/config/mm/1024/borf_cot_1024.json",
-//      "autotuning/config/mm/1024/bogp_cot_1024.json"
+      "autotuning/config/mm/1024/rs_emb_1024.json",
+      "autotuning/config/mm/1024/ls_cot_1024.json",
+      "autotuning/config/mm/1024/atf_emb_1024.json",
+      "autotuning/config/mm/1024/borf_cot_1024.json",
+      "autotuning/config/mm/1024/bogp_cot_1024.json"
     )
 
     runExperiment(
