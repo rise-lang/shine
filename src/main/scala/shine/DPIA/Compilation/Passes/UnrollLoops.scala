@@ -85,9 +85,18 @@ object UnrollLoops {
       shine.DPIA.DSL.comment(s"unrolling loop of $numIter"))({
       case (prev, i) =>
         val index = init + Cst(i * incr)
-        assert(isSmaller(index, n).contains(true)) //TODO add if-guards otherwise.
         //TODO store result of init in temporary variable
-        Seq(prev, genBody(index))
+        val current = if (isSmaller(index, n).contains(true)) {
+          genBody(index)
+        } else {
+          shine.DPIA.Phrases.IfThenElse(
+            shine.DPIA.Phrases.BinOp(shine.DPIA.Phrases.Operators.Binary.LT,
+              shine.DPIA.Phrases.Natural(index),
+              shine.DPIA.Phrases.Natural(n)),
+            genBody(index),
+            shine.DPIA.primitives.imperative.Skip())
+        }
+        Seq(prev, current)
     })
 
     tmp
