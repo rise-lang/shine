@@ -73,8 +73,8 @@ object mm {
               ))(zip(p6)(x._1))
             )
           ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
-          mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
-          transpose // v3.v4.f
+            mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
+            transpose // v3.v4.f
         )) |> join |> transpose
       )) |> join
     ))
@@ -107,7 +107,8 @@ object mm {
             mapWorkGroup(0)(fun(p3 =>
               zip(p2)(p3) |> // O'.(v8.v5.f x v8.v7.f)
                 // FIXME: there seems to be a bug in AdjustArraySizesForAllocations
-                oclReduceSeq(AddressSpace.Private)(fun((p13, p14) =>
+//                oclReduceSeq(AddressSpace.Private)(fun((p13, p14) =>
+                  oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
                   // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
                   let (toLocal(makePair(
                     p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f
