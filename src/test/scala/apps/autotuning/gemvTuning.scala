@@ -139,33 +139,28 @@ class gemvTuning extends test_util.Tests {
     executeGemv(gemvKeplerBestTuning, 128)
   }
 
-  ignore("tune gemv version"){
-    runTuning(gemvBlastNTuning)
-    runTuning(gemvBlastTTuning)
-    runTuning(gemvFusedTuning) // ignore s0 in this case
-    runTuning(gemvFusedAMDTuning)
-    runTuning(gemvKeplerBestTuning)
-  }
+  test("tune gemv 1024"){
+    // change name to run other version
+    val version = gemvKeplerBestTuning
+    val name = "gemvKeplerBestTuning"
 
-
-  def runTuning(e: Expr) = {
-//    val version = autotuning.parseName(configFile)
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 20,
-      name = "gemv",
-      output = s"autotuning/gemv",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None,
-      hmConstraints = true,
-      runtimeStatistic = Minimum,
-      saveToFile = true
+    val configs = Seq(
+      "autotuning/config/gemv/1024/rs_cot_1024.json",
+      "autotuning/config/gemv/1024/rs_emb_1024.json",
+      "autotuning/config/gemv/1024/ls_cot_1024.json",
+      "autotuning/config/gemv/1024/atf_emb_1024.json",
+      "autotuning/config/gemv/1024/borf_cot_1024.json",
+      "autotuning/config/gemv/1024/bogp_cot_1024.json"
     )
 
-    autotune.search(tuner)(e)
+    runExperiment(
+      name = name,
+      configFiles = configs,
+      iterations = 1,
+      s"autotuning/${name}",
+      version,
+      HostCode(init(1024, 1024), compute, finish),
+      Seq(1024, 1024, 1024)
+    )
   }
 }
