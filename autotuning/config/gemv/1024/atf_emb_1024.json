@@ -13,7 +13,7 @@
   "log_file" : "atf_emb_1024.log",
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 1000,
+  "optimization_iterations": 100,
   "input_parameters" : {
     "tuned_ls1" : {
       "parameter_type" : "ordinal",
