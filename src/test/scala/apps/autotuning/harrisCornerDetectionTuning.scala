@@ -59,7 +59,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   def lowerOCL(e: ToBeTyped[Expr]): Expr =
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
-  ignore("execute harris"){
+  test("execute harris"){
     // expression
     val tileX = 8
     val tileY = 8
@@ -89,49 +89,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       execution = Median
     )
     println("result: " + result)
-  }
-
-  ignore("harris tuning ") {
-    // expression
-//    val tileX = 8
-//    val tileY = 8
-
-    val harrisTuning =
-      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
-        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
-          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
-            lowerOCL(
-              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
-                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
-    )))
-
-    val harrisOCLTuning =
-      tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
-        tuningParam("gs1", RangeMul(1, 256, 2), (gs1: Nat) =>
-          tuningParam("ls0", RangeMul(1, 256, 2), (ls0: Nat) =>
-            tuningParam("ls1", RangeMul(1, 256, 2), (ls1: Nat) =>
-                wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
-            ))))
-
-    // start auto tuning
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(128, 256), compute, finish),
-      inputSizes = Seq(128, 256),
-      samples = 100,
-      name = "harris",
-      output = "autotuning/harris",
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some("/home/jo/development/rise-lang/shine/autotuning/harris/harris2.json"),
-      hmConstraints = true
-    )
-
-    val result = autotune.search(tuner)(harrisOCLTuning)
-    val best = autotune.getBest(result.samples)
-    println("result: \n" + result)
-    println("best: \n" + best)
   }
 
   ignore("run mm autotuning"){
