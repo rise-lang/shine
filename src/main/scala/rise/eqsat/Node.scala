@@ -7,6 +7,7 @@ import rise.core.semantics
   * @tparam E abstracts over children nodes, and differs for [[Expr]], [[ENode]], [[Pattern]], etc
   * @tparam N abstracts over contained nats
   * @tparam DT abstracts over contained data types
+  * @tparam A abstracts over contained address spaces
   */
 sealed trait Node[+E, +N, +DT, +A] {
   def map[OE, ON, ODT, OA](fe: E => OE,

@@ -3,7 +3,6 @@ package rise.eqsat
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.eqsat.ematching.MNode
 
-// TODO: think about what the predicate interface should be
 trait Predicate {
   def start(egraph: EGraph,
             roots: Seq[EClassId]): Unit = {}

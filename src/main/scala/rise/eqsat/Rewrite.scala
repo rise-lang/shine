@@ -3,7 +3,7 @@ package rise.eqsat
 import rise.core.{types => rct}
 
 object Rewrite {
-  def init[ED, ND, DT](name: String, rule: (Searcher, Applier)): Rewrite = {
+  def init(name: String, rule: (Searcher, Applier)): Rewrite = {
     val (searcher, applier) = rule
     assert {
       val boundVars = searcher.patternVars()
