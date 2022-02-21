@@ -167,6 +167,10 @@ object InsertMemoryBarriers {
         collectWrites(a, allocs, writes); collectWrites(b, allocs, writes)
       case TakeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case TransposeAcc(_, _, _, a) => collectWrites(a, allocs, writes)
+      // TODO: collect reads in indices?
+      case ScatterAcc(_, _, _, indices, a) =>
+        /* collectReads(indices, allocs, reads); */ collectWrites(a, allocs, writes)
+      case UnzipAcc(_, _, _, a) => collectWrites(a, allocs, writes)
       case _ => throw new Exception(s"did not expect $a")
     }
   }
