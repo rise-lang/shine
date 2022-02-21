@@ -39,6 +39,12 @@ case class DebugExecutor(lowering: Strategy[Rise],
   var number = 0
   val random = new scala.util.Random
 
+  override def checkSolution(solution: Solution[Rise]): Boolean = {
+
+
+    true
+  }
+
   def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
     number = number + 1
 

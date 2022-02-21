@@ -46,6 +46,11 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   var number = 0
   val random = new scala.util.Random
 
+  override def checkSolution(solution: Solution[Rise]): Boolean = {
+
+    true
+  }
+
   def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
     number = number + 1
 
