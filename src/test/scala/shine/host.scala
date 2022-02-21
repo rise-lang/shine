@@ -128,6 +128,24 @@ int main(int argc, char** argv) {
     checkOutput(m)
   }
 
+  test("two kernel calls, intermediate processing") {
+    val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
+      oclRun(LocalSize(2), GlobalSize(n/2))(mapGlobal(add(li32(3)))(in)) |> store(x1 =>
+      mapSeq(fun(x => x - li32(1)))(x1) |> store(x2 =>
+      oclRun(LocalSize(4), GlobalSize(n/2))(mapGlobal(add(li32(1)))(x2))))
+    ))
+    val m = gen.opencl.hosted.fromExpr(e)
+    val hostCode = gen.c.function.asString(m.hostCode)
+    // println(hostCode)
+    findCount(1, """createBuffer\(.*, HOST_READ \| DEVICE_WRITE\)""".r, hostCode)
+    findCount(1, """createBuffer\(.*, HOST_WRITE \| DEVICE_READ\)""".r, hostCode)
+    findDeviceBufferSyncWrite(2, hostCode)
+    findDeviceBufferSyncRead(2, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_WRITE\)""".r, hostCode)
+    findCount(1, """hostBufferSync\(.*, HOST_READ\)""".r, hostCode)
+    checkOutput(m)
+  }
+
   test("local memory") {
     val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
       oclRun(LocalSize(16), GlobalSize(n))(

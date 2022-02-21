@@ -30,7 +30,8 @@ package object autotune {
                    speedupFactor: Double = 100, // defines at which threshold the iterations are dropped, if the execution is slow compared to current best
                    configFile: Option[String] = None, // specifies the location of a config-file, otherwise, a config file is generated
                    hmConstraints: Boolean = false, // enable constraints feature in HM (experimental)
-                   saveToFile: Boolean = false
+                   saveToFile: Boolean = false,
+                   failureMode: FailureMode = IntMax
                   )
 
   // necessary host-code parts to execute the program
@@ -96,6 +97,7 @@ package object autotune {
     if(tuner.saveToFile){
       ("mkdir -p " + tuner.output + "/" + tuner.name !!)
       ("mkdir -p " + tuner.output + "/" + tuner.name + "_hm" !!)
+      ("mkdir -p " + tuner.output + "/" + "log" !!)
     }
 
     // generate json if necessary
@@ -105,7 +107,10 @@ package object autotune {
 
         val filePath = tuner.saveToFile match{
           case true => tuner.output + "/" + tuner.name + ".json"
-          case false => "/tmp/" + tuner.name + ".json"
+          case false => {
+            ("mkdir -p tmp" !!)
+            "/tmp/" + tuner.name + ".json"
+          }
         }
 
         val file = new PrintWriter(
@@ -124,7 +129,7 @@ package object autotune {
       val totalStart = System.currentTimeMillis()
 
       val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
-        NatIdentifier(h) -> (p.toInt: Nat)
+        NatIdentifier(h) -> (p.toFloat.toInt: Nat)
       }.toMap
       if (checkConstraints(constraints, parametersValuesMap)) {
         // execute
@@ -150,7 +155,6 @@ package object autotune {
         val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
         Sample(
           parameters = parametersValuesMap,
-//          runtime = None,
           runtime = Left(AutoTuningError(CONSTRAINTS_ERROR, None)),
           timestamp = System.currentTimeMillis() - start,
           tuningTimes = TuningTimes(totalTime, None, None, None)
@@ -174,12 +178,11 @@ package object autotune {
 
     println("configFile: " + configFile)
 
-    // check if hypermapper is installed and config file exists
-    assert(
-      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
-        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
-        && os.isFile(configFile)
-    )
+    // check if hypermapper is installed
+    ("which hypermapper" !!)
+
+    // check if config file exists
+    assert(os.isFile(configFile))
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
@@ -215,7 +218,6 @@ package object autotune {
             // compute sample (including function value aka runtime)
             print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
-//            println(sample.runtime)
             println(sample.runtime)
             println(sample)
             println()
@@ -224,12 +226,22 @@ package object autotune {
             samples += sample
             // append response
             sample.runtime match {
-              case Left(value) => response += s"${parametersValues.mkString(",")},-1,False\n"
+              case Left(value) =>
+                // make sure to response int values
+
+                // check output mode
+                val runtime: String = tuner.failureMode match {
+                  case `-1` => "-1"
+                  case IntMax => "2147483647"
+                }
+
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${runtime},False\n"
               case Right(value) =>
-                response += s"${parametersValues.mkString(",")},${value.value},True\n"
+                // make sure to response int values
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
-          print(s"Response: $response")
+
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
@@ -239,47 +251,17 @@ package object autotune {
 
     println("tuning finished")
 
+    val tuningResult = TuningResult(samples.toSeq, tuner)
+    saveTuningResult(tuningResult)
 
-    if(tuner.saveToFile) {
+    tuningResult
+  }
 
-      // save samples to file
-      val destination = saveSamples(
-        tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv",
-        TuningResult(samples.toSeq, tuner)
-      )
-
-      // copy hm output file to output folder
-      ("mv " + tuner.name + "_output_samples.csv"  + " " +
-        destination.substring(0, destination.length - 4) + "_hm.csv" !!)
-
-      // mv hm output file to hm output folder
-      ("mv " + destination.substring(0, destination.length - 4) + "_hm.csv" + " " +
-        tuner.output + "/" + tuner.name + "_hm" !!)
-
-      // save meta information to file and store it in the output folder
-      // call method here
-
-      // todo call saveTuningResult(path, tuningResult, tuner) here
-
-      // remove this comment after development
-      // config file is generated in the output folder if we want to save it, no action needed
-      // config file is generated in /tmp/ and removed after tuning
-
-      // copy output file
-      if(tuner.configFile.isDefined){
-        ("cp " + tuner.configFile.get + " " + tuner.output !!)
-      }
-
-    } else {
-      // remove tmp config file
-      if(!tuner.configFile.isDefined){
-          ("rm " + "/tmp/" + tuner.name + ".json" !!)
-      }
+  def getUniqueFilepath(path: String, ending: String): String = {
+    new File(path).exists() match {
+      case true => path.substring(0, path.length - ending.length) + "_" + System.currentTimeMillis() + ending
+      case false => path
     }
-
-    println("samples: " + samples)
-
-    TuningResult(samples.toSeq, tuner)
   }
 
   // wrap ocl run to a function
@@ -328,13 +310,80 @@ package object autotune {
     tuningResult.samples.size
   }
 
-  def saveTuningResult(path: String, tuningResult: TuningResult, tuner:Tuner): (String, String) = {
+  def saveTuningResult(tuningResult: TuningResult) = {
+    val tuner = tuningResult.tuner
 
-    val samples = saveSamples(path, tuningResult)
-    val meta = saveMeta(path, tuningResult, tuner)
+    // save results to file
+    if(tuner.saveToFile) {
 
-    // return unique filenames
-    (samples, meta)
+      // get unique filepath
+      val path = tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv"
+      val file = new File(path)
+      val timeAppendix = if (file.exists()) {
+        "_" + System.currentTimeMillis().toString
+      } else {
+        ""
+      }
+
+      // save samples to file
+      saveSamples(
+        tuner.output + "/" + tuner.name + "/" + tuner.name + timeAppendix + ".csv",
+        tuningResult
+      )
+
+      // save hm output file
+      ("mv " + tuner.name + "_output_samples.csv"  + " " +
+        tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
+
+      // save logfile and configfile
+      if(tuner.configFile.isDefined) {
+
+        // parse logfile name from json or use default name
+        val logfile = try {
+          parseFromJson(tuner.configFile.get, "log_file")
+        } catch {
+          case e: NoSuchElementException => "hypermapper_logfile.log"
+        }
+
+        // move logfile to output folder
+        ("mv " + logfile + " " +
+          tuner.output + "/log/" + logfile.substring(0, logfile.length - 4) + timeAppendix + ".log" !!)
+
+        // copy config file to output folder
+        ("cp " + tuner.configFile.get + " " + tuner.output !!)
+      } else {
+
+        // move logfile to output folder
+        ("mv " + tuner.name + ".log" + " " +
+          tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
+
+      }
+
+      // create plots
+      plotTuning(tuner)
+
+    } else {
+      // remove logfile and generated config file
+      if(tuner.configFile.isDefined){
+
+        val logfile = try {
+          parseFromJson(tuner.configFile.get, "log_file")
+        } catch {
+          case e: NoSuchElementException => "hypermapper_logfile.log"
+        }
+
+        ("rm " + logfile !!)
+
+      }else{
+
+        ("rm " + tuner.name + ".log" !!)
+        ("rm " + "/tmp/" + tuner.name + ".json" !!)
+
+      }
+    }
+
+    // todo save meta
+
   }
 
   // write tuning results into csv file
@@ -342,7 +391,8 @@ package object autotune {
     // create unique filepath
     val file = new File(path)
     val uniqueFilepath = if (file.exists()) {
-      path.substring(0, path.length - 4) + "_" + System.currentTimeMillis() + ".csv"
+      val timeAppendix = System.currentTimeMillis().toString
+      path.substring(0, path.length - 4) + "_" + timeAppendix + ".csv"
     } else {
       path
     }
@@ -411,7 +461,24 @@ package object autotune {
 
     writeToPath(uniqueFilepath, header + content)
 
+
     uniqueFilepath
+  }
+
+  def plotTuning(tuner: Tuner) = {
+
+    // get config file
+    val configFile: String = tuner.configFile match {
+      case Some(value) => value
+      case None => tuner.output + "/" + tuner.name + ".json"
+    }
+
+    // plot results using hypermapper
+    ("hm-plot-optimization-results " +
+      "-j " + configFile + " " +
+      "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
+      "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
+      "-log --y_label \"Log Runtime(ms)\"" !!)
   }
 
   // todo finish implementation
@@ -419,14 +486,11 @@ package object autotune {
 
     // todo save tuner information to file
 
-
-
     // todo collect statistics from tuningResult
     val duration = (tuningResult.samples.apply(tuningResult.samples.size).timestamp - tuningResult.samples.apply(0).timestamp)
     val samples = tuningResult.samples.size
 
     // save statistics to csv file (don't overwrite -> append)
-
 
 
     // return unique filename

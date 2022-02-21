@@ -102,7 +102,7 @@ class kmeansTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("search kmeans with manual config file") {
+  ignore("search kmeans with manual config file") {
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
@@ -136,7 +136,7 @@ class kmeansTuning extends test_util.Tests {
   }
 
   def runTuning(configFile: String) = {
-    val version = autotuning.parseName(configFile)
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
@@ -154,7 +154,7 @@ class kmeansTuning extends test_util.Tests {
     autotune.search(tuner)(kmeans)
   }
 
-  test("run kmeans autotuning"){
+  ignore("run kmeans autotuning"){
 
     val configs = Seq(
         "autotuning/config/kmeans/kmeans_rs_cot.json",

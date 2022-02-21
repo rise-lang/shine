@@ -1,0 +1,32 @@
+{
+  "application_name" : "nn_rs_emb",
+  "optimization_objectives" : ["runtime"],
+  "hypermapper_mode" : {
+    "mode" : "client-server"
+  },
+  "feasible_output" : {
+    "enable_feasible_predictor" : true,
+    "name" : "Valid",
+    "true_value" : "True",
+    "false_value" : "False"
+  },
+  "design_of_experiment" : {
+    "doe_type" : "embedding random sampling",
+    "number_of_samples" : 10
+  },
+  "optimization_iterations" : 0,
+  "input_parameters" : {
+    "tuned_s0" : {
+      "parameter_type" : "integer",
+      "values" : [1, 1000],
+      "constraints" : ["1000 % tuned_s0 == 0"],
+      "dependencies" : []
+    },
+    "tuned_s1" : {
+      "parameter_type" : "integer",
+      "values" : [1, 1000],
+      "constraints" : ["tuned_s0 % tuned_s1 == 0"],
+      "dependencies" : ["tuned_s0"]
+    }
+  }
+}

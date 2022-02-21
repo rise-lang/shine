@@ -72,7 +72,7 @@ class nnTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("search nn with generated config file"){
+  ignore("search nn with generated config file"){
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
@@ -107,7 +107,7 @@ class nnTuning extends test_util.Tests {
   }
 
   def runTuning(configFile: String) = {
-    val version = autotuning.parseName(configFile)
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
@@ -125,7 +125,7 @@ class nnTuning extends test_util.Tests {
     autotune.search(tuner)(nn)
   }
 
-  test("run kmeans autotuning"){
+  ignore("run nn autotuning"){
 
     val configs = Seq(
       "autotuning/config/nn/nn_rs_cot.json",

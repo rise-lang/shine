@@ -1,5 +1,6 @@
 package apps.autotuning
 
+import apps.autotuning
 import apps.mriQ.{computePhiMagOcl, computePhiMagOcl2, computeQOcl}
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
@@ -192,7 +193,7 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("tune computePhiMag"){
+  ignore("tune computePhiMag"){
 
     val tuner = Tuner(
       hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
@@ -219,7 +220,7 @@ class mriqTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("tune computeQ"){
+  ignore("tune computeQ"){
 
     val tuner = Tuner(
     hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
@@ -244,6 +245,72 @@ class mriqTuning extends test_util.Tests {
     val bestSample = autotune.getBest(tuningResult.samples)
     println("bestSample: \n" + bestSample)
     println("runtime: \n" + bestSample.get.runtime)
+  }
+
+  def runExperiments(configFiles: Seq[String], iterations: Int, tuning: String => autotune.TuningResult) = {
+
+    for(i <- 1 to iterations) {
+      configFiles.foreach(tuning)
+    }
+
+  }
+
+  def runTuningPhiMag(configFile: String) = {
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
+
+    val tuner = Tuner(
+      hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
+      inputSizes = Seq(256),
+      samples = 20, // defined by config file
+      name = version,
+      output = s"autotuning/mriq/phiMag/${version}",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(configFile),
+      hmConstraints = true,
+      saveToFile = true
+    )
+
+    autotune.search(tuner)(computePhiMagTuning)
+  }
+
+  def runTuningQ(configFile: String) = {
+    val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
+
+    val tuner = Tuner(
+      hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
+      inputSizes = Seq(256, 512),
+      samples = 20, // defined by config file
+      name = version,
+      output = s"autotuning/mriq/q/${version}",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some(configFile),
+      hmConstraints = true,
+      saveToFile = true
+    )
+
+    autotune.search(tuner)(computeQTuning)
+  }
+
+  ignore("run mriq autotuning"){
+
+    // PhiMag
+    val configsPhiMag = Seq(
+      "autotuning/config/mriq/phiMag/rs_cot_256.json",
+    )
+
+    runExperiments(configFiles = configsPhiMag, iterations = 3, runTuningPhiMag)
+
+
+    // Q
+    val configsQ = Seq(
+      "autotuning/config/mriq/q/rs_cot_256.json",
+    )
+
+    runExperiments(configFiles = configsQ, iterations = 3, runTuningQ)
   }
 
 }

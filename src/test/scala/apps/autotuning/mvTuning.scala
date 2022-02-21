@@ -84,17 +84,13 @@ class mvTuning extends test_util.Tests {
        |  inY[i] = (float)(rand());
        |}
        |
-       |int alpha = (float)(rand());
-       |int beta = (float)(rand());
-       |
        |""".stripMargin
   }
 
   val compute =
     s"""
-       |// fun_run(ctx, &fun, outputZ, M, N, inputM, inputX, inputY, alpha, beta);
        |fun_run(ctx, &fun, outputZ, M, N, inputM, inputX);
-       |       |""".stripMargin
+       |""".stripMargin
 
   val finish =
     s"""
@@ -107,20 +103,6 @@ class mvTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  test("print different gemv tuning versions"){
-
-    println("mvTuning: " + mvTuning)
-    println("mvFusedTuning: " + mvFusedTuning)
-    println("mvFusedSplitTuning: " + mvFusedSplitTuning)
-
-    println("mvFusedAMDTuning: " + mvFusedAMDTuning)
-    println("mvKeplerBestTuning: " + mvKeplerBestTuning)
-
-    println("mvBlastNTuning: " + mvBlastNTuning)
-    println("mvBlastTTuning: " + mvBlastTTuning)
-
-  }
-
   def executeMv(e: Expr, inputSize: Int, s0: Nat) = {
 
     val params: Nat => Map[Nat, Nat] = s0 => Map(
@@ -131,14 +113,6 @@ class mvTuning extends test_util.Tests {
       TuningParameter("s0") -> (s0),
     )
 
-//    val p = rise.autotune.constraints.collectParameters(e)
-//    val constraints = rise.autotune.constraints.collectConstraints(e, p)
-//    val inputs = rise.autotune.getInputs(e)
-
-//    println("p: " + p)
-//    println("inputs: " + inputs) // (m, n) size should be two
-//    println("constraint: ")
-//    constraints.foreach(println)
 
     val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
@@ -171,50 +145,28 @@ class mvTuning extends test_util.Tests {
 
   }
 
-  test("tune mv version") {
-    val mvBest = runTuning(mvTuning, "mvTuning")
-    val mvFusedBest = runTuning(mvFusedTuning, "mvFusedTuning")
+  test("tune gemv 1024"){
+    // change name to run other version
+    val version = mvKeplerBestTuning
+    val name = "mvKeplerBestTuning"
 
-    val mvBlastNBest = runTuning(mvBlastNTuning, "mvBlastN")
-    val mvBlastTBest = runTuning(mvBlastTTuning, "mvBlastT")
-
-    val mvFusedAMDBest = runTuning(mvFusedAMDTuning, "mvFusedAMD")
-    val mvKeplerBest = runTuning(mvKeplerBestTuning, "mvKeplerBest")
-
-    println("mvBest: " + mvBest)
-    println("mvFusedBest: " + mvFusedBest)
-
-    println("mvBlastNBest: " + mvBlastNBest)
-    println("mvBlastTBest: " + mvBlastTBest)
-
-    println("mvFusedAMDBest: " + mvFusedAMDBest)
-    println("mvKeplerBest: " + mvKeplerBest)
-
-  }
-
-  def runTuning(e: Expr, version: String) = {
-    //      val version = autotuning.parseName(configFile)
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024),
-      samples = 1000,
-      name = "mv_" + version,
-      output = s"autotuning/mv",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None,
-      hmConstraints = true,
-      runtimeStatistic = Median,
-      saveToFile = true
+    val configs = Seq(
+      "autotuning/config/mv/1024/rs_cot_1024.json",
+      "autotuning/config/mv/1024/rs_emb_1024.json",
+      "autotuning/config/mv/1024/ls_cot_1024.json",
+      "autotuning/config/mv/1024/atf_emb_1024.json",
+      "autotuning/config/mv/1024/borf_cot_1024.json",
+      "autotuning/config/mv/1024/bogp_cot_1024.json"
     )
 
-    val result = autotune.search(tuner)(e)
-
-    val best = autotune.getBest(result.samples)
-//    println("result: " + best.get.runtime)
-
-    best.get.runtime
+    runExperiment(
+      name = name,
+      configFiles = configs,
+      iterations = 2,
+      s"autotuning/${name}",
+      version,
+      HostCode(init(1024, 1024), compute, finish),
+      Seq(1024, 1024, 1024)
+    )
   }
 }

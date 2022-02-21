@@ -128,7 +128,7 @@ class nBodyTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("search nbody"){
+  ignore("search nbody"){
 
     println("initalisze")
 

@@ -143,6 +143,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         | "hypermapper_mode" : {
         |   "mode" : "client-server"
         | },
+        | "log_file" : "RISE.log",
         | "feasible_output" : {
         |   "enable_feasible_predictor" : true,
         |   "name" : "Valid",
@@ -168,6 +169,10 @@ class TestConfigFileGeneration extends test_util.Tests {
         |""".stripMargin
     // scalastyle:on
 
+    println("json: \n" + json)
+
+    println("gold : \n" + gold)
+
     assert(util.compareConfigFiles(json, gold))
   }
 
@@ -181,6 +186,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         | "hypermapper_mode" : {
         |   "mode" : "client-server"
         | },
+        | "log_file" : "RISE.log",
         | "feasible_output" : {
         |   "enable_feasible_predictor" : true,
         |   "name" : "Valid",
@@ -276,6 +282,11 @@ class TestConfigFileGeneration extends test_util.Tests {
     )
     val json = autotune.configFileGeneration.generateJSON(parameters, constraintsSubstituted, tuner)
 
+    println("json: \n" + json)
+
+    println("gold : \n" + gold)
+
     assert(util.compareConfigFiles(json, gold))
+
   }
 }

@@ -1,9 +1,10 @@
 {
-  "application_name" : "harris_rs_emb",
+  "application_name" : "harris_rs_exh",
   "optimization_objectives" : ["runtime"],
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
+  "log_file" : "harris_rs_exh.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
@@ -33,13 +34,13 @@
     "tuned_gs0" : {
       "parameter_type" : "ordinal",
       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256],
-      "constraints" : ["tuned_gs0 >= 0 and tuned_gs0 % tuned_ls0 == 0"],
+      "constraints" : ["tuned_gs0 >= 0", "tuned_gs0 % tuned_ls0 == 0"],
       "dependencies" : ["tuned_ls0"]
     },
     "tuned_gs1" : {
       "parameter_type" : "ordinal",
       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256],
-      "constraints" : ["tuned_gs1 >= 0 and tuned_gs1 % tuned_ls1 == 0"],
+      "constraints" : ["tuned_gs1 >= 0", "tuned_gs1 % tuned_ls1 == 0"],
       "dependencies" : ["tuned_ls1"]
     },
     "tuned_ls0" : {
