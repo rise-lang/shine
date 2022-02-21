@@ -1,6 +1,6 @@
 package rise
 
-import arithexpr.arithmetic.RangeUnknown
+import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
 import rise.autotune.configFileGeneration._
 import rise.autotune.constraints._
 import rise.autotune.execution._
@@ -19,22 +19,61 @@ import scala.sys.process._
 
 package object autotune {
 
-  case class Timeouts(codgenerationTimeout: Long, compilationTimeout: Long, executionTimeout: Long)
-  case class Tuner(main: String,
-                   iterations: Int = 100,
-                   name: String = "RISE",
-                   output: String = "autotuning",
-                   timeouts: Timeouts = Timeouts(5000, 5000, 5000),
-                   configFile: Option[String] = None,
-                   hierarchicalHM: Boolean = false)
+  case class Tuner(hostCode: HostCode, // defines necessary host-code to execute program
+                   inputSizes: Seq[Nat] = Seq(), // todo think about multi-dimensional inputs
+                   samples: Int = 100, // number of parameter configurations (samples) to evaluate
+                   name: String = "RISE", // todo this has to match name in config file!
+                   output: String = "autotuning", // folder to store output files in
+                   timeouts: Timeouts = Timeouts(5000, 5000, 5000), // timeouts for codegen, compilation and execution
+                   executionIterations: Int = 10, // defines, how many times the program is executed to determine the runtime a sample
+                   runtimeStatistic: RuntimeStatistic = Median, // specifies, how to determine the runtime from multiple iterations (Median/Minimum)
+                   speedupFactor: Double = 100, // defines at which threshold the iterations are dropped, if the execution is slow compared to current best
+                   configFile: Option[String] = None, // specifies the location of a config-file, otherwise, a config file is generated
+                   hmConstraints: Boolean = false, // enable constraints feature in HM (experimental)
+                   saveToFile: Boolean = false,
+                   failureMode: FailureMode = IntMax
+                  )
 
-  case class Sample(parameters: Map[NatIdentifier, Nat],
-                    runtime: Option[TimeSpan[Time.ms]],
-                    timestamp: Long,
-                    autoTuningError: AutoTuningError)
+  // necessary host-code parts to execute the program
+  case class HostCode(init: String, // define and initialize input/output (buffers)
+                      compute: String, // call the function with the input and output
+                      finish: String) // check output, destroy input/output buffers
 
-  // todo add meta information (configuration, times, samples, ...)
-  case class TuningResult(samples: Seq[Sample])
+  // timeouts for sub-parts of the evaluation of a parameter configuration (sample)
+  case class Timeouts(codegenerationTimeout: Long, // timeout for code-generation part
+                      compilationTimeout: Long, // timeout for compilation part
+                      executionTimeout: Long // timeout for execution part
+                     )
+
+  // result of a complete tuning run and used tuner
+  case class TuningResult(samples: Seq[Sample],
+                          tuner: Tuner
+                         )
+
+  // tuning sample representing result of one specific parameter configuration
+  case class Sample(parameters: Map[NatIdentifier, Nat], // specific parameter configuration
+                    runtime: Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
+                    timestamp: Long, // timestamp of sample
+                    tuningTimes: TuningTimes // durations of sub-parts
+                   )
+
+  // durations of sub-parts of a tuning sample
+  case class TuningTimes(total: Option[TimeSpan[Time.ms]], // total time
+                         codegen: Option[TimeSpan[Time.ms]], // duration of code-generation part
+                         compilation: Option[TimeSpan[Time.ms]], // duration of compilation part
+                         execution: Option[TimeSpan[Time.ms]] // duration of execution part
+                        )
+
+  case class TuningStatistics(
+                             name: String,
+                             totalSamples: Int,
+                             executionIterations: Int,
+                             totalExecutions: Int,
+                             totalDuration: TimeSpan[Time.s],
+                             averageDuration: TimeSpan[Time.s]
+
+                             )
+
   type Parameters = Set[NatIdentifier]
 
   // should we allow tuning params to be substituted during type inference?
@@ -48,16 +87,35 @@ package object autotune {
 
     val start = System.currentTimeMillis()
     val parameters = collectParameters(e)
+
+    // inject input sizes into constraints
+    val inputs = getInputs(e)
+    val inputMap = (inputs zip tuner.inputSizes).toMap
     val constraints = collectConstraints(e, parameters)
-    ("mkdir -p " + tuner.output !!)
+      .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
+
+    if(tuner.saveToFile){
+      ("mkdir -p " + tuner.output + "/" + tuner.name !!)
+      ("mkdir -p " + tuner.output + "/" + tuner.name + "_hm" !!)
+      ("mkdir -p " + tuner.output + "/" + "log" !!)
+    }
 
     // generate json if necessary
     tuner.configFile match {
       case None =>
         println("generate configuration file")
+
+        val filePath = tuner.saveToFile match{
+          case true => tuner.output + "/" + tuner.name + ".json"
+          case false => {
+            ("mkdir -p tmp" !!)
+            "/tmp/" + tuner.name + ".json"
+          }
+        }
+
         val file = new PrintWriter(
           new FileOutputStream(
-            new File(tuner.output + "/" + tuner.name + ".json"), false))
+            new File(filePath), false))
         file.write(generateJSON(parameters, constraints, tuner))
         file.close()
       case _ => println("use given configuration file")
@@ -68,47 +126,67 @@ package object autotune {
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
+      val totalStart = System.currentTimeMillis()
+
       val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
-        NatIdentifier(h) -> (p.toInt: Nat)
+        NatIdentifier(h) -> (p.toFloat.toInt: Nat)
       }.toMap
       if (checkConstraints(constraints, parametersValuesMap)) {
-        println("constraints true")
         // execute
         val result = execute(
-          rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e), tuner.main, tuner.timeouts)
-        result._1 match {
-          case Some(_) =>
-            Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-          case None =>
-            Sample(parametersValuesMap, result._1, System.currentTimeMillis() - start, result._2)
-        }
-      } else {
-        println("constraints false")
+          rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e),
+          tuner.hostCode,
+          tuner.timeouts,
+          tuner.executionIterations,
+          tuner.speedupFactor,
+          tuner.runtimeStatistic
+        )
+        val totalTime = Some(TimeSpan.inMilliseconds(
+          (System.currentTimeMillis() - totalStart).toDouble)
+        )
         Sample(
-          parametersValuesMap,
-          None,
-          System.currentTimeMillis() - start,
-          AutoTuningError(CONSTRAINTS_ERROR, None)
+          parameters = parametersValuesMap,
+          runtime = result.runtime,
+          timestamp = System.currentTimeMillis() - start,
+          tuningTimes = TuningTimes(
+            totalTime, result.codegenTime, result.compilationTime, result.executionTime)
+        )
+      } else {
+        val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
+        Sample(
+          parameters = parametersValuesMap,
+          runtime = Left(AutoTuningError(CONSTRAINTS_ERROR, None)),
+          timestamp = System.currentTimeMillis() - start,
+          tuningTimes = TuningTimes(totalTime, None, None, None)
         )
       }
     }
 
     val configFile = tuner.configFile match {
-      case Some(filename) => os.Path.apply(filename)
-      case None => os.pwd / tuner.output / (tuner.name + ".json")
+      case Some(filename) =>
+        filename.substring(0, 1) match {
+          case "/" => os.Path.apply(filename)
+          case _ => os.Path.apply(os.pwd.toString() + "/" + filename)
+        }
+      case None => os.Path.apply(
+        tuner.saveToFile match {
+          case true => os.pwd.toString() + "/" + tuner.output + "/" + tuner.name + ".json"
+          case false => "/tmp/" + tuner.name + ".json"
+        }
+      )
     }
 
     println("configFile: " + configFile)
 
-    // check if hypermapper is installed and config file exists
-    assert(
-      (os.proc("which", "hypermapper").call().exitCode == 0)
-        && os.isFile(configFile)
-    )
+    // check if hypermapper is installed
+    ("which hypermapper" !!)
+
+    // check if config file exists
+    assert(os.isFile(configFile))
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
-    var i = 0
+    var i = 1
     // main tuning loop
     var samples = new ListBuffer[Sample]()
     var done = false
@@ -138,25 +216,52 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
+            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
+            println(sample.runtime)
+            println(sample)
+            println()
+            i += 1
             // append sample to Samples
             samples += sample
             // append response
             sample.runtime match {
-              case None => response += s"${parametersValues.mkString(",")},-1,False\n"
-              case Some(value) =>
-                response += s"${parametersValues.mkString(",")},${value.value},True\n"
+              case Left(value) =>
+                // make sure to response int values
+
+                // check output mode
+                val runtime: String = tuner.failureMode match {
+                  case `-1` => "-1"
+                  case IntMax => "2147483647"
+                }
+
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${runtime},False\n"
+              case Right(value) =>
+                // make sure to response int values
+                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
-          print(s"Response: $response")
+
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
-        case error => println("error: " + error)
+        case message => println("message: " + message)
       }
     }
 
-    TuningResult(samples.toSeq)
+    println("tuning finished")
+
+    val tuningResult = TuningResult(samples.toSeq, tuner)
+    saveTuningResult(tuningResult)
+
+    tuningResult
+  }
+
+  def getUniqueFilepath(path: String, ending: String): String = {
+    new File(path).exists() match {
+      case true => path.substring(0, path.length - ending.length) + "_" + System.currentTimeMillis() + ending
+      case false => path
+    }
   }
 
   // wrap ocl run to a function
@@ -169,15 +274,16 @@ package object autotune {
       // depFun(x => e)
       case dl@DepLambda(kind, x, e) =>
         DepLambda(kind, x, wrapOclRun(localSize, globalSize)(e))(dl.t)
-      case e => oclRun(localSize, globalSize)(e)
+      case e =>
+        oclRun(localSize, globalSize)(e)
     }
   }
 
   def getBest(samples: Seq[Sample]): Option[Sample] = {
     val best = samples.reduceLeft(min)
     best.runtime match {
-      case Some(_) => Some(best)
-      case None => None
+      case Right(_) => Some(best)
+      case Left(_) => None
     }
   }
 
@@ -193,18 +299,117 @@ package object autotune {
     rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
   }
 
+  def getDuration(tuningResult: TuningResult): TimeSpan[Time.ms]= {
+    val duration = tuningResult.samples.apply(tuningResult.samples.size).timestamp -
+      tuningResult.samples.apply(0).timestamp
+
+    TimeSpan.inMilliseconds(duration.toDouble)
+  }
+
+  def getSamples(tuningResult: TuningResult): Int = {
+    tuningResult.samples.size
+  }
+
+  def saveTuningResult(tuningResult: TuningResult) = {
+    val tuner = tuningResult.tuner
+
+    // save results to file
+    if(tuner.saveToFile) {
+
+      // get unique filepath
+      val path = tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv"
+      val file = new File(path)
+      val timeAppendix = if (file.exists()) {
+        "_" + System.currentTimeMillis().toString
+      } else {
+        ""
+      }
+
+      // save samples to file
+      saveSamples(
+        tuner.output + "/" + tuner.name + "/" + tuner.name + timeAppendix + ".csv",
+        tuningResult
+      )
+
+      // save hm output file
+      ("mv " + tuner.name + "_output_samples.csv"  + " " +
+        tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
+
+      // save logfile and configfile
+      if(tuner.configFile.isDefined) {
+
+        // parse logfile name from json or use default name
+        val logfile = try {
+          parseFromJson(tuner.configFile.get, "log_file")
+        } catch {
+          case e: NoSuchElementException => "hypermapper_logfile.log"
+        }
+
+        // move logfile to output folder
+        ("mv " + logfile + " " +
+          tuner.output + "/log/" + logfile.substring(0, logfile.length - 4) + timeAppendix + ".log" !!)
+
+        // copy config file to output folder
+        ("cp " + tuner.configFile.get + " " + tuner.output !!)
+      } else {
+
+        // move logfile to output folder
+        ("mv " + tuner.name + ".log" + " " +
+          tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
+
+      }
+
+      // create plots
+      plotTuning(tuner)
+
+    } else {
+      // remove logfile and generated config file
+      if(tuner.configFile.isDefined){
+
+        val logfile = try {
+          parseFromJson(tuner.configFile.get, "log_file")
+        } catch {
+          case e: NoSuchElementException => "hypermapper_logfile.log"
+        }
+
+        ("rm " + logfile !!)
+
+      }else{
+
+        ("rm " + tuner.name + ".log" !!)
+        ("rm " + "/tmp/" + tuner.name + ".json" !!)
+
+      }
+    }
+
+    // todo save meta
+
+  }
+
   // write tuning results into csv file
-  def saveSamples(path: String, tuningResult: TuningResult): Unit = {
+  def saveSamples(path: String, tuningResult: TuningResult): String = {
+    // create unique filepath
+    val file = new File(path)
+    val uniqueFilepath = if (file.exists()) {
+      val timeAppendix = System.currentTimeMillis().toString
+      path.substring(0, path.length - 4) + "_" + timeAppendix + ".csv"
+    } else {
+      path
+    }
+
     // write header
     var header = ""
     tuningResult.samples.head.parameters.foreach {
       case (id: NatIdentifier, _:Nat) =>  header += id.name + ","
       case _ => throw Exception("This should not happen")
     }
+
     header += "runtime" + ","
-    header += "error level" + ","
-    header += "error message" + ","
-    header += "timestamp"
+    header += "timestamp" + ","
+    header += "total" + ","
+    header += "code generation" + ","
+    header += "compilation" + ","
+    header += "execution" + ","
     header += "\n"
 
     // write content
@@ -217,47 +422,112 @@ package object autotune {
       })
 
       // write runtime
-      sample.runtime match {
-        case Some(value) => content += value.value.toString + ","
-        case None => content += "-1" + ","
-      }
+      sample.runtime match{
+        case Right(runtime) => content += runtime.toString + ","
+        case Left(error) =>
 
-      // write error level
-      content += sample.autoTuningError.errorLevel.toString + ","
+          val errorMessage = error.message match {
+            case None => ""
+            case Some(value) => ": " + value
+          }
 
-      // write error message
-      sample.autoTuningError.message match {
-        case Some(value) => content += value + ","
-        case None => content += "" + ","
+          content += error.errorLevel.toString + errorMessage + ","
+
       }
 
       // write timestamp
-      content += sample.timestamp
+      content += sample.timestamp.toString + ","
+
+      sample.tuningTimes.total match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.codegen match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.compilation match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
+      sample.tuningTimes.execution match {
+        case Some(value) => content += value.value.toString + ","
+        case None => content += "-1" + ","
+      }
 
       // finish line
       content += "\n"
     })
 
-    writeToPath(path, header + content)
+    writeToPath(uniqueFilepath, header + content)
+
+
+    uniqueFilepath
   }
 
+  def plotTuning(tuner: Tuner) = {
+
+    // get config file
+    val configFile: String = tuner.configFile match {
+      case Some(value) => value
+      case None => tuner.output + "/" + tuner.name + ".json"
+    }
+
+    // plot results using hypermapper
+    ("hm-plot-optimization-results " +
+      "-j " + configFile + " " +
+      "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
+      "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
+      "-log --y_label \"Log Runtime(ms)\"" !!)
+  }
+
+  // todo finish implementation
+  def saveMeta(path: String, tuningResult: TuningResult, tuner: Tuner): String = {
+
+    // todo save tuner information to file
+
+    // todo collect statistics from tuningResult
+    val duration = (tuningResult.samples.apply(tuningResult.samples.size).timestamp - tuningResult.samples.apply(0).timestamp)
+    val samples = tuningResult.samples.size
+
+    // save statistics to csv file (don't overwrite -> append)
+
+
+    // return unique filename
+    ""
+  }
+
+
+  // helper functions
   private def min(s1: Sample, s2: Sample): Sample = {
     s1.runtime match {
-      case Some(s1Runtime) =>
+      case Right(s1Runtime) =>
         s2.runtime match {
-          case Some(s2Runtime) =>
+          case Right(s2Runtime) =>
             if (s1Runtime.value < s2Runtime.value) {
               s1
             } else {
               s2
             }
-          case None => s1
+          case Left(_) => s1
         }
-      case None =>
+      case Left(_) =>
         s2.runtime match{
-          case Some(_) => s2
-          case None => s1
+          case Right(_) => s2
+          case Left(_) => s1
         }
     }
   }
+
+  def getInputs(e: Expr): Seq[NatIdentifier] = {
+    getInputsRec(Seq.empty[NatIdentifier], e)
+  }
+
+  def getInputsRec(inputs: Seq[NatIdentifier], e: Expr): Seq[NatIdentifier] = {
+    e match {
+      case DepLambda(NatKind, n: NatIdentifier, subexpr) => getInputsRec(inputs :+ n, subexpr)
+      case _ => inputs
+    }
+  }
+
 }
