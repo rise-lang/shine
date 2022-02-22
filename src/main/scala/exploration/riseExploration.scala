@@ -153,9 +153,9 @@ object riseExploration {
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[AutoTuningExecutor], strategies, nameList.reverse.apply(index))
+//      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[AutoTuningExecutor], strategies, nameList.reverse.apply(index))
 //    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-//      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[DebugExecutor], strategies, nameList.reverse.apply(index))
+      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[DebugExecutor], strategies, nameList.reverse.apply(index))
     index = index + 1
 
     // iterate reverse direction
