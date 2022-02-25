@@ -9,48 +9,58 @@ import scala.language.implicitConversions
 
 object Pattern {
   def fromExpr(e: Expr): Pattern = {
-    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType)
+    val pnode = e.node.map(fromExpr, NatPattern.fromNat, DataTypePattern.fromDataType, AddressPattern.fromAddress)
     Pattern(PatternNode(pnode), TypePattern.fromType(e.t))
   }
 
-  implicit def patternToApplier[ED, ND, TD](pattern: Pattern): Applier[ED, ND, TD] = new Applier[ED, ND, TD] {
+  implicit def patternToApplier(pattern: Pattern): Applier = new Applier {
     override def toString: String = pattern.toString
 
     override def patternVars(): Set[Any] = pattern.patternVars()
 
-    override def applyOne(egraph: EGraph[ED, ND, TD],
+    override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+      (Set(), Set())
+
+    override def applyOne(egraph: EGraph,
                           eclass: EClassId,
-                          shc: SubstHashCons,
-                          subst: Subst): Vec[EClassId] = {
+                          shc: Substs)(
+                          subst: shc.Subst): Vec[EClassId] = {
       def missingRhsTy[T](): T = throw new Exception("unknown type on right-hand side")
       def pat(p: Pattern): EClassId = {
         p.p match {
-          case w: PatternVar => subst(w, shc)
+          case w: PatternVar => shc.get(w, subst)
           case PatternNode(n) =>
-            val enode = n.map(pat, nat, data)
+            val enode = n.map(pat, nat, data, addr)
             egraph.add(enode, `type`(p.t))
         }
       }
       def nat(p: NatPattern): NatId = {
         p match {
-          case w: NatPatternVar => subst(w, shc)
+          case w: NatPatternVar => shc.get(w, subst)
           case NatPatternNode(n) => egraph.add(n.map(nat))
           case NatPatternAny => missingRhsTy()
         }
       }
       def data(pat: DataTypePattern): DataTypeId = {
         pat match {
-          case w: DataTypePatternVar => subst(w, shc)
+          case w: DataTypePatternVar => shc.get(w, subst)
           case DataTypePatternNode(n) => egraph.add(n.map(nat, data))
           case DataTypePatternAny => missingRhsTy()
         }
       }
       def `type`(pat: TypePattern): TypeId = {
         pat match {
-          case w: TypePatternVar => subst(w, shc)
+          case w: TypePatternVar => shc.get(w, subst)
           case TypePatternNode(n) => egraph.add(n.map(`type`, nat, data))
           case TypePatternAny => missingRhsTy()
           case dtp: DataTypePattern => data(dtp)
+        }
+      }
+      def addr(pat: AddressPattern): Address = {
+        pat match {
+          case w: AddressPatternVar => shc.get(w, subst)
+          case AddressPatternNode(n) => n
+          case AddressPatternAny => missingRhsTy()
         }
       }
 
@@ -80,7 +90,7 @@ case class Pattern(p: PatternVarOrNode, t: TypePattern) {
   def patternVars(): Set[Any] = {
     (this.p match {
       case PatternNode(n) =>
-        Node.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
+        Node.collect(n.map(_.patternVars(), _.patternVars(), _.patternVars(), _.patternVars())).flatten.toSet
       case pv: PatternVar => Set(pv)
     }) ++ this.t.patternVars()
   }
@@ -95,15 +105,15 @@ case class CompiledPattern(pat: Pattern, prog: ematching.Program) {
 }
 
 object CompiledPattern {
-  implicit def patternToSearcher[ED, ND, TD](cpat: CompiledPattern)
-  : Searcher[ED, ND, TD] = new Searcher[ED, ND, TD] {
+  implicit def patternToSearcher(cpat: CompiledPattern)
+  : Searcher = new Searcher {
     override def toString: String = cpat.toString
 
     override def patternVars(): Set[Any] = cpat.pat.patternVars()
 
-    override def search(egraph: EGraph[ED, ND, TD],
-                        shc: SubstHashCons,
-                       ): Vec[SearchMatches] = {
+    override def search(egraph: EGraph,
+                        shc: Substs,
+                       ): Vec[SearchMatches[shc.Subst]] = {
       cpat.pat.p match {
         case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
@@ -116,16 +126,16 @@ object CompiledPattern {
       }
     }
 
-    override def searchEClass(egraph: EGraph[ED, ND, TD],
-                              shc: SubstHashCons,
+    override def searchEClass(egraph: EGraph,
+                              shc: Substs,
                               eclass: EClassId,
-                             ): Option[SearchMatches] = {
+                             ): Option[SearchMatches[shc.Subst]] = {
       val substs = cpat.prog.run(egraph, eclass, shc)
       if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
     }
   }
 
-  implicit def patternToApplier[ED, ND, TD](cpat: CompiledPattern): Applier[ED, ND, TD] =
+  implicit def patternToApplier(cpat: CompiledPattern): Applier =
     Pattern.patternToApplier(cpat.pat)
 }
 
@@ -136,10 +146,10 @@ object PatternDSL {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = lhs -> rhs
   }
   implicit final class RewriteArrowCPattern(private val lhs: CompiledPattern) extends AnyVal {
-    @inline def -->[ED, ND, TD](rhs: Pattern): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
-      (lhs: Searcher[ED, ND, TD]) -> rhs
-    @inline def -->[ED, ND, TD](rhs: Applier[ED, ND, TD]): (Searcher[ED, ND, TD], Applier[ED, ND, TD]) =
-      (lhs: Searcher[ED, ND, TD]) -> rhs
+    @inline def -->(rhs: Pattern): (Searcher, Applier) =
+      (lhs: Searcher) -> rhs
+    @inline def -->(rhs: Applier): (Searcher, Applier) =
+      (lhs: Searcher) -> rhs
   }
   implicit final class RewriteArrowPNode(private val lhs: PNode) extends AnyVal {
     @inline def -->(rhs: Pattern): (Pattern, Pattern) = (lhs: Pattern) -> rhs

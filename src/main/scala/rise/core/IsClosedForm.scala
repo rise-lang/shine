@@ -46,6 +46,14 @@ object IsClosedForm {
       case _ => return_
     }
 
+    override def addressSpace: AddressSpace => Pair[AddressSpace] = {
+      // FIXME: unclear whether this is needed or not
+      case i: AddressSpaceIdentifier =>
+        val iw: Kind.Identifier = AddressSpaceKind.IDWrapper(i)
+        if (boundT(iw)) return_(i: AddressSpace) else accumulate((OrderedSet.empty, OrderedSet.one(iw)))(i: AddressSpace)
+      case x => return_(x)
+    }
+
     override def nat: Nat => Pair[Nat] = n => {
       val free = n.varList.foldLeft(OrderedSet.empty[Kind.Identifier]) {
         case (free, v: NamedVar) if !boundT(NatKind.IDWrapper(v)) => OrderedSet.add(NatKind.IDWrapper(v) : Kind.Identifier)(free)

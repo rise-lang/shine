@@ -40,7 +40,7 @@ object Nat {
   }
 
   def toNamed(n: Nat, bound: Expr.Bound = Expr.Bound.empty): rct.Nat =
-    toNamedGeneric(n, bound.nat(_))
+    toNamedGeneric(n, bound.getNat)
   def toNamedGeneric(n: Nat, nameOf: Int => rct.NatIdentifier): rct.Nat = {
     n.node match {
       case NatVar(index) => nameOf(index)

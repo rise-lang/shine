@@ -1,163 +1,40 @@
 package rise.elevate
 
 import elevate.core._
-import elevate.core.strategies.basic._
-//import elevate.core.strategies.debug.peek
-//import rise.core.IsClosedForm
-import elevate.core.strategies.debug.debug
-import elevate.core.strategies.traversal._
-import rise.core.DSL._
-import rise.core.primitives._
-import rise.core.types.DataType._
-import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
-import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
-import rise.elevate.strategies.algorithmic.reorder
-import rise.elevate.strategies.lowering._
-import rise.elevate.strategies.normalForm._
-import rise.elevate.strategies.predicate._
-import rise.elevate.strategies.tiling._
-import rise.elevate.strategies.traversal
-import rise.elevate.strategies.traversal._
-
-import _root_.util.gen
-
-object tvmGemm {
-  val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.outermost(default.RiseTraversable)
-  val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
-    traversal.innermost(default.RiseTraversable)
-
-  //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
-  val N = 1024
-
-  val mm: Rise = //infer(
-    fun(ArrayType(N, ArrayType(N, f32)))(a =>
-      fun(ArrayType(N, ArrayType(N, f32)))(b =>
-        a |> map(fun(ak =>
-          transpose(b) |> map(fun(bk =>
-            zip(ak)(bk) |>
-              map(fun(x => fst(x) * snd(x))) |>
-              reduce(add)(lf32(0.0f))
-          ))
-        ))
-      ))
-  //)
-
-  //// ICFP'20 TVM - STRATEGIES ////////////////////////////////////////////////
-  // -- BASELINE ---------------------------------------------------------------
-
-  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
-    fuseReduceMap `@` topDown[Rise]
-
-  // -- BLOCKING ---------------------------------------------------------------
-
-  val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
-  val blocking: Strategy[Rise] =
-    baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,6,3,4))
-
-  val blockingPartial: Strategy[Rise] =
-    baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2)))
-  val blockingPartial2: Strategy[Rise] =
-    baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
-  val blockingPartial3: Strategy[Rise] =
-    baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce))
-
-  // -- VECTORIZATION ----------------------------------------------------------
-
-  val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
-  val vectorization: Strategy[Rise] =
-    blocking `;;`
-      (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
-
-  // -- LOOP PERMUTATION -------------------------------------------------------
-
-  val loopPerm: Strategy[Rise] = baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder(List(1,2,5,3,6,4)) `;;`
-    (vectorize(32) `@` innermost(isFullyAppliedMap))
-
-  // -- ARRAY PACKING ----------------------------------------------------------
-
-  val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
-  val permuteB: Strategy[Rise] =
-      splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
-      topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
-      argument(argument(idAfter)) `;` normalize.apply(liftId()) `;`
-      topDown(idToCopy)
-
-  val packB: Strategy[Rise] =
-    storeInMemory(isTransposedB,
-      permuteB `;;`
-        (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
-        (parallel()    `@` outermost(isApplied(isMap)))
-    ) `@` inLambda
-
-  def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-    isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
-
-  val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
-
-  // -- CACHE BLOCKS -----------------------------------------------------------
-
-  val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;`// debug[Rise]("after arrayPacking") `;`
-      (unroll `@` innermost(isReduceSeq))
-    )
-
-  // -- PARALLEL ---------------------------------------------------------------
-
-  val par = (
-    arrayPacking `;;`
-      ((parallel() `@` outermost(isApplied(isMap))) `@`
-        outermost(isApplied(isLet))) `;;`
-      (unroll `@` innermost(isReduceSeq))
-    )
-}
+import _root_.util.{gen, time, prettyTime, memStats, prettyMem}
 
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
-  import tvmGemm._
+  import apps.tvmGemm._
 
   test("baseline") {
-    run("baseline",  baseline `;` lowerToC, openMP = false)
+    run("baseline", baseline, openMP = false)
   }
 
   test("blocking") {
-    run("blocking", blocking `;` lowerToC, openMP = false)
+    run("blocking", blocking, openMP = false)
   }
 
   test("vectorization") {
-    run("vectorization", (vectorization `;` lowerToC), openMP = true)
+    run("vectorization", vectorization, openMP = true)
   }
 
   test("loop permutation") {
-    run("loop_permutation", (loopPerm `;` lowerToC), openMP = true)
+    run("loop_permutation", loopPerm, openMP = true)
   }
 
   test("array packing") {
-    run("array_packing", arrayPacking `;` lowerToC, openMP = true)
+    run("array_packing", arrayPacking, openMP = true)
   }
 
   test("cache blocks") {
-    run("cache_blocks", cacheBlocks `;` lowerToC, openMP = true)
+    run("cache_blocks", cacheBlocks, openMP = true)
   }
 
   test("parallel") {
-    run("parallel", par `;` lowerToC, openMP = true)
+    run("parallel", par, openMP = true)
   }
 
 
@@ -180,32 +57,37 @@ class tvmGemm extends test_util.Tests {
       w.close()
     }
 
-    def currentTimeSec: Long = System.currentTimeMillis / 1000
-
     val versionUC = version.toUpperCase()
     // reset rewrite step counter
     Success.rewriteCount = 0
+    elevate.core.applyCount = 0
 
     // rewrite the matmul input expresssion
-    val time0 = currentTimeSec
-    val rewritten = strategy(mm)
-    val time1 = currentTimeSec
-    logger.debug(s"[$versionUC] rewrite time: ${time1 - time0}s")
+    val m1 = memStats().used
+    val (rewriteTime1, rewritten1) = time(strategy(mm))
+    val m2 = memStats().used
+    logger.debug(s"[$versionUC] rewrite time: ${prettyTime(rewriteTime1)}")
+    logger.debug(s"[$versionUC] memory use: ${prettyMem(m1 max m2)}")
+    logger.debug(s"[$versionUC] required rewrite steps: ${Success.rewriteCount}")
+    logger.debug(s"[$versionUC] required rewrite steps (atomic): ${elevate.core.applyCount}\n")
+
+    val (rewriteTime2, rewritten) = time(lowerToC.apply(rewritten1.get))
+    logger.debug(s"[$versionUC] rewrite time (lowering): ${prettyTime(rewriteTime2)}")
+    logger.debug(s"[$versionUC] required rewrite steps (including lowering): ${Success.rewriteCount}")
+    logger.debug(s"[$versionUC] required rewrite steps (including lowering, atomic): ${elevate.core.applyCount}\n")
+
+    val steps = Success.rewriteCount
     if (generateFiles) {
-      val steps = Success.rewriteCount
-      logger.debug(s"[$versionUC] required rewrite steps: $steps\n")
       writeToFile(plotsFolder, version, s"$version,$steps", ".csv")
     }
 
     // generate the C code
-    val time2 = currentTimeSec
-    val program = if(openMP) {
+    val (genTime, program) = time(if(openMP) {
       gen.openmp.function(version).asStringFromExpr(rewritten.get)
     } else {
       gen.c.function(version).asStringFromExpr(rewritten.get)
-    }
-    val time3 = currentTimeSec
-    logger.debug(s"[$versionUC] codegen time: ${time3 - time2}s")
+    })
+    logger.debug(s"[$versionUC] codegen time: ${prettyTime(genTime)}s")
     logger.debug(s"Program:\n${program}")
 
     // store the C code
