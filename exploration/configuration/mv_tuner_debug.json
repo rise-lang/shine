@@ -8,7 +8,7 @@
         "iterations" : 1
       }],
       "executor" : {
-        "name" : "AutoTuning",
+        "name" : "Debug",
         "iterations" : 10,
 	    "threshold" : 10
       }

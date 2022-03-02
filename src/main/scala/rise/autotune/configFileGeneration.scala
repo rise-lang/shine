@@ -23,7 +23,7 @@ object configFileGeneration {
 //    val optimization_iterations = tuner.samples
 
     val doe = 10
-    val optimization_iterations = 0
+    val optimization_iterations = 10
 
 
     // create header for hypermapper configuration file

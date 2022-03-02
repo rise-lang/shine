@@ -6,7 +6,7 @@ import _root_.rise.core.types.{ExprType, Nat}
 import rise.elevate.strategies.normalForm.DFNF
 import _root_.elevate.core.Strategy
 import _root_.elevate.core.strategies.Traversable
-import arithexpr.arithmetic.RangeUnknown
+import arithexpr.arithmetic.{RangeMul, RangeUnknown}
 import rise.autotune.tuningParam
 
 package object elevate {
@@ -36,7 +36,7 @@ package object elevate {
 
   // wrapper to create strategies with tuning parameters
   def tunable[T](f: Nat => T) = {
-    tuningParam(rise.core.freshName.apply("tp"), RangeUnknown, f)
+    tuningParam(rise.core.freshName.apply("tp"), RangeMul(1, 1024, 2), f)
   }
 
 }

@@ -41,6 +41,8 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
   override def checkSolution(solution: Solution[Rise]): Boolean = {
 
+    //
+
 
     true
   }
@@ -122,13 +124,24 @@ case class DebugExecutor(lowering: Strategy[Rise],
    Some(1.0)
   }
 
+  var counter = 0
+
   def performanceModel(solution: Solution[Rise]): Option[Double] = {
     // evaluate, if expression is invalid
+//    counter += 1
 
-    // try to minimize programs size
-    val value = 100000/solution.expression.toString.size.toDouble
+//    if(counter <= 10){
+      // try to minimize programs size
+//      val value = 100000/solution.expression.toString.size.toDouble
 
-    Some(value)
+      //    val value = solution.expression.toString.size
+
+//      Some(value)
+//    }else{
+      val value = solution.expression.toString.size
+//
+      Some(value)
+//    }
   }
 
 
@@ -146,7 +159,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     }
 
     val runtime = tuningResultStatistic.runtime match {
-      case Some(value) => value.toString
+      case Some(value) => value.value.toString
       case None => "-1"
     }
 
@@ -155,9 +168,9 @@ case class DebugExecutor(lowering: Strategy[Rise],
       tuningResultStatistic.number.toString + ", " +
         tuningResultStatistic.solution + ", " +
         tuningResultStatistic.timestamp.toString + ", " +
-        tuningResultStatistic.duration.toString + ", " +
-        tuningResultStatistic.durationTuning.toString + ", " +
-        tuningResultStatistic.durationLowering.toString + ", " +
+        tuningResultStatistic.duration.value.toString + ", " +
+        tuningResultStatistic.durationTuning.value.toString + ", " +
+        tuningResultStatistic.durationLowering.value.toString + ", " +
         tuningResultStatistic.samples.toString + ", " +
         tuningResultStatistic.executions.toString + ", " +
         runtime.toString + "\n"
