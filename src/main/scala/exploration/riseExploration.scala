@@ -9,10 +9,10 @@ import rise.elevate.rules.traversal.default
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.{AutoTuningExecutor, CExecutor, DebugExecutor}
-import elevate.heuristic_search.Metaheuristic
+import elevate.heuristic_search.{Metaheuristic, Runner}
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
-import exploration.explorationUtil.jsonParser.ParseExploration
+import exploration.explorationUtil.jsonParser.{ParseExploration, executorRead}
 import strategies.{convolutionStrategies, defaultStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -144,18 +144,12 @@ object riseExploration {
 
     var index = 0
 
-//    val strategies = defaultStrategies.strategies
-//    val strategies = convolutionStrategies.strategies
-//    val strategies = scalStrategies.strategies
-
-
-    // todo fix hard coded changes here!
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
+
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[AutoTuningExecutor], strategies, nameList.reverse.apply(index))
-//    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-//      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[DebugExecutor], strategies, nameList.reverse.apply(index))
+            rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[Runner[Rise]], strategies, nameList.reverse.apply(index))
+
     index = index + 1
 
     // iterate reverse direction
