@@ -119,8 +119,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       speedupFactor = threshold,
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
-//      hmConstraints = true,
-      hmConstraints = false,
+      hmConstraints = true,
+//      hmConstraints = false,
       saveToFile = false
     )
 
