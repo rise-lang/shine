@@ -1,14 +1,14 @@
   {
-      "name" : "mv_exhaustive",
+      "name" : "mv_debug",
       "output" : "exploration",
       "inputSize" : 1024,
       "metaheuristic" : [{
-        "heuristic" : "exhaustive",
+        "heuristic" : "IterativeImprovement",
         "depth" : 10,
         "iterations" : 1
       }],
       "executor" : {
-        "name" : "AutoTuning",
+        "name" : "Debug",
         "iterations" : 10,
 	    "threshold" : 10
       }
