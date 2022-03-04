@@ -47,8 +47,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   val random = new scala.util.Random
 
   override def checkSolution(solution: Solution[Rise]): Boolean = {
-
-    true
+    exploration.runner.checkSolution(lowering, solution)
   }
 
   def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
@@ -119,8 +118,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       speedupFactor = threshold,
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
-      hmConstraints = true,
-//      hmConstraints = false,
+//      hmConstraints = true,
+      hmConstraints = false,
       saveToFile = false
     )
 

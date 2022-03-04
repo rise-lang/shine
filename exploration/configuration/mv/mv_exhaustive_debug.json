@@ -4,11 +4,11 @@
       "inputSize" : 1024,
       "metaheuristic" : [{
         "heuristic" : "exhaustive",
-        "depth" : 20,
+        "depth" : 100,
         "iterations" : 1
       }],
       "executor" : {
-        "name" : "AutoTuning",
+        "name" : "Debug",
         "iterations" : 10,
 	    "threshold" : 10
       }

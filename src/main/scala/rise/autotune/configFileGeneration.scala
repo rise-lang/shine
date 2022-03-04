@@ -22,12 +22,12 @@ object configFileGeneration {
 //    val doe = p.size * 10
 //    val optimization_iterations = tuner.samples
 
-    val doe = 10
-    val optimization_iterations = 50
+    val doe = 25
+    val optimization_iterations = 25
 
 
     // create header for hypermapper configuration file
-    val header_old =
+    val header =
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
@@ -49,7 +49,7 @@ object configFileGeneration {
          | "input_parameters" : {
          |""".stripMargin
 
-    val header =
+    val header_old =
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
@@ -174,7 +174,8 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "values" : ${values.mkString("[", ", ", "]")}
+               |       "values" : ${values.mkString("[", ", ", "]")},
+               |       "parameter_default" : 1
                |   },
                |""".stripMargin
 

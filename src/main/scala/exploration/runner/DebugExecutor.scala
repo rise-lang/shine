@@ -1,10 +1,17 @@
 package exploration.runner
 
-import elevate.core.{Strategy}
+import arithexpr.arithmetic.RangeMul
+import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{Solution, hashProgram}
+import exploration.runner
+import rise.autotune
+import rise.autotune.{tuningParam, wrapOclRun}
+import rise.core.Expr
+import rise.core.types.{Nat, NatIdentifier}
 import rise.elevate.Rise
-import util.{Time, TimeSpan}
+import shine.OpenCL.{GlobalSize, LocalSize}
+import util.{Time, TimeSpan, gen}
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
@@ -39,12 +46,13 @@ case class DebugExecutor(lowering: Strategy[Rise],
   var number = 0
   val random = new scala.util.Random
 
-  override def checkSolution(solution: Solution[Rise]): Boolean = {
+//  override def checkSolution(solution: Solution[Rise]): Boolean = {
+//
+//    true
+//  }
 
-    //
-
-
-    true
+  def checkSolution(solution: Solution[Rise]): Boolean = {
+    runner.checkSolution(lowering, solution)
   }
 
   def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
@@ -132,13 +140,13 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
 //    if(counter <= 10){
       // try to minimize programs size
-//      val value = 100000/solution.expression.toString.size.toDouble
+      val value = 100000/solution.expression.toString.size.toDouble
 
       //    val value = solution.expression.toString.size
 
 //      Some(value)
 //    }else{
-      val value = solution.expression.toString.size
+//      val value = solution.expression.toString.size
 //
       Some(value)
 //    }
