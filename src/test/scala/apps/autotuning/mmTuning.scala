@@ -347,7 +347,7 @@ class mmTuning extends test_util.Tests {
   }
 
 
-  test("tune mm 128"){
+  ignore("tune mm 128"){
 
     val configs = Seq(
       "autotuning/config/mm/128/rs_cot_128.json",
@@ -370,7 +370,7 @@ class mmTuning extends test_util.Tests {
   }
 
 
-  ignore("tune mm 1024"){
+  test("tune mm 1024"){
 
     val configs = Seq(
       //"autotuning/config/mm/1024/rs_cot_1024.json",

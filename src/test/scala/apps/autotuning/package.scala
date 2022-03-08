@@ -15,10 +15,11 @@ package object autotuning {
     // run tuning
     for(i <- 1 to iterations) {
       configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
+
+      // plot experiments after each iteration of all configs
+      plotExperiment(name, configFiles, output)
     }
 
-    // plot experiments
-    plotExperiment(name, configFiles, output)
   }
 
   def runTuning(configFile: String, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
