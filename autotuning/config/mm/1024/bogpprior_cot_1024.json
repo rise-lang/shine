@@ -10,7 +10,7 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "bogp_cot_1024.log",
+  "log_file" : "bogpprior_cot_1024.log",
   "design_of_experiment" : {
     "doe_type" : "random sampling",
     "number_of_samples" : 100
