@@ -15,7 +15,7 @@
     "doe_type" : "random sampling",
     "number_of_samples" : 80
   },
-  "optimization_iterations" : 920,
+  "optimization_iterations" : 420,
   "models": {
     "model": "gaussian_process"
   },

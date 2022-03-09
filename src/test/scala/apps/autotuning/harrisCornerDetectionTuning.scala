@@ -158,15 +158,15 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       "autotuning/config/harris/harris_rs_cot.json",
       "autotuning/config/harris/harris_rs_emb.json",
       "autotuning/config/harris/harris_atf_emb.json",
-//      "autotuning/config/harris/harris_ls_cot.json",
-      "autotuning/config/harris/harris_borf_cot.json",
+      "autotuning/config/harris/harris_ls_cot.json",
+//      "autotuning/config/harris/harris_borf_cot.json",
       "autotuning/config/harris/harris_bogp_cot.json",
     )
 
     runExperiment(
       name = "harris",
       configFiles = configs,
-      iterations = 2,
+      iterations = 5,
       "autotuning/harris_test",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
