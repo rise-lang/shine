@@ -11,14 +11,15 @@ import scala.sys.process._
 package object autotuning {
 
   def runExperiment(name: String, configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
-
-    // run tuning
-    for(i <- 1 to iterations) {
-      configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
-
-      // plot experiments after each iteration of all configs
-      plotExperiment(name, configFiles, output)
-    }
+    plotExperiment(name, configFiles, output)
+//
+//    // run tuning
+//    for(i <- 1 to iterations) {
+//      configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
+//
+//      // plot experiments after each iteration of all configs
+//      plotExperiment(name, configFiles, output)
+//    }
 
   }
 

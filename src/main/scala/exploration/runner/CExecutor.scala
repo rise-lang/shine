@@ -30,6 +30,8 @@ case class CExecutor(lowering: Strategy[Rise],
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
+  override def checkSolution(solution: Solution[Rise]): Boolean = ???
+
   def execute(solution: Solution[Rise]):(Rise,Option[Double]) = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
