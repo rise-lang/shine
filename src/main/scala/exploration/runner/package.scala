@@ -119,7 +119,6 @@ package object runner {
       true
       } catch {
         case e: Throwable =>
-          filtered += 1
           false
       }
     }
