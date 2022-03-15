@@ -22,8 +22,8 @@ object configFileGeneration {
 //    val doe = p.size * 10
 //    val optimization_iterations = tuner.samples
 
-    val doe = 10
-    val optimization_iterations = 10
+    val doe = 25
+    val optimization_iterations = 25
 
 
     // create header for hypermapper configuration file
@@ -45,6 +45,26 @@ object configFileGeneration {
          |   "doe_type" : "random sampling",
          |   "number_of_samples" : ${doe}
          | },
+         | "optimization_iterations" : ${optimization_iterations},
+         | "input_parameters" : {
+         |""".stripMargin
+
+    val header_old =
+      s"""{
+         | "application_name" : "${tuner.name}",
+         | "optimization_objectives" : ["runtime"],
+         | "hypermapper_mode" : {
+         |   "mode" : "client-server"
+         | },
+         | "log_file" : "${tuner.name}.log",
+         | "feasible_output" : {
+         |   "enable_feasible_predictor" : true,
+         |   "name" : "Valid",
+         |   "true_value" : "True",
+         |   "false_value" : "False"
+         | },
+         | "scalarization_method": "linear",
+         | "optimization_method": "opentuner",
          | "optimization_iterations" : ${optimization_iterations},
          | "input_parameters" : {
          |""".stripMargin
@@ -121,6 +141,13 @@ object configFileGeneration {
 //          (List.empty[Int], wdc._1)
       }
 
+      // check if value are empty
+//      println("values: " + values)
+      if(values.size == 0){
+//        println("all values were filtered out - check your constraints")
+        throw new Exception("all values were filtered out - check your constraints")
+      }
+
       // get new element with filtered constraints
       val newWdc = (constraintsFiltered, wdc._2)
 
@@ -154,7 +181,8 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "values" : ${values.mkString("[", ", ", "]")}
+               |       "values" : ${values.mkString("[", ", ", "]")},
+               |       "parameter_default" : 1
                |   },
                |""".stripMargin
 
@@ -175,7 +203,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-    println("file: " + file)
+//    println("file: " + file)
 
     file
   }
