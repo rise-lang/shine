@@ -28,7 +28,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   case class TuningResultStatistic(
                                   number: Int,
-                                  solution: String,
+                                  solution: Solution[Rise],
                                   timestamp: Long,
                                   duration: TimeSpan[Time.ms],
                                   durationTuning: TimeSpan[Time.ms],
@@ -73,7 +73,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     saveTuningResults(
       TuningResultStatistic(
         number = number,
-        solution = hashProgram(solution.expression),
+        solution = solution,
         timestamp = System.currentTimeMillis(),
         duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
         durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -103,6 +103,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // todo work with gold expression
 
     println("solution: " + solution)
+    println(hashProgram(solution.expression))
 
     // create tuner
     val tuner = Tuner(
@@ -171,7 +172,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
             runtime,
             TuningResultStatistic(
               number = number,
-              solution = hashProgram(solution.expression),
+              solution = solution,
               timestamp = System.currentTimeMillis(),
               duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
               durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -195,7 +196,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
               None,
               TuningResultStatistic(
                 number = number,
-                solution = hashProgram(solution.expression),
+                solution = solution,
                 timestamp = System.currentTimeMillis(),
                 duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
                 durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -224,7 +225,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           (solution.expression, None),
           TuningResultStatistic(
             number = number,
-            solution = hashProgram(solution.expression),
+            solution = solution,
             timestamp = System.currentTimeMillis(),
             duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
             durationTuning = TimeSpan.inMilliseconds(0.0),
@@ -255,7 +256,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val fWriter = new PrintWriter(new FileOutputStream(new File(filePath), true))
 
     if(!exists) {
-      val header = "number, solution, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
+      val header = "number, solution, strategy, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
       fWriter.write(header)
     }
 
@@ -267,7 +268,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // write line
     val line =
       tuningResultStatistic.number.toString + ", " +
-        tuningResultStatistic.solution + ", " +
+        hashProgram(tuningResultStatistic.solution.expression) + ", " +
+        tuningResultStatistic.solution.strategies.mkString(" : ") + ", " +
         tuningResultStatistic.timestamp.toString + ", " +
         tuningResultStatistic.duration.toString + ", " +
         tuningResultStatistic.durationTuning.toString + ", " +
