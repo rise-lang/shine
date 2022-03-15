@@ -141,6 +141,13 @@ object configFileGeneration {
 //          (List.empty[Int], wdc._1)
       }
 
+      // check if value are empty
+//      println("values: " + values)
+      if(values.size == 0){
+//        println("all values were filtered out - check your constraints")
+        throw new Exception("all values were filtered out - check your constraints")
+      }
+
       // get new element with filtered constraints
       val newWdc = (constraintsFiltered, wdc._2)
 
@@ -196,7 +203,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-    println("file: " + file)
+//    println("file: " + file)
 
     file
   }

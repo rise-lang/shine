@@ -139,10 +139,10 @@ case class DebugExecutor(lowering: Strategy[Rise],
 //    counter += 1
 
 //    if(counter <= 10){
-      // try to minimize programs size
+      // try to maximize programs size
       val value = 100000/solution.expression.toString.size.toDouble
 
-      //    val value = solution.expression.toString.size
+//          val value = solution.expression.toString.size
 
 //      Some(value)
 //    }else{
