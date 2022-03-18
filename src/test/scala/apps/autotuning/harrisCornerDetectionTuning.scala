@@ -161,6 +161,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       "autotuning/config/harris/harris_ls_cot.json",
 //      "autotuning/config/harris/harris_borf_cot.json",
       "autotuning/config/harris/harris_bogp_cot.json",
+      "autotuning/config/harris/harris_bogplog_cot.json",
     )
 
     runExperiment(

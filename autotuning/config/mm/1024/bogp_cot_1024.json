@@ -13,14 +13,14 @@
   "log_file" : "bogp_cot_1024.log",
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 100
+    "number_of_samples" : 110
   },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 400,
+  "optimization_iterations": 390,
   "input_parameters" : {
     "tuned_v3": {
       "parameter_type" : "ordinal",
