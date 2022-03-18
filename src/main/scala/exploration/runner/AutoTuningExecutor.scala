@@ -46,8 +46,16 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   var number = 0
   val random = new scala.util.Random
 
+  var duration: Long = 0
+
   override def checkSolution(solution: Solution[Rise]): Boolean = {
-    exploration.runner.checkSolution(lowering, solution)
+//    val checkStart = System.currentTimeMillis()
+    val result = exploration.runner.checkSolution(lowering, solution)
+//    duration += System.currentTimeMillis() - checkStart
+//    println("checking duration total: " + duration.toDouble/1000 + " s")
+//    println("checking duration total: " + duration.toDouble/1000/60 + " m")
+
+    result
   }
 
   def execute2(solution: Solution[Rise]):(Rise, Option[Double]) = {
@@ -119,8 +127,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       speedupFactor = threshold,
       None,
 //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
-//      hmConstraints = true,
-      hmConstraints = false,
+      hmConstraints = true,
+//      hmConstraints = false,
       saveToFile = false
     )
 
@@ -256,12 +264,17 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val fWriter = new PrintWriter(new FileOutputStream(new File(filePath), true))
 
     if(!exists) {
-      val header = "number, solution, strategy, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
+      val header = "number, solution, strategy, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime, runtime2" + "\n"
       fWriter.write(header)
     }
 
     val runtime = tuningResultStatistic.runtime match {
       case Some(value) => value.toString
+      case None => "-1"
+    }
+
+    val runtime2 = tuningResultStatistic.runtime match {
+      case Some(value) => value.value
       case None => "-1"
     }
 
@@ -276,7 +289,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         tuningResultStatistic.durationLowering.toString + ", " +
         tuningResultStatistic.samples.toString + ", " +
         tuningResultStatistic.executions.toString + ", " +
-        runtime.toString + "\n"
+        runtime.toString + ", " +
+        runtime2 + "\n"
 
     fWriter.write(line)
 

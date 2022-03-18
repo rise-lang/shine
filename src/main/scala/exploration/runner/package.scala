@@ -15,6 +15,9 @@ import util.gen
 
 package object runner {
 
+  var duration: Long = 0
+  var duration2: Long = 0
+  var duration3: Long = 0
   def checkSolution(lowering: Strategy[Rise], solution: Solution[Rise]): Boolean = {
 
     // todo check expression using checking function
@@ -113,6 +116,8 @@ package object runner {
       val inputMap = (inputs zip tuner.inputSizes).toMap
       val constraints = collectConstraints(loweredOclTuning, parameters)
         .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
+
+      val startJson = System.currentTimeMillis()
 
       generateJSON(parameters, constraints, tuner)
 

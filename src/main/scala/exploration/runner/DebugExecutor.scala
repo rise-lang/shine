@@ -75,7 +75,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     //    val result = constant()
     val result = performanceModel(solution)
 
-    println("result: " + result)
+//    println("result: " + result)
 
     // convert Double to timespan for tuning output
     val resultTuning: Option[TimeSpan[Time.ms]] = result match {

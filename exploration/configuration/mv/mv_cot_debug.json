@@ -1,10 +1,10 @@
   {
-      "name" : "mv_exhaustive",
+      "name" : "mv_autotuner",
       "output" : "exploration",
       "inputSize" : 1024,
       "metaheuristic" : [{
-        "heuristic" : "exhaustive",
-        "depth" : 20,
+        "heuristic" : "cot",
+        "depth" : 7,
         "iterations" : 1
       }],
       "executor" : {

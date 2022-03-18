@@ -1,7 +1,7 @@
 package exploration
 
 import apps.separableConvolution2D.mulT
-import exploration.strategies.defaultStrategiesGPU
+import exploration.strategies.{defaultStrategiesGPU, simpleStrategiesGPU}
 import rise.autotune.HostCode
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -59,9 +59,22 @@ object mvExploration {
     (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
   )((mat, xs) =>
     mat |> map(fun(row =>
-      zip(row)(xs) |> map(mulT) |> reduce(add)(lf32(0.0f))
+      zip(row)(xs) |>
+        map(mulT) |>
+        reduce(add)(lf32(0.0f))
     ))
   ))
+
+  val mvHighLevel2 = depFun((n: Nat, m: Nat) => fun(
+    (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32)
+  )((mat, xs) =>
+    mat |> map(fun(row =>
+      zip(row)(xs) |>
+        map(fun(x => fst(x) * snd(x))) |>
+        reduce(add)(lf32(0.0f))
+    ))
+  ))
+
 
   val gemvHighLevel = depFun((n: Nat, m: Nat) => fun(
     (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->:
@@ -70,6 +83,7 @@ object mvExploration {
     zip(map(fun(row => alpha * dot(row, xs)))(mat))(scal(ys, beta)) |>
       map(fun(x => x._1 + x._2))
   ))
+
 
   val mvOcl = depFun((n: Nat, m: Nat) => fun(
     (m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->:
@@ -122,10 +136,14 @@ object mvExploration {
   }
 
   def main(args: Array[String]): Unit = {
-    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel, simpleStrategiesGPU.lowering, simpleStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner_debug.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //        riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_ii.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_exhaustive.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel2, simpleStrategiesGPU.lowering, simpleStrategiesGPU.strategies, "exploration/configuration/mv/mv_exhaustive.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+//    riseExploration(mvHighLevel2, simpleStrategiesGPU.lowering, simpleStrategiesGPU.strategies, "exploration/configuration/mv/mv_cot_debug.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
+    riseExploration(mvHighLevel2, simpleStrategiesGPU.lowering, simpleStrategiesGPU.strategies, "exploration/configuration/mv/mv_cot_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_exhaustive_debug.json", None)
     //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_debug.json", None)
   }
