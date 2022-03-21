@@ -12,7 +12,7 @@
   },
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 10
+    "number_of_samples" : 500
   },
   "optimization_iterations" : 0,
   "input_parameters" : {
@@ -31,8 +31,8 @@
     "tuned_ls0" : {
       "parameter_type" : "ordinal",
       "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
-      "constraints" : [],
-      "dependencies" : []
+      "constraints" : ["tuned_ls0 * tuned_ls1 <= 1024"],
+      "dependencies" : ["tuned_ls1"]
     },
     "tuned_ls1" : {
       "parameter_type" : "ordinal",

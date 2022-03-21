@@ -1,7 +1,7 @@
 package apps.autotuning
 
 import apps.autotuning
-import apps.mriQ.{computePhiMagOcl, computePhiMagOcl2, computeQOcl}
+import apps.mriQ.{computePhiMagOcl, computePhiMagOcl2, computePhiMagOcl3, computeQOcl}
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
@@ -19,14 +19,15 @@ class mriqTuning extends test_util.Tests {
 //              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
 //            ))))
 //
+
   val computePhiMagTuning:Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
           tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
             tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl2(s0))
-          )))))
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl3(s0))
+            )))))
 
   val computeQTuning:Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
@@ -140,7 +141,7 @@ class mriqTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute computePhiMag"){
+  ignore("execute computePhiMag"){
 
     println("nbody: \n" + computePhiMagTuning)
 
@@ -167,7 +168,7 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("execute computeQ"){
+  ignore("execute computeQ"){
 
     println("nbody: \n" + computeQTuning)
 
@@ -193,11 +194,12 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("tune computePhiMag"){
+  ignore("tune computePhiMag"){
+    val inputSize = 1024
 
     val tuner = Tuner(
-      hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
-      inputSizes = Seq(256),
+      hostCode = HostCode(initPhiMag(inputSize), computePhiMag, finishPhiMag),
+      inputSizes = Seq(inputSize),
       samples = 10,
       name = "computePhiMag",
       output = "autotuning/mriq/computePhiMag",
@@ -220,7 +222,7 @@ class mriqTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("tune computeQ"){
+  ignore("tune computeQ"){
 
     val tuner = Tuner(
     hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
@@ -259,8 +261,8 @@ class mriqTuning extends test_util.Tests {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
-      hostCode = HostCode(initPhiMag(256), computePhiMag, finishPhiMag),
-      inputSizes = Seq(256),
+      hostCode = HostCode(initPhiMag(1024), computePhiMag, finishPhiMag),
+      inputSizes = Seq(1024),
       samples = 20, // defined by config file
       name = version,
       output = s"autotuning/mriq/phiMag/${version}",
@@ -279,8 +281,8 @@ class mriqTuning extends test_util.Tests {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
     val tuner = Tuner(
-      hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
-      inputSizes = Seq(256, 512),
+      hostCode = HostCode(initQ(1024, 1024), computeQ, finishQ),
+      inputSizes = Seq(1024, 1024),
       samples = 20, // defined by config file
       name = version,
       output = s"autotuning/mriq/q/${version}",
@@ -295,7 +297,7 @@ class mriqTuning extends test_util.Tests {
     autotune.search(tuner)(computeQTuning)
   }
 
-  test("run mriq autotuning"){
+  ignore("run mriq autotuning"){
 
     // PhiMag
     val configsPhiMag = Seq(
@@ -313,4 +315,50 @@ class mriqTuning extends test_util.Tests {
     runExperiments(configFiles = configsQ, iterations = 3, runTuningQ)
   }
 
+
+  test("tune computePhiMag 1024"){
+    val inputSize: Int = 1024
+
+    val configs = Seq(
+      s"autotuning/config/mriq/phiMag/rs_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/rs_emb_phiMag.json",
+      s"autotuning/config/mriq/phiMag/ls_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/bogp_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/bogplog_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/atf_emb_phiMag.json"
+    )
+
+    runExperiment(
+      name = s"phiMag_${inputSize}",
+      configFiles = configs,
+      iterations = 5,
+      output = s"autotuning/mriq/phiMag",
+      computePhiMagTuning,
+      HostCode(initPhiMag(inputSize), computePhiMag, finishPhiMag),
+      inputSizes = Seq(1024)
+    )
+  }
+
+  test("tune computeQ 1024"){
+    val inputSize: Int = 1024
+
+    val configs = Seq(
+      s"autotuning/config/mriq/q/rs_cot_q.json",
+      s"autotuning/config/mriq/q/rs_emb_q.json",
+      s"autotuning/config/mriq/q/ls_cot_q.json",
+      s"autotuning/config/mriq/q/bogp_cot_q.json",
+      s"autotuning/config/mriq/q/bogplog_cot_q.json",
+      s"autotuning/config/mriq/q/atf_emb_q.json"
+    )
+
+    runExperiment(
+      name = s"q_${inputSize}",
+      configFiles = configs,
+      iterations = 5,
+      output = s"autotuning/mriq/q",
+      computeQTuning,
+      HostCode(initQ(inputSize, inputSize), computeQ, finishQ),
+      inputSizes = Seq(1024, 1024)
+    )
+  }
 }
