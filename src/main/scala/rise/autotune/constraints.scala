@@ -80,6 +80,7 @@ object constraints {
 
   // we only look at constraints on top-level nats
   def collectConstraints(e: Expr, parameters: Parameters): Set[Constraint] = {
+
     import arithexpr.arithmetic._
     import BoolExpr._
 
@@ -107,6 +108,8 @@ object constraints {
             for ((ls, gs) <- Seq((ls0, gs0), (ls1, gs1), (ls2, gs2))) {
               cs += RangeConstraint(gs, RangeAdd(0, PosInf, ls))
             }
+            // todo change hard-coded 1024 to CL_DEVICE_MAX_WORK_GROUP_SIZE
+            addPredicate(ArithPredicate(ls0*ls1*ls2, 1024, ArithPredicate.Operator.<=))
           case _ =>
         }
         super.expr(e)
@@ -146,6 +149,21 @@ object constraints {
           m
         })
     })
+
+
+    // todo add additional constraints here -> e.g. local memory usage, hardware-analysis
+
+    // inject local size max here
+    // parameter: "tuned_ls0"
+    // constraint: "tuned_ls0 * tuned_ls1 <= 1024"
+    // dependencies: "tuned_ls1:
+
+    val ls0: Nat = 10
+    val ls1: Nat = 20
+    val test = addPredicate(ArithPredicate(ls0*ls1, 1024, ArithPredicate.Operator.<=))
+
+    println("constraints: " )
+    cs.foreach(println)
 
     cs.toSet
   }
