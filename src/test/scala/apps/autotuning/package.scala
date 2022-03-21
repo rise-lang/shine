@@ -31,8 +31,8 @@ package object autotuning {
       samples = 20, // defined by config file, value is ignored
       name = version,
       output = s"${output}/${version}",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
+      timeouts = Timeouts(10000, 10000, 20000),
+      executionIterations = 5,
       speedupFactor = 100,
       configFile = Some(configFile),
       hmConstraints = true,
