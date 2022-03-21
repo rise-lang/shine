@@ -10,9 +10,22 @@ from matplotlib.pyplot import cm
 import numpy as np
 
 plt.style.use('seaborn')  # to get seaborn scatter plot
+
 path = sys.argv[1]
+log = False
+
+def parse_log(arg):
+    if(arg == 'log'):
+        return True
+    else:
+        return False
+
+
+if(len(sys.argv) > 2):
+    log = parse_log(sys.argv[2])
 
 def collect_points(input_file):
+    global log
     y = []
     x = []
     ifd = open(str(path + '/' + input_file), mode='r')
@@ -30,7 +43,17 @@ def collect_points(input_file):
     
             if(str(row[11]) == 'True'):
                 x.append(line_count)
-                y.append(float(row[10]))
+                if(log == True):
+                    y.append(np.log10(float(row[10])))
+                else:
+                    y.append(float(row[10]))
+
+            else:
+                x.append(line_count)
+                if(log == True):
+                    y.append(float(-1))
+                else:
+                    y.append(float(-1000))
            
     return (x, y)
            
