@@ -150,20 +150,7 @@ object constraints {
         })
     })
 
-
     // todo add additional constraints here -> e.g. local memory usage, hardware-analysis
-
-    // inject local size max here
-    // parameter: "tuned_ls0"
-    // constraint: "tuned_ls0 * tuned_ls1 <= 1024"
-    // dependencies: "tuned_ls1:
-
-    val ls0: Nat = 10
-    val ls1: Nat = 20
-    val test = addPredicate(ArithPredicate(ls0*ls1, 1024, ArithPredicate.Operator.<=))
-
-    println("constraints: " )
-    cs.foreach(println)
 
     cs.toSet
   }
