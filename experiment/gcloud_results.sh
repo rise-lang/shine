@@ -9,9 +9,9 @@ mkdir -p results
 user="jo"
 
 # use rsync dry run
-rsync -aunv ${user}@${1}:~/shine/autotuning/harris_test results
+#rsync -aunv ${user}@${1}:~/shine/autotuning/harris_test results
 # use rsync
-rsync -au --info=progress2 ${user}@${1}:~/shine/autotuning/harris_test results
+rsync -au --info=progress2 ${user}@${1}:~/shine/autotuning/${2} results
 
 
 
