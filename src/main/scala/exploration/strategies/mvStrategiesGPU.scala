@@ -1,12 +1,20 @@
 package exploration.strategies
 
-import elevate.core.Strategy
+import elevate.core.{Strategy, Success}
 import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
+import exploration.strategies.simpleStrategiesGPU.{allSplitJoin, allTopdownSplitJoin, bottomUpSplitJoin, lowerGs0, lowerGs1, lowerGsGs, lowerLcl0, lowerLcl1, lowerWrg0, lowerWrg1, lowerWrgLcl, lowerWrgWrgLclLcl, oneSplitJoin, oneUsingStateSplitJoin, someSplitJoin, topDownSplitJoin}
+import rise.core.App
+import rise.core.DSL.{TypeAssertionHelper, preserveType}
+import rise.core.primitives.map
+import rise.core.types.DataType
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering.{addRequiredCopies, reduceOCL}
 import rise.elevate.rules.traversal.default.RiseTraversable
 import rise.elevate.{Rise, tunable}
+import rise.eqsat.NamedRewriteDSL.{app, lam, map}
+import rise.eqsat.{NamedRewrite, rules}
+import rise.eqsat.rules.{Rule, liftReduceSeq, liftReduceSeq2, liftReduceSeq3, mapFission, reduceSeq, reduceSeqMapFission, reduceSeqMapFusion, splitBeforeMap, splitJoin2M, transposeAroundMapMapF1M}
 
 //import rise.eqsat.rules._
 
@@ -114,6 +122,52 @@ object mvStrategiesGPU {
   // what about traversals? Where to apply these rules?
 
   // extracted
+  val test = Success(mapFission)
+
+//  def mapFission2: Strategy[Rise] = `*g >> *f -> *(g >> f)`
+//  @rule def `*g >> *f -> *(g >> f)`: Strategy[Rise] = {
+//    case e @ App(App(map(), f), App(App(map(), g), arg)) =>
+//      Success(map(preserveType(g) >> f)(arg) !: e.t)
+//  }
+//
+//
+//  val strategies3 = Set[Strategy[Rise]](
+//    mapFusion,
+//    mapFission,
+//    reduceSeq,
+//    reduceSeqMapFusion,
+//    tunable(splitJoin),
+//    tunable(splitStrategy),
+//    splitBeforeMap,
+//    reduceSeqMapFission,
+//    liftReduceSeq,
+//    liftReduceSeq2,
+//    liftReduceSeq3,
+//    transposeAroundMapMapF1M,
+//
+//    //     partial lowerings
+//    lowerGs0,
+//    lowerGs1,
+//    lowerWrg0,
+//    lowerWrg1,
+//    lowerLcl0,
+//    lowerLcl1,
+//    lowerGsGs,
+//    lowerWrgLcl,
+//    lowerWrgWrgLclLcl,
+//    //     split join
+//    allSplitJoin,
+//    oneSplitJoin,
+//    someSplitJoin,
+//    oneUsingStateSplitJoin,
+//    topDownSplitJoin,
+//    allTopdownSplitJoin,
+//    bottomUpSplitJoin
+//
+//  )
+
+
+
 
 //  // list
 //  mapFission,
@@ -138,87 +192,4 @@ object mvStrategiesGPU {
 //  ocl.mapWorkGroup(0),
 //  ocl.mapLocal(0)
 
-
-
-
-
-  // maps inside map reduce will stay maps instead of mapSeqs
-  val lowering =
-    addRequiredCopies() `;`
-      fuseReduceMap2 `;` // fuse map and reduce
-    rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
-      reduceMapFission2 `;` // fission map and reduce
-      rise.elevate.rules.lowering.specializeSeqReduce() `;` // lower: reduce -> reduceSeq
-    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
-
-  // strategies
-  @rule def allSplitJoin: Strategy[Rise] =
-    all(tunable(splitJoin))
-  @rule def oneSplitJoin: Strategy[Rise] =
-    one(tunable(splitJoin))
-  @rule def someSplitJoin: Strategy[Rise] =
-    some(tunable(splitJoin))
-  @rule def oneUsingStateSplitJoin: Strategy[Rise] =
-    oneUsingState(tunable(splitJoin))
-  @rule def topDownSplitJoin: Strategy[Rise] =
-    topDown(tunable(splitJoin))
-  @rule def allTopdownSplitJoin: Strategy[Rise] =
-    allTopdown(tunable(splitJoin))
-  @rule def bottomUpSplitJoin: Strategy[Rise] =
-    bottomUp(tunable(splitJoin))
-
-  // lowerings
-  @rule def lowerGs0: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapGlobal(0))
-
-  @rule def lowerGs1: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapGlobal(1))
-
-  @rule def lowerWrg0: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapWorkGroup(0))
-
-  @rule def lowerWrg1: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapWorkGroup(1))
-
-  @rule def lowerLcl0: Strategy[Rise]=
-    topDown(rise.elevate.rules.lowering.mapLocal(0))
-
-  @rule def lowerLcl1: Strategy[Rise]=
-    topDown(rise.elevate.rules.lowering.mapLocal(1))
-
-  @rule def lowerGsGs: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapGlobal(0)) `;`
-      topDown(rise.elevate.rules.lowering.mapGlobal(1))
-
-  @rule def lowerWrgLcl: Strategy[Rise] =
-    topDown(rise.elevate.rules.lowering.mapWorkGroup(0)) `;`
-      topDown(rise.elevate.rules.lowering.mapLocal(0))
-
-  @rule def lowerWrgWrgLclLcl: Strategy[Rise]=
-    topDown(rise.elevate.rules.lowering.mapWorkGroup(0)) `;`
-      topDown(rise.elevate.rules.lowering.mapWorkGroup(1)) `;`
-      topDown(rise.elevate.rules.lowering.mapLocal(0)) `;`
-      topDown(rise.elevate.rules.lowering.mapLocal(1))
-
-  val strategies = Set[Strategy[Rise]](
-    // partiall lowerings
-    lowerGs0,
-    lowerGs1,
-    lowerWrg0,
-    lowerWrg1,
-    lowerLcl0,
-    lowerLcl1,
-    lowerGs0,
-    lowerGsGs,
-    lowerWrgLcl,
-    lowerWrgWrgLclLcl,
-    // split join
-    allSplitJoin,
-    oneSplitJoin,
-    someSplitJoin,
-    oneUsingStateSplitJoin,
-    topDownSplitJoin,
-    allTopdownSplitJoin,
-    bottomUpSplitJoin
-  )
 }
