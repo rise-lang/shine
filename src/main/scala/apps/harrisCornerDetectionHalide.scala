@@ -230,8 +230,7 @@ object harrisCornerDetectionHalide {
         )) >> unslide2D >> map(padEmpty(4))
       ))
 
-//    def harrisTileShiftInwardsPar(tileX: Int, tileY: Int, mapPar: Int => ToBeTyped[Expr],
-    def harrisTileShiftInwardsPar(tileX: Nat, tileY: Nat, mapPar: Int => ToBeTyped[Expr],
+    def harrisTileShiftInwardsPar(tileX: Nat, tileY: Nat, mapPar: Nat => ToBeTyped[Expr],
                                   innerHarris: ToBeTyped[Expr]): ToBeTyped[Expr] =
       depFun((h: Nat, w: Nat) => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
@@ -293,9 +292,8 @@ object harrisCornerDetectionHalide {
     // limitations:
     // - v <= 4
     // - if toMem = toPrivate, loop unrolling can fail due to blowup
-//    def harrisVecUnaligned2(v: Int,
     def harrisVecUnaligned2(v: Nat,
-                            mapPar: Int => ToBeTyped[Expr],
+                            mapPar: Nat => ToBeTyped[Expr],
                             toMem: ToBeTyped[Expr]): ToBeTyped[Expr] =
       depFun((h: Nat) => nModFun(v, w => fun(
         (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)

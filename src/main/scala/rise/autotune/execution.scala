@@ -43,11 +43,11 @@ object execution {
 
     val codegenStart = System.currentTimeMillis()
 
-    val codegenResult = try {
+    val codegenResult = /* try */ {
 
       // run code-generation with timeout
-      val codgenResult = autoTuningUtils.runWithTimeout(
-        timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression))
+      val codgenResult: Option[gen.opencl.HostedModule] = /*autoTuningUtils.runWithTimeout(
+        timeouts.codegenerationTimeout)(*/Some(gen.opencl.hosted("fun").fromExpr(expression))//)
 
       // check if timeout was triggered
       codgenResult match {
@@ -58,10 +58,10 @@ object execution {
           )
         )
       }
-    } catch {
+    } /* catch {
       case e:Throwable =>
         Left(AutoTuningError(CODE_GENERATION_ERROR, Some(e.getCause.getMessage)))
-    }
+    } */
 
     val codegenTime = TimeSpan.inMilliseconds((System.currentTimeMillis() - codegenStart).toDouble)
 
@@ -92,6 +92,8 @@ object execution {
 
         assert(executionIterations > 0)
 
+        println(program)
+
         // execute program
         val result = executeWithRuntime(
           program,
@@ -102,6 +104,8 @@ object execution {
           speedupFactor,
           execution
         )
+
+        println(result)
 
         ExecutionResult(
           runtime = result._1,

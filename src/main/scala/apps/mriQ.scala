@@ -20,21 +20,11 @@ object mriQ {
       i ->: i ->: i ->: o
   }
 
-//  private val qFun = foreignFun("computeQ",
-//    Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
-//    """{
-//      |  #define PIx2 6.2831853071795864769252867665590058f
-//      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
-//      |  acc._fst = acc._fst + PhiMag * cos(expArg);
-//      |  acc._snd = acc._snd + PhiMag * sin(expArg);
-//      |  return acc;
-//      |}""".stripMargin,
-//    f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
-
   private val qFun = foreignFun("computeQ",
     Seq("sX", "sY", "sZ", "Kx", "Ky", "Kz", "PhiMag", "acc"),
     """{
-      |  float expArg = 6.2831853071795864769252867665590058f * (Kx * sX + Ky * sY + Kz * sZ);
+      |  #define PIx2 6.2831853071795864769252867665590058f
+      |  float expArg = PIx2 * (Kx * sX + Ky * sY + Kz * sZ);
       |  acc._fst = acc._fst + PhiMag * cos(expArg);
       |  acc._snd = acc._snd + PhiMag * sin(expArg);
       |  return acc;

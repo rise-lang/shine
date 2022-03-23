@@ -107,7 +107,10 @@ package object autotune {
 
         val filePath = tuner.saveToFile match{
           case true => tuner.output + "/" + tuner.name + ".json"
-          case false => "/tmp/" + tuner.name + ".json"
+          case false => {
+            ("mkdir -p tmp" !!)
+            "/tmp/" + tuner.name + ".json"
+          }
         }
 
         val file = new PrintWriter(
@@ -175,14 +178,11 @@ package object autotune {
 
     println("configFile: " + configFile)
 
-    // todo adjust this check
-    // call `hypermapper` for testing installation?
-    // check if hypermapper is installed and config file exists
-//    assert(
-//      (os.isFile(os.Path.apply("/usr/local/bin/hypermapper"))
-//        || os.isFile(os.Path.apply("/usr/bin/hypermapper")))
-//        && os.isFile(configFile)
-//    )
+    // check if hypermapper is installed
+    ("which hypermapper" !!)
+
+    // check if config file exists
+    assert(os.isFile(configFile))
 
     val hypermapper = os.proc("hypermapper", configFile).spawn()
 
@@ -241,7 +241,7 @@ package object autotune {
                 response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
-          print(s"Response: $response")
+
           // send response to Hypermapper
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
@@ -357,8 +357,6 @@ package object autotune {
         ("mv " + tuner.name + ".log" + " " +
           tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
 
-        // move generated config file to output folder
-        ("mv " + "/tmp/" + tuner.name + ".json" + " " + tuner.output !!)
       }
 
       // create plots
