@@ -45,28 +45,33 @@ object gemv {
     import rise.openCL.DSL._
     import rise.openCL.primitives.{mapWorkGroup => _, mapLocal => _, _}
 
-    val gemvBlastN = depFun((n: Nat, m: Nat) => fun(
-      (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-        (m`.`f32)
-    )((mat, xs, ys, alpha, beta) =>
-      join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
-        fun(y => mapLocal(fun(x =>
-          fst(x) * alpha + snd(x) * beta
-        )) $ zip(y)(map(snd) $ matChunk)) o
-        // TODO: check address space
-        oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
-          let (toLocal(mapLocal(fun(x => x))(snd(next))))
-          be (localX => // localX: 64.f32
-            mapLocal(fun(x => // x: f32 x 64.f32
-              // TODO: check address space
-              oclReduceSeq(AddressSpace.Private)(fun((acc2, next2) => // next2: (f32 x f32)
-                acc2 + fst(next2) * snd(next2)
-              ))(fst(x)) $ zip(snd(x))(localX)
-            )) $ zip(acc)(fst(next)))
-        ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (64`.`f32))) $
-          zip(transpose o map(split(64) o fst) $ matChunk)(split(64) $ xs)
-      )) o split(64) $ zip(mat)(ys)
-    ))
+    def gemvBlastNParam(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
+          (m`.`f32)
+      )((mat, xs, ys, alpha, beta) =>
+        join o mapWorkGroup(fun(matChunk => // matChunk: 64.(n.f32 x f32)
+          fun(y => mapLocal(fun(x =>
+            fst(x) * alpha + snd(x) * beta
+          )) $ zip(y)(map(snd) $ matChunk)) o
+            // TODO: check address space
+            oclReduceSeq(AddressSpace.Private)(fun((acc, next) => // next: 64.64.f32 x 64.f32
+              let (toLocal(mapLocal(fun(x => x))(snd(next))))
+                be (localX => // localX: 64.f32
+                mapLocal(fun(x => // x: f32 x 64.f32
+                  // TODO: check address space
+                  oclReduceSeq(AddressSpace.Private)(fun((acc2, next2) => // next2: (f32 x f32)
+                    acc2 + fst(next2) * snd(next2)
+                  ))(fst(x)) $ zip(snd(x))(localX)
+                )) $ zip(acc)(fst(next)))
+            ))(mapLocal(fun(x => x))(generate(fun(_ => lf32(0.0f))) :: (s0`.`f32))) $
+            zip(transpose o map(split(s0) o fst) $ matChunk)(split(s0) $ xs)
+        )) o split(s0) $ zip(mat)(ys)
+      ))
+
+    }
+
+    val gemvBlastN = gemvBlastNParam(64)
 
     val gemvBlastT = depFun((n: Nat, m: Nat) => fun(
       (n`.`m`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -74,6 +79,15 @@ object gemv {
     )((mat, xs, ys, alpha, beta) =>
       gemvBlastN(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
     ))
+
+    def gemvBlastTParam(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (n`.`m`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
+          (m`.`f32)
+      )((mat, xs, ys, alpha, beta) =>
+        gemvBlastNParam(s0)(n)(m)(transpose(mat))(xs)(ys)(alpha)(beta)
+      ))
+    }
 
     val gemvFused = depFun((n: Nat, m: Nat) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -90,39 +104,47 @@ object gemv {
         )) |> join
     ))
 
-    val gemvFusedAMD = depFun((n: Nat, m: Nat) => fun(
-      (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->: (m`.`f32)
-    )((mat, xs, ys, alpha, beta) =>
-      zip(mat)(ys) |>
-        mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
-            reorderWithStride(128) |>
-            split(n /^ 128) |>
-            toLocalFun(mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
-            )) |>
-            split(128) |>
-            toLocalFun(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))) |>
-            mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
-        )) |> join
-    ))
+    def gemvFusedAMDParam(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->: (m`.`f32)
+      )((mat, xs, ys, alpha, beta) =>
+        zip(mat)(ys) |>
+          mapWorkGroup(fun(t =>
+            zip(xs)(t._1) |>
+              reorderWithStride(s0) |>
+              split(n /^ s0) |>
+              toLocalFun(mapLocal(
+                reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              )) |>
+              split(s0) |>
+              toLocalFun(mapLocal(reduceSeq(add)(lf32(0.0f)))) |>
+              mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
+          )) |> join
+      ))
+    }
 
-    val gemvKeplerBest = depFun((n: Nat, m: Nat) => fun(
-      (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
-        (m`.`f32)
-    )((mat, xs, ys, alpha, beta) =>
-      zip(mat)(ys) |>
-        mapWorkGroup(fun(t =>
-          zip(xs)(t._1) |>
-            reorderWithStride(128) |>
-            split(n /^ 128) |>
-            toLocalFun(mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
-            )) |>
-            toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))) |>
-            fun(x => (alpha * x) + (t._2 * beta))
-        ))
-    ))
+    val gemvFusedAMD = gemvFusedAMDParam(128)
+
+    def gemvKeplerBestParam(s0: Nat): ToBeTyped[Expr] = {
+      depFun((n: Nat, m: Nat) => fun(
+        (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
+          (m`.`f32)
+      )((mat, xs, ys, alpha, beta) =>
+        zip(mat)(ys) |>
+          mapWorkGroup(fun(t =>
+            zip(xs)(t._1) |>
+              reorderWithStride(s0) |>
+              split(n /^ s0) |>
+              toLocalFun(mapLocal(
+                reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+              )) |>
+              toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
+              fun(x => (alpha * x) + (t._2 * beta))
+          ))
+      ))
+    }
+
+    val gemvKeplerBest = gemvKeplerBestParam(128)
   }
 
   object omp {

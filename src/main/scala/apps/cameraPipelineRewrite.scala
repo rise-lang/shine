@@ -3,7 +3,6 @@ package apps
 import util.printTime
 import rise.core.{primitives => p, _}
 import rise.core.DSL._
-import rise.core.{types => rct}
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -383,44 +382,18 @@ object cameraPipelineRewrite {
   }
 
   def letHoist: Strategy[Rise] = {
-    case expr @ App(App(f, App(App(p.let(), v), Lambda(x, b))), y) if (f.t match {
-      // reason: let only works for functions over datatypes
-      case rct.FunType(_: rct.DataType, rct.FunType(_, _: rct.DataType)) => true
-      case _ => false
-    }) =>
-      Success((let(v) be (lambda(eraseType(x), preserveType(f)(b)(y)))) !: expr.t)
-    case expr @ App(App(f, y), App(App(p.let(), v), Lambda(x, b))) if (f.t match {
-      // reason: let only works for functions over datatypes
-      case rct.FunType(_, rct.FunType(_: rct.DataType, _: rct.DataType)) => true
-      case _ => false
-    }) =>
-      Success((let(v) be (lambda(eraseType(x), preserveType(f)(y)(b)))) !: expr.t)
-    case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) if (f.t match {
-      // reason: let only works for functions over datatypes
-      case rct.FunType(_: rct.DataType, _: rct.DataType) => true
-      case _ => false
-    }) =>
-      Success((let(v) be (lambda(eraseType(x), preserveType(f)(b)))) !: expr.t)
+    case expr @ App(f, App(App(p.let(), v), Lambda(x, b))) =>
+      Success(letf(lambda(eraseType(x), preserveType(f)(b)))(v) !: expr.t)
     // TODO: normal form / non-map specific?
     case expr @ App(App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )), in) if !contains[Rise](y).apply(v) =>
-      Success((let(v) be (lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))) !: expr.t)
+      Success(letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v) !: expr.t)
     case expr @ App(p.map(), Lambda(y,
       App(App(p.let(), v), Lambda(x, b))
     )) if !contains[Rise](y).apply(v) =>
       Success(fun(in =>
-        let(v) be (lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))
-      ) !: expr.t)
-    case expr @ App(App(p.mapSeq(), Lambda(y,
-    App(App(p.let(), v), Lambda(x, b))
-    )), in) if !contains[Rise](y).apply(v) =>
-      Success((let(v) be (lambda(eraseType(x), p.mapSeq(lambda(eraseType(y), b))(in)))) !: expr.t)
-    case expr @ App(p.mapSeq(), Lambda(y,
-    App(App(p.let(), v), Lambda(x, b))
-    )) if !contains[Rise](y).apply(v) =>
-      Success(fun(in =>
-        let(v) be (lambda(eraseType(x), p.mapSeq(lambda(eraseType(y), b))(in)))
+        letf(lambda(eraseType(x), p.map(lambda(eraseType(y), b))(in)))(v)
       ) !: expr.t)
     case _ => Failure(letHoist)
   }
