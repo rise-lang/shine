@@ -92,8 +92,6 @@ object execution {
 
         assert(executionIterations > 0)
 
-        println(program)
-
         // execute program
         val result = executeWithRuntime(
           program,
@@ -104,8 +102,6 @@ object execution {
           speedupFactor,
           execution
         )
-
-        println(result)
 
         ExecutionResult(
           runtime = result._1,
