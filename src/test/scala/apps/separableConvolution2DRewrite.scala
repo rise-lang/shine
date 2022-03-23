@@ -10,6 +10,7 @@ import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import elevate.macros.StrategyMacro.strategy
 import rise.elevate.Rise
 import rise.elevate.strategies.algorithmic._
 import rise.elevate.rules.traversal._
@@ -19,6 +20,7 @@ import rise.core.primitives._
 class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
   private val idS: Strategy[Rise] = strategies.basic.id
+  private val idSC: Strategy[(Rise, Int)] = strategies.basic.id
 
   private val weights2d = binomialWeights2d
   private val weightsV = binomialWeightsV
@@ -33,6 +35,95 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private val Dv = dot(weightsV)
 
   private val BENF = rise.elevate.strategies.normalForm.BENF()(alternative.RiseTraversable)
+
+
+  def countApplications(s: Strategy[Rise]): Strategy[(Rise, Int)] = { case (p, c) =>
+    s(p) match {
+      case Success(p2) => Success((p2, c + 1))
+      case Failure(s) => Failure(countApplications(s))
+    }
+  }
+
+  // FIXME: lots of code duplication
+  implicit val traversableCountApplications: strategies.Traversable[(Rise, Int)] = new strategies.Traversable[(Rise, Int)] {
+    override def all: Strategy[(Rise, Int)] => Strategy[(Rise, Int)] = s => {
+      case (ap @ App(f, e), c) =>
+        s((f, c)).flatMapSuccess { case (f2, c2) => s((e, c2)).mapSuccess { case (e2, c3) =>
+          (App(f2, e2)(ap.t), c3) }}
+      case x => traverseSingleSubexpression(s)(x) match {
+        case Some(r) => r
+        case None => Failure(s)
+      }
+    }
+
+    override def one: Strategy[(Rise, Int)] => Strategy[(Rise, Int)] =
+      oneHandlingState(false)
+    override def oneUsingState: Strategy[(Rise, Int)] => Strategy[(Rise, Int)] =
+      oneHandlingState(true)
+
+    private def oneHandlingState: Boolean => Strategy[(Rise, Int)] => Strategy[(Rise, Int)] =
+      carryOverState => s => {
+        // (option 2) traverse to function first
+        case (a @ App(f, e), c) => s((f, c)) match {
+          case Success((x: Rise, c2)) => Success((App(x, e)(a.t), c2))
+          case Failure(state) => if (carryOverState)
+            mapSuccessWithCount(state((e, c)), App(f, _)(a.t)) else
+            mapSuccessWithCount(s((e, c)), App(f, _)(a.t))
+        }
+
+        // Push s further down the AST.
+        // If there are no subexpressions (None),
+        // we failed to apply s once => Failure
+        case x => traverseSingleSubexpression(s)(x) match {
+          case Some(r) => r
+          case None => Failure(s)
+        }
+      }
+
+    override def some: Strategy[(Rise, Int)] => Strategy[(Rise, Int)] = s => {
+      case (a @ App(f, e), c) => (s((f, 0)), s((e, 0))) match {
+        case (Failure(_), Failure(_)) => Failure(s)
+        case (x, y) =>
+          val (f2, cf) = x.getProgramOrElse((f, 0))
+          val (e2, ce) = y.getProgramOrElse((e, 0))
+          Success((App(f2, e2)(a.t), c + cf + ce))
+      }
+
+      // ...same here (see oneHandlingState)
+      case x => traverseSingleSubexpression(s)(x) match {
+        case Some(r) => r
+        case None => Failure(s)
+      }
+    }
+
+    // Handle all Rise-AST nodes that contain one
+    // or no subexpressions (all except App)
+    type TraversalType = Strategy[(Rise, Int)] => ((Rise, Int)) => Option[RewriteResult[(Rise, Int)]]
+    private def mapSuccessWithCount(r: RewriteResult[(Rise, Int)], f: Rise => Rise): RewriteResult[(Rise, Int)] =
+      r.mapSuccess { case (e2, c2) => (f(e2), c2) }
+    protected def traverseSingleSubexpression: TraversalType = {
+      import rise.core.types._
+      import rise.core.types.DataType._
+
+      s => {
+        case (App(_,_), _) => throw new Exception("this should not happen")
+        case (Identifier(_), _) => None
+        case (l @ Lambda(x, e), c) => Some(mapSuccessWithCount(s((e, c)), Lambda(x, _)(l.t)))
+        case (dl @ DepLambda(k, x, e), c) =>
+          Some(mapSuccessWithCount(s((e, c)), DepLambda(k, x, _)(dl.t)))
+        case (da @ DepApp(k, f, x), c) =>
+          Some(mapSuccessWithCount(s((f, c)), DepApp(k, _, x)(da.t)))
+        case (Literal(_), _) => None
+        case (_: TypeAnnotation, _) => throw new Exception("Type annotations should be gone.")
+        case (_: TypeAssertion, _) => throw new Exception("Type assertions should be gone.")
+        case (_: Opaque, _) => throw new Exception("Opaque expressions should be gone.")
+        case (_: Primitive, _) => None
+      }
+    }
+  }
+
+  @strategy def BENF_counting: Strategy[(Rise, Int)] =
+    normalize(traversableCountApplications)(countApplications(etaReduction()) <+ countApplications(betaReduction))
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
@@ -60,6 +151,18 @@ class separableConvolution2DRewrite extends test_util.Tests {
       assert_ben_eq(result, expected)
       result
     })
+  }
+
+  private def rewrite_steps_counting(a: Expr, steps: scala.collection.Seq[(Strategy[(Rise, Int)], Expr)]): Unit = {
+    var totalBENFC = 0
+    val (_, endC) = steps.foldLeft[(Expr, Int)]((a, 0))({ case ((p, c), (s, expected)) =>
+      val (norm, benfC) = BENF_counting((p, 0)).get
+      totalBENFC += benfC
+      val result = s((norm, c)).get
+      assert_ben_eq(result._1, expected)
+      result
+    })
+    println(s"$endC rewrite rules applied, as well as $totalBENFC for BENF normalization")
   }
 
   //// algorithmic
@@ -111,29 +214,30 @@ class separableConvolution2DRewrite extends test_util.Tests {
   }
 
   test("base to scanline (mapLastFission)") {
-    rewrite_steps(base(weights2d), scala.collection.Seq(
-      idS
+    rewrite_steps_counting(base(weights2d), scala.collection.Seq(
+      idSC
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d))(join(nbh)))))),
-      topDown(separateDotT)
+      topDown(countApplications(separateDotT))
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      topDown(`*f >> S -> S >> **f`)
+      topDown(countApplications(`*f >> S -> S >> **f`))
         -> (P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      topDown(mapFusion)
+      topDown(countApplications(mapFusion))
         -> (P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      topDown(mapFusion)
+      topDown(countApplications(mapFusion))
         -> (P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      topDown(`*S >> T -> T >> S >> *T`)
+      topDown(countApplications(`*S >> T -> T >> S >> *T`))
         -> (P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      topDown(mapFusion)
+      topDown(countApplications(mapFusion))
         -> (P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      topDown(removeTransposePair)
+      topDown(countApplications(removeTransposePair))
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (repeatNTimes(3)(skip(1)(mapLastFission())) `;` BENF `;`
-        repeatNTimes(2)(topDown(mapFusion)))
+      repeatNTimes(3)(skip(1)(countApplications(mapLastFission())))
+        -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(zip(weightsH)) >> *(*(mulT)) >> *(reduce(add)(lf32(0.0f))))),
+      repeatNTimes(2)(topDown(countApplications(mapFusion)))
         -> (P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      topDown(`S >> **f -> *f >> S`)
+      topDown(countApplications(`S >> **f -> *f >> S`))
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
-      idS
+      idSC
         -> scanline(weightsV)(weightsH)
     ))
   }

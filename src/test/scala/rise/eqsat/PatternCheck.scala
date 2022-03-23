@@ -2,7 +2,7 @@ package rise.eqsat
 
 class PatternCheck extends test_util.Tests {
   test("simple match") {
-    val commuteAdd1: DefaultAnalysis.Rewrite = {
+    val commuteAdd1 = {
       import PatternDSL._
       Rewrite.init("commute-add-1",
         app(app(add, ?(0) :: `?dt`(0)), ?(1)).compile()
@@ -12,7 +12,7 @@ class PatternCheck extends test_util.Tests {
           ?(0) :: `?dt`(0)) :: `?dt`(0)))
     }
 
-    val commuteAdd2: DefaultAnalysis.Rewrite = {
+    val commuteAdd2 = {
       import NamedRewriteDSL._
       NamedRewrite.init("commute-add-2",
         app(app(add, "x"), "y")
@@ -21,7 +21,7 @@ class PatternCheck extends test_util.Tests {
     }
 
     for (commuteAdd <- Seq(commuteAdd1, commuteAdd2)) {
-      val egraph = EGraph.emptyWithAnalysis(DefaultAnalysis)
+      val egraph = EGraph.empty()
 
       val (add1, add2) = {
         import ExprDSL._
@@ -31,12 +31,12 @@ class PatternCheck extends test_util.Tests {
 
       egraph.union(add1, add2)
       egraph.rebuild(Seq(add1, add2))
-      val shc = SubstHashCons.empty
+      val shc = SubstsHC.empty
       val matches = commuteAdd.search(egraph, shc)
       val nMatches = matches.map(m => m.substs.size).sum
       assert(nMatches == 2)
 
-      val applications = commuteAdd.apply(egraph, shc, matches)
+      val applications = commuteAdd.apply(egraph, shc)(matches)
       egraph.rebuild(Seq(add1, add2))
       assert(applications.size == 2)
 
@@ -44,6 +44,7 @@ class PatternCheck extends test_util.Tests {
     }
   }
 
+  // TODO: test address App
   test("compile program with depApps") {
     import PatternDSL._
 
@@ -54,11 +55,11 @@ class PatternCheck extends test_util.Tests {
     assert(
       pattern.prog.instructions == Vec(
         PushType(Reg(0)),
-        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        Bind(NatApp((), ()), Reg(0), Reg(1), NatReg(0), TypeReg(1), AddrReg(0)),
         PushType(Reg(1)),
-        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1), TypeReg(2)),
+        Bind(NatApp((), ()), Reg(1), Reg(2), NatReg(1), TypeReg(2), AddrReg(0)),
         PushType(Reg(2)),
-        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2), TypeReg(3)),
+        Bind(Primitive(rise.core.primitives.add.primitive), Reg(2), Reg(3), NatReg(2), TypeReg(3), AddrReg(0)),
         // TODO: the bind below will be executed on each match backtracking,
         //  it is probably best to reorder execution in a smarter way
         NatCompare(NatReg(0), NatReg(1))
@@ -67,7 +68,7 @@ class PatternCheck extends test_util.Tests {
     assert(pattern.prog.v2r == HashMap())
     assert(pattern.prog.n2r == HashMap(x -> NatReg(1)))
 
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
 
     val roots = {
       import ExprDSL._
@@ -81,7 +82,7 @@ class PatternCheck extends test_util.Tests {
 
     egraph.rebuild(roots)
 
-    val shc = SubstHashCons.empty
+    val shc = SubstsHC.empty
     assert(pattern.search(egraph, shc).length == 1)
   }
 
@@ -94,7 +95,7 @@ class PatternCheck extends test_util.Tests {
     assert(
       pattern.prog.instructions == Vec(
         PushType(Reg(0)),
-        Bind(Primitive(rise.core.primitives.map.primitive), Reg(0), Reg(1), NatReg(0), TypeReg(1)),
+        Bind(Primitive(rise.core.primitives.map.primitive), Reg(0), Reg(1), NatReg(0), TypeReg(1), AddrReg(0)),
         // TODO: the bind below will be executed on each match backtracking,
         //  it is probably best to reorder execution in a smarter way
         TypeBind(FunType((), ()), TypeReg(0)),
@@ -109,7 +110,7 @@ class PatternCheck extends test_util.Tests {
     assert(pattern.prog.n2r == HashMap(`?n`(0) -> NatReg(0)))
     assert(pattern.prog.dt2r == HashMap(`?dt`(0) -> TypeReg(5)))
 
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
 
     val roots = {
       import ExprDSL._
@@ -125,7 +126,7 @@ class PatternCheck extends test_util.Tests {
 
     egraph.rebuild(roots)
 
-    val shc = SubstHashCons.empty
+    val shc = SubstsHC.empty
     assert(pattern.search(egraph, shc).length == 2)
   }
 }

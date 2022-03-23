@@ -5,7 +5,7 @@ import ExprDSL._
 
 class EGraphCheck extends test_util.Tests {
   test("simple add") {
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
     val x = egraph.add(Var(0), egraph.addDataType(f32))
     val x2 = egraph.add(Var(0), egraph.addDataType(f32))
     val x3 = egraph.add(Var(0), egraph.addDataType(cst(1)`.`f32))
@@ -21,7 +21,7 @@ class EGraphCheck extends test_util.Tests {
   }
 
   test("canonical nats") {
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
     val x = egraph.add(Var(0), egraph.addType(Type(IndexType(Nat(
       NatAdd(Nat(NatVar(0)), Nat(NatAdd(Nat(NatVar(2)), Nat(NatVar(1))))))))))
     val x2 = egraph.add(Var(0), egraph.addType(Type(IndexType(Nat(

@@ -10,11 +10,12 @@ import ProveEquiv.syntax._
 class Reorder extends test_util.Tests {
   private val reorderRulesCNF = Seq(
     // rules.combinatory.compositionAssoc1,
-    rules.combinatory.compositionAssoc2,
+    // rules.combinatory.compositionAssoc2,
     // rules.combinatory.compositionIntro, //.directed(),
     // rules.combinatory.compositionLeftId, //.directed(),
     // rules.combinatory.compositionRightId, //.directed(),
     rules.combinatory.mapFusion,
+    rules.combinatory.mapFusion2,
     rules.combinatory.mapFission,
     rules.combinatory.transposeAroundMapMapF,
     // rules.combinatory.transposePairAfter,
@@ -24,9 +25,7 @@ class Reorder extends test_util.Tests {
   )
 
   private val reorderRulesBENF = Seq(
-    rules.eta,//.directed(),
-    rules.betaExtract,//.directed(),
-    rules.betaNatExtract,//.directed(),
+    // rules.eta, rules.betaExtract, rules.betaNatExtract,
     rules.mapFusion, rules.mapFission,
     rules.transposePairAfter, rules.mapMapFBeforeTranspose,
     rules.etaAbstraction,
