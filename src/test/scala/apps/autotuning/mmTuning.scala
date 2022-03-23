@@ -447,14 +447,14 @@ class mmTuning extends test_util.Tests {
     )
   }
 
-  ignore("tune mm 1024"){
+  test("tune mm 1024"){
     val inputSize: Int = 1024
 
     val configs = Seq(
       s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-       s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-       s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
     )
@@ -470,7 +470,7 @@ class mmTuning extends test_util.Tests {
     )
   }
 
-  test("tune mm 4096"){
+  ignore("tune mm 4096"){
     val inputSize: Int = 4096
 
     val configs = Seq(

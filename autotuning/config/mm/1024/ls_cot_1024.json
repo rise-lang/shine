@@ -11,6 +11,8 @@
     "mode" : "client-server"
   },
   "log_file" : "ls_cot_1024.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"

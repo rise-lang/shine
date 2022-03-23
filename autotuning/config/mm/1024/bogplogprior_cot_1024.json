@@ -11,6 +11,7 @@
     "mode" : "client-server"
   },
   "log_file" : "bogplog_cot_1024.log",
+  "log_transform_output": true,
   "design_of_experiment" : {
     "doe_type" : "random sampling",
     "number_of_samples" : 100
