@@ -1,0 +1,28 @@
+{
+  "application_name" : "kmeans_exhaustive",
+  "optimization_objectives" : ["runtime"],
+  "hypermapper_mode" : {
+    "mode" : "client-server"
+  },
+  "feasible_output" : {
+    "enable_feasible_predictor" : true,
+    "name" : "Valid",
+    "true_value" : "True",
+    "false_value" : "False"
+  },
+  "optimization_method": "exhaustive",
+  "input_parameters" : {
+    "tuned_gs0" : {
+      "parameter_type" : "ordinal",
+      "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
+      "constraints" : ["tuned_gs0 >= 0", "tuned_gs0 % tuned_ls0 == 0"],
+      "dependencies" : ["tuned_ls0"]
+    },
+    "tuned_ls0" : {
+      "parameter_type" : "ordinal",
+      "values" : [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
+      "constraints" : [],
+      "dependencies" : []
+    }
+  }
+}
