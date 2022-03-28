@@ -2,6 +2,7 @@ package exploration
 
 import apps.separableConvolution2D.mulT
 import exploration.strategies.{defaultStrategiesGPU, simpleStrategiesGPU}
+import meta.parser.Nat.AST
 import rise.autotune.HostCode
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -11,6 +12,9 @@ import rise.core.types.DataType._
 import rise.core.types._
 import rise.openCL.DSL.mapGlobal
 import rise.openCL.primitives.oclReduceSeq
+import util.writeToTempFile
+
+import java.io.File
 
 
 class mvExploration extends test_util.Tests {
@@ -96,25 +100,34 @@ object mvExploration {
   object mvHostCode {
     // scalastyle:off
     val init: (Int, Int) => String = (N, M) => {
+      val mFile = writeMat(genMat((N, M), () => Math.random.toFloat))
+      val vFile = writeVec(genVec(N, () => Math.random.toFloat))
+      println(mFile)
+      println(vFile)
+
       s"""
          |const int N = ${N};
          |const int M = ${M};
          |
-         |srand(time(NULL));
          |
          |Buffer inputM = createBuffer(ctx, M * N * sizeof(float), HOST_WRITE | DEVICE_READ);
          |Buffer inputV = createBuffer(ctx, N * sizeof(float), HOST_WRITE | DEVICE_READ);
          |Buffer outputV = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
          |
          |float* inM = hostBufferSync(ctx, inputM, N * M * sizeof(float), HOST_WRITE);
+         |FILE* file = fopen("${mFile.getAbsolutePath}", "r");
          |for (int i = 0; i < N * M ; i++) {
-         |  inM[i] = (float)(rand());
+         |  fscanf(file, "%f", &inM[i]);
          |}
+         |fclose(file);
          |
          |float* inV = hostBufferSync(ctx, inputV, N * sizeof(float), HOST_WRITE);
+         |file = fopen("${vFile.getAbsolutePath}", "r");
          |for (int i = 0; i < N; i++) {
-         |  inV[i] = (float)(rand());
+         |  fscanf(file, "%f", &inV[i]);
          |}
+         |fclose(file);
+         |
          |
          |""".stripMargin
     }
@@ -134,6 +147,17 @@ object mvExploration {
          |""".stripMargin
     // scalastyle:on
   }
+
+  def genScal[A <: Number] (gen: () => A): A = gen()
+  def genVec[A] (size: Int, gen: () => A): Seq[A] = Seq.fill(size)(gen())
+  def genMat[A] (sizes: (Int, Int), gen: () => A): Seq[Seq[A]] = Seq.fill(sizes._1)(genVec(sizes._2,gen))
+
+  def writeMat[A] (mat: Seq[Seq[A]]): File = writeToTempFile("mvInput", "", mat.map(_.mkString(" ")).mkString("\n"))
+  def writeVec[A] (vec: Seq[A]): File = writeToTempFile("mvInput", "", vec.mkString(" "))
+
+
+
+
 
   def main(args: Array[String]): Unit = {
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
