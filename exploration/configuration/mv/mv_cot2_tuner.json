@@ -1,0 +1,15 @@
+  {
+      "name" : "mv_autotuner",
+      "output" : "exploration",
+      "inputSize" : 1024,
+      "metaheuristic" : [{
+        "heuristic" : "cot2",
+        "depth" : 3,
+        "iterations" : 1
+      }],
+      "executor" : {
+        "name" : "AutoTuning",
+        "iterations" : 10,
+	    "threshold" : 10
+      }
+}
