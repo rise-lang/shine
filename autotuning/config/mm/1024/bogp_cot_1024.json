@@ -15,14 +15,14 @@
   "epsilon_greedy_threshold": 0,
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 110
+    "number_of_samples" : 11
   },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 390,
+  "optimization_iterations": 489,
   "input_parameters" : {
     "tuned_v3": {
       "parameter_type" : "ordinal",
