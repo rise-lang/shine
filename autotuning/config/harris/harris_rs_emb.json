@@ -1,19 +1,25 @@
 {
   "application_name" : "harris_rs_emb",
   "optimization_objectives" : ["runtime"],
-  "hypermapper_mode" : {
-    "mode" : "client-server"
-  },
-  "log_file" : "harris_rs_emb.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
     "true_value" : "True",
     "false_value" : "False"
   },
+  "hypermapper_mode" : {
+    "mode" : "client-server"
+  },
+  "log_file" : "harris_rs_emb.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "design_of_experiment" : {
     "doe_type" : "embedding random sampling",
     "number_of_samples" : 500
+  },
+  "scalarization_method": "linear",
+  "models": {
+    "model": "gaussian_process"
   },
   "optimization_iterations" : 0,
   "input_parameters" : {

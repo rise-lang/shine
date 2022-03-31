@@ -134,7 +134,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-  test("run mm autotuning"){
+  test("run harris autotuning"){
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -167,7 +167,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     runExperiment(
       name = "harris",
       configFiles = configs,
-      iterations = 5,
+      iterations = 10,
       "autotuning/harris_test",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),

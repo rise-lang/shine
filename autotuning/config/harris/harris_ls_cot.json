@@ -1,19 +1,25 @@
 {
   "application_name" : "harris_ls_cot",
   "optimization_objectives" : ["runtime"],
-  "hypermapper_mode" : {
-    "mode" : "client-server"
-  },
-  "log_file" : "harris_ls_cot.log",
   "feasible_output" : {
     "enable_feasible_predictor" : true,
     "name" : "Valid",
     "true_value" : "True",
     "false_value" : "False"
   },
+  "hypermapper_mode" : {
+    "mode" : "client-server"
+  },
+  "log_file" : "harris_ls_cot.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "optimization_method": "local_search",
-  "local_search_random_points" : 125,
+  "local_search_random_points" : 50,
   "local_search_evaluation_limit": 500,
+  "scalarization_method": "linear",
+  "models": {
+    "model": "gaussian_process"
+  },
   "input_parameters" : {
     "tuned_vec" : {
       "parameter_type" : "ordinal",
