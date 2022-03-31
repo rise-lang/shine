@@ -12,9 +12,9 @@
       },
       "design_of_experiment": {
         "doe_type": "random sampling",
-        "number_of_samples": 10
+        "number_of_samples": 50
       },
-      "optimization_iterations": 10,
+      "optimization_iterations": 50,
       "input_parameters" : {
         "s1" : {
           "parameter_type" : "ordinal",
