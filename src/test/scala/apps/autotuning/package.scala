@@ -5,21 +5,25 @@ import rise.autotune.{HostCode, Minimum, Timeouts, Tuner}
 import rise.core.Expr
 import rise.core.types.Nat
 
+import java.io.File
 import scala.language.postfixOps
 import scala.sys.process._
 
 package object autotuning {
 
-  def runExperiment(name: String, configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
+  def runExperiment(name: String, configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat], plotOnly: Boolean = false) = {
 
-    // run tuning
-    for(i <- 1 to iterations) {
-      configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
+    plotOnly match {
+      case true => plotExperiment(name, configFiles, output)
+      case false =>
+        // run tuning
+        for (i <- 1 to iterations) {
+          configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
 
-      // plot experiments after each iteration of all configs
-      plotExperiment(name, configFiles, output)
+          // plot experiments after each iteration of all configs
+          plotExperiment(name, configFiles, output)
+        }
     }
-
   }
 
   def runTuning(configFile: String, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
@@ -66,6 +70,21 @@ package object autotuning {
       s"--title ${name} "
 
     println("plot: \n" + command)
+
+    // create unique filepath
+    val path = output + "/" + "plot_hm.sh"
+    val file = new File(path)
+    val uniqueFilepath = if (file.exists()) {
+      val timeAppendix = System.currentTimeMillis().toString
+      path.substring(0, path.length - 3) + "_" + timeAppendix + ".sh"
+    } else {
+      path
+    }
+
+    // write plotting script
+    val header = "#!/bin/bash\n"
+    val content = header + command
+    util.writeToPath(uniqueFilepath, content)
 
     command !!
   }
