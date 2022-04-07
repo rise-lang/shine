@@ -1,0 +1,2409 @@
+[info] welcome to sbt 1.4.7 (Oracle Corporation Java 1.8.0_332)
+[info] loading settings for project global-plugins from idea.sbt,plugins.sbt ...
+[info] loading global plugins from /home/basta/.sbt/1.0/plugins
+[info] loading settings for project rise-and-shine-build from plugins.sbt ...
+[info] loading project definition from /home/basta/work/rise-and-shine/project
+[info] loading settings for project riseAndShine from build.sbt ...
+[info] loading settings for project arithExpr from build.sbt ...
+[info] loading settings for project executor from build.sbt ...
+[info] loading settings for project CUexecutor from build.sbt ...
+[info] loading settings for project elevate from build.sbt ...
+[info] set current project to riseAndShine (in build file:/home/basta/work/rise-and-shine/)
+[info] running (fork) benchmarks.eqsat.mm 
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 14MiB 634KiB, total: 188MiB 
+[info] goal check: 36ms 825µs
+[info] Iteration:
+[info]   #nodes: 41, #classes: 40, #memo: 41, search: 13ms 362µs, apply: 9ms 36µs, rebuild: 22ms 936µs, total: 45ms 335µs, #rebuilds: 0
+[info]   applied 1: HashMap(reduce-seq -> 1)
+[info]   memory used: 17MiB 885KiB, total: 188MiB 
+[info] goal check: 9ms 795µs
+[info] Iteration:
+[info]   #nodes: 51, #classes: 49, #memo: 51, search: 2ms 68µs, apply: 5ms 654µs, rebuild: 14ms 692µs, total: 22ms 415µs, #rebuilds: 0
+[info]   applied 1: HashMap(reduce-seq-map-fusion -> 1)
+[info]   memory used: 20MiB 9KiB, total: 188MiB 
+[info] goal check: 10ms 484µs
+[info] nodes removed by directed rewriting: 0
+[info] filter eliminated 1 classes and 0 nodes in 2µs + 425µs + 2ms 671µs
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 9MiB 433KiB, total: 188MiB 
+[info] goal check: 6ms 790µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 4ms 825µs, apply: 10ms 800µs, rebuild: 83ms 133µs, total: 98ms 760µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 14MiB 14KiB, total: 188MiB 
+[info] goal check: 14ms 801µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 11ms 913µs, apply: 32ms 980µs, rebuild: 112ms 623µs, total: 157ms 518µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 22MiB 606KiB, total: 188MiB 
+[info] goal check: 34ms 45µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 20ms 831µs, apply: 66ms 409µs, rebuild: 171ms 402µs, total: 258ms 643µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 46MiB 185KiB, total: 188MiB 
+[info] goal check: 45ms 439µs
+[info] filter eliminated 99 classes and 110 nodes in 294ms 752µs + 1ms 792µs + 10ms 218µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 26ms 684µs, apply: 139ms 254µs, rebuild: 362ms 74µs, total: 528ms 13µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 59MiB 49KiB, total: 188MiB 
+[info] goal check: 70ms 614µs
+[info] filter eliminated 497 classes and 583 nodes in 232ms 430µs + 9ms 430µs + 10ms 707µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 31ms 166µs, apply: 216ms 966µs, rebuild: 326ms 559µs, total: 574ms 691µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 116MiB 183KiB, total: 188MiB 
+[info] goal check: 129ms 356µs
+[info] filter eliminated 1811 classes and 2238 nodes in 347ms 522µs + 46ms 608µs + 19ms 524µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 51ms 165µs, apply: 399ms 217µs, rebuild: 581ms 722µs, total: 1s 32ms 105µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 180MiB 673KiB, total: 520MiB 512KiB
+[info] goal check: 250ms 781µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 32MiB 507KiB, total: 523MiB 512KiB
+[info] goal check: 1ms 777µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 784µs, apply: 429µs, rebuild: 3ms 634µs, total: 4ms 849µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 41MiB 222KiB, total: 523MiB 512KiB
+[info] goal check: 2ms 567µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 1ms 755µs, apply: 2ms 804µs, rebuild: 8ms 182µs, total: 12ms 743µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 41MiB 222KiB, total: 523MiB 512KiB
+[info] goal check: 4ms 296µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 3ms 774µs, apply: 3ms 885µs, rebuild: 14ms 403µs, total: 22ms 64µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 58MiB 676KiB, total: 523MiB 512KiB
+[info] goal check: 9ms 775µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 7ms 193µs, apply: 12ms 744µs, rebuild: 23ms 910µs, total: 43ms 848µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 84MiB 844KiB, total: 523MiB 512KiB
+[info] goal check: 12ms 972µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 10ms 889µs, apply: 20ms 45µs, rebuild: 37ms 352µs, total: 68ms 286µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 137MiB 156KiB, total: 523MiB 512KiB
+[info] goal check: 16ms 652µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 12ms 850µs, apply: 45ms 985µs, rebuild: 78ms 882µs, total: 137ms 718µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 259MiB 258KiB, total: 523MiB 512KiB
+[info] goal check: 34ms 508µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 29ms 370µs, apply: 109ms 75µs, rebuild: 166ms 299µs, total: 304ms 745µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 294MiB 141KiB, total: 742MiB 512KiB
+[info] goal check: 56ms 54µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 95ms 228µs, apply: 289ms 835µs, rebuild: 299ms 459µs, total: 684ms 524µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 575MiB 732KiB, total: 742MiB 512KiB
+[info] goal check: 170ms 38µs
+[info] Iteration:
+[info]   #nodes: 7830, #classes: 5275, #memo: 13253, search: 123ms 57µs, apply: 614ms 719µs, rebuild: 429ms 792µs, total: 1s 167ms 569µs, #rebuilds: 1817
+[info]   applied 2323: HashMap(reduce-seq-map-fission -> 1, eta -> 58, transpose-around-map-map-f-1m -> 410, map-fission -> 679, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 15, beta-extract -> 1141, lift-reduce-seq -> 11, reduce-seq-map-fusion -> 6)
+[info]   memory used: 217MiB 915KiB, total: 742MiB 512KiB
+[info] goal check: 125ms 463µs
+[info] Iteration:
+[info]   #nodes: 10813, #classes: 7010, #memo: 21168, search: 100ms 980µs, apply: 1s 155ms 616µs, rebuild: 615ms 713µs, total: 1s 872ms 310µs, #rebuilds: 2546
+[info]   applied 3339: HashMap(eta -> 58, transpose-around-map-map-f-1m -> 695, lift-reduce-seq-3 -> 1, map-fission -> 891, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 19, beta-extract -> 1658, lift-reduce-seq -> 12, reduce-seq-map-fusion -> 3)
+[info]   memory used: 426MiB 594KiB, total: 743MiB 512KiB
+[info] goal check: 175ms 613µs
+[info] nodes removed by directed rewriting: 0
+[info] filter eliminated 10 classes and 9 nodes in 6µs + 413µs + 685µs
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 17MiB 429KiB, total: 743MiB 512KiB
+[info] goal check: 944µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 522µs, apply: 3ms 913µs, rebuild: 4ms 10µs, total: 8ms 446µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 17MiB 429KiB, total: 743MiB 512KiB
+[info] goal check: 1ms 882µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 728µs, apply: 1ms 564µs, rebuild: 8ms 300µs, total: 10ms 592µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 17MiB 429KiB, total: 743MiB 512KiB
+[info] goal check: 3ms 232µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 1ms 555µs, apply: 4ms 165µs, rebuild: 19ms 366µs, total: 25ms 88µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 43MiB 731KiB, total: 743MiB 512KiB
+[info] goal check: 9ms 231µs
+[info] filter eliminated 99 classes and 110 nodes in 48ms 621µs + 938µs + 1ms 877µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 4ms 188µs, apply: 17ms 187µs, rebuild: 67ms 591µs, total: 88ms 967µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 109MiB 463KiB, total: 743MiB 512KiB
+[info] goal check: 33ms 852µs
+[info] filter eliminated 497 classes and 583 nodes in 121ms 792µs + 8ms 982µs + 3ms 968µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 14ms 86µs, apply: 63ms 261µs, rebuild: 180ms 327µs, total: 257ms 676µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 319MiB 835KiB, total: 743MiB 512KiB
+[info] goal check: 61ms 715µs
+[info] filter eliminated 1811 classes and 2238 nodes in 325ms 396µs + 41ms 741µs + 8ms 491µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 40ms 828µs, apply: 221ms 119µs, rebuild: 500ms 885µs, total: 762ms 833µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 398MiB 718KiB, total: 743MiB 512KiB
+[info] goal check: 143ms 603µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 534MiB 647KiB, total: 743MiB 512KiB
+[info] goal check: 1ms 96µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 560µs, apply: 465µs, rebuild: 2ms 889µs, total: 3ms 914µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 534MiB 647KiB, total: 743MiB 512KiB
+[info] goal check: 1ms 705µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 1ms 23µs, apply: 707µs, rebuild: 6ms 628µs, total: 8ms 358µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 547MiB 799KiB, total: 743MiB 512KiB
+[info] goal check: 2ms 732µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 1ms 784µs, apply: 1ms 637µs, rebuild: 10ms 149µs, total: 13ms 571µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 560MiB 951KiB, total: 743MiB 512KiB
+[info] goal check: 5ms 480µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 3ms 158µs, apply: 5ms 970µs, rebuild: 16ms 457µs, total: 25ms 585µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 587MiB 231KiB, total: 743MiB 512KiB
+[info] goal check: 6ms 353µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 5ms 485µs, apply: 15ms 780µs, rebuild: 32ms 422µs, total: 53ms 688µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 639MiB 839KiB, total: 743MiB 512KiB
+[info] goal check: 12ms 312µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 11ms 251µs, apply: 44ms 28µs, rebuild: 62ms 705µs, total: 117ms 984µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 666MiB 119KiB, total: 743MiB 512KiB
+[info] goal check: 19ms 846µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 19ms 847µs, apply: 98ms 824µs, rebuild: 126ms 131µs, total: 244ms 803µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 324MiB 475KiB, total: 736MiB 512KiB
+[info] goal check: 37ms 731µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 34ms 844µs, apply: 271ms 180µs, rebuild: 237ms 6µs, total: 543ms 31µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 402MiB 530KiB, total: 740MiB 
+[info] goal check: 68ms 47µs
+[info] Iteration:
+[info]   #nodes: 7830, #classes: 5275, #memo: 13253, search: 63ms 947µs, apply: 626ms 391µs, rebuild: 360ms 37µs, total: 1s 50ms 376µs, #rebuilds: 1817
+[info]   applied 2323: HashMap(reduce-seq-map-fission -> 1, eta -> 58, transpose-around-map-map-f-1m -> 410, map-fission -> 679, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 15, beta-extract -> 1141, lift-reduce-seq -> 11, reduce-seq-map-fusion -> 6)
+[info]   memory used: 490MiB 860KiB, total: 740MiB 
+[info] goal check: 123ms 20µs
+[info] Iteration:
+[info]   #nodes: 10813, #classes: 7010, #memo: 21168, search: 112ms 846µs, apply: 1s 96ms 988µs, rebuild: 520ms 761µs, total: 1s 730ms 595µs, #rebuilds: 2546
+[info]   applied 3339: HashMap(eta -> 58, transpose-around-map-map-f-1m -> 695, lift-reduce-seq-3 -> 1, map-fission -> 891, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 19, beta-extract -> 1658, lift-reduce-seq -> 12, reduce-seq-map-fusion -> 3)
+[info]   memory used: 59MiB 332KiB, total: 740MiB 512KiB
+[info] goal check: 244ms 305µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°2
+[info] filter eliminated 10 classes and 9 nodes in 2µs + 523µs + 157µs
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 reduceSeq
+[info]                                        │       │         ┝ λx5 λx6 map
+[info]                                        │       │         │         ┝ λx7 map
+[info]                                        │       │         │         │     ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │         │     ┕ zip (fst x7) (snd x7)
+[info]                                        │       │         │         ┕ zip x5 x6
+[info]                                        │       │         ┝ fst
+[info]                                        │       │         │ ┕ unzip
+[info]                                        │       │         │   ┕ map unzip
+[info]                                        │       │         │     ┕ map <λx5. zip (fst x5) (snd x5)> (zip x3 x4)
+[info]                                        │       │         ┕ transpose
+[info]                                        │       │           ┕ map transpose
+[info]                                        │       │             ┕ snd
+[info]                                        │       │               ┕ unzip
+[info]                                        │       │                 ┕ map unzip
+[info]                                        │       │                   ┕ map <λx5. zip (fst x5) (snd x5)> (zip x3 x4)
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map <λx3. transpose (map (split 4) (map (zip x2) x3))>
+[info]                                            │       ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 151, #classes: 151, #memo: 151, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 450MiB 840KiB, total: 740MiB 512KiB
+[info] goal check: 4ms 140µs
+[info] Iteration:
+[info]   #nodes: 291, #classes: 244, #memo: 291, search: 6ms 265µs, apply: 3ms 187µs, rebuild: 12ms 22µs, total: 21ms 475µs, #rebuilds: 0
+[info]   applied 47: HashMap(map-fusion -> 6, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 16, reduce-seq-unroll -> 2, vec-32-after-(f32, f32) -> 1, map-par -> 16, vec-32-after-f32 -> 5)
+[info]   memory used: 463MiB 891KiB, total: 740MiB 512KiB
+[info] goal check: 5ms 795µs
+[info] Iteration:
+[info]   #nodes: 429, #classes: 350, #memo: 430, search: 2ms 936µs, apply: 29ms 258µs, rebuild: 16ms 99µs, total: 48ms 294µs, #rebuilds: 0
+[info]   applied 32: HashMap(map-fusion -> 9, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 10, vec-32-after-(f32, f32) -> 1, vec-before-map-f32x-f32xf32 -> 1, beta-extract -> 1, map-par -> 6, vec-32-after-f32 -> 3)
+[info]   memory used: 476MiB 943KiB, total: 740MiB 512KiB
+[info] goal check: 8ms 187µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 17MiB 603KiB, total: 741MiB 512KiB
+[info] goal check: 2ms 287µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 1ms 216µs, apply: 1ms 101µs, rebuild: 7ms 10µs, total: 9ms 328µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 17MiB 603KiB, total: 741MiB 512KiB
+[info] goal check: 8ms 61µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 3ms 78µs, apply: 5ms 316µs, rebuild: 20ms 568µs, total: 28ms 963µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 17MiB 603KiB, total: 741MiB 512KiB
+[info] goal check: 9ms 266µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 6ms 844µs, apply: 13ms 806µs, rebuild: 54ms 833µs, total: 75ms 484µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 43MiB 479KiB, total: 741MiB 512KiB
+[info] goal check: 19ms 248µs
+[info] filter eliminated 99 classes and 110 nodes in 52ms 156µs + 1ms 7µs + 1ms 268µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 10ms 433µs, apply: 23ms 739µs, rebuild: 68ms 616µs, total: 102ms 789µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 108MiB 944KiB, total: 741MiB 512KiB
+[info] goal check: 29ms 239µs
+[info] filter eliminated 497 classes and 583 nodes in 143ms 708µs + 14ms 916µs + 8ms 337µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 23ms 20µs, apply: 72ms 690µs, rebuild: 213ms 377µs, total: 309ms 88µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 315MiB 973KiB, total: 741MiB 512KiB
+[info] goal check: 110ms 738µs
+[info] filter eliminated 1811 classes and 2238 nodes in 322ms 115µs + 51ms 673µs + 12ms 994µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 78ms 614µs, apply: 272ms 185µs, rebuild: 497ms 639µs, total: 848ms 439µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 393MiB 599KiB, total: 741MiB 512KiB
+[info] goal check: 176ms 361µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 541MiB 402KiB, total: 741MiB 512KiB
+[info] goal check: 1ms 222µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 574µs, apply: 286µs, rebuild: 2ms 696µs, total: 3ms 557µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 541MiB 402KiB, total: 741MiB 512KiB
+[info] goal check: 1ms 316µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 819µs, apply: 616µs, rebuild: 6ms 242µs, total: 7ms 678µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 554MiB 381KiB, total: 741MiB 512KiB
+[info] goal check: 4ms 380µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 2ms 366µs, apply: 1ms 851µs, rebuild: 9ms 968µs, total: 14ms 186µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 567MiB 360KiB, total: 741MiB 512KiB
+[info] goal check: 3ms 794µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 2ms 829µs, apply: 6ms 405µs, rebuild: 18ms 917µs, total: 28ms 152µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 593MiB 318KiB, total: 741MiB 512KiB
+[info] goal check: 7ms 621µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 4ms 687µs, apply: 16ms 77µs, rebuild: 32ms 863µs, total: 53ms 627µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 645MiB 235KiB, total: 741MiB 512KiB
+[info] goal check: 13ms 46µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 10ms 384µs, apply: 43ms 794µs, rebuild: 66ms 166µs, total: 120ms 346µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 671MiB 194KiB, total: 741MiB 512KiB
+[info] goal check: 21ms 59µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 21ms 181µs, apply: 107ms 139µs, rebuild: 136ms 183µs, total: 264ms 504µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 332MiB 705KiB, total: 735MiB 512KiB
+[info] goal check: 47ms 562µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 42ms 967µs, apply: 302ms 555µs, rebuild: 250ms 201µs, total: 595ms 724µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 397MiB 149KiB, total: 738MiB 512KiB
+[info] goal check: 82ms 947µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°2
+[info] filter eliminated 4 classes and 3 nodes in 3µs + 204µs + 94µs
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 130, #classes: 130, #memo: 130, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 365MiB 557KiB, total: 738MiB 512KiB
+[info] goal check: 4ms 204µs
+[info] Iteration:
+[info]   #nodes: 264, #classes: 220, #memo: 264, search: 1ms 287µs, apply: 1ms 337µs, rebuild: 9ms 756µs, total: 12ms 380µs, #rebuilds: 0
+[info]   applied 44: HashMap(map-fusion -> 5, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 13, reduce-seq-unroll -> 2, vec-32-after-(f32, f32) -> 2, map-par -> 13, vec-32-after-f32 -> 8)
+[info]   memory used: 378MiB 467KiB, total: 738MiB 512KiB
+[info] goal check: 3ms 717µs
+[info] Iteration:
+[info]   #nodes: 397, #classes: 325, #memo: 397, search: 2ms 287µs, apply: 5ms 468µs, rebuild: 13ms 74µs, total: 20ms 829µs, #rebuilds: 0
+[info]   applied 28: HashMap(map-fusion -> 9, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 9, vec-32-after-(f32, f32) -> 1, vec-before-map-f32x-f32xf32 -> 1, map-par -> 5, vec-32-after-f32 -> 2)
+[info]   memory used: 391MiB 377KiB, total: 738MiB 512KiB
+[info] goal check: 5ms 495µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 17MiB 772KiB, total: 739MiB 512KiB
+[info] goal check: 735µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 351µs, apply: 604µs, rebuild: 3ms 724µs, total: 4ms 681µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 17MiB 772KiB, total: 739MiB 512KiB
+[info] goal check: 1ms 403µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 647µs, apply: 1ms 323µs, rebuild: 5ms 696µs, total: 7ms 667µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 17MiB 772KiB, total: 739MiB 512KiB
+[info] goal check: 2ms 479µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 1ms 348µs, apply: 4ms 571µs, rebuild: 19ms 786µs, total: 25ms 706µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 43MiB 359KiB, total: 739MiB 512KiB
+[info] goal check: 7ms 644µs
+[info] filter eliminated 99 classes and 110 nodes in 41ms 779µs + 2ms 110µs + 1ms 216µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 8ms 742µs, apply: 23ms 375µs, rebuild: 60ms 74µs, total: 92ms 192µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 107MiB 350KiB, total: 739MiB 512KiB
+[info] goal check: 16ms 520µs
+[info] filter eliminated 497 classes and 583 nodes in 119ms 515µs + 8ms 855µs + 4ms 69µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 10ms 783µs, apply: 61ms 80µs, rebuild: 177ms 4µs, total: 248ms 867µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 312MiB 117KiB, total: 739MiB 512KiB
+[info] goal check: 57ms 184µs
+[info] filter eliminated 1811 classes and 2238 nodes in 323ms 712µs + 46ms 909µs + 11ms 954µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 43ms 531µs, apply: 223ms 9µs, rebuild: 478ms 854µs, total: 745ms 395µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 388MiB 926KiB, total: 739MiB 512KiB
+[info] goal check: 162ms 367µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 536MiB 930KiB, total: 739MiB 
+[info] goal check: 1ms 560µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 838µs, apply: 560µs, rebuild: 4ms 108µs, total: 5ms 507µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 549MiB 788KiB, total: 739MiB 
+[info] goal check: 1ms 473µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 1ms 9µs, apply: 546µs, rebuild: 5ms 29µs, total: 6ms 585µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 549MiB 788KiB, total: 739MiB 
+[info] goal check: 2ms 535µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 2ms 61µs, apply: 2ms 474µs, rebuild: 9ms 686µs, total: 14ms 223µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 562MiB 647KiB, total: 739MiB 
+[info] goal check: 7ms 241µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 3ms 918µs, apply: 5ms 491µs, rebuild: 17ms 171µs, total: 26ms 581µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 588MiB 364KiB, total: 739MiB 
+[info] goal check: 10ms 72µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 5ms 30µs, apply: 16ms 266µs, rebuild: 35ms 90µs, total: 56ms 387µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 652MiB 681KiB, total: 739MiB 
+[info] goal check: 11ms 416µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 10ms 419µs, apply: 48ms 721µs, rebuild: 66ms 625µs, total: 125ms 765µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 665MiB 539KiB, total: 739MiB 
+[info] goal check: 20ms 202µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 17ms 747µs, apply: 97ms 963µs, rebuild: 121ms 594µs, total: 237ms 305µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 341MiB 3KiB, total: 734MiB 
+[info] goal check: 38ms 723µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 35ms 985µs, apply: 295ms 639µs, rebuild: 272ms 146µs, total: 603ms 770µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 404MiB 996KiB, total: 736MiB 512KiB
+[info] goal check: 70ms 227µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°2
+[info] filter eliminated 4 classes and 3 nodes in 1µs + 130µs + 58µs
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 130, #classes: 130, #memo: 130, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 373MiB 337KiB, total: 736MiB 512KiB
+[info] goal check: 4ms 577µs
+[info] filter eliminated 12 classes and 15 nodes in 17ms 711µs + 344µs + 278µs
+[info] Iteration:
+[info]   #nodes: 635, #classes: 517, #memo: 638, search: 2ms 533µs, apply: 3ms 988µs, rebuild: 22ms 189µs, total: 28ms 711µs, #rebuilds: 0
+[info]   applied 121: HashMap(split-join-2-32 -> 37, store-to-mem -> 47, map-array -> 37)
+[info]   memory used: 398MiB 993KiB, total: 736MiB 512KiB
+[info] goal check: 13ms 974µs
+[info] filter eliminated 67 classes and 95 nodes in 63ms 129µs + 842µs + 1ms 333µs
+[info] Iteration:
+[info]   #nodes: 1480, #classes: 1064, #memo: 1521, search: 5ms 183µs, apply: 14ms 169µs, rebuild: 79ms 33µs, total: 98ms 386µs, #rebuilds: 0
+[info]   applied 326: HashMap(eta -> 4, split-join-2-32 -> 105, store-to-mem -> 115, map-array -> 102)
+[info]   memory used: 463MiB 74KiB, total: 736MiB 512KiB
+[info] goal check: 54ms 186µs
+[info] filter eliminated 169 classes and 266 nodes in 85ms 188µs + 2ms 299µs + 2ms 850µs
+[info] Iteration:
+[info]   #nodes: 2837, #classes: 1823, #memo: 3145, search: 10ms 443µs, apply: 21ms 580µs, rebuild: 105ms 813µs, total: 137ms 837µs, #rebuilds: 0
+[info]   applied 695: HashMap(eta -> 33, split-join-2-32 -> 235, store-to-mem -> 220, map-array -> 207)
+[info]   memory used: 578MiB 468KiB, total: 736MiB 512KiB
+[info] goal check: 63ms 538µs
+[info] filter eliminated 335 classes and 571 nodes in 146ms 852µs + 2ms 693µs + 3ms 571µs
+[info] Iteration:
+[info]   #nodes: 5562, #classes: 3399, #memo: 6427, search: 11ms 714µs, apply: 69ms 879µs, rebuild: 179ms 154µs, total: 260ms 748µs, #rebuilds: 6
+[info]   applied 1386: HashMap(eta -> 28, transpose-around-map-map-f-1m -> 126, split-join-2-32 -> 471, store-to-mem -> 387, map-array -> 374)
+[info]   memory used: 629MiB 757KiB, total: 736MiB 512KiB
+[info] goal check: 108ms 898µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°3
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 157, #classes: 157, #memo: 157, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 391MiB 627KiB, total: 733MiB 512KiB
+[info] goal check: 4ms 787µs
+[info] Iteration:
+[info]   #nodes: 326, #classes: 270, #memo: 326, search: 1ms 65µs, apply: 1ms 278µs, rebuild: 10ms 840µs, total: 13ms 183µs, #rebuilds: 0
+[info]   applied 56: HashMap(map-fusion -> 7, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 18, reduce-seq-unroll -> 2, vec-32-after-(f32, f32) -> 2, map-par -> 18, vec-32-after-f32 -> 8)
+[info]   memory used: 404MiB 482KiB, total: 733MiB 512KiB
+[info] goal check: 5ms 185µs
+[info] Iteration:
+[info]   #nodes: 487, #classes: 395, #memo: 487, search: 1ms 914µs, apply: 8ms 480µs, rebuild: 14ms 64µs, total: 24ms 459µs, #rebuilds: 0
+[info]   applied 36: HashMap(map-fusion -> 13, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 11, vec-32-after-(f32, f32) -> 1, vec-before-map-f32x-f32xf32 -> 1, map-par -> 5, vec-32-after-f32 -> 4)
+[info]   memory used: 430MiB 191KiB, total: 733MiB 512KiB
+[info] goal check: 7ms 783µs
+[info] Iteration:
+[info]   #nodes: 629, #classes: 488, #memo: 673, search: 3ms 80µs, apply: 19ms 660µs, rebuild: 18ms 883µs, total: 41ms 625µs, #rebuilds: 28
+[info]   applied 64: HashMap(map-fusion -> 19, vec-before-map-f32 -> 1, map-eta-abstraction -> 17, vec-32-after-(f32, f32) -> 2, vec-before-map-f32x-f32xf32 -> 1, beta-extract -> 13, map-par -> 7, vec-32-after-f32 -> 4)
+[info]   memory used: 481MiB 632KiB, total: 733MiB 512KiB
+[info] goal check: 10ms 945µs
+[info] nodes removed by directed rewriting: 0
+[info] filter eliminated 17 classes and 16 nodes in 1µs + 505µs + 92µs
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 18MiB 114KiB, total: 718MiB 512KiB
+[info] goal check: 971µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 309µs, apply: 372µs, rebuild: 2ms 459µs, total: 3ms 140µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 18MiB 114KiB, total: 718MiB 512KiB
+[info] goal check: 1ms 201µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 565µs, apply: 1ms 113µs, rebuild: 6ms 603µs, total: 8ms 282µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 18MiB 114KiB, total: 718MiB 512KiB
+[info] goal check: 2ms 918µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 1ms 331µs, apply: 3ms 421µs, rebuild: 16ms 734µs, total: 21ms 486µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 43MiB 627KiB, total: 718MiB 512KiB
+[info] goal check: 6ms 188µs
+[info] filter eliminated 99 classes and 110 nodes in 42ms 613µs + 2ms 483µs + 1ms 418µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 5ms 314µs, apply: 13ms 994µs, rebuild: 55ms 187µs, total: 74ms 495µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 120MiB 116KiB, total: 718MiB 512KiB
+[info] goal check: 19ms 674µs
+[info] filter eliminated 497 classes and 583 nodes in 119ms 378µs + 6ms 594µs + 3ms 345µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 12ms 224µs, apply: 57ms 8µs, rebuild: 164ms 202µs, total: 233ms 435µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 311MiB 374KiB, total: 718MiB 512KiB
+[info] goal check: 68ms 203µs
+[info] filter eliminated 1811 classes and 2238 nodes in 376ms 35µs + 51ms 61µs + 10ms 118µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 45ms 989µs, apply: 298ms 173µs, rebuild: 538ms 220µs, total: 882ms 384µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 387MiB 887KiB, total: 731MiB 512KiB
+[info] goal check: 253ms 638µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 544MiB 778KiB, total: 731MiB 512KiB
+[info] goal check: 1ms 90µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 560µs, apply: 225µs, rebuild: 2ms 671µs, total: 3ms 457µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 544MiB 778KiB, total: 731MiB 512KiB
+[info] goal check: 1ms 814µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 1ms 232µs, apply: 701µs, rebuild: 7ms 248µs, total: 9ms 181µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 557MiB 501KiB, total: 731MiB 512KiB
+[info] goal check: 2ms 498µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 1ms 948µs, apply: 1ms 789µs, rebuild: 11ms 793µs, total: 15ms 532µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 570MiB 224KiB, total: 731MiB 512KiB
+[info] goal check: 3ms 999µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 3ms 817µs, apply: 8ms 94µs, rebuild: 18ms 49µs, total: 29ms 961µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 595MiB 694KiB, total: 731MiB 512KiB
+[info] goal check: 7ms 309µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 7ms 585µs, apply: 19ms 10µs, rebuild: 32ms 924µs, total: 59ms 519µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 646MiB 610KiB, total: 731MiB 512KiB
+[info] goal check: 13ms 161µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 11ms 935µs, apply: 44ms 314µs, rebuild: 71ms 333µs, total: 127ms 582µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 109MiB 662KiB, total: 735MiB 
+[info] goal check: 22ms 776µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 19ms 229µs, apply: 105ms 731µs, rebuild: 126ms 609µs, total: 251ms 570µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 352MiB 113KiB, total: 735MiB 
+[info] goal check: 39ms 913µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 37ms 907µs, apply: 287ms 595µs, rebuild: 250ms 782µs, total: 576ms 285µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 415MiB 938KiB, total: 735MiB 
+[info] goal check: 78ms 261µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°2
+[info] filter eliminated 4 classes and 3 nodes in 1µs + 130µs + 60µs
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 130, #classes: 130, #memo: 130, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 391MiB 554KiB, total: 691MiB 512KiB
+[info] goal check: 4ms 396µs
+[info] filter eliminated 12 classes and 15 nodes in 31ms 175µs + 485µs + 471µs
+[info] Iteration:
+[info]   #nodes: 635, #classes: 517, #memo: 638, search: 1ms 25µs, apply: 6ms 291µs, rebuild: 38ms 557µs, total: 45ms 873µs, #rebuilds: 0
+[info]   applied 121: HashMap(split-join-2-32 -> 37, store-to-mem -> 47, map-array -> 37)
+[info]   memory used: 415MiB 909KiB, total: 691MiB 512KiB
+[info] goal check: 20ms 130µs
+[info] filter eliminated 67 classes and 95 nodes in 54ms 978µs + 1ms 128µs + 1ms 118µs
+[info] Iteration:
+[info]   #nodes: 1480, #classes: 1064, #memo: 1521, search: 3ms 311µs, apply: 9ms 434µs, rebuild: 68ms 282µs, total: 81ms 28µs, #rebuilds: 0
+[info]   applied 326: HashMap(eta -> 4, split-join-2-32 -> 105, store-to-mem -> 115, map-array -> 102)
+[info]   memory used: 476MiB 778KiB, total: 691MiB 512KiB
+[info] goal check: 39ms 972µs
+[info] filter eliminated 169 classes and 266 nodes in 68ms 635µs + 1ms 472µs + 1ms 901µs
+[info] Iteration:
+[info]   #nodes: 2837, #classes: 1823, #memo: 3145, search: 5ms 299µs, apply: 19ms 588µs, rebuild: 87ms 732µs, total: 112ms 620µs, #rebuilds: 0
+[info]   applied 695: HashMap(eta -> 33, split-join-2-32 -> 235, store-to-mem -> 220, map-array -> 207)
+[info]   memory used: 598MiB 512KiB, total: 691MiB 512KiB
+[info] goal check: 49ms 493µs
+[info] filter eliminated 335 classes and 571 nodes in 139ms 482µs + 2ms 745µs + 4ms 727µs
+[info] Iteration:
+[info]   #nodes: 5562, #classes: 3399, #memo: 6427, search: 23ms 40µs, apply: 56ms 825µs, rebuild: 176ms 297µs, total: 256ms 164µs, #rebuilds: 6
+[info]   applied 1386: HashMap(eta -> 28, transpose-around-map-map-f-1m -> 126, split-join-2-32 -> 471, store-to-mem -> 387, map-array -> 374)
+[info]   memory used: 224MiB 963KiB, total: 659MiB 
+[info] goal check: 169ms 379µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°3
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 157, #classes: 157, #memo: 157, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 445MiB 493KiB, total: 659MiB 
+[info] goal check: 3ms 292µs
+[info] Iteration:
+[info]   #nodes: 326, #classes: 270, #memo: 326, search: 1ms 182µs, apply: 2ms 734µs, rebuild: 13ms 26µs, total: 16ms 943µs, #rebuilds: 0
+[info]   applied 56: HashMap(map-fusion -> 7, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 18, reduce-seq-unroll -> 2, vec-32-after-(f32, f32) -> 2, map-par -> 18, vec-32-after-f32 -> 8)
+[info]   memory used: 457MiB 92KiB, total: 659MiB 
+[info] goal check: 6ms 2µs
+[info] Iteration:
+[info]   #nodes: 487, #classes: 395, #memo: 487, search: 2ms 367µs, apply: 7ms 595µs, rebuild: 13ms 968µs, total: 23ms 931µs, #rebuilds: 0
+[info]   applied 36: HashMap(map-fusion -> 13, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 11, vec-32-after-(f32, f32) -> 1, vec-before-map-f32x-f32xf32 -> 1, map-par -> 5, vec-32-after-f32 -> 4)
+[info]   memory used: 480MiB 312KiB, total: 659MiB 
+[info] goal check: 8ms 970µs
+[info] Iteration:
+[info]   #nodes: 629, #classes: 488, #memo: 673, search: 3ms 235µs, apply: 18ms 313µs, rebuild: 17ms 532µs, total: 39ms 82µs, #rebuilds: 28
+[info]   applied 64: HashMap(map-fusion -> 19, vec-before-map-f32 -> 1, map-eta-abstraction -> 17, vec-32-after-(f32, f32) -> 2, vec-before-map-f32x-f32xf32 -> 1, beta-extract -> 13, map-par -> 7, vec-32-after-f32 -> 4)
+[info]   memory used: 526MiB 752KiB, total: 659MiB 
+[info] goal check: 13ms 21µs
+[info] nodes removed by directed rewriting: 0
+[info] filter eliminated 17 classes and 16 nodes in 1µs + 507µs + 109µs
+[info] ---- step n°0
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduce add 0.0000
+[info]                                  │     │     ┕ map <λx4. mul (fst x4) (snd x4)> (zip x2 x3)
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] Iteration:
+[info]   #nodes: 40, #classes: 40, #memo: 40, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 17MiB 300KiB, total: 655MiB 512KiB
+[info] goal check: 838µs
+[info] Iteration:
+[info]   #nodes: 100, #classes: 94, #memo: 100, search: 498µs, apply: 552µs, rebuild: 5ms 562µs, total: 6ms 613µs, #rebuilds: 0
+[info]   applied 6: HashMap(split-join-32 -> 3, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 1)
+[info]   memory used: 17MiB 300KiB, total: 655MiB 512KiB
+[info] goal check: 2ms 189µs
+[info] Iteration:
+[info]   #nodes: 225, #classes: 202, #memo: 225, search: 798µs, apply: 1ms 245µs, rebuild: 8ms 141µs, total: 10ms 185µs, #rebuilds: 0
+[info]   applied 17: HashMap(split-join-32 -> 6, reduce-seq -> 1, blocked-reduce-4 -> 1, map-fission -> 6, beta-extract -> 1, split-before-map -> 1, reduce-seq-map-fusion -> 1)
+[info]   memory used: 28MiB 839KiB, total: 655MiB 512KiB
+[info] goal check: 3ms 211µs
+[info] Iteration:
+[info]   #nodes: 560, #classes: 486, #memo: 568, search: 1ms 611µs, apply: 3ms 627µs, rebuild: 18ms 171µs, total: 23ms 411µs, #rebuilds: 5
+[info]   applied 51: HashMap(split-join-32 -> 22, split-join-2m-32 -> 3, eta -> 1, map-fission -> 18, beta-extract -> 4, split-before-map -> 2, reduce-seq-map-fusion -> 1)
+[info]   memory used: 51MiB 894KiB, total: 655MiB 512KiB
+[info] goal check: 6ms 442µs
+[info] filter eliminated 99 classes and 110 nodes in 42ms 229µs + 2ms 112µs + 980µs
+[info] Iteration:
+[info]   #nodes: 1435, #classes: 1186, #memo: 1527, search: 4ms 1µs, apply: 14ms 645µs, rebuild: 53ms 50µs, total: 71ms 697µs, #rebuilds: 39
+[info]   applied 194: HashMap(split-join-32 -> 78, split-join-2m-32 -> 12, eta -> 4, map-fission -> 67, eliminate-map-identity -> 1, beta-extract -> 22, split-before-map -> 10)
+[info]   memory used: 109MiB 520KiB, total: 655MiB 512KiB
+[info] goal check: 19ms 542µs
+[info] filter eliminated 497 classes and 583 nodes in 127ms 699µs + 5ms 988µs + 3ms 355µs
+[info] Iteration:
+[info]   #nodes: 3782, #classes: 2957, #memo: 4260, search: 14ms 411µs, apply: 64ms 104µs, rebuild: 170ms 928µs, total: 249ms 445µs, #rebuilds: 153
+[info]   applied 717: HashMap(split-join-32 -> 267, split-join-2m-32 -> 74, eta -> 13, map-fission -> 233, eliminate-map-identity -> 7, beta-extract -> 79, split-before-map -> 44)
+[info]   memory used: 316MiB 1015KiB, total: 655MiB 512KiB
+[info] goal check: 61ms 362µs
+[info] filter eliminated 1811 classes and 2238 nodes in 333ms 579µs + 56ms 497µs + 14ms 343µs
+[info] Iteration:
+[info]   #nodes: 9477, #classes: 7056, #memo: 12131, search: 38ms 191µs, apply: 240ms 746µs, rebuild: 515ms 421µs, total: 794ms 358µs, #rebuilds: 949
+[info]   applied 2522: HashMap(split-join-32 -> 931, split-join-2m-32 -> 311, blocked-reduce-4 -> 1, eta -> 43, map-fission -> 785, eliminate-map-identity -> 7, beta-extract -> 286, split-before-map -> 154, reduce-seq-map-fusion -> 4)
+[info]   memory used: 397MiB 696KiB, total: 701MiB 
+[info] goal check: 232ms 388µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°1
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 66, #classes: 66, #memo: 66, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 601MiB 169KiB, total: 701MiB 
+[info] goal check: 845µs
+[info] Iteration:
+[info]   #nodes: 110, #classes: 106, #memo: 110, search: 484µs, apply: 214µs, rebuild: 2ms 549µs, total: 3ms 248µs, #rebuilds: 0
+[info]   applied 4: HashMap(reduce-seq-map-fission -> 2, map-fission -> 2)
+[info]   memory used: 613MiB 292KiB, total: 701MiB 
+[info] goal check: 1ms 389µs
+[info] Iteration:
+[info]   #nodes: 202, #classes: 188, #memo: 212, search: 870µs, apply: 593µs, rebuild: 5ms 991µs, total: 7ms 455µs, #rebuilds: 7
+[info]   applied 11: HashMap(eta -> 1, map-fission -> 5, beta-extract -> 2, lift-reduce-seq -> 1, reduce-seq-map-fusion -> 2)
+[info]   memory used: 613MiB 292KiB, total: 701MiB 
+[info] goal check: 2ms 526µs
+[info] Iteration:
+[info]   #nodes: 340, #classes: 299, #memo: 372, search: 1ms 565µs, apply: 1ms 524µs, rebuild: 9ms 849µs, total: 12ms 939µs, #rebuilds: 13
+[info]   applied 32: HashMap(reduce-seq-map-fission -> 1, eta -> 5, map-fission -> 11, eliminate-map-identity -> 1, beta-extract -> 12, lift-reduce-seq -> 2)
+[info]   memory used: 625MiB 415KiB, total: 701MiB 
+[info] goal check: 4ms 111µs
+[info] Iteration:
+[info]   #nodes: 545, #classes: 446, #memo: 637, search: 4ms 730µs, apply: 5ms 884µs, rebuild: 18ms 960µs, total: 29ms 574µs, #rebuilds: 29
+[info]   applied 79: HashMap(eta -> 7, map-fission -> 23, eliminate-map-identity -> 4, beta-extract -> 40, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 3)
+[info]   memory used: 29MiB 648KiB, total: 655MiB 
+[info] goal check: 8ms 705µs
+[info] Iteration:
+[info]   #nodes: 928, #classes: 725, #memo: 1132, search: 6ms 689µs, apply: 17ms 567µs, rebuild: 37ms 25µs, total: 61ms 282µs, #rebuilds: 51
+[info]   applied 147: HashMap(eta -> 7, transpose-around-map-map-f-1m -> 10, map-fission -> 42, eliminate-map-identity -> 2, beta-extract -> 79, lift-reduce-seq -> 2, reduce-seq-map-fusion -> 5)
+[info]   memory used: 87MiB 476KiB, total: 655MiB 
+[info] goal check: 13ms 182µs
+[info] Iteration:
+[info]   #nodes: 1679, #classes: 1294, #memo: 2049, search: 17ms 249µs, apply: 49ms 447µs, rebuild: 75ms 657µs, total: 142ms 354µs, #rebuilds: 76
+[info]   applied 261: HashMap(reduce-seq-map-fission -> 2, eta -> 5, transpose-around-map-map-f-1m -> 32, map-fission -> 107, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 2, beta-extract -> 102, lift-reduce-seq -> 3, reduce-seq-map-fusion -> 7)
+[info]   memory used: 203MiB 133KiB, total: 655MiB 
+[info] goal check: 25ms 929µs
+[info] Iteration:
+[info]   #nodes: 2993, #classes: 2208, #memo: 3903, search: 23ms 529µs, apply: 109ms 163µs, rebuild: 142ms 221µs, total: 274ms 914µs, #rebuilds: 301
+[info]   applied 604: HashMap(reduce-seq-map-fission -> 2, eta -> 21, transpose-around-map-map-f-1m -> 95, map-fission -> 196, lift-reduce-seq-2 -> 1, eliminate-map-identity -> 5, beta-extract -> 269, lift-reduce-seq -> 8, reduce-seq-map-fusion -> 7)
+[info]   memory used: 446MiB 26KiB, total: 655MiB 
+[info] goal check: 44ms 995µs
+[info] Iteration:
+[info]   #nodes: 5343, #classes: 3747, #memo: 7362, search: 36ms 725µs, apply: 305ms 964µs, rebuild: 258ms 591µs, total: 601ms 281µs, #rebuilds: 586
+[info]   applied 1238: HashMap(reduce-seq-map-fission -> 2, eta -> 36, transpose-around-map-map-f-1m -> 208, lift-reduce-seq-3 -> 1, map-fission -> 355, lift-reduce-seq-2 -> 2, eliminate-map-identity -> 10, beta-extract -> 610, lift-reduce-seq -> 10, reduce-seq-map-fusion -> 4)
+[info]   memory used: 515MiB 434KiB, total: 655MiB 
+[info] goal check: 92ms 543µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°2
+[info] filter eliminated 4 classes and 3 nodes in 1µs + 125µs + 60µs
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 130, #classes: 130, #memo: 130, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 542MiB 232KiB, total: 646MiB 
+[info] goal check: 2ms 744µs
+[info] filter eliminated 12 classes and 15 nodes in 20ms 738µs + 411µs + 283µs
+[info] Iteration:
+[info]   #nodes: 635, #classes: 517, #memo: 638, search: 1ms 452µs, apply: 3ms 303µs, rebuild: 24ms 693µs, total: 29ms 449µs, #rebuilds: 0
+[info]   applied 121: HashMap(split-join-2-32 -> 37, store-to-mem -> 47, map-array -> 37)
+[info]   memory used: 564MiB 299KiB, total: 646MiB 
+[info] goal check: 29ms 935µs
+[info] filter eliminated 67 classes and 95 nodes in 47ms 846µs + 790µs + 785µs
+[info] Iteration:
+[info]   #nodes: 1480, #classes: 1064, #memo: 1521, search: 2ms 650µs, apply: 11ms 320µs, rebuild: 56ms 777µs, total: 70ms 747µs, #rebuilds: 0
+[info]   applied 326: HashMap(eta -> 4, split-join-2-32 -> 105, store-to-mem -> 115, map-array -> 102)
+[info]   memory used: 76MiB 219KiB, total: 604MiB 
+[info] goal check: 26ms 3µs
+[info] filter eliminated 169 classes and 266 nodes in 100ms 753µs + 2ms 258µs + 3ms 858µs
+[info] Iteration:
+[info]   #nodes: 2837, #classes: 1823, #memo: 3145, search: 4ms 109µs, apply: 19ms 159µs, rebuild: 128ms 712µs, total: 151ms 981µs, #rebuilds: 0
+[info]   applied 695: HashMap(eta -> 33, split-join-2-32 -> 235, store-to-mem -> 220, map-array -> 207)
+[info]   memory used: 191MiB 992KiB, total: 604MiB 
+[info] goal check: 118ms 448µs
+[info] filter eliminated 335 classes and 571 nodes in 199ms 291µs + 4ms 272µs + 14ms 89µs
+[info] Iteration:
+[info]   #nodes: 5562, #classes: 3399, #memo: 6427, search: 15ms 554µs, apply: 78ms 364µs, rebuild: 267ms 579µs, total: 361ms 498µs, #rebuilds: 6
+[info]   applied 1386: HashMap(eta -> 28, transpose-around-map-map-f-1m -> 126, split-join-2-32 -> 471, store-to-mem -> 387, map-array -> 374)
+[info]   memory used: 434MiB 2KiB, total: 604MiB 
+[info] goal check: 220ms 261µs
+[info] nodes removed by directed rewriting: 0
+[info] ---- step n°3
+[info] beam head:  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info] Iteration:
+[info]   #nodes: 157, #classes: 157, #memo: 157, search: 0µs, apply: 0µs, rebuild: 0µs, total: 0µs, #rebuilds: 0
+[info]   applied 0: HashMap()
+[info]   memory used: 125MiB 859KiB, total: 579MiB 
+[info] goal check: 3ms 384µs
+[info] Iteration:
+[info]   #nodes: 326, #classes: 270, #memo: 326, search: 954µs, apply: 1ms 257µs, rebuild: 10ms 417µs, total: 12ms 629µs, #rebuilds: 0
+[info]   applied 56: HashMap(map-fusion -> 7, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 18, reduce-seq-unroll -> 2, vec-32-after-(f32, f32) -> 2, map-par -> 18, vec-32-after-f32 -> 8)
+[info]   memory used: 135MiB 889KiB, total: 579MiB 
+[info] goal check: 5ms 685µs
+[info] Iteration:
+[info]   #nodes: 487, #classes: 395, #memo: 487, search: 1ms 829µs, apply: 6ms 899µs, rebuild: 14ms 756µs, total: 23ms 485µs, #rebuilds: 0
+[info]   applied 36: HashMap(map-fusion -> 13, vec-32-after-(f32, (f32, f32)) -> 1, map-eta-abstraction -> 11, vec-32-after-(f32, f32) -> 1, vec-before-map-f32x-f32xf32 -> 1, map-par -> 5, vec-32-after-f32 -> 4)
+[info]   memory used: 165MiB 980KiB, total: 579MiB 
+[info] goal check: 8ms 963µs
+[info] Iteration:
+[info]   #nodes: 629, #classes: 488, #memo: 673, search: 2ms 854µs, apply: 19ms 442µs, rebuild: 17ms 366µs, total: 39ms 663µs, #rebuilds: 28
+[info]   applied 64: HashMap(map-fusion -> 19, vec-before-map-f32 -> 1, map-eta-abstraction -> 17, vec-32-after-(f32, f32) -> 2, vec-before-map-f32x-f32xf32 -> 1, beta-extract -> 13, map-par -> 7, vec-32-after-f32 -> 4)
+[info]   memory used: 206MiB 76KiB, total: 579MiB 
+[info] goal check: 11ms 595µs
+[info] nodes removed by directed rewriting: 0
+[info] filter eliminated 17 classes and 16 nodes in 1µs + 466µs + 82µs
+[info] ---- lowering
+[info] -- Runner report --
+[info]   Stop reasons: Saturated
+[info]   Iterations: 4
+[info]   EGraph size: 72 nodes, 59 classes, 76 memo
+[info]   Rebuilds: 0, 0.00 per iter
+[info]   Total time: 8ms 522µs (0.22 search, 0.09 apply, 0.69 rebuild)
+[info]   Maximum Memory: used: 236MiB 166KiB, total: 579MiB 
+[info] lowered extraction time: 63ms 852µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 mapSeq
+[info]                                  ┝ λx2 mapSeq
+[info]                                  │     ┝ λx3 reduceSeq <λx4. λx5. add x4 (mul (fst x5) (snd x5))> 0.0000
+[info]                                  │     │     ┕ zip x2 x3
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] ---- lowering
+[info] filter eliminated 1 classes and 0 nodes in 53ms 503µs + 1ms 378µs + 595µs
+[info] filter eliminated 4 classes and 0 nodes in 41ms 579µs + 489µs + 445µs
+[info] filter eliminated 8 classes and 0 nodes in 18ms 625µs + 396µs + 476µs
+[info] filter eliminated 3 classes and 0 nodes in 11ms 459µs + 596µs + 852µs
+[info] filter eliminated 4 classes and 0 nodes in 11ms 727µs + 580µs + 492µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 554µs + 453µs + 675µs
+[info] filter eliminated 1 classes and 0 nodes in 27ms 927µs + 861µs + 642µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 544µs + 278µs + 340µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 541µs + 315µs + 457µs
+[info] filter eliminated 1 classes and 0 nodes in 10ms 987µs + 257µs + 301µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 223µs + 274µs + 288µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 825µs + 351µs + 382µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 153µs + 266µs + 306µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 80µs + 284µs + 328µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 781µs + 285µs + 549µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 678µs + 313µs + 349µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 40µs + 351µs + 465µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 839µs + 456µs + 565µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 360µs + 812µs + 628µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 87µs + 263µs + 347µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 401µs + 298µs + 377µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 219µs + 335µs + 355µs
+[info] filter eliminated 1 classes and 0 nodes in 18ms 765µs + 441µs + 524µs
+[info] filter eliminated 1 classes and 0 nodes in 13ms 175µs + 705µs + 612µs
+[info] filter eliminated 1 classes and 0 nodes in 17ms 670µs + 306µs + 386µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 467µs + 282µs + 336µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 878µs + 523µs + 637µs
+[info] filter eliminated 1 classes and 0 nodes in 10ms 985µs + 294µs + 500µs
+[info] filter eliminated 1 classes and 0 nodes in 14ms 129µs + 756µs + 415µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 904µs + 532µs + 432µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 283µs + 267µs + 359µs
+[info] filter eliminated 1 classes and 0 nodes in 14ms 942µs + 393µs + 498µs
+[info] -- Runner report --
+[info]   Stop reasons: IterationLimit(60)
+[info]   Iterations: 60
+[info]   EGraph size: 552 nodes, 360 classes, 1132 memo
+[info]   Rebuilds: 297, 4.95 per iter
+[info]   Total time: 2s 235ms 109µs (0.05 search, 0.44 apply, 0.51 rebuild)
+[info]   Maximum Memory: used: 497MiB 219KiB, total: 579MiB 
+[info] lowered extraction time: 429ms 239µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ mapSeq
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ mapSeq
+[info]                                    │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                    │         │     ┕ reduceSeq
+[info]                                    │         │       ┝ λx5 λx6 mapSeq (mapSeq <λx7. x7>)
+[info]                                    │         │       │         ┕ reduceSeq
+[info]                                    │         │       │           ┝ λx8 λx9 mapSeq
+[info]                                    │         │       │           │         ┝ λx10 mapSeq
+[info]                                    │         │       │           │         │      ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                    │         │       │           │         │      ┕ zip (fst x10) (snd x10)
+[info]                                    │         │       │           │         ┕ zip x8 x9
+[info]                                    │         │       │           ┝ mapSeq (mapSeq <λx12. x12>)
+[info]                                    │         │       │           │ ┕ fst
+[info]                                    │         │       │           │   ┕ unzip
+[info]                                    │         │       │           │     ┕ map <λx13. unzip (zip (fst x13) (snd x13))>
+[info]                                    │         │       │           │       ┕ zip x5 x6
+[info]                                    │         │       │           ┕ transpose
+[info]                                    │         │       │             ┕ map transpose
+[info]                                    │         │       │               ┕ snd
+[info]                                    │         │       │                 ┕ unzip
+[info]                                    │         │       │                   ┕ map <λx14. unzip (zip (fst x14) (snd x14))>
+[info]                                    │         │       │                     ┕ zip x5 x6
+[info]                                    │         │       ┝ mapSeq (mapSeq <λx15. x15>) (generate <λx16. generate <λx17. 0.0000>>)
+[info]                                    │         │       ┕ transpose x3
+[info]                                    │         ┕ transpose
+[info]                                    │           ┕ map
+[info]                                    │             ┝ λx18 map <λx19. transpose (map (split 4) (map (zip x18) x19))>
+[info]                                    │             │      ┕ split 32 (transpose x1)
+[info]                                    │             ┕ x2
+[info]                                    ┕ split 32 x0
+[info] ---- lowering
+[info] filter eliminated 1 classes and 0 nodes in 16ms 981µs + 487µs + 367µs
+[info] filter eliminated 3 classes and 0 nodes in 17ms 399µs + 514µs + 447µs
+[info] filter eliminated 8 classes and 0 nodes in 15ms 29µs + 485µs + 502µs
+[info] filter eliminated 3 classes and 0 nodes in 14ms 192µs + 454µs + 661µs
+[info] filter eliminated 4 classes and 0 nodes in 15ms 679µs + 749µs + 967µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 507µs + 407µs + 459µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 541µs + 424µs + 484µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 401µs + 536µs + 328µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 520µs + 470µs + 413µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 718µs + 351µs + 314µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 338µs + 359µs + 446µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 530µs + 297µs + 318µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 830µs + 306µs + 307µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 492µs + 578µs + 510µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 571µs + 322µs + 355µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 419µs + 353µs + 366µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 891µs + 301µs + 349µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 532µs + 274µs + 335µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 335µs + 600µs + 559µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 137µs + 329µs + 324µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 236µs + 563µs + 540µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 158µs + 490µs + 446µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 711µs + 533µs + 342µs
+[info] filter eliminated 1 classes and 0 nodes in 10ms 974µs + 594µs + 452µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 428µs + 631µs + 518µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 764µs + 308µs + 329µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 756µs + 361µs + 394µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 579µs + 298µs + 342µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 744µs + 305µs + 370µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 572µs + 315µs + 346µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 419µs + 310µs + 3ms 447µs
+[info] filter eliminated 1 classes and 0 nodes in 11ms 592µs + 290µs + 334µs
+[info] -- Runner report --
+[info]   Stop reasons: IterationLimit(60)
+[info]   Iterations: 60
+[info]   EGraph size: 579 nodes, 385 classes, 1097 memo
+[info]   Rebuilds: 267, 4.45 per iter
+[info]   Total time: 2s 113ms 673µs (0.04 search, 0.54 apply, 0.42 rebuild)
+[info]   Maximum Memory: used: 420MiB 1022KiB, total: 503MiB 512KiB
+[info] lowered extraction time: 317ms 944µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ mapSeq
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ mapSeq
+[info]                                    │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                    │         │     ┕ reduceSeq
+[info]                                    │         │       ┝ λx5 λx6 mapSeq (mapSeq <λx7. x7>)
+[info]                                    │         │       │         ┕ reduceSeq
+[info]                                    │         │       │           ┝ λx8 λx9 mapSeq
+[info]                                    │         │       │           │         ┝ λx10 asScalar
+[info]                                    │         │       │           │         │      ┕ mapSeq
+[info]                                    │         │       │           │         │        ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                    │         │       │           │         │        ┕ zip (asVectorAligned 32 (fst (unzip (zip (fst x10) (snd x10)))))
+[info]                                    │         │       │           │         │          ┕ zip
+[info]                                    │         │       │           │         │            ┝ asVectorAligned 32
+[info]                                    │         │       │           │         │            │ ┕ fst (unzip (snd (unzip (zip (fst x10) (snd x10)))))
+[info]                                    │         │       │           │         │            ┕ asVectorAligned 32
+[info]                                    │         │       │           │         │              ┕ snd (unzip (snd (unzip (zip (fst x10) (snd x10)))))
+[info]                                    │         │       │           │         ┕ zip x8 x9
+[info]                                    │         │       │           ┝ mapSeq (mapSeq <λx12. x12>)
+[info]                                    │         │       │           │ ┕ fst
+[info]                                    │         │       │           │   ┕ unzip
+[info]                                    │         │       │           │     ┕ map <λx13. unzip (zip (fst x13) (snd x13))>
+[info]                                    │         │       │           │       ┕ zip x5 x6
+[info]                                    │         │       │           ┕ transpose
+[info]                                    │         │       │             ┕ map transpose
+[info]                                    │         │       │               ┕ snd
+[info]                                    │         │       │                 ┕ unzip
+[info]                                    │         │       │                   ┕ map <λx14. unzip (zip (fst x14) (snd x14))>
+[info]                                    │         │       │                     ┕ zip x5 x6
+[info]                                    │         │       ┝ mapSeq (mapSeq <λx15. x15>) (generate <λx16. generate <λx17. 0.0000>>)
+[info]                                    │         │       ┕ transpose x3
+[info]                                    │         ┕ transpose
+[info]                                    │           ┕ map
+[info]                                    │             ┝ λx18 map <λx19. transpose (map (split 4) (map (zip x18) x19))>
+[info]                                    │             │      ┕ split 32 (transpose x1)
+[info]                                    │             ┕ x2
+[info]                                    ┕ split 32 x0
+[info] ---- lowering
+[info] filter eliminated 1 classes and 0 nodes in 16ms 285µs + 639µs + 278µs
+[info] filter eliminated 4 classes and 0 nodes in 15ms 711µs + 463µs + 335µs
+[info] filter eliminated 9 classes and 0 nodes in 14ms 316µs + 411µs + 435µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 356µs + 906µs + 730µs
+[info] filter eliminated 6 classes and 0 nodes in 13ms 301µs + 344µs + 319µs
+[info] filter eliminated 3 classes and 0 nodes in 13ms 982µs + 315µs + 307µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 540µs + 299µs + 376µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 827µs + 395µs + 379µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 493µs + 349µs + 385µs
+[info] filter eliminated 1 classes and 0 nodes in 13ms 410µs + 335µs + 431µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 104µs + 434µs + 731µs
+[info] filter eliminated 3 classes and 0 nodes in 13ms 429µs + 709µs + 643µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 843µs + 399µs + 446µs
+[info] filter eliminated 1 classes and 0 nodes in 16ms 707µs + 293µs + 351µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 494µs + 332µs + 402µs
+[info] filter eliminated 3 classes and 0 nodes in 15ms 93µs + 366µs + 413µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 774µs + 333µs + 411µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 178µs + 310µs + 410µs
+[info] filter eliminated 5 classes and 0 nodes in 14ms 51µs + 865µs + 951µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 745µs + 497µs + 487µs
+[info] filter eliminated 2 classes and 0 nodes in 15ms 524µs + 371µs + 500µs
+[info] filter eliminated 2 classes and 0 nodes in 15ms 463µs + 329µs + 460µs
+[info] filter eliminated 5 classes and 0 nodes in 16ms 607µs + 367µs + 420µs
+[info] filter eliminated 1 classes and 0 nodes in 12ms 975µs + 328µs + 475µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 951µs + 319µs + 477µs
+[info] filter eliminated 1 classes and 0 nodes in 17ms 238µs + 469µs + 721µs
+[info] filter eliminated 5 classes and 0 nodes in 15ms 896µs + 380µs + 525µs
+[info] filter eliminated 2 classes and 0 nodes in 14ms 524µs + 357µs + 574µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 412µs + 547µs + 1ms 108µs
+[info] filter eliminated 3 classes and 0 nodes in 12ms 542µs + 619µs + 706µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 736µs + 340µs + 828µs
+[info] filter eliminated 2 classes and 0 nodes in 18ms 696µs + 425µs + 674µs
+[info] filter eliminated 5 classes and 0 nodes in 16ms 326µs + 434µs + 714µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 651µs + 337µs + 600µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 318µs + 688µs + 747µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 73µs + 386µs + 820µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 815µs + 415µs + 671µs
+[info] filter eliminated 2 classes and 0 nodes in 14ms 425µs + 397µs + 601µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 638µs + 714µs + 1ms 20µs
+[info] filter eliminated 3 classes and 0 nodes in 19ms 728µs + 606µs + 876µs
+[info] filter eliminated 5 classes and 0 nodes in 16ms 573µs + 376µs + 609µs
+[info] filter eliminated 2 classes and 0 nodes in 16ms 425µs + 343µs + 700µs
+[info] filter eliminated 5 classes and 0 nodes in 14ms 906µs + 1ms 197µs + 1ms 650µs
+[info] filter eliminated 1 classes and 0 nodes in 14ms 184µs + 372µs + 725µs
+[info] filter eliminated 2 classes and 0 nodes in 14ms 19µs + 659µs + 817µs
+[info] filter eliminated 2 classes and 0 nodes in 17ms 448µs + 347µs + 635µs
+[info] filter eliminated 5 classes and 0 nodes in 16ms 341µs + 344µs + 1ms 12µs
+[info] filter eliminated 1 classes and 0 nodes in 18ms 551µs + 975µs + 1ms 52µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 810µs + 309µs + 615µs
+[info] filter eliminated 1 classes and 0 nodes in 15ms 143µs + 378µs + 659µs
+[info] filter eliminated 2 classes and 0 nodes in 14ms 269µs + 363µs + 762µs
+[info] filter eliminated 3 classes and 0 nodes in 16ms 143µs + 394µs + 798µs
+[info] filter eliminated 5 classes and 0 nodes in 12ms 46µs + 293µs + 789µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 895µs + 536µs + 922µs
+[info] filter eliminated 5 classes and 0 nodes in 13ms 276µs + 454µs + 734µs
+[info] filter eliminated 2 classes and 0 nodes in 12ms 983µs + 329µs + 722µs
+[info] filter eliminated 2 classes and 0 nodes in 13ms 685µs + 305µs + 653µs
+[info] filter eliminated 2 classes and 0 nodes in 12ms 937µs + 373µs + 1ms 152µs
+[info] -- Runner report --
+[info]   Stop reasons: IterationLimit(60)
+[info]   Iterations: 60
+[info]   EGraph size: 594 nodes, 393 classes, 2325 memo
+[info]   Rebuilds: 737, 12.28 per iter
+[info]   Total time: 2s 335ms 342µs (0.04 search, 0.50 apply, 0.46 rebuild)
+[info]   Maximum Memory: used: 346MiB 35KiB, total: 402MiB 
+[info] lowered extraction time: 803ms 726µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ mapSeq
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ mapSeq
+[info]                                    │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                    │         │     ┕ reduceSeq
+[info]                                    │         │       ┝ λx5 λx6 mapSeq
+[info]                                    │         │       │         ┝ λx7 mapSeq <λx8. x8>
+[info]                                    │         │       │         │     ┕ reduceSeq
+[info]                                    │         │       │         │       ┝ λx9 λx10 asScalar
+[info]                                    │         │       │         │       │          ┕ mapSeq
+[info]                                    │         │       │         │       │            ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                    │         │       │         │       │            ┕ zip (asVectorAligned 32 (fst (unzip (zip x9 x10))))
+[info]                                    │         │       │         │       │              ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip x9 x10))))))
+[info]                                    │         │       │         │       │                ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip x9 x10)))))
+[info]                                    │         │       │         │       ┝ mapSeq <λx12. x12> (fst (unzip (zip (fst x7) (snd x7))))
+[info]                                    │         │       │         │       ┕ transpose (snd (unzip (zip (fst x7) (snd x7))))
+[info]                                    │         │       │         ┕ zip x5 x6
+[info]                                    │         │       ┝ mapSeq (mapSeq <λx13. x13>) (generate <λx14. generate <λx15. 0.0000>>)
+[info]                                    │         │       ┕ transpose x3
+[info]                                    │         ┕ transpose
+[info]                                    │           ┕ map
+[info]                                    │             ┝ λx16 map transpose
+[info]                                    │             │      ┕ map (map <λx17. split 4 (zip x16 x17)>)
+[info]                                    │             │        ┕ split 32 (transpose x1)
+[info]                                    │             ┕ x2
+[info]                                    ┕ split 32 x0
+[info] ---- lowering
+[info] -- Runner report --
+[info]   Stop reasons: Saturated
+[info]   Iterations: 5
+[info]   EGraph size: 443 nodes, 310 classes, 572 memo
+[info]   Rebuilds: 59, 11.80 per iter
+[info]   Total time: 71ms 928µs (0.07 search, 0.20 apply, 0.73 rebuild)
+[info]   Maximum Memory: used: 247MiB 406KiB, total: 320MiB 512KiB
+[info] lowered extraction time: 79ms 335µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 let
+[info]                                  ┝ toMem
+[info]                                  │ ┕ join
+[info]                                  │   ┕ mapPar
+[info]                                  │     ┝ λx18 transpose
+[info]                                  │     │      ┕ mapSeq <λx19. asScalar (mapSeq <λx20. x20> (asVectorAligned 32 x19))>
+[info]                                  │     │        ┕ transpose x18
+[info]                                  │     ┕ split 32 (transpose x1)
+[info]                                  ┕ λx21 join
+[info]                                         ┕ mapSeq
+[info]                                           ┝ λx2 map join
+[info]                                           │     ┕ transpose
+[info]                                           │       ┕ mapSeq
+[info]                                           │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                           │         │     ┕ reduceSeq
+[info]                                           │         │       ┝ λx5 λx6 mapSeq
+[info]                                           │         │       │         ┝ λx7 mapSeq <λx8. x8>
+[info]                                           │         │       │         │     ┕ reduceSeq
+[info]                                           │         │       │         │       ┝ λx9 λx10 asScalar
+[info]                                           │         │       │         │       │          ┕ mapSeq
+[info]                                           │         │       │         │       │            ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                           │         │       │         │       │            ┕ zip (asVectorAligned 32 (fst (unzip (zip x9 x10))))
+[info]                                           │         │       │         │       │              ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip x9 x10))))))
+[info]                                           │         │       │         │       │                ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip x9 x10)))))
+[info]                                           │         │       │         │       ┝ mapSeq <λx12. x12> (fst (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         │       ┕ transpose (snd (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         ┕ zip x5 x6
+[info]                                           │         │       ┝ mapSeq (mapSeq <λx13. x13>) (generate <λx14. generate <λx15. 0.0000>>)
+[info]                                           │         │       ┕ transpose x3
+[info]                                           │         ┕ transpose
+[info]                                           │           ┕ map
+[info]                                           │             ┝ λx16 map transpose
+[info]                                           │             │      ┕ map (map <λx17. split 4 (zip x16 x17)>)
+[info]                                           │             │        ┕ split 32 x21
+[info]                                           │             ┕ x2
+[info]                                           ┕ split 32 x0
+[info] ---- lowering
+[info] -- Runner report --
+[info]   Stop reasons: Saturated
+[info]   Iterations: 5
+[info]   EGraph size: 443 nodes, 310 classes, 572 memo
+[info]   Rebuilds: 59, 11.80 per iter
+[info]   Total time: 75ms 802µs (0.07 search, 0.19 apply, 0.74 rebuild)
+[info]   Maximum Memory: used: 127MiB 331KiB, total: 301MiB 512KiB
+[info] lowered extraction time: 60ms 637µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 let
+[info]                                  ┝ toMem
+[info]                                  │ ┕ join
+[info]                                  │   ┕ mapPar
+[info]                                  │     ┝ λx18 transpose
+[info]                                  │     │      ┕ mapSeq <λx19. asScalar (mapSeq <λx20. x20> (asVectorAligned 32 x19))>
+[info]                                  │     │        ┕ transpose x18
+[info]                                  │     ┕ split 32 (transpose x1)
+[info]                                  ┕ λx21 join
+[info]                                         ┕ mapSeq
+[info]                                           ┝ λx2 map join
+[info]                                           │     ┕ transpose
+[info]                                           │       ┕ mapSeq
+[info]                                           │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                           │         │     ┕ reduceSeq
+[info]                                           │         │       ┝ λx5 λx6 mapSeq
+[info]                                           │         │       │         ┝ λx7 mapSeq <λx8. x8>
+[info]                                           │         │       │         │     ┕ reduceSeqUnroll
+[info]                                           │         │       │         │       ┝ λx9 λx10 asScalar
+[info]                                           │         │       │         │       │          ┕ mapSeq
+[info]                                           │         │       │         │       │            ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                           │         │       │         │       │            ┕ zip (asVectorAligned 32 (fst (unzip (zip x9 x10))))
+[info]                                           │         │       │         │       │              ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip x9 x10))))))
+[info]                                           │         │       │         │       │                ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip x9 x10)))))
+[info]                                           │         │       │         │       ┝ mapSeq <λx12. x12> (fst (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         │       ┕ transpose (snd (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         ┕ zip x5 x6
+[info]                                           │         │       ┝ mapSeq (mapSeq <λx13. x13>) (generate <λx14. generate <λx15. 0.0000>>)
+[info]                                           │         │       ┕ transpose x3
+[info]                                           │         ┕ transpose
+[info]                                           │           ┕ map
+[info]                                           │             ┝ λx16 map transpose
+[info]                                           │             │      ┕ map (map <λx17. split 4 (zip x16 x17)>)
+[info]                                           │             │        ┕ split 32 x21
+[info]                                           │             ┕ x2
+[info]                                           ┕ split 32 x0
+[info] ---- lowering
+[info] -- Runner report --
+[info]   Stop reasons: Saturated
+[info]   Iterations: 5
+[info]   EGraph size: 402 nodes, 289 classes, 522 memo
+[info]   Rebuilds: 52, 10.40 per iter
+[info]   Total time: 68ms 695µs (0.08 search, 0.13 apply, 0.79 rebuild)
+[info]   Maximum Memory: used: 244MiB 3KiB, total: 301MiB 512KiB
+[info] lowered extraction time: 42ms 300µs
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 let
+[info]                                  ┝ toMem
+[info]                                  │ ┕ join
+[info]                                  │   ┕ mapPar
+[info]                                  │     ┝ λx18 transpose
+[info]                                  │     │      ┕ mapSeq <λx19. asScalar (mapSeq <λx20. x20> (asVectorAligned 32 x19))>
+[info]                                  │     │        ┕ transpose x18
+[info]                                  │     ┕ split 32 (transpose x1)
+[info]                                  ┕ λx21 join
+[info]                                         ┕ mapPar
+[info]                                           ┝ λx2 map join
+[info]                                           │     ┕ transpose
+[info]                                           │       ┕ mapSeq
+[info]                                           │         ┝ λx3 mapSeq (mapSeq <λx4. x4>)
+[info]                                           │         │     ┕ reduceSeq
+[info]                                           │         │       ┝ λx5 λx6 mapSeq
+[info]                                           │         │       │         ┝ λx7 mapSeq <λx8. x8>
+[info]                                           │         │       │         │     ┕ reduceSeqUnroll
+[info]                                           │         │       │         │       ┝ λx9 λx10 asScalar
+[info]                                           │         │       │         │       │          ┕ mapSeq
+[info]                                           │         │       │         │       │            ┝ λx11. add (fst x11) (mul (fst (snd x11)) (snd (snd x11)))
+[info]                                           │         │       │         │       │            ┕ zip (asVectorAligned 32 (fst (unzip (zip x9 x10))))
+[info]                                           │         │       │         │       │              ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip x9 x10))))))
+[info]                                           │         │       │         │       │                ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip x9 x10)))))
+[info]                                           │         │       │         │       ┝ mapSeq <λx12. x12> (fst (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         │       ┕ transpose (snd (unzip (zip (fst x7) (snd x7))))
+[info]                                           │         │       │         ┕ zip x5 x6
+[info]                                           │         │       ┝ mapSeq (mapSeq <λx13. x13>) (generate <λx14. generate <λx15. 0.0000>>)
+[info]                                           │         │       ┕ transpose x3
+[info]                                           │         ┕ transpose x2
+[info]                                           ┕ map
+[info]                                             ┝ λe6043 map
+[info]                                             │        ┝ λx16 map transpose
+[info]                                             │        │      ┕ map (map <λx17. split 4 (zip x16 x17)>)
+[info]                                             │        │        ┕ split 32 x21
+[info]                                             │        ┕ e6043
+[info]                                             ┕ split 32 x0
+[info] filter eliminated 6 classes and 5 nodes in 1µs + 97µs + 48µs
+[info] filter eliminated 4 classes and 2 nodes in 2µs + 74µs + 38µs
+[info] baseline goal size: 39
+[info] normalized baseline goal (lowered):  λe4 λe5 mapSeq
+[info]          ┝ λe6 mapSeq
+[info]          │     ┝ λe7 let
+[info]          │     │     ┝ reduceSeq <λe6568. λe6569. add e6568 (mul (fst e6569) (snd e6569))>
+[info]          │     │     │ ┝ <λe6592. e6592> 0.0000
+[info]          │     │     │ ┕ zip e6 e7
+[info]          │     │     ┕ λe6590. e6590
+[info]          │     ┕ transpose e5
+[info]          ┕ e4
+[info] filter eliminated 6 classes and 0 nodes in 2µs + 148µs + 113µs
+[info] blocking goal size: 186
+[info] normalized blocking goal (lowered):  λe4 λe5 join
+[info]          ┕ map <λη12471. map <λη12474. join η12474> η12471>
+[info]            ┕ map <λη12468. transpose η12468>
+[info]              ┕ mapSeq
+[info]                ┝ λη12450 mapSeq
+[info]                │         ┝ λη11759 mapSeq (mapSeq <λe12413. e12413>)
+[info]                │         │         ┕ reduceSeq
+[info]                │         │           ┝ λe11922 λe11923 mapSeq (mapSeq <λe12399. e12399>)
+[info]                │         │           │                 ┕ reduceSeq
+[info]                │         │           │                   ┝ λe12211 λe12212 mapSeq
+[info]                │         │           │                   │                 ┝ λη12465 mapSeq
+[info]                │         │           │                   │                 │         ┝ λe12384. add (fst e12384) (mul (fst (snd e12384)) (snd (snd e12384)))
+[info]                │         │           │                   │                 │         ┕ η12465
+[info]                │         │           │                   │                 ┕ map <λe12385. zip (fst e12385) (snd e12385)> (zip e12211 e12212)
+[info]                │         │           │                   ┝ mapSeq <λe12494. mapSeq <λe12495. <λe12496. e12496> e12495> e12494>
+[info]                │         │           │                   │ ┕ fst
+[info]                │         │           │                   │   ┕ unzip
+[info]                │         │           │                   │     ┕ map <λη12462. unzip η12462>
+[info]                │         │           │                   │       ┕ map <λe12217. zip (fst e12217) (snd e12217)> (zip e11922 e11923)
+[info]                │         │           │                   ┕ transpose
+[info]                │         │           │                     ┕ map <λη12459. transpose η12459>
+[info]                │         │           │                       ┕ snd
+[info]                │         │           │                         ┕ unzip
+[info]                │         │           │                           ┕ map <λη12456. unzip η12456>
+[info]                │         │           │                             ┕ map <λe12031. zip (fst e12031) (snd e12031)> (zip e11922 e11923)
+[info]                │         │           ┝ mapSeq <λe12477. mapSeq <λe12478. <λe12479. e12479> e12478> e12477>
+[info]                │         │           │ ┕ generate <λe11884. generate <λe11780. 0.0000>>
+[info]                │         │           ┕ transpose (map <λη12453. transpose η12453> η11759)
+[info]                │         ┕ η12450
+[info]                ┕ map
+[info]                  ┝ λη12438 map
+[info]                  │         ┝ λη12441. map <λη12444. map <λη12447. split 4 η12447> η12444> η12441
+[info]                  │         ┕ η12438
+[info]                  ┕ map <λη12435. transpose η12435>
+[info]                    ┕ map
+[info]                      ┝ λη12426 map
+[info]                      │         ┝ λe8918 map <λη12429. map <λη12432. zip e8918 η12432> η12429>
+[info]                      │         │        ┕ split 32 (transpose e5)
+[info]                      │         ┕ η12426
+[info]                      ┕ split 32 e4
+[info] filter eliminated 16 classes and 9 nodes in 2µs + 464µs + 263µs
+[info] filter eliminated 18 classes and 15 nodes in 5µs + 566µs + 181µs
+[info] vectorization goal size: 228
+[info] normalized vectorization goal (lowered):  λe4 λe5 join
+[info]          ┕ map <λη18887. map <λη18890. join η18890> η18887>
+[info]            ┕ map <λη18884. transpose η18884>
+[info]              ┕ mapSeq
+[info]                ┝ λη18869 mapSeq
+[info]                │         ┝ λη18029 mapSeq (mapSeq <λe18825. e18825>)
+[info]                │         │         ┕ reduceSeq
+[info]                │         │           ┝ λe18192 λe18193 mapSeq (mapSeq <λe18811. e18811>)
+[info]                │         │           │                 ┕ reduceSeq
+[info]                │         │           │                   ┝ λe18481 λe18482 mapSeq
+[info]                │         │           │                   │                 ┝ λη18707 asScalar
+[info]                │         │           │                   │                 │         ┕ mapSeq
+[info]                │         │           │                   │                 │           ┝ λe18838. add (fst e18838) (mul (fst (snd e18838)) (snd (snd e18838)))
+[info]                │         │           │                   │                 │           ┕ zip (asVectorAligned 32 (fst (unzip η18707)))
+[info]                │         │           │                   │                 │             ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip η18707)))))
+[info]                │         │           │                   │                 │               ┕ asVectorAligned 32 (snd (unzip (snd (unzip η18707))))
+[info]                │         │           │                   │                 ┕ map <λe18655. zip (fst e18655) (snd e18655)> (zip e18481 e18482)
+[info]                │         │           │                   ┝ mapSeq <λe18910. mapSeq <λe18911. <λe18912. e18912> e18911> e18910>
+[info]                │         │           │                   │ ┕ fst
+[info]                │         │           │                   │   ┕ unzip
+[info]                │         │           │                   │     ┕ map <λη18881. unzip η18881>
+[info]                │         │           │                   │       ┕ map <λe18487. zip (fst e18487) (snd e18487)> (zip e18192 e18193)
+[info]                │         │           │                   ┕ transpose
+[info]                │         │           │                     ┕ map <λη18878. transpose η18878>
+[info]                │         │           │                       ┕ snd
+[info]                │         │           │                         ┕ unzip
+[info]                │         │           │                           ┕ map <λη18875. unzip η18875>
+[info]                │         │           │                             ┕ map <λe18301. zip (fst e18301) (snd e18301)> (zip e18192 e18193)
+[info]                │         │           ┝ mapSeq <λe18893. mapSeq <λe18894. <λe18895. e18895> e18894> e18893>
+[info]                │         │           │ ┕ generate <λe18154. generate <λe18050. 0.0000>>
+[info]                │         │           ┕ transpose (map <λη18872. transpose η18872> η18029)
+[info]                │         ┕ η18869
+[info]                ┕ map
+[info]                  ┝ λη18857 map
+[info]                  │         ┝ λη18860. map <λη18863. map <λη18866. split 4 η18866> η18863> η18860
+[info]                  │         ┕ η18857
+[info]                  ┕ map <λη18854. transpose η18854>
+[info]                    ┕ map
+[info]                      ┝ λη18845 map
+[info]                      │         ┝ λe15188 map <λη18848. map <λη18851. zip e15188 η18851> η18848>
+[info]                      │         │         ┕ split 32 (transpose e5)
+[info]                      │         ┕ η18845
+[info]                      ┕ split 32 e4
+[info] filter eliminated 19 classes and 12 nodes in 2µs + 417µs + 115µs
+[info] filter eliminated 22 classes and 22 nodes in 2µs + 442µs + 109µs
+[info] filter eliminated 8 classes and 7 nodes in 2µs + 276µs + 98µs
+[info] loop-perm goal size: 194
+[info] normalized loop-perm goal (lowered):  λe4 λe5 join
+[info]          ┕ map <λη25042. map <λη25045. join η25045> η25042>
+[info]            ┕ map <λη25039. transpose η25039>
+[info]              ┕ mapSeq
+[info]                ┝ λη25033 mapSeq
+[info]                │         ┝ λη24498 mapSeq (mapSeq <λe24989. e24989>)
+[info]                │         │         ┕ reduceSeq
+[info]                │         │           ┝ λe24661 λe24662 mapSeq
+[info]                │         │           │                 ┝ λη24774 mapSeq <λe24981. e24981>
+[info]                │         │           │                 │         ┕ reduceSeq
+[info]                │         │           │                 │           ┝ λe24842 λe24843 asScalar
+[info]                │         │           │                 │           │                 ┕ mapSeq
+[info]                │         │           │                 │           │                   ┝ λe25002. add (fst e25002) (mul (fst (snd e25002)) (snd (snd e25002)))
+[info]                │         │           │                 │           │                   ┕ zip (asVectorAligned 32 (fst (unzip (zip e24842 e24843))))
+[info]                │         │           │                 │           │                     ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip e24842 e24843))))))
+[info]                │         │           │                 │           │                       ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip e24842 e24843)))))
+[info]                │         │           │                 │           ┝ mapSeq <λe25065. <λe25066. e25066> e25065> (fst (unzip η24774))
+[info]                │         │           │                 │           ┕ transpose (snd (unzip η24774))
+[info]                │         │           │                 ┕ map <λe24770. zip (fst e24770) (snd e24770)> (zip e24661 e24662)
+[info]                │         │           ┝ mapSeq <λe25048. mapSeq <λe25049. <λe25050. e25050> e25049> e25048>
+[info]                │         │           │ ┕ generate <λe24623. generate <λe24519. 0.0000>>
+[info]                │         │           ┕ transpose (map <λη25036. transpose η25036> η24498)
+[info]                │         ┕ η25033
+[info]                ┕ map
+[info]                  ┝ λη25021 map
+[info]                  │         ┝ λη25024. map <λη25027. map <λη25030. split 4 η25030> η25027> η25024
+[info]                  │         ┕ η25021
+[info]                  ┕ map <λη25018. transpose η25018>
+[info]                    ┕ map
+[info]                      ┝ λη25009 map
+[info]                      │         ┝ λe21657 map <λη25012. map <λη25015. zip e21657 η25015> η25012>
+[info]                      │         │         ┕ split 32 (transpose e5)
+[info]                      │         ┕ η25009
+[info]                      ┕ split 32 e4
+[info] filter eliminated 23 classes and 12 nodes in 1µs + 325µs + 110µs
+[info] filter eliminated 22 classes and 22 nodes in 1µs + 559µs + 112µs
+[info] filter eliminated 8 classes and 7 nodes in 2µs + 625µs + 276µs
+[info] array-packing goal size: 235
+[info] normalized array-packing goal (lowered):  λe4 λe5 let
+[info]          ┝ toMem
+[info]          │ ┕ join
+[info]          │   ┕ map <λη33117. transpose η33117>
+[info]          │     ┕ mapPar
+[info]          │       ┝ λe29052 map <λη33114. asScalar η33114>
+[info]          │       │         ┕ mapSeq <λη33111. mapSeq <λe32524. e32524> η33111>
+[info]          │       │           ┕ map <λη33108. asVectorAligned 32 η33108> e29052
+[info]          │       ┕ map <λη33105. transpose η33105> (split 32 (transpose e5))
+[info]          ┕ λx25689 join
+[info]                    ┕ map <λη33153. map <λη33156. join η33156> η33153>
+[info]                      ┕ map <λη33150. transpose η33150>
+[info]                        ┕ mapSeq
+[info]                          ┝ λη33144 mapSeq
+[info]                          │         ┝ λη32579 mapSeq (mapSeq <λe33085. e33085>)
+[info]                          │         │         ┕ reduceSeq
+[info]                          │         │           ┝ λe32742 λe32743 mapSeq
+[info]                          │         │           │                 ┝ λη32855 mapSeq <λe33077. e33077>
+[info]                          │         │           │                 │         ┕ reduceSeq
+[info]                          │         │           │                 │           ┝ λe32923 λe32924 asScalar
+[info]                          │         │           │                 │           │                 ┕ mapSeq
+[info]                          │         │           │                 │           │                   ┝ λe33098. add (fst e33098) (mul (fst (snd e33098)) (snd (snd e33098)))
+[info]                          │         │           │                 │           │                   ┕ zip (asVectorAligned 32 (fst (unzip (zip e32923 e32924))))
+[info]                          │         │           │                 │           │                     ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip e32923 e32924))))))
+[info]                          │         │           │                 │           │                       ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip e32923 e32924)))))
+[info]                          │         │           │                 │           ┝ mapSeq <λe33176. <λe33177. e33177> e33176> (fst (unzip η32855))
+[info]                          │         │           │                 │           ┕ transpose (snd (unzip η32855))
+[info]                          │         │           │                 ┕ map <λe32851. zip (fst e32851) (snd e32851)> (zip e32742 e32743)
+[info]                          │         │           ┝ mapSeq <λe33159. mapSeq <λe33160. <λe33161. e33161> e33160> e33159>
+[info]                          │         │           │ ┕ generate <λe32704. generate <λe32600. 0.0000>>
+[info]                          │         │           ┕ transpose (map <λη33147. transpose η33147> η32579)
+[info]                          │         ┕ η33144
+[info]                          ┕ map
+[info]                            ┝ λη33132 map
+[info]                            │         ┝ λη33135. map <λη33138. map <λη33141. split 4 η33141> η33138> η33135
+[info]                            │         ┕ η33132
+[info]                            ┕ map <λη33129. transpose η33129>
+[info]                              ┕ map
+[info]                                ┝ λη33120 map
+[info]                                │         ┝ λe27921 map <λη33123. map <λη33126. zip e27921 η33126> η33123>
+[info]                                │         │         ┕ split 32 x25689
+[info]                                │         ┕ η33120
+[info]                                ┕ split 32 e4
+[info] filter eliminated 6 classes and 0 nodes in 1µs + 158µs + 96µs
+[info] cache-blocks goal size: 235
+[info] normalized cache-blocks goal (lowered):  λe4 λe5 let
+[info]          ┝ toMem
+[info]          │ ┕ join
+[info]          │   ┕ map <λη41376. transpose η41376>
+[info]          │     ┕ mapPar
+[info]          │       ┝ λe37254 map <λη41373. asScalar η41373>
+[info]          │       │         ┕ mapSeq <λη41370. mapSeq <λe40726. e40726> η41370>
+[info]          │       │           ┕ map <λη41367. asVectorAligned 32 η41367> e37254
+[info]          │       ┕ map <λη41364. transpose η41364> (split 32 (transpose e5))
+[info]          ┕ λx33891 join
+[info]                    ┕ map <λη41412. map <λη41415. join η41415> η41412>
+[info]                      ┕ map <λη41409. transpose η41409>
+[info]                        ┕ mapSeq
+[info]                          ┝ λη41403 mapSeq
+[info]                          │         ┝ λη40781 mapSeq (mapSeq <λe41351. e41351>)
+[info]                          │         │         ┕ reduceSeq
+[info]                          │         │           ┝ λe40944 λe40945 mapSeq
+[info]                          │         │           │                 ┝ λη41057 mapSeq <λe41343. e41343>
+[info]                          │         │           │                 │         ┕ reduceSeqUnroll
+[info]                          │         │           │                 │           ┝ λe41125 λe41126 asScalar
+[info]                          │         │           │                 │           │                 ┕ mapSeq
+[info]                          │         │           │                 │           │                   ┝ λe41279. add (fst e41279) (mul (fst (snd e41279)) (snd (snd e41279)))
+[info]                          │         │           │                 │           │                   ┕ zip (asVectorAligned 32 (fst (unzip (zip e41125 e41126))))
+[info]                          │         │           │                 │           │                     ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip e41125 e41126))))))
+[info]                          │         │           │                 │           │                       ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip e41125 e41126)))))
+[info]                          │         │           │                 │           ┝ mapSeq <λe41435. <λe41436. e41436> e41435> (fst (unzip η41057))
+[info]                          │         │           │                 │           ┕ transpose (snd (unzip η41057))
+[info]                          │         │           │                 ┕ map <λe41053. zip (fst e41053) (snd e41053)> (zip e40944 e40945)
+[info]                          │         │           ┝ mapSeq <λe41418. mapSeq <λe41419. <λe41420. e41420> e41419> e41418>
+[info]                          │         │           │ ┕ generate <λe40906. generate <λe40802. 0.0000>>
+[info]                          │         │           ┕ transpose (map <λη41406. transpose η41406> η40781)
+[info]                          │         ┕ η41403
+[info]                          ┕ map
+[info]                            ┝ λη41391 map
+[info]                            │         ┝ λη41394. map <λη41397. map <λη41400. split 4 η41400> η41397> η41394
+[info]                            │         ┕ η41391
+[info]                            ┕ map <λη41388. transpose η41388>
+[info]                              ┕ map
+[info]                                ┝ λη41379 map
+[info]                                │         ┝ λe36123 map <λη41382. map <λη41385. zip e36123 η41385> η41382>
+[info]                                │         │         ┕ split 32 x33891
+[info]                                │         ┕ η41379
+[info]                                ┕ split 32 e4
+[info] filter eliminated 4 classes and 0 nodes in 1µs + 159µs + 90µs
+[info] parallel goal size: 235
+[info] normalized parallel goal (lowered):  λe4 λe5 let
+[info]          ┝ toMem
+[info]          │ ┕ join
+[info]          │   ┕ map <λη49695. transpose η49695>
+[info]          │     ┕ mapPar
+[info]          │       ┝ λe45518 map <λη49692. asScalar η49692>
+[info]          │       │         ┕ mapSeq <λη49689. mapSeq <λe48990. e48990> η49689>
+[info]          │       │           ┕ map <λη49686. asVectorAligned 32 η49686> e45518
+[info]          │       ┕ map <λη49683. transpose η49683> (split 32 (transpose e5))
+[info]          ┕ λx42155 join
+[info]                    ┕ map <λη49728. map <λη49731. join η49731> η49728>
+[info]                      ┕ map <λη49725. transpose η49725>
+[info]                        ┕ mapPar
+[info]                          ┝ mapSeq
+[info]                          │ ┕ λη49045 mapSeq (mapSeq <λe49670. e49670>)
+[info]                          │           ┕ reduceSeq
+[info]                          │             ┝ λe49208 λe49209 mapSeq
+[info]                          │             │                 ┝ λη49321 mapSeq <λe49662. e49662>
+[info]                          │             │                 │         ┕ reduceSeqUnroll
+[info]                          │             │                 │           ┝ λe49389 λe49390 asScalar
+[info]                          │             │                 │           │                 ┕ mapSeq
+[info]                          │             │                 │           │                   ┝ λe49543. add (fst e49543) (mul (fst (snd e49543)) (snd (snd e49543)))
+[info]                          │             │                 │           │                   ┕ zip (asVectorAligned 32 (fst (unzip (zip e49389 e49390))))
+[info]                          │             │                 │           │                     ┕ zip (asVectorAligned 32 (fst (unzip (snd (unzip (zip e49389 e49390))))))
+[info]                          │             │                 │           │                       ┕ asVectorAligned 32 (snd (unzip (snd (unzip (zip e49389 e49390)))))
+[info]                          │             │                 │           ┝ mapSeq <λe49751. <λe49752. e49752> e49751> (fst (unzip η49321))
+[info]                          │             │                 │           ┕ transpose (snd (unzip η49321))
+[info]                          │             │                 ┕ map <λe49317. zip (fst e49317) (snd e49317)> (zip e49208 e49209)
+[info]                          │             ┝ mapSeq <λe49734. mapSeq <λe49735. <λe49736. e49736> e49735> e49734>
+[info]                          │             │ ┕ generate <λe49170. generate <λe49066. 0.0000>>
+[info]                          │             ┕ transpose (map <λη49722. transpose η49722> η49045)
+[info]                          ┕ map
+[info]                            ┝ λη49710 map
+[info]                            │         ┝ λη49713. map <λη49716. map <λη49719. split 4 η49719> η49716> η49713
+[info]                            │         ┕ η49710
+[info]                            ┕ map <λη49707. transpose η49707>
+[info]                              ┕ map
+[info]                                ┝ λη49698 map
+[info]                                │         ┝ λe44387 map <λη49701. map <λη49704. zip e44387 η49704> η49701>
+[info]                                │         │         ┕ split 32 x42155
+[info]                                │         ┕ η49698
+[info]                                ┕ split 32 e4
+[info] -------- baseline
+[info] found after 446ms 499µs
+[info]   -- step n°0
+[info]   iterations: 2, rewrites: 2, nf rewrites: 0
+[info] e-graph size: 51 nodes, 49 classes
+[info]   total time: 370ms 635µs (0.50 initialize, 0.04 rewrite search, 0.04 rewrite apply, 0.10 e-graph rebuild, 0.19 goal check, 0.13 extraction)
+[info]   maximum memory used: 20MiB 9KiB, total: 188MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 map
+[info]                                  ┝ λx2 map
+[info]                                  │     ┝ λx3 reduceSeq
+[info]                                  │     │     ┝ λx4. λx5. add x4 (<λx6. mul (fst x6) (snd x6)> x5)
+[info]                                  │     │     ┝ 0.0000
+[info]                                  │     │     ┕ zip x2 x3
+[info]                                  │     ┕ transpose x1
+[info]                                  ┕ x0
+[info] -------- blocking SR
+[info] found after 10s 310ms 353µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 4s 188ms 996µs (0.00 initialize, 0.03 rewrite search, 0.21 rewrite apply, 0.39 e-graph rebuild, 0.13 goal check, 0.23 extraction)
+[info]   maximum memory used: 180MiB 673KiB, total: 520MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 10, rewrites: 8038, nf rewrites: 0
+[info] e-graph size: 10813 nodes, 7010 classes
+[info]   total time: 6s 92ms 96µs (0.00 initialize, 0.06 rewrite search, 0.37 rewrite apply, 0.28 e-graph rebuild, 0.10 goal check, 0.19 extraction)
+[info]   maximum memory used: 575MiB 732KiB, total: 743MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 λx5 reduceSeq
+[info]                                        │       │         │   ┝ λx6 λx7 map
+[info]                                        │       │         │   │         ┝ λx8 map
+[info]                                        │       │         │   │         │     ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │   │         │     ┕ zip (fst x8) (snd x8)
+[info]                                        │       │         │   │         ┕ zip x6 x7
+[info]                                        │       │         │   ┝ fst (unzip (map unzip x5))
+[info]                                        │       │         │   ┕ transpose (map transpose (snd (unzip (map unzip x5))))
+[info]                                        │       │         ┕ map <λx5. zip (fst x5) (snd x5)> (zip x3 x4)
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map <λx3. transpose (map (split 4) (map (zip x2) x3))>
+[info]                                            │       ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] -------- vectorization SRL
+[info] found after 7s 522ms 993µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 1s 857ms 73µs (0.00 initialize, 0.03 rewrite search, 0.17 rewrite apply, 0.42 e-graph rebuild, 0.14 goal check, 0.24 extraction)
+[info]   maximum memory used: 398MiB 718KiB, total: 743MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 10, rewrites: 8038, nf rewrites: 0
+[info] e-graph size: 10813 nodes, 7010 classes
+[info]   total time: 5s 512ms 168µs (0.00 initialize, 0.05 rewrite search, 0.39 rewrite apply, 0.25 e-graph rebuild, 0.10 goal check, 0.21 extraction)
+[info]   maximum memory used: 666MiB 119KiB, total: 743MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 λx5 reduceSeq
+[info]                                        │       │         │   ┝ λx6 λx7 map
+[info]                                        │       │         │   │         ┝ λx8 map
+[info]                                        │       │         │   │         │     ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │   │         │     ┕ zip (fst x8) (snd x8)
+[info]                                        │       │         │   │         ┕ zip x6 x7
+[info]                                        │       │         │   ┝ fst (unzip (map unzip x5))
+[info]                                        │       │         │   ┕ transpose (map transpose (snd (unzip (map unzip x5))))
+[info]                                        │       │         ┕ map <λx5. zip (fst x5) (snd x5)> (zip x3 x4)
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map <λx3. transpose (map (split 4) (map (zip x2) x3))>
+[info]                                            │       ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info]   -- step n°2
+[info]   iterations: 2, rewrites: 79, nf rewrites: 1
+[info] e-graph size: 429 nodes, 350 classes
+[info]   total time: 139ms 434µs (0.14 initialize, 0.07 rewrite search, 0.23 rewrite apply, 0.20 e-graph rebuild, 0.16 goal check, 0.20 extraction)
+[info]   maximum memory used: 476MiB 943KiB, total: 740MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 reduceSeq
+[info]                                        │       │         ┝ λx5 λx6 map
+[info]                                        │       │         │         ┝ λx7 asScalar
+[info]                                        │       │         │         │     ┕ map
+[info]                                        │       │         │         │       ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │         │       ┕ zip (asVector 32 (fst (unzip (zip (fst x7) (snd x7)))))
+[info]                                        │       │         │         │         ┕ zip
+[info]                                        │       │         │         │           ┝ asVector 32
+[info]                                        │       │         │         │           │ ┕ fst (unzip (snd (unzip (zip (fst x7) (snd x7)))))
+[info]                                        │       │         │         │           ┕ asVector 32
+[info]                                        │       │         │         │             ┕ snd (unzip (snd (unzip (zip (fst x7) (snd x7)))))
+[info]                                        │       │         │         ┕ zip x5 x6
+[info]                                        │       │         ┝ fst
+[info]                                        │       │         │ ┕ unzip
+[info]                                        │       │         │   ┕ map <λx5. unzip (zip (fst x5) (snd x5))>
+[info]                                        │       │         │     ┕ zip x3 x4
+[info]                                        │       │         ┕ transpose
+[info]                                        │       │           ┕ map transpose
+[info]                                        │       │             ┕ snd
+[info]                                        │       │               ┕ unzip
+[info]                                        │       │                 ┕ map <λx5. unzip (zip (fst x5) (snd x5))>
+[info]                                        │       │                   ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map <λx3. transpose (map (split 4) (map (zip x2) x3))>
+[info]                                            │       ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] -------- loop-perm SRL
+[info] found after 4s 642µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 2s 217ms 179µs (0.00 initialize, 0.06 rewrite search, 0.18 rewrite apply, 0.39 e-graph rebuild, 0.16 goal check, 0.21 extraction)
+[info]   maximum memory used: 393MiB 599KiB, total: 741MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 8, rewrites: 2376, nf rewrites: 0
+[info] e-graph size: 5343 nodes, 3747 classes
+[info]   total time: 1s 687ms 215µs (0.00 initialize, 0.05 rewrite search, 0.28 rewrite apply, 0.31 e-graph rebuild, 0.11 goal check, 0.24 extraction)
+[info]   maximum memory used: 671MiB 194KiB, total: 741MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 λx6 reduceSeq
+[info]                                        │       │         │     │   ┝ λx7 λx8 map
+[info]                                        │       │         │     │   │         ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │     │   │         ┕ zip x7 x8
+[info]                                        │       │         │     │   ┝ fst x6
+[info]                                        │       │         │     │   ┕ transpose (snd x6)
+[info]                                        │       │         │     ┕ unzip (zip (fst x5) (snd x5))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info]   -- step n°2
+[info]   iterations: 2, rewrites: 72, nf rewrites: 1
+[info] e-graph size: 397 nodes, 325 classes
+[info]   total time: 82ms 100µs (0.20 initialize, 0.04 rewrite search, 0.08 rewrite apply, 0.28 e-graph rebuild, 0.22 goal check, 0.18 extraction)
+[info]   maximum memory used: 391MiB 377KiB, total: 738MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 asScalar
+[info]                                        │       │         │     │         ┕ map
+[info]                                        │       │         │     │           ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │           ┕ zip (asVector 32 (fst (unzip (zip x6 x7))))
+[info]                                        │       │         │     │             ┕ zip (asVector 32 (fst (unzip (snd (unzip (zip x6 x7))))))
+[info]                                        │       │         │     │               ┕ asVector 32 (snd (unzip (snd (unzip (zip x6 x7)))))
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info] -------- array-packing SRCL
+[info] found after 4s 718ms 524µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 1s 833ms 903µs (0.00 initialize, 0.04 rewrite search, 0.17 rewrite apply, 0.41 e-graph rebuild, 0.14 goal check, 0.25 extraction)
+[info]   maximum memory used: 388MiB 926KiB, total: 739MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 8, rewrites: 2376, nf rewrites: 0
+[info] e-graph size: 5343 nodes, 3747 classes
+[info]   total time: 1s 620ms 644µs (0.00 initialize, 0.05 rewrite search, 0.29 rewrite apply, 0.33 e-graph rebuild, 0.10 goal check, 0.23 extraction)
+[info]   maximum memory used: 665MiB 539KiB, total: 739MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 λx6 reduceSeq
+[info]                                        │       │         │     │   ┝ λx7 λx8 map
+[info]                                        │       │         │     │   │         ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │     │   │         ┕ zip x7 x8
+[info]                                        │       │         │     │   ┝ fst x6
+[info]                                        │       │         │     │   ┕ transpose (snd x6)
+[info]                                        │       │         │     ┕ unzip (zip (fst x5) (snd x5))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info]   -- step n°2
+[info]   iterations: 4, rewrites: 2528, nf rewrites: 1
+[info] e-graph size: 5562 nodes, 3399 classes
+[info]   total time: 1s 81ms 893µs (0.01 initialize, 0.03 rewrite search, 0.10 rewrite apply, 0.36 e-graph rebuild, 0.23 goal check, 0.27 extraction)
+[info]   maximum memory used: 629MiB 757KiB, total: 736MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info]   -- step n°3
+[info]   iterations: 3, rewrites: 156, nf rewrites: 0
+[info] e-graph size: 629 nodes, 488 classes
+[info]   total time: 168ms 254µs (0.06 initialize, 0.04 rewrite search, 0.17 rewrite apply, 0.26 e-graph rebuild, 0.20 goal check, 0.27 extraction)
+[info]   maximum memory used: 481MiB 632KiB, total: 733MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ map
+[info]                                    │         ┝ λx3 reduceSeq
+[info]                                    │         │     ┝ λx4 λx5 map
+[info]                                    │         │     │         ┝ λx6 reduceSeq
+[info]                                    │         │     │         │     ┝ λx7 λx8 λx9 asScalar
+[info]                                    │         │     │         │     │         │   ┕ map
+[info]                                    │         │     │         │     │         │     ┝ λx10. add (fst x10) (mul (fst (snd x10)) (snd (snd x10)))
+[info]                                    │         │     │         │     │         │     ┕ zip (asVector 32 (fst (unzip x9)))
+[info]                                    │         │     │         │     │         │       ┕ zip (asVector 32 (fst (unzip (snd (unzip x9)))))
+[info]                                    │         │     │         │     │         │         ┕ asVector 32 (snd (unzip (snd (unzip x9))))
+[info]                                    │         │     │         │     │         ┕ zip x7 x8
+[info]                                    │         │     │         │     ┝ fst (unzip (zip (fst x6) (snd x6)))
+[info]                                    │         │     │         │     ┕ transpose (snd (unzip (zip (fst x6) (snd x6))))
+[info]                                    │         │     │         ┕ zip x4 x5
+[info]                                    │         │     ┝ generate <λx4. generate <λx5. 0.0000>>
+[info]                                    │         │     ┕ transpose x3
+[info]                                    │         ┕ transpose x2
+[info]                                    ┕ map
+[info]                                      ┝ map
+[info]                                      │ ┕ λx2 map transpose
+[info]                                      │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                      │         ┕ split 32
+[info]                                      │           ┕ let
+[info]                                      │             ┝ toMem
+[info]                                      │             │ ┕ join
+[info]                                      │             │   ┕ mapPar
+[info]                                      │             │     ┝ λx3 transpose
+[info]                                      │             │     │     ┕ map <λx4. asScalar (map <λx5. x5> (asVector 32 x4))>
+[info]                                      │             │     │       ┕ transpose x3
+[info]                                      │             │     ┕ split 32 (transpose x1)
+[info]                                      │             ┕ λx3. x3
+[info]                                      ┕ split 32 x0
+[info] -------- cache-blocks SRCL
+[info] found after 5s 121ms 549µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 2s 188ms 995µs (0.00 initialize, 0.03 rewrite search, 0.17 rewrite apply, 0.36 e-graph rebuild, 0.16 goal check, 0.28 extraction)
+[info]   maximum memory used: 387MiB 887KiB, total: 731MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 8, rewrites: 2376, nf rewrites: 0
+[info] e-graph size: 5343 nodes, 3747 classes
+[info]   total time: 1s 617ms 109µs (0.00 initialize, 0.05 rewrite search, 0.29 rewrite apply, 0.32 e-graph rebuild, 0.11 goal check, 0.22 extraction)
+[info]   maximum memory used: 646MiB 610KiB, total: 735MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 λx6 reduceSeq
+[info]                                        │       │         │     │   ┝ λx7 λx8 map
+[info]                                        │       │         │     │   │         ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │     │   │         ┕ zip x7 x8
+[info]                                        │       │         │     │   ┝ fst x6
+[info]                                        │       │         │     │   ┕ transpose (snd x6)
+[info]                                        │       │         │     ┕ unzip (zip (fst x5) (snd x5))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info]   -- step n°2
+[info]   iterations: 4, rewrites: 2528, nf rewrites: 1
+[info] e-graph size: 5562 nodes, 3399 classes
+[info]   total time: 1s 130ms 611µs (0.01 initialize, 0.03 rewrite search, 0.08 rewrite apply, 0.33 e-graph rebuild, 0.25 goal check, 0.30 extraction)
+[info]   maximum memory used: 598MiB 512KiB, total: 691MiB 512KiB
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info]   -- step n°3
+[info]   iterations: 3, rewrites: 156, nf rewrites: 0
+[info] e-graph size: 629 nodes, 488 classes
+[info]   total time: 173ms 436µs (0.06 initialize, 0.04 rewrite search, 0.17 rewrite apply, 0.26 e-graph rebuild, 0.20 goal check, 0.28 extraction)
+[info]   maximum memory used: 526MiB 752KiB, total: 659MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ map
+[info]                                    │         ┝ λx3 reduceSeq
+[info]                                    │         │     ┝ λx4 λx5 map
+[info]                                    │         │     │         ┝ λx6 reduceSeqUnroll
+[info]                                    │         │     │         │     ┝ λx7 λx8 λx9 asScalar
+[info]                                    │         │     │         │     │         │   ┕ map
+[info]                                    │         │     │         │     │         │     ┝ λx10. add (fst x10) (mul (fst (snd x10)) (snd (snd x10)))
+[info]                                    │         │     │         │     │         │     ┕ zip (asVector 32 (fst (unzip x9)))
+[info]                                    │         │     │         │     │         │       ┕ zip (asVector 32 (fst (unzip (snd (unzip x9)))))
+[info]                                    │         │     │         │     │         │         ┕ asVector 32 (snd (unzip (snd (unzip x9))))
+[info]                                    │         │     │         │     │         ┕ zip x7 x8
+[info]                                    │         │     │         │     ┝ fst (unzip (zip (fst x6) (snd x6)))
+[info]                                    │         │     │         │     ┕ transpose (snd (unzip (zip (fst x6) (snd x6))))
+[info]                                    │         │     │         ┕ zip x4 x5
+[info]                                    │         │     ┝ generate <λx4. generate <λx5. 0.0000>>
+[info]                                    │         │     ┕ transpose x3
+[info]                                    │         ┕ transpose x2
+[info]                                    ┕ map
+[info]                                      ┝ map
+[info]                                      │ ┕ λx2 map transpose
+[info]                                      │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                      │         ┕ split 32
+[info]                                      │           ┕ let
+[info]                                      │             ┝ toMem
+[info]                                      │             │ ┕ join
+[info]                                      │             │   ┕ mapPar
+[info]                                      │             │     ┝ λx3 transpose
+[info]                                      │             │     │     ┕ map <λx4. asScalar (map <λx5. x5> (asVector 32 x4))>
+[info]                                      │             │     │       ┕ transpose x3
+[info]                                      │             │     ┕ split 32 (transpose x1)
+[info]                                      │             ┕ λx3. x3
+[info]                                      ┕ split 32 x0
+[info] -------- parallel SRCL
+[info] found after 5s 306ms 57µs
+[info]   -- step n°0
+[info]   iterations: 6, rewrites: 3507, nf rewrites: 0
+[info] e-graph size: 9477 nodes, 7056 classes
+[info]   total time: 2s 42ms 954µs (0.00 initialize, 0.03 rewrite search, 0.16 rewrite apply, 0.38 e-graph rebuild, 0.16 goal check, 0.27 extraction)
+[info]   maximum memory used: 397MiB 696KiB, total: 701MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map
+[info]                                    ┝ map
+[info]                                    │ ┕ λx2 join
+[info]                                    │       ┕ map
+[info]                                    │         ┝ map
+[info]                                    │         │ ┕ λx3 reduceSeq
+[info]                                    │         │       ┝ λx4 λx5 add x4
+[info]                                    │         │       │         ┕ reduceSeq <λx6. λx7. add x6 (mul (fst x7) (snd x7))> 0.0000 x5
+[info]                                    │         │       ┝ 0.0000
+[info]                                    │         │       ┕ split 4 (zip x2 x3)
+[info]                                    │         ┕ split 32 (transpose x1)
+[info]                                    ┕ split 32 x0
+[info]   -- step n°1
+[info]   iterations: 8, rewrites: 2376, nf rewrites: 0
+[info] e-graph size: 5343 nodes, 3747 classes
+[info]   total time: 1s 735ms 95µs (0.00 initialize, 0.05 rewrite search, 0.28 rewrite apply, 0.32 e-graph rebuild, 0.11 goal check, 0.23 extraction)
+[info]   maximum memory used: 625MiB 415KiB, total: 701MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 λx6 reduceSeq
+[info]                                        │       │         │     │   ┝ λx7 λx8 map
+[info]                                        │       │         │     │   │         ┝ λx9. add (fst x9) (mul (fst (snd x9)) (snd (snd x9)))
+[info]                                        │       │         │     │   │         ┕ zip x7 x8
+[info]                                        │       │         │     │   ┝ fst x6
+[info]                                        │       │         │     │   ┕ transpose (snd x6)
+[info]                                        │       │         │     ┕ unzip (zip (fst x5) (snd x5))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32 (transpose x1)
+[info]                                            ┕ split 32 x0
+[info]   -- step n°2
+[info]   iterations: 4, rewrites: 2528, nf rewrites: 1
+[info] e-graph size: 5562 nodes, 3399 classes
+[info]   total time: 1s 356ms 276µs (0.01 initialize, 0.02 rewrite search, 0.08 rewrite apply, 0.35 e-graph rebuild, 0.30 goal check, 0.24 extraction)
+[info]   maximum memory used: 564MiB 299KiB, total: 646MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ map (map join)
+[info]                                    ┕ map transpose
+[info]                                      ┕ map
+[info]                                        ┝ map
+[info]                                        │ ┕ λx2 reduceSeq
+[info]                                        │       ┝ λx3 λx4 map
+[info]                                        │       │         ┝ λx5 reduceSeq
+[info]                                        │       │         │     ┝ λx6 λx7 map
+[info]                                        │       │         │     │         ┝ λx8. add (fst x8) (mul (fst (snd x8)) (snd (snd x8)))
+[info]                                        │       │         │     │         ┕ zip x6 x7
+[info]                                        │       │         │     ┝ fst (unzip (zip (fst x5) (snd x5)))
+[info]                                        │       │         │     ┕ transpose (snd (unzip (zip (fst x5) (snd x5))))
+[info]                                        │       │         ┕ zip x3 x4
+[info]                                        │       ┝ generate <λx3. generate <λx4. 0.0000>>
+[info]                                        │       ┕ transpose x2
+[info]                                        ┕ map transpose
+[info]                                          ┕ map
+[info]                                            ┝ map
+[info]                                            │ ┕ λx2 map transpose
+[info]                                            │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                            │         ┕ split 32
+[info]                                            │           ┕ let
+[info]                                            │             ┝ toMem
+[info]                                            │             │ ┕ join
+[info]                                            │             │   ┕ map transpose
+[info]                                            │             │     ┕ map (map (map <λx3. x3>))
+[info]                                            │             │       ┕ map transpose (split 32 (transpose x1))
+[info]                                            │             ┕ λx3. x3
+[info]                                            ┕ split 32 x0
+[info]   -- step n°3
+[info]   iterations: 3, rewrites: 156, nf rewrites: 0
+[info] e-graph size: 629 nodes, 488 classes
+[info]   total time: 162ms 754µs (0.05 initialize, 0.03 rewrite search, 0.17 rewrite apply, 0.26 e-graph rebuild, 0.20 goal check, 0.28 extraction)
+[info]   maximum memory used: 206MiB 76KiB, total: 579MiB 
+[info]   best expr:
+[info]  Λn0:nat Λn1:nat Λn2:nat λx0 λx1 join
+[info]                                  ┕ mapPar
+[info]                                    ┝ λx2 map join
+[info]                                    │     ┕ transpose
+[info]                                    │       ┕ map
+[info]                                    │         ┝ λx3 reduceSeq
+[info]                                    │         │     ┝ λx4 λx5 map
+[info]                                    │         │     │         ┝ λx6 reduceSeqUnroll
+[info]                                    │         │     │         │     ┝ λx7 λx8 λx9 asScalar
+[info]                                    │         │     │         │     │         │   ┕ map
+[info]                                    │         │     │         │     │         │     ┝ λx10. add (fst x10) (mul (fst (snd x10)) (snd (snd x10)))
+[info]                                    │         │     │         │     │         │     ┕ zip (asVector 32 (fst (unzip x9)))
+[info]                                    │         │     │         │     │         │       ┕ zip (asVector 32 (fst (unzip (snd (unzip x9)))))
+[info]                                    │         │     │         │     │         │         ┕ asVector 32 (snd (unzip (snd (unzip x9))))
+[info]                                    │         │     │         │     │         ┕ zip x7 x8
+[info]                                    │         │     │         │     ┝ fst (unzip (zip (fst x6) (snd x6)))
+[info]                                    │         │     │         │     ┕ transpose (snd (unzip (zip (fst x6) (snd x6))))
+[info]                                    │         │     │         ┕ zip x4 x5
+[info]                                    │         │     ┝ generate <λx4. generate <λx5. 0.0000>>
+[info]                                    │         │     ┕ transpose x3
+[info]                                    │         ┕ transpose x2
+[info]                                    ┕ map
+[info]                                      ┝ map
+[info]                                      │ ┕ λx2 map transpose
+[info]                                      │       ┕ map (map <λx3. split 4 (zip x2 x3)>)
+[info]                                      │         ┕ split 32
+[info]                                      │           ┕ let
+[info]                                      │             ┝ toMem
+[info]                                      │             │ ┕ join
+[info]                                      │             │   ┕ mapPar
+[info]                                      │             │     ┝ λx3 transpose
+[info]                                      │             │     │     ┕ map <λx4. asScalar (map <λx5. x5> (asVector 32 x4))>
+[info]                                      │             │     │       ┕ transpose x3
+[info]                                      │             │     ┕ split 32 (transpose x1)
+[info]                                      │             ┕ λx3. x3
+[info]                                      ┕ split 32 x0
+[success] Total time: 57 s, completed 06-Apr-2022 10:24:38
