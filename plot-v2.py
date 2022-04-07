@@ -94,6 +94,13 @@ def plotOne(i, name):
         ax.text(y=0.80*maxYC, x=item+0.5, s='guide', color=guideColor)
         ax.text(y=0.70*maxYC, x=item+0.5, s='n°'+str(i+1), color=guideColor)
 
+    # plot out of memory
+    if name == "unguided-parallel":
+        ax.vlines(6.5, ymax=4000000, ymin=0, color='red', linestyle='--')
+        # area = plt.Rectangle((6.5, 0), 22, 4000000, fc='#ffb3b3')
+        # ax.add_patch(area)
+        ax.text(y=0.80*4000000, x=7, s='out of memory', color='red')
+
     ax.yaxis.set_major_formatter(FuncFormatter(lambda n, _: prefixValue(n)))
     if name == "unguided-parallel":
         ax.set_ylim((0, 4000000))
