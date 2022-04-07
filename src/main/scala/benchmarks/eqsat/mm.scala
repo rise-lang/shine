@@ -270,7 +270,7 @@ object mm {
             containsReduceSeq(k, containsAddMul))),
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(StandardConstraintsPredicate)
       .run(start, steps)
   }
@@ -313,7 +313,7 @@ object mm {
       tilingStep withSketch reorder_1,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -345,7 +345,7 @@ object mm {
 
     val steps = blocking_4_sketches.map(tilingStep.withSketch)
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -359,7 +359,7 @@ object mm {
     val steps = Seq(splitStep, reorderStep, splitStep, reorderStep)
       .zip(blocking_4_sketches).map { case (s, p) => s withSketch p }
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -374,7 +374,7 @@ object mm {
       tilingStep withSketch reorder_1,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -390,7 +390,7 @@ object mm {
       reorderStep withSketch reorder_1,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -415,7 +415,7 @@ object mm {
       loweringStep withSketch lower_1,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -430,7 +430,7 @@ object mm {
       (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch lower_1,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -454,7 +454,7 @@ object mm {
       loweringStep withSketch lower_2,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -468,7 +468,7 @@ object mm {
       (splitStepBENF compose reorderStepBENF compose loweringStep) withSketch lower_2,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -509,7 +509,7 @@ object mm {
       loweringStep withSketch lower_3,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -523,7 +523,7 @@ object mm {
       (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_3
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -553,7 +553,7 @@ object mm {
       loweringStep withSketch lower_4,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -568,7 +568,7 @@ object mm {
       (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_4
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -598,7 +598,7 @@ object mm {
       loweringStep withSketch lower_5,
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)
@@ -613,7 +613,7 @@ object mm {
       (splitStepBENF compose reorderStepBENF compose copyStep compose loweringStep) withSketch lower_5
     )
 
-    GuidedSearch.init()
+    GuidedSearch.init().withVerbose(true)
       .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(300) &&
         StandardConstraintsPredicate)
       .withRunnerTransform(runnerTrans)

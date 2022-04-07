@@ -84,12 +84,14 @@ object GuidedSearch {
   def init(): GuidedSearch = new GuidedSearch(
     filter = NoPredicate(),
     transformRunner = r => r,
+    verbose = false,
   )
 }
 
 class GuidedSearch(
   var filter: Predicate,
-  var transformRunner: Runner => Runner
+  var transformRunner: Runner => Runner,
+  var verbose: Boolean,
 ) {
   def withFilter(filter: Predicate): GuidedSearch = {
     this.filter = filter
@@ -98,6 +100,11 @@ class GuidedSearch(
 
   def withRunnerTransform(f: Runner => Runner): GuidedSearch = {
     transformRunner = f
+    this
+  }
+
+  def withVerbose(v: Boolean): GuidedSearch = {
+    verbose = v
     this
   }
 
@@ -114,7 +121,9 @@ class GuidedSearch(
     @tailrec
     def rec(s: Int, beam: Seq[Expr]): Seq[Expr] = {
       if (s < steps.length) {
-        println(s"---- step n°$s")
+        if (verbose) {
+          println(s"---- step n°$s")
+        }
         val step = steps(s)
 
         var normRewriteCount = 0L
@@ -125,7 +134,9 @@ class GuidedSearch(
             normRewriteCount += rc
             n
           }
-          println(s"beam head: ${Expr.toNamed(normBeam.head)}")
+          if (verbose) {
+            println(s"beam head: ${Expr.toNamed(normBeam.head)}")
+          }
           val rootId = normBeam.map(egraph.addExpr)
             .reduce[EClassId] { case (a, b) => egraph.union(a, b)._1 }
           egraph.rebuild(Seq(rootId))
@@ -134,7 +145,8 @@ class GuidedSearch(
 
         // TODO: add goal check to e-graph for incremental update?
         val mergedRules = (step.rules ++ step.normalForm.rules).distinctBy(_.name)
-        val (growTime, runner) = util.time(transformRunner(Runner.init())
+        val (growTime, runner) = util.time(
+          transformRunner(Runner.init().withVerbose(verbose))
           // note: update time limit
           .withTimeLimit(java.time.Duration.ofNanos(timeLimit - (System.nanoTime() - startTime)))
           .doneWhen { _ =>
@@ -169,7 +181,9 @@ class GuidedSearch(
           assert(newBeam.nonEmpty)
         } else {
           runner.printReport()
-          runner.iterations.foreach(println)
+          if (!verbose) {
+            runner.iterations.foreach(println)
+          }
           return Seq() // could not reach sketch
         }
 

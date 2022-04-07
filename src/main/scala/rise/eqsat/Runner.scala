@@ -26,7 +26,8 @@ object Runner {
     timeLimit = Duration.ofSeconds(30).toNanos,
     memoryLimit = 2L * 1024L * 1024L * 1024L, // 2GiB
     scheduler = SimpleScheduler,
-    totalRemoved = 0L
+    totalRemoved = 0L,
+    verbose = false,
   )
 }
 
@@ -42,7 +43,8 @@ class Runner(var iterations: Vec[Iteration],
              var timeLimit: Long,
              var memoryLimit: Long,
              var scheduler: Scheduler,
-             var totalRemoved: Long) {
+             var totalRemoved: Long,
+             var verbose: Boolean) {
   def iterationCount(): Int =
     iterations.size - 1
 
@@ -64,6 +66,10 @@ class Runner(var iterations: Vec[Iteration],
 
   def withScheduler(sched: Scheduler): Runner = {
     scheduler = sched; this
+  }
+
+  def withVerbose(v: Boolean): Runner = {
+    verbose = v; this
   }
 
   def doneWhen(f: Runner => Boolean): Runner = {
@@ -116,11 +122,11 @@ class Runner(var iterations: Vec[Iteration],
       nRebuilds = 0,
       memStats = util.memStats()
     )
-    // println(iteration0)
+    if (verbose) { println(iteration0) }
     iterations += iteration0
 
     def end(): Runner = {
-      println(s"nodes removed by directed rewriting: $totalRemoved")
+      if (verbose) { println(s"nodes removed by directed rewriting: $totalRemoved") }
       egraph.releaseAnalyses(filter.requiredAnalyses())
       rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
       normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
@@ -135,7 +141,7 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return end() }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
-      // println(iter)
+      if (verbose) { println(iter) }
 
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {
@@ -256,7 +262,7 @@ class Iteration(val egraphNodes: Int,
       s"rebuild: ${util.prettyTime(rebuildTime)}, " +
       s"total: ${util.prettyTime(totalTime)}, " +
       s"#rebuilds: $nRebuilds\n" +
-    s"  applied: $applied\n" +
+    s"  applied ${applied.map(_._2).sum}: $applied\n" +
     s"  memory ${memStats.pretty()}"
   }
 }
