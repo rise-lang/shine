@@ -15,41 +15,55 @@ import pandas as pd
 import math
 from cycler import cycler
 import scipy.optimize as opt
+from functools import reduce
+from itertools import accumulate
 
 plots = [
-  ("guided-blocking", (4, 3)),
-  ("guided-parallel", (6, 3)),
   ("unguided-blocking", (4, 3)),
   ("unguided-parallel", (4, 3)),
+  ("guided-blocking", (4, 3)),
+  ("guided-parallel", (6, 3)),
 ]
 
-for (i, (name, figsize)) in enumerate(plots):
+plt.rc('axes', prop_cycle=
+       (cycler('color', ['#1E88E5', '#FFC107', '#004D40']) +
+        cycler('linestyle', ['-']) *
+        cycler('marker', ['.', '+', 'x'])))
+figsize = (10, 6)
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figsize, #tight_layout = {'pad': 0},
+        sharex=True, sharey=False, constrained_layout=True)
+axes = [ax1, ax2, ax3, ax4]
+
+for i, ax in enumerate(axes):
+    ax.set_title(plots[i][0].replace('-', ' '))
+
+def plotOne(i, name, ax):
     data = pd.read_csv(name + '.csv', sep=' ')
 
     data['skit'] = list(zip(data.sketch, data.iteration))
-    data['index'] = [i for (i, _) in enumerate(zip(data.sketch, data.iteration))]
+    data['x'] = list(accumulate(zip(data.sketch, data.iteration),
+        lambda acc, si: acc if si[1] == 0 else acc + 1,
+        initial=0))[1:]
+    print(data)
+    # [i for (i, _) in enumerate([v for v in
+    #    zip(data.sketch, data.iteration) if (v[0] == 0) or (v[1] != 0)])]
 
     # insert NaNs at discontinuities
     discontinuities = list(set(data.sketch.values))
-    # print(data)
     nans = pd.DataFrame({
         "sketch": [s for s in discontinuities],
         "iteration": [max(data[data["sketch"] == s].iteration.values) + 1 for s in discontinuities],
-        "index": [max(data[data["sketch"] == s].index.values) for s in discontinuities],
+        "x": [max(data[data["sketch"] == s].x.values) for s in discontinuities],
         "nodes": [np.nan for s in discontinuities],
         "classes": [np.nan for s in discontinuities],
         "rules": [np.nan for s in discontinuities],
         })
-    frame = pd.concat([data, nans]).sort_values(by=['index', 'iteration'])
-    # print(frame)
+    print(nans)
+    nans['skit'] = list(zip(nans.sketch, nans.iteration))
+    frame = pd.concat([data, nans]).sort_values(by=['x', 'skit'])
+    print(frame)
 
-    plt.rc('axes', prop_cycle=
-           (cycler('color', ['#1E88E5', '#FFC107', '#004D40']) +
-            cycler('linestyle', ['-']) *
-            cycler('marker', ['.', '+', 'x'])))
-    fig, ax = plt.subplots(figsize=figsize, tight_layout = {'pad': 0})
-
-    frame.plot("index", ["nodes", "classes", "rules"], ax=ax)
+    frame.plot("x", ["nodes", "classes", "rules"], ax=ax)
 
     maxColor='grey'
     maxY = max([max(data.nodes.values), max(data.classes.values), max(data.rules.values)])
@@ -60,7 +74,7 @@ for (i, (name, figsize)) in enumerate(plots):
     print("max Y: ", maxY, " ~ ", maxYC)
     # plot max size
     if name != "unguided-parallel":
-        plt.axhline(y=maxYC, color=maxColor, linestyle='--')
+        ax.axhline(y=maxYC, color=maxColor, linestyle='--')
     if name == "guided-blocking":
         trans = transforms.blended_transform_factory(
             ax.get_yticklabels()[0].get_transform(), ax.transData)
@@ -80,28 +94,29 @@ for (i, (name, figsize)) in enumerate(plots):
 
     # plot sketch guides
     guideColor='#5500d4ff'
-    periods = data[data.sketch.diff() != 0].index.values
-    plt.vlines(periods[1:], ymax=maxYC, ymin=0, color=guideColor, linestyle='--')
+    periods = data[data.sketch.diff() != 0].x.values
+    ax.vlines(periods[1:], ymax=maxYC, ymin=0, color=guideColor, linestyle='--')
     for (i, item) in enumerate(periods[1:]):
-        plt.text(y=0.90*maxYC, x=item+0.5, s='sketch', color=guideColor)
-        plt.text(y=0.80*maxYC, x=item+0.5, s='guide', color=guideColor)
-        plt.text(y=0.70*maxYC, x=item+0.5, s='n°'+str(i+1), color=guideColor)
+        ax.text(y=0.90*maxYC, x=item+0.5, s='sketch', color=guideColor)
+        ax.text(y=0.80*maxYC, x=item+0.5, s='guide', color=guideColor)
+        ax.text(y=0.70*maxYC, x=item+0.5, s='n°'+str(i+1), color=guideColor)
 
-    plt.xlabel("iterations")
     ax.yaxis.set_major_formatter(FuncFormatter(lambda n, _: prefixValue(n)))
     if name == "unguided-parallel":
-        plt.ylim((0, 4000000))
-        plt.xticks(np.arange(data.skit.size + 1), np.arange(data.skit.size + 1))
-    else:
-        plt.xticks(np.arange(data.skit.size), [i for (_, i) in data.skit.values])
-    ax.get_legend().remove()
-    plt.savefig(name + '.pgf')
-    plt.savefig(name + '.png')
+        ax.set_ylim((0, 4000000))
 
-    if i == 0:
-        figleg = plt.figure(tight_layout = {'pad': 0}, figsize=(2, 1.5))
-        patches, _labels = ax.get_legend_handles_labels()
-        patches.append(mpl.lines.Line2D([0], [0], color="black", linestyle=":"))
-        figleg.legend(patches, ["e-nodes", "e-classes", "rules", "prediction"])
-        figleg.savefig("legend.pgf")
-        figleg.savefig("legend.png")
+for (i, (name, figsize)), ax in zip(enumerate(plots), axes):
+    plotOne(i, name, ax)
+
+for ax in axes:
+  ax.set_xlabel("iterations")
+# plt.xticks(np.arange(data.skit.size), [i for (_, i) in data.skit.values])
+
+ax1.get_legend().remove()
+patches, _labels = ax1.get_legend_handles_labels()
+patches.append(mpl.lines.Line2D([0], [0], color="black", linestyle=":"))
+ax2.legend(patches, ["e-nodes", "e-classes", "rules", "estimate"])
+ax3.get_legend().remove()
+ax4.get_legend().remove()
+plt.savefig('results.pgf')
+plt.savefig('result.png')
