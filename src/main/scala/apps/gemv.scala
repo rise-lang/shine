@@ -136,9 +136,9 @@ object gemv {
               reorderWithStride(s0) |>
               split(n /^ s0) |>
               toLocalFun(mapLocal(
-                reduceSeq(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => mult(x) + a)))(lf32(0.0f))
               )) |>
-              toLocalFun(reduceSeq(add)(lf32(0.0f))) |>
+              toLocalFun(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))) |>
               fun(x => (alpha * x) + (t._2 * beta))
           ))
       ))

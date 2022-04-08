@@ -451,10 +451,10 @@ class mmTuning extends test_util.Tests {
     val inputSize: Int = 1024
 
     val configs = Seq(
-//      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-//      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-//      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-//      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
     )
@@ -463,10 +463,12 @@ class mmTuning extends test_util.Tests {
       name = s"mm_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      s"autotuning/mm_${inputSize}",
+//      s"autotuning/mm_${inputSize}",
+      s"experiment/results/mm_${inputSize}_log_init",
       mm,
       HostCode(init(inputSize, inputSize, inputSize), compute, finish),
-      Seq(inputSize, inputSize, inputSize)
+      Seq(inputSize, inputSize, inputSize),
+      true
     )
   }
 
