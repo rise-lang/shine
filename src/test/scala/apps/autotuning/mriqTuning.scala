@@ -316,7 +316,7 @@ class mriqTuning extends test_util.Tests {
   }
 
 
-  test("tune computePhiMag 1024"){
+  ignore("tune computePhiMag 1024"){
     val inputSize: Int = 1024
 
     val configs = Seq(
@@ -354,7 +354,7 @@ class mriqTuning extends test_util.Tests {
     runExperiment(
       name = s"q_${inputSize}",
       configFiles = configs,
-      iterations = 5,
+      iterations = 10,
       output = s"autotuning/mriq/q",
       computeQTuning,
       HostCode(initQ(inputSize, inputSize), computeQ, finishQ),

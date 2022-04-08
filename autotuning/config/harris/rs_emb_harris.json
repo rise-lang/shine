@@ -1,5 +1,5 @@
 {
-  "application_name" : "harris_ls_cot",
+  "application_name" : "rs_emb_harris",
   "optimization_objectives" : ["runtime"],
   "feasible_output" : {
     "enable_feasible_predictor" : true,
@@ -10,16 +10,18 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "harris_ls_cot.log",
+  "log_file" : "rs_emb_harris.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "optimization_method": "local_search",
-  "local_search_random_points" : 50,
-  "local_search_evaluation_limit": 500,
+  "design_of_experiment" : {
+    "doe_type" : "embedding random sampling",
+    "number_of_samples" : 500
+  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
+  "optimization_iterations" : 0,
   "input_parameters" : {
     "tuned_vec" : {
       "parameter_type" : "ordinal",

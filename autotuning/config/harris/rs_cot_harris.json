@@ -1,5 +1,5 @@
 {
-  "application_name" : "harris_bogp_cot",
+  "application_name" : "rs_cot_harris",
   "optimization_objectives" : ["runtime"],
   "feasible_output" : {
     "enable_feasible_predictor" : true,
@@ -10,19 +10,18 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "harris_bogp_cot.log",
+  "log_file" : "rs_cot_harris.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 9
+    "number_of_samples" : 500
   },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "bayesian_optimization",
-  "optimization_iterations" : 491,
+  "optimization_iterations" : 0,
   "input_parameters" : {
     "tuned_vec" : {
       "parameter_type" : "ordinal",

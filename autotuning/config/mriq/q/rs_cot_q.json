@@ -13,6 +13,8 @@
     "mode": "client-server"
   },
   "log_file": "rs_cot_q.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
     "number_of_samples": 500

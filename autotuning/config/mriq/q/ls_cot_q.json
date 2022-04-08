@@ -13,6 +13,8 @@
     "mode": "client-server"
   },
   "log_file": "ls_cot_q.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
@@ -20,8 +22,8 @@
   "optimization_method": "local_search",
   "local_search_random_points": 125,
   "local_search_evaluation_limit": 500,
-  "input_parameters": {
-    "tuned_gs0": {
+  "input_parameters" : {
+    "tuned_gs0" : {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -44,7 +46,7 @@
         "tuned_ls0"
       ]
     },
-    "tuned_gs1": {
+    "tuned_gs1" : {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -67,7 +69,7 @@
         "tuned_ls1"
       ]
     },
-    "tuned_ls0": {
+    "tuned_ls0" : {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -89,7 +91,7 @@
         "tuned_ls1"
       ]
     },
-    "tuned_ls1": {
+    "tuned_ls1" : {
       "parameter_type": "ordinal",
       "values": [
         1,
