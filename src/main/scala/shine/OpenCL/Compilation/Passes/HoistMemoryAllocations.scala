@@ -8,6 +8,7 @@ import shine.DPIA.primitives.imperative._
 import shine.DPIA.Phrases.{VisitAndRebuild, _}
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.OpenCL.{get_local_id, get_local_size}
 import shine.OpenCL.primitives.imperative.{New, ParFor, ParForNat}
 import shine._
 
@@ -80,9 +81,12 @@ object HoistMemoryAllocations {
                 parallelismLevel match {
                   case OpenCL.Local | OpenCL.Sequential =>
                     performRewrite(oldVariable, oldBody, i, n)
+                  case OpenCL.Global =>
+                    // FIXME: this is wrong in general, needs more thinking
+                    performRewrite(oldVariable, oldBody, Right(get_local_id(0)), 1 /* get_local_size(0) */)
                   case OpenCL.WorkGroup => // do not perform the substitution
                     (oldVariable, oldBody)
-                  case OpenCL.Global | OpenCL.Warp | OpenCL.Lane =>
+                  case OpenCL.Warp | OpenCL.Lane =>
                     throw new Exception("This should not happen")
                 }
               case AddressSpace.Private | AddressSpace.Constant | AddressSpaceIdentifier(_) =>
