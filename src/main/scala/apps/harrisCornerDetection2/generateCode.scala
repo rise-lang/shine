@@ -64,10 +64,12 @@ object generateCode {
       // TODO
     )
 
-    // java.nio.file.Files.createDirectory(java.nio.file.Paths.get("/tmp/harris/"))
+    java.nio.file.Files.createDirectories(java.nio.file.Paths.get("/tmp/harris/"))
 
     for ((name, prog) <- kernels) {
       println(name)
+      // val p: rise.core.Expr = rise.core.DSL.toBeTyped(
+      //   rise.eqsat.Expr.toNamedUnique(rise.eqsat.Expr.fromNamed(prog.toUntypedExpr)))
       val m = util.gen.opencl.hosted.fromExpr(prog)
       val c = util.gen.opencl.hosted.asString(m)
       util.writeToPath(s"/tmp/harris/${name}.c", c)
