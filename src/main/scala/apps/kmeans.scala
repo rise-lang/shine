@@ -125,9 +125,7 @@ object kmeans {
     val localSize = LocalSize(256)
     val globalSize = GlobalSize(P)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]]
-      `)=>` Array[Int]]
+    val f = k.as[In `=` Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]], Out[Array[Int]]]
     f(localSize, globalSize)(P `,` C `,` F `,` features `,` clusters)
   }
 }
