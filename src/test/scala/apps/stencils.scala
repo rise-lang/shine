@@ -73,7 +73,7 @@ class stencils extends test_util.Tests {
     ): (Array[Float], TimeSpan[ms]) = {
       import shine.OpenCL._
 
-      val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]
+      val kernelFun = k.as[In `=` Int `,` Input, Out[Array[Float]]]
       kernelFun(inputSize `,` input)
     }
   }

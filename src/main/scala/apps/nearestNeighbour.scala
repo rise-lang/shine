@@ -91,9 +91,9 @@ object nearestNeighbour {
     val localSize = LocalSize(128)
     val globalSize = GlobalSize(N)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Float `,` Float
-      `)=>` Array[Float]]
+    val f = k.as[In `=`
+      Int `,` Array[Float] `,` Float `,` Float,
+      Out[Array[Float]]]
     f(localSize, globalSize)(N `,` locations `,` lat `,` lng)
   }
 

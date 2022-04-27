@@ -171,11 +171,11 @@ object molecularDynamics {
     val localSize = LocalSize(128)
     val globalSize = GlobalSize(N)
 
-    val f = k.as[ScalaFunction `(`
+    val f = k.as[In `=`
       Int `,` Int `,`
       Array[Float] `,` Array[Array[Int]] `,`
-      Float `,` Float `,` Float
-      `)=>` Array[Float]]
+      Float `,` Float `,` Float,
+      Out[Array[Float]]]
     f(localSize, globalSize)(
       N `,` M `,` particles `,` neighbours `,` cutsq `,` lj1 `,` lj2
     )
