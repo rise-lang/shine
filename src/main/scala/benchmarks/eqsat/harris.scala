@@ -81,7 +81,7 @@ object harris {
   // val nf = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm
   val start = apps.harrisCornerDetectionHalide.harris(1, 1).toExpr
 
-  private def goals(): () = {
+  private def goals(): Unit = {
     val normStart = apps.harrisCornerDetectionHalideRewrite.reducedFusedForm(start).get
     println(s"normalized start (Elevate): $normStart")
     println(s"start size: ${AstSize.ofExpr(Expr.fromNamed(normStart))}")
@@ -168,7 +168,7 @@ object harris {
 
   def mapPar: Sketch = ocl.mapGlobal(0)
 
-  private def codegen(name: String, e: Expr): () = {
+  private def codegen(name: String, e: Expr): Unit = {
     object Cost extends CostFunction[Int] {
       val ordering = implicitly
 
@@ -426,7 +426,7 @@ object harris {
       .run(start, steps)
   }
 
-  def main(args: Array[String]): () = {
+  def main(args: Array[String]): Unit = {
     goals()
     val fs = Seq(
       // "shape" -> shape _,

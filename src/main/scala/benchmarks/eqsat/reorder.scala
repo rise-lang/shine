@@ -85,7 +85,7 @@ object reorder {
       run(expr, Seq(/* gold132, gold213, gold231, */ gold321 /*, gold312 */))
     }
 
-    def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): () = {
+    def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): Unit = {
       import rise.eqsat._
       import rise.eqsat.SketchDSL._
 
@@ -132,7 +132,7 @@ object reorder {
       run(expr, Seq(/* gold1243, gold1324, gold2134, */ gold4321))
     }
 
-    def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): () = {
+    def guidedSearch(normalForm: rise.eqsat.NF, rewriteRules: Seq[Rewrite]): Unit = {
       import rise.eqsat._
       import rise.eqsat.SketchDSL._
 

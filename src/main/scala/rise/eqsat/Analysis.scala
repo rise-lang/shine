@@ -12,8 +12,8 @@ trait Analysis {
   // FIXME: requiring non-type analysis is not supported
   def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis])
 
-  def init(egraph: EGraph): ()
-  def update(egraph: EGraph): ()
+  def init(egraph: EGraph): Unit
+  def update(egraph: EGraph): Unit
 
   // FIXME: we are currently not updating the analysis data to account for removals
   def eliminate(egraph: EGraph, toEliminate: HashSet[EClassId]): Unit = {
@@ -294,13 +294,13 @@ object NoAnalysis extends SemiLatticeAnalysis with TypeAnalysis {
   override def requiredTypeAnalyses(): Set[TypeAnalysis] = Set()
 
   override def make(egraph: EGraph, enode: ENode, t: TypeId,
-                    analysisOf: EClassId => ()): () = ()
+                    analysisOf: EClassId => Unit): Unit = ()
 
-  override def makeNat(egraph: EGraph, node: NatNode[NatId]): () = ()
+  override def makeNat(egraph: EGraph, node: NatNode[NatId]): Unit = ()
   override def makeType(egraph: EGraph,
-                        node: TypeNode[TypeId, NatId, DataTypeId]): () = ()
+                        node: TypeNode[TypeId, NatId, DataTypeId]): Unit = ()
 
-  override def merge(a: (), b: ()): MergeResult =
+  override def merge(a: Unit, b: Unit): MergeResult =
     MergeResult((), mayNotBeA = false, mayNotBeB = false)
 }
 

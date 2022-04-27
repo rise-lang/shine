@@ -157,7 +157,7 @@ object mm {
     rules.omp.mapPar,
   )
 
-  private def goals(): () = {
+  private def goals(): Unit = {
     goal("baseline", apps.tvmGemm.baseline)
     goal("blocking", apps.tvmGemm.blocking)
     goal("vectorization", apps.tvmGemm.vectorization)
@@ -171,7 +171,7 @@ object mm {
   private def N = 1024
   private def K = 1024
 
-  private def goal(name: String, strategy: elevate.core.Strategy[rise.core.Expr]): () = {
+  private def goal(name: String, strategy: elevate.core.Strategy[rise.core.Expr]): Unit = {
     val goal = (rise.elevate.strategies.normalForm.DFNF() `;` strategy) {
       import rise.core.DSL._
       mm(M)(N)(K)
@@ -187,7 +187,7 @@ object mm {
     util.writeToPath(s"/tmp/${name}_goal.c", goalCode)
   }
 
-  private def codegen(name: String, e: Expr): () = {
+  private def codegen(name: String, e: Expr): Unit = {
     // val loweredWithElevate = lowerToC.apply(Expr.toNamed(e)).get
     // println(loweredWithElevate)
 
@@ -620,7 +620,7 @@ object mm {
       .run(start, steps)
   }
 
-  def main(args: Array[String]): () = {
+  def main(args: Array[String]): Unit = {
     // val names = Set(args(0))
     // fs.filter { case (k, _) => names(k) }
 
