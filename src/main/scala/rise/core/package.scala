@@ -10,9 +10,17 @@ package object core {
     private var counter = 0
 
     def apply(prefix: String): String = {
-      counter += 1
-      prefix + counter
+      this.synchronized {
+//        println("counter: " + counter)
+        counter += 1
+        prefix + counter
+      }
     }
+
+    def reset() = {
+      counter = 0
+    }
+
   }
 
   def toEvaluableString(e: Expr): String = {

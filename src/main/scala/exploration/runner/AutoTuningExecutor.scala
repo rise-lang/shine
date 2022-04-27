@@ -48,6 +48,10 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   var duration: Long = 0
 
+  def plot(): Unit = {
+
+  }
+
   override def checkSolution(solution: Solution[Rise]): Boolean = {
 //    val checkStart = System.currentTimeMillis()
     val result = exploration.runner.checkSolution(lowering, solution)

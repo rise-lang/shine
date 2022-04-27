@@ -30,6 +30,10 @@ case class CExecutor(lowering: Strategy[Rise],
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
+  def plot(): Unit = {
+
+  }
+
   override def checkSolution(solution: Solution[Rise]): Boolean = {
 
     true

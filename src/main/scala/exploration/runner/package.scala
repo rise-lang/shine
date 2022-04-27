@@ -22,6 +22,9 @@ package object runner {
 
     // todo check expression using checking function
 
+    val (e, lowered, loweredOclReplaced) = this.synchronized {
+
+
     // lower expression
     val e: Expr = solution.expression
     val lowered = lowering.apply(e)
@@ -33,11 +36,16 @@ package object runner {
     val paramMap: Map[NatIdentifier, Nat] = params.map(param => {
       param -> (1: Nat)
     }).toMap[NatIdentifier, Nat]
-    val loweredOclReplaced = rise.core.substitute.natsInExpr(paramMap.toMap[Nat, Nat], loweredOcl)
+//    val loweredOclReplaced = rise.core.substitute.natsInExpr(paramMap.toMap[Nat, Nat], loweredOcl)
+      (e, lowered, rise.core.substitute.natsInExpr(paramMap.toMap[Nat, Nat], loweredOcl))
+    }
 
     // try to generate code
     try {
-      gen.opencl.hosted("fun").fromExpr(loweredOclReplaced)
+
+      this.synchronized {
+        gen.opencl.hosted("fun").fromExpr(loweredOclReplaced)
+      }
 
       // check if all values were filtered out
         object mvHostCode {
@@ -82,6 +90,9 @@ package object runner {
           // scalastyle:on
         }
 
+
+      this.synchronized {
+
         val tuner = Tuner(
           hostCode = HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish),
           inputSizes = Seq(1024, 1024),
@@ -108,6 +119,7 @@ package object runner {
               ))))
 
 
+
       // get parameters
       val parameters = autotune.constraints.collectParameters(loweredOclTuning)
 
@@ -121,9 +133,12 @@ package object runner {
 
       generateJSON(parameters, constraints, tuner)
 
+      }
       true
       } catch {
         case e: Throwable =>
+//          println("false")
+//          println(e)
           false
       }
     }

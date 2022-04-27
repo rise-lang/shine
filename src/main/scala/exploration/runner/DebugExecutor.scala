@@ -5,7 +5,7 @@ import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{Solution, hashProgram}
 import exploration.runner
-import rise.autotune
+import rise.{autotune, core}
 import rise.autotune.{tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.{Nat, NatIdentifier}
@@ -16,6 +16,8 @@ import util.{Time, TimeSpan, gen}
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
+import scala.sys.process._
 
 case class DebugExecutor(lowering: Strategy[Rise],
                          goldExpression: Rise,
@@ -84,7 +86,8 @@ case class DebugExecutor(lowering: Strategy[Rise],
     }
 
 
-    saveTuningResults(
+
+    val tresult =
       TuningResultStatistic(
         number = number,
         solution = hashProgram(solution.expression),
@@ -96,9 +99,14 @@ case class DebugExecutor(lowering: Strategy[Rise],
         executions = executions,
         runtime = resultTuning
       )
-    )
 
-      (solution.expression, result)
+    saveTuningResults(tresult)
+    // add to
+    tuningResults += tresult
+
+    core.freshName.reset()
+
+    (solution.expression, result)
   }
 
   def randomFunction(number: Int): Option[Double] = {
@@ -152,23 +160,82 @@ case class DebugExecutor(lowering: Strategy[Rise],
 //    }
   }
 
+  def plot() = {
+
+    // also write config file
+
+    val doe = tuningResults.size
+
+    val configString = {
+      s"""{
+      "application_name": "mv_exploration",
+      "optimization_objectives": ["runtime"],
+      "feasible_output" : {
+        "enable_feasible_predictor" : true,
+        "name" : "Valid",
+        "true_value" : "True",
+        "false_value" : "False"
+      },
+      "hypermapper_mode" : {
+        "mode" : "client-server"
+      },
+      "design_of_experiment": {
+        "doe_type": "random sampling",
+        "number_of_samples": ${doe}
+      },
+      "optimization_iterations": 0,
+      "input_parameters" : {
+        "index": {
+        "parameter_type" : "integer",
+        "values" : [0, ${doe}],
+        "dependencies" : [],
+        "constraints" : []
+      }
+      }
+    }"""
+    }
+
+    // write configstring
+    val configFilePath = output + "/" + "tuningStatistics.json"
+    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), true))
+    fWriter.write(configString)
+    fWriter.close()
+
+    // plot results
+//    val outputFilePath = output + "/" + "tuningStatistics_hm.csv"
+
+    // mkdir output folder
+    (s"mkdir -p ${output}/hm " !!)
+    (s"mv ${output}/tuningStatistics_hm.csv ${output}/hm" !!)
+
+    // call plot
+    (s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration" !!)
+
+  }
+
 
   // todo check, if necessary
   def saveTuningResults(tuningResultStatistic: TuningResultStatistic) = {
 
     val filePath = output + "/" + "tuningStatistics.csv"
+    val filePathHm = output + "/" + "tuningStatistics_hm.csv"
+
     val exists = Files.exists(Paths.get(filePath))
 
     val fWriter = new PrintWriter(new FileOutputStream(new File(filePath), true))
+    val fWriterHm = new PrintWriter(new FileOutputStream(new File(filePathHm), true))
 
     if(!exists) {
       val header = "number, solution, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
+      val headerHm = "index,runtime,Valid,Timestamp" + "\n"
+
       fWriter.write(header)
+      fWriterHm.write(headerHm)
     }
 
-    val runtime = tuningResultStatistic.runtime match {
-      case Some(value) => value.value.toString
-      case None => "-1"
+    val (runtime, valid) = tuningResultStatistic.runtime match {
+      case Some(value) => (value.value.toString, "True")
+      case None => ("-1", "False")
     }
 
     // write line
@@ -183,8 +250,19 @@ case class DebugExecutor(lowering: Strategy[Rise],
         tuningResultStatistic.executions.toString + ", " +
         runtime.toString + "\n"
 
+    // write line hm
+    val lineHm =
+      tuningResultStatistic.number.toString + "," +
+        runtime.toString + "," +
+        valid + "," +
+        tuningResultStatistic.timestamp.toString + "\n"
+
     fWriter.write(line)
+    fWriterHm.write(lineHm)
 
     fWriter.close()
+    fWriterHm.close()
+
+
   }
 }
