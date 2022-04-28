@@ -286,9 +286,9 @@ object TypeAnalysis {
 }
 
 object NoAnalysis extends SemiLatticeAnalysis with TypeAnalysis {
-  type Data = ()
-  type NatData = ()
-  type TypeData = ()
+  type Data = Unit
+  type NatData = Unit
+  type TypeData = Unit
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
   override def requiredTypeAnalyses(): Set[TypeAnalysis] = Set()
