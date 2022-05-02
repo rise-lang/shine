@@ -42,8 +42,7 @@ object sobelXY {
             makeArray(2)(sobelXWeightsV)(sobelYWeightsV) |>
             mapSeqUnroll(fun(ws => dotSeqUWV(ws)(vNbh)))
           )) >>
-          // FIXME: should not need to avoid vector
-          impl { (t: DataType) => (map(asScalar) >> toGlobal >> map(asVectorAligned(vecw))) :: (t ->: t) } >>
+          toGlobal >>
           slide(3)(1) >>
           mapSeq(
             transpose >> map(shuffle) >>

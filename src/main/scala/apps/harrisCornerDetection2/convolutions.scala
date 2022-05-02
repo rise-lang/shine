@@ -39,8 +39,7 @@ object convolutions {
         map(asVectorAligned(vecw)) >> slide(3)(1) >> mapGlobal(
           transpose >>
           mapSeq(dotSeqUWV(weightsV)) >>
-          // FIXME: should not need to avoid vector
-          impl { (t: DataType) => (asScalar >> toGlobal >> asVectorAligned(vecw)) :: (t ->: t) } >>
+          toGlobal >>
           // toLocal >>
           slide(3)(1) >>
           mapSeq(shuffle >> dotSeqUWV(weightsH)) >>

@@ -225,8 +225,10 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
-      case _: ScalarType | _: IndexType | _: VectorType | NatType =>
+      case _: ScalarType | _: IndexType | NatType =>
         C.AST.Literal(s"sizeof(${typ(dt)})")
+      case v: VectorType =>
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(v.size), BinaryOperator.*, bufferSize(v.elemType))
       case PairType(fst, snd) =>
         C.AST.BinaryExpr(bufferSize(fst), BinaryOperator.+, bufferSize(snd))
       case a: DataType.ArrayType =>

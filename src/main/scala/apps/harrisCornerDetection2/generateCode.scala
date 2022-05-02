@@ -3,7 +3,6 @@ package apps.harrisCornerDetection2
 object generateCode {
   def main(args: Array[String]): Unit = {
     val kernels = Seq[(String, rise.core.DSL.ToBeTyped[rise.core.Expr])](
-      /*
       "binomial-base" -> convolutions.base(binomialWeights2d),
       "binomial-line-vec" -> convolutions.lineVec(binomialWeightsV, binomialWeightsH),
       "binomial-rotv-vec" -> convolutions.rotvVec(binomialWeightsV, binomialWeightsH),
@@ -39,7 +38,7 @@ object generateCode {
       "sobelXYMul-rotv-vec" -> sobelXYMul.rotvVec,
       "sobelXYMul-tile" -> sobelXYMul.tile,
       "sobelXYMul-tile-vec" -> sobelXYMul.tileVec,
-*/
+
       "binomialCoarsity-base" -> binomialCoarsity.base,
       "binomialCoarsity-line-vec" -> binomialCoarsity.lineVec,
       "binomialCoarsity-rotv-vec" -> binomialCoarsity.rotvVec,
