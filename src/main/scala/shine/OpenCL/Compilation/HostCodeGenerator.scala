@@ -222,6 +222,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
     }
   }
 
+  // TODO: use arith expr simplification here
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
