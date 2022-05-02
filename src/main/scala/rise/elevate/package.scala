@@ -36,6 +36,7 @@ package object elevate {
 
   // wrapper to create strategies with tuning parameters
   def tunable[T](f: Nat => T) = {
+//    rise.core.freshName.reset()
     tuningParam(rise.core.freshName.apply("tp"), RangeMul(1, 1024, 2), f)
   }
 

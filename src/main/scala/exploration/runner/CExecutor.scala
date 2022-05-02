@@ -2,7 +2,7 @@ package exploration.runner
 
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{IOHelper, Solution}
+import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
 import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
 import rise.elevate.Rise
 import shine.C
@@ -20,12 +20,12 @@ case class CExecutor(lowering: Strategy[Rise],
                      inputSize: Int,
                      threshold: Double,
                      output: String) extends Runner[Rise] {
-  var globalBest:Option[Double] = None
+  var globalBest: Option[Double] = None
   val N: Int = inputSize
-  var best:Option[Double] = None
+  var best: Option[Double] = None
   var gold: C.Module = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
-  var errorLevel:ExplorationErrorLevel = LoweringError
+  var errorLevel: ExplorationErrorLevel = LoweringError
 
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
@@ -39,7 +39,7 @@ case class CExecutor(lowering: Strategy[Rise],
     true
   }
 
-  def execute(solution: Solution[Rise]):(Rise,Option[Double]) = {
+  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
       println("strategy: " + elem)
@@ -54,7 +54,7 @@ case class CExecutor(lowering: Strategy[Rise],
     errorLevel = CodeGenerationError
 
     //generate executable program (including host code)
-    var performanceValue:Option[Double] = None
+    var performanceValue: Option[Double] = None
     var code = ""
     try {
       code = genExecutableCode(lowered.get)
@@ -66,9 +66,9 @@ case class CExecutor(lowering: Strategy[Rise],
         val bin = compile(code)
 
         // execute
-        try{
+        try {
           errorLevel = ExecutionError
-          println("execute: " + Integer.toHexString(solution.expression.hashCode()))
+          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
@@ -105,14 +105,15 @@ case class CExecutor(lowering: Strategy[Rise],
                 throw new Exception("unknow error code")
             }
         }
-      } catch{
+      } catch {
         case _: Throwable =>
           println("compiling error")
       }
 
     } catch {
-      case _: Throwable =>
+      case e: Throwable =>
         println("code gen error")
+        println("e: " + e)
         code = "code generation error "
     }
 
@@ -125,14 +126,14 @@ case class CExecutor(lowering: Strategy[Rise],
     var codeOutput = ""
 
     // add high/low-level hash, performance value and code
-    codeOutput += "// high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + " \n"
-    codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
+    codeOutput += "// high-level hash: " + hashProgram(solution.expression) + " \n"
+    codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
 
     // check if execution was valid
-    var filenameC = Integer.toHexString(solution.expression.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
-    var filenameLowered = Integer.toHexString(lowered.get.hashCode())
-    var filenameHigh = Integer.toHexString(solution.expression.hashCode())
-    var folder = output + "/" + Integer.toHexString(solution.expression.hashCode())
+    var filenameC = hashProgram(solution.expression) + "_" + hashProgram(lowered.get)
+    var filenameLowered = hashProgram(lowered.get)
+    var filenameHigh = hashProgram(solution.expression)
+    var folder = output + "/" + hashProgram(solution.expression)
 
     performanceValue match {
       case None =>
@@ -142,7 +143,7 @@ case class CExecutor(lowering: Strategy[Rise],
         filenameLowered += "_" + errorLevel.toString
         filenameHigh += "_" + errorLevel.toString
         folder += "_" + errorLevel.toString
-      case _ => codeOutput += "// runtime: " + performanceValue.get.toString  + "\n \n"
+      case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
     }
 
     // create folder for high-level expression
@@ -166,7 +167,7 @@ case class CExecutor(lowering: Strategy[Rise],
     // write lowered expressions
 
     // write runtime to output file
-    writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), "executor")
+    writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), solution.strategies, "executor")
 
     // print lowered expression to file
     val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
@@ -175,7 +176,7 @@ case class CExecutor(lowering: Strategy[Rise],
     val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
     // lowered string
-    var loweredString = "high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + "\n"
+    var loweredString = "high-level hash: " + hashProgram(solution.expression) + "\n"
     loweredString += lowered.get
 
     // write code to file
@@ -202,7 +203,7 @@ case class CExecutor(lowering: Strategy[Rise],
     val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
 
     // create file for for lowered expression
-    val pwStrategy= new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
+    val pwStrategy = new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
 
     // create strategy string
     var strategyString = ""
@@ -217,7 +218,7 @@ case class CExecutor(lowering: Strategy[Rise],
     (solution.expression, performanceValue)
   }
 
-  def prepareInput(tu: C.Module):(String,String,String,String) = {
+  def prepareInput(tu: C.Module): (String, String, String, String) = {
 
     val fun: C.AST.Function = tu.functions.head
 
@@ -225,7 +226,8 @@ case class CExecutor(lowering: Strategy[Rise],
     val arrayOne = "(.)+[.]f32".r
     val elemOne = "f32".r
 
-    var codeBeg = s"""
+    var codeBeg =
+      s"""
         const int N = $N;
         """
 
@@ -240,10 +242,10 @@ case class CExecutor(lowering: Strategy[Rise],
       s"""
         //inputs""".stripMargin
 
-    fun.inputParams.foreach{ case (decl, meta) =>
+    fun.inputParams.foreach { case (decl, meta) =>
 
-//      println("elem: " + decl)
-//      println("type: " + decl.t)
+      //      println("elem: " + decl)
+      //      println("type: " + decl.t)
 
       if (decl.t.toString.equals("int")) {
         codeBeg +=
@@ -292,16 +294,18 @@ case class CExecutor(lowering: Strategy[Rise],
     val outputParamDecl = fun.outputParams.head._1
     val outputParamMeta = fun.outputParams.head._2
 
-    codeBeg += s"""
+    codeBeg +=
+      s"""
 
         //output"""
 
-    if(outputParamDecl.t.toString.equals("int")) {
+    if (outputParamDecl.t.toString.equals("int")) {
       codeBeg +=
         s"""
         const int ${outputParamDecl.name} = N; """
     } else if (arrayTwo.findFirstIn(outputParamMeta.typ.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         float* ${outputParamDecl.name} = (float*) malloc(sizeof(float)*N*N);
         float* gold = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
@@ -309,11 +313,13 @@ case class CExecutor(lowering: Strategy[Rise],
           gold[i] = 0;
         }
         """
-      codeEnd += s"""
+      codeEnd +=
+        s"""
         free(gold);
         free(${outputParamDecl.name});"""
     } else if (arrayOne.findFirstIn(outputParamMeta.typ.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         float* ${outputParamDecl.name} = (float*) malloc(sizeof(float)*N);
         float* gold = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
@@ -321,12 +327,14 @@ case class CExecutor(lowering: Strategy[Rise],
           gold[i] = 0;
         }
         """
-      codeEnd += s"""
+      codeEnd +=
+        s"""
         free(gold);
         free(${outputParamDecl.name});"""
 
     } else if (elemOne.findFirstIn(outputParamMeta.typ.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         float ${outputParamDecl.name} = N;
         float gold = N;
         """
@@ -335,26 +343,28 @@ case class CExecutor(lowering: Strategy[Rise],
     call += s""");"""
     callGold += s""");"""
 
-    (codeBeg,codeEnd, call, callGold)
+    (codeBeg, codeEnd, call, callGold)
   }
 
   // maybe change name
-  def prepareGold(): String ={
+  def prepareGold(): String = {
 
     val arrayTwo = "(.)+[.](.)+[.]f32".r
     val arrayOne = "(.)+[.]f32".r
     val elemOne = "f32".r
 
-    var codeBeg = s"""
+    var codeBeg =
+      s"""
 int compare_gold(float* C, float* GOLD){
   int valid = 1;"""
 
     val goldOutputParam = gold.functions.head.outputParams.head._1
 
-    if(goldOutputParam.t.toString.equals("int")) {
+    if (goldOutputParam.t.toString.equals("int")) {
       throw new Exception("Should not reach this point")
     } else if (arrayTwo.findFirstIn(goldOutputParam.t.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         for(int i = 0; i < SIZE*SIZE; i++){
     		  if(C[i] != GOLD[i]){
     			  valid = 0;
@@ -363,7 +373,8 @@ int compare_gold(float* C, float* GOLD){
     	  }
         """
     } else if (arrayOne.findFirstIn(goldOutputParam.t.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         for(int i = 0; i < SIZE; i++){
           if(C[i] != GOLD[i]){
     			  valid = 0;
@@ -372,14 +383,16 @@ int compare_gold(float* C, float* GOLD){
     	  }
         """
     } else if (elemOne.findFirstIn(goldOutputParam.t.toString).isDefined) {
-      codeBeg += s"""
+      codeBeg +=
+        s"""
         if(C[0] != GOLD[0]){
     			  valid = 0;
         }
         """
     }
 
-    codeBeg += s"""
+    codeBeg +=
+      s"""
     return valid;
     }
     """
@@ -387,14 +400,15 @@ int compare_gold(float* C, float* GOLD){
     codeBeg
   }
 
-  def genExecutableCode(riseProgram:Rise):String = {
+  def genExecutableCode(riseProgram: Rise): String = {
     val p = gen.openmp.function("riseFun").fromExpr(riseProgram)
 
     val preparation = prepareInput(p)
 
     val goldCheck = prepareGold()
 
-    val testCode = s"""
+    val testCode =
+      s"""
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -449,7 +463,12 @@ int main(int argc, char** argv) {
 
     // todo: make this configable using json file
     // compile
-    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+
+    //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
+
+    //      s"clang $src -o $bin -lm -fopenmp" !!
 
     bin
   }
@@ -458,17 +477,17 @@ int main(int argc, char** argv) {
     //repeat execution
     //take median as runtime
     val N = iterations
-    val runtimes:Array[Double] = new Array[Double](N)
+    val runtimes: Array[Double] = new Array[Double](N)
     var runtime = 0.0
     //check global execution time. Discard any with factor 10
     var i = 0
-    while(i < N) {
+    while (i < N) {
       runtimes(i) = (s"$bin" !!).toDouble
 
-      println("runtime:(" + i +"): " + runtimes(i))
+      println("runtime:(" + i + "): " + runtimes(i))
       println("globalBest: " + globalBest)
       // check if we have to skip this execution round
-      globalBest match{
+      globalBest match {
         case Some(value) =>
           if (runtimes(i) > value * threshold) {
             for (j <- Range(i, N)) {
@@ -482,7 +501,7 @@ int main(int argc, char** argv) {
     }
 
     // get runtime (median of iterations)
-    runtime = runtimes.sorted.apply(N/2)
+    runtime = runtimes.sorted.apply(N / 2)
 
     // check if new global best was found
     if (runtime < globalBest.get) {
@@ -495,15 +514,18 @@ int main(int argc, char** argv) {
 
   def writeValues(path: String,
                   result: (Rise, Rise, Option[Double], ExplorationErrorLevel),
-                  name:String): Unit = {
+                  rewrite: Seq[Strategy[Rise]],
+                  name: String): Unit = {
     // open file to append values
     val file = new PrintWriter(
       new FileOutputStream(new File(path), true))
 
     // create string to write to file
     var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
-      s"${Integer.toHexString(result._1.hashCode())}, " +
-      s"${Integer.toHexString(result._2.hashCode())}, ${result._4.toString}, "
+      hashProgram(result._1) + ", " +
+      hashProgram(result._2) + ", " +
+      rewrite.mkString(" | ") + ", " +
+      result._4.toString + ", "
     result._3 match {
       case Some(value) => string += value.toString + "\n"
       case _ => string += "-1 \n"
@@ -515,14 +537,14 @@ int main(int argc, char** argv) {
     file.close()
   }
 
-  def writeHeader(path:String): Unit = {
+  def writeHeader(path: String): Unit = {
     // open file
     val file = new PrintWriter(
       new FileOutputStream(new File(path), false))
 
     // create string to write to file
     val string = "iteration, runner, timestamp, high-level hash, " +
-      "low-level hash, error-level, runtime\n"
+      "low-level hash, rewrite, error-level, runtime\n"
 
     // write to file and close
     file.write(string)
