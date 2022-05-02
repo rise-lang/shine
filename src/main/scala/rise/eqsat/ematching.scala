@@ -27,7 +27,7 @@ object ematching {
 
     def run[ED, ND, TD](egraph: EGraph,
                         instructions: Seq[Instruction],
-                        yieldFn: () => ()): Unit = {
+                        yieldFn: () => Unit): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {

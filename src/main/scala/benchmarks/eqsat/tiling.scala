@@ -88,7 +88,7 @@ object tiling {
 
     val expr = wrap(f => **(f))
 
-    def equiv(): () = {
+    def equiv(): Unit = {
       val golds1 = Seq(
         // 1 loop
         wrap(f => J o ***(f) o S),
@@ -113,7 +113,7 @@ object tiling {
         .runBENF(golds1, golds2, reorderRulesBENF)
     }
 
-    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): () = {
+    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): Unit = {
       import rise.eqsat._
       import rise.eqsat.SketchDSL._
 
@@ -158,7 +158,7 @@ object tiling {
 
     val expr = wrap(f => ***(f))
 
-    def equiv(): () = {
+    def equiv(): Unit = {
       val golds1 = Seq(
         // 1 loop
         wrap(f => J o ****(f) o S),
@@ -199,7 +199,7 @@ object tiling {
         .runBENF(golds1, golds2, reorderRulesBENF)
     }
 
-    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): () = {
+    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): Unit = {
       import rise.eqsat._
       import rise.eqsat.SketchDSL._
 
@@ -248,7 +248,7 @@ object tiling {
 
     val expr = wrap(f => ****(f))
 
-    def equiv(): () = {
+    def equiv(): Unit = {
       val golds1 = Seq(
         // 1 loop
         wrap(f => J o *****(f) o S),
@@ -315,7 +315,7 @@ object tiling {
         .runBENF(golds1, golds2, reorderRulesBENF)
     }
 
-    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): () = {
+    def guidedSearch(normalForm: rise.eqsat.NF, splitRules: Seq[Rewrite], reorderRules: Seq[Rewrite]): Unit = {
       import rise.eqsat._
       import rise.eqsat.SketchDSL._
 

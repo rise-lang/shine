@@ -41,7 +41,7 @@ object GuidedSearch {
 
   // no expr = failure
   case class Result(exprs: Seq[Expr], stats: Vec[Stats]) {
-    def printReport(): () = {
+    def printReport(): Unit = {
       stats.zipWithIndex.foreach { case (st, i) =>
         println(s"  -- step n°$i")
         def ratio(a: Long, b: Long) = f"${a.toDouble/b.toDouble}%.2f"
