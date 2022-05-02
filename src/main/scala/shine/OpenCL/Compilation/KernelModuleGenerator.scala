@@ -53,8 +53,6 @@ object KernelModuleGenerator extends ModuleGenerator[KernelDef] {
       CModuleGenerator.imperativePasses andThen
       InsertMemoryBarriers.insert andThen
       HoistMemoryAllocations.hoist andThen
-      // FIXME: need to re-inject because of Hoist impl
-      { case (info, p) => (info, InjectWorkItemSizes.inject(funDef.wgConfig)(p)) } andThen
       AdaptKernelParameters.adapt(gen, outParam, funDef.params)
   }
 
