@@ -7,6 +7,16 @@ import rise.core.types._
 import rise.openCL.primitives._
 import rise.core.DSL.HighLevelConstructs.zipND
 
+/** This version of Harris follows from the following paper:
+  * https://dl.acm.org/doi/abs/10.1145/2568058.2568067
+  *
+  * Compared to Halide's version:
+  * - it starts from grayscale images instead of color images
+  * - it uses a binomial filter instead of a box filter
+  *
+  * The algorithm is simplified:
+  * - there is no padding and the output is smaller than the input.
+  */
 package object harrisCornerDetection2 {
   val num_threads = 4
   val vecw = 8
