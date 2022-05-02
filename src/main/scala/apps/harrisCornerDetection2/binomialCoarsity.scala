@@ -56,8 +56,8 @@ object binomialCoarsity {
         slide(3)(1) >> mapGlobal(
           transpose >> map(transpose) >>
           mapSeq(mapSeqUnroll(dotSeqUWV(binomialWeightsV))) >>
-          // FIXME: toGlobal? + should not need to avoid vector
-          impl { (t: DataType) => (map(asScalar) >> toLocal >> map(asVectorAligned(vecw))) :: (t ->: t) } >>
+          // FIXME: should not need to avoid vector
+          impl { (t: DataType) => (map(asScalar) >> toGlobal >> map(asVectorAligned(vecw))) :: (t ->: t) } >>
           slide(3)(1) >>
           mapSeq(
             transpose >> map(shuffle) >>
