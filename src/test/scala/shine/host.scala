@@ -163,4 +163,22 @@ int main(int argc, char** argv) {
     findDeviceBufferSyncRead(1, hostCode)
     checkOutput(m)
   }
+
+  test("global memory") {
+    val e = depFun((n: Nat) => fun((n`.`i32) ->: (n`.`i32))(in =>
+      oclRun(LocalSize(16), GlobalSize(n))(
+        in |> split(16) |> mapWorkGroup(0)(
+          mapLocal(0)(add(li32(1))) >>
+          toGlobal >>
+          mapLocal(0)(add(li32(2)))
+        ) |> join
+      )
+    ))
+    val m = gen.opencl.hosted.fromExpr(e)
+    val hostCode = gen.c.function.asString(m.hostCode)
+    // logger.debug(hostCode)
+    findDeviceBufferSyncWrite(1, hostCode)
+    findDeviceBufferSyncRead(1, hostCode)
+    checkOutput(m)
+  }
 }

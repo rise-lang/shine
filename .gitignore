@@ -17,3 +17,5 @@ modules.xml
 *.pdf
 *.gz
 *.sc
+
+*.o

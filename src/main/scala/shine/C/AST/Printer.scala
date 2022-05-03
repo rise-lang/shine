@@ -43,6 +43,8 @@ trait Printer {
 
 object Printer {
   def apply(n: Node): String = (new CPrinter).printNode(n)
+  def declFun(f: FunDecl): String =
+    (new CPrinter).declareFunSig(f)
 }
 
 class CPrinter extends Printer {
@@ -65,6 +67,12 @@ class CPrinter extends Printer {
     case l: LabelDecl => printLabelDecl(l)
     case t: TypedefDecl => printTypedefDecl(t)
     case s: StructTypeDecl => printStructTypeDecl(s)
+  }
+
+  def declareFunSig(f: FunDecl): String = {
+    printFunSig(f)
+    print(";")
+    sb.toString()
   }
 
   override def printExpr(e: Expr, parenthesize: Boolean): Unit = e match {
@@ -116,8 +124,7 @@ class CPrinter extends Printer {
       print(";")
   }
 
-  // Decls
-  private def printFunDecl(f: FunDecl): Unit = {
+  def printFunSig(f: FunDecl): Unit = {
     print(typeName(f.returnType))
     print(s" ${f.name}(")
     f.params.foreach(p => {
@@ -125,7 +132,11 @@ class CPrinter extends Printer {
       if (!p.eq(f.params.last)) print(", ")
     })
     print(")")
+  }
 
+  // Decls
+  private def printFunDecl(f: FunDecl): Unit = {
+    printFunSig(f)
     printStmt(f.body)
   }
 

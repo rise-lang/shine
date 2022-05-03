@@ -30,6 +30,26 @@ object Module {
        |${util.gen.c.function.asString(m.hostCode)}
        |""".stripMargin
 
+  def translateToHeaderAndSource(m: Module): (String, String) =
+    (s"""
+      |#ifdef __cplusplus
+      |extern "C"
+      |{
+      |#endif
+      |${m.hostCode.includes.map(_.toString).mkString("\n")}
+      |${m.hostCode.decls.map(C.AST.Printer(_)).mkString("\n")}
+      |${m.hostCode.functions.map(f => C.AST.Printer.declFun(f.code)).mkString("\n")}
+      |#ifdef __cplusplus
+      |}
+      |#endif
+      |""".stripMargin,
+      s"""
+       |${m.kernels.map(kernelSource).mkString("\n")}
+       |#define loadKernel(ctx, id)\\
+       |  loadKernelFromSource(ctx, #id, id##_source, sizeof(id##_source) - 1)
+       |${util.gen.c.function.asString(m.hostCode)}
+       |""".stripMargin)
+
   def dumpToDirectory(dir: java.io.File)(m: Module): Unit = {
     util.writeToPath(s"${dir.getAbsolutePath}/host.c",
       s"""#define loadKernel(ctx, ident) loadKernelFromFile(ctx, #ident, #ident ".cl")
