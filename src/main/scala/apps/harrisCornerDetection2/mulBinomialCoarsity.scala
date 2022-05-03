@@ -11,6 +11,70 @@ import rise.openCL.primitives.oclRotateValues
 import shine.OpenCL.{GlobalSize, LocalSize}
 
 object mulBinomialCoarsity {
+  def check(module: shine.OpenCL.Module, h: Int, w: Int, kappa: Float): Unit = {
+    val main = s"""
+#include "src/main/scala/apps/harrisCornerDetection2/common.cpp"
+
+int main(int argc, char** argv) {
+  Context ctx = createDefaultContext();
+  size_t in_bytes = $h * $w * sizeof(float);
+  size_t out_bytes = ${h - 2*bd_h} * ${w - 2*bd_w} * sizeof(float);
+  Buffer input_ix = createBuffer(ctx, in_bytes, HOST_WRITE | HOST_READ | DEVICE_READ);
+  Buffer input_iy = createBuffer(ctx, in_bytes, HOST_WRITE | HOST_READ | DEVICE_READ);
+  Buffer output = createBuffer(ctx, out_bytes, HOST_READ | HOST_WRITE | DEVICE_WRITE);
+
+  float* ixx_gold = (float*) malloc(in_bytes);
+  float* ixy_gold = (float*) malloc(in_bytes);
+  float* iyy_gold = (float*) malloc(in_bytes);
+  float* sxx_gold = (float*) malloc(out_bytes);
+  float* sxy_gold = (float*) malloc(out_bytes);
+  float* syy_gold = (float*) malloc(out_bytes);
+  float* out_gold = (float*) malloc(out_bytes);
+
+  std::random_device rand_d;
+  std::default_random_engine rand_e(rand_d());
+  // bigger range results in higher output differences
+  std::uniform_real_distribution<float> dist(0, 50);
+
+  float* in_ix = (float*) hostBufferSync(ctx, input_ix, in_bytes, HOST_WRITE | HOST_READ);
+  float* in_iy = (float*) hostBufferSync(ctx, input_iy, in_bytes, HOST_WRITE | HOST_READ);
+  for (int y = 0; y < $h; y++) {
+    for (int x = 0; x < $w; x++) {
+      in_ix[y*$w + x] = dist(rand_e);
+      in_iy[y*$w + x] = dist(rand_e);
+    }
+  }
+
+  mul_gold(ixx_gold, $h, $w, in_ix, in_ix);
+  mul_gold(ixy_gold, $h, $w, in_ix, in_iy);
+  mul_gold(iyy_gold, $h, $w, in_iy, in_iy);
+  binomial_gold(sxx_gold, $h, $w, ixx_gold);
+  binomial_gold(sxy_gold, $h, $w, ixy_gold);
+  binomial_gold(syy_gold, $h, $w, iyy_gold);
+  coarsity_gold(out_gold, ${h - 2*bd_h}, ${w - 2*bd_w}, sxx_gold, sxy_gold, syy_gold, $kappa);
+
+  foo_init_run(ctx, output, $h, $w, input_ix, input_iy, $kappa);
+
+  ErrorStats errors;
+  init_error_stats(&errors);
+  float* out = (float*) hostBufferSync(ctx, output, out_bytes, HOST_READ);
+  accumulate_error_stats(&errors, out, out_gold, ${h - 2*bd_h}, ${w - 2*bd_w});
+  finish_error_stats(&errors, 5.0, 0.01);
+
+  free(sxx_gold);
+  free(sxy_gold);
+  free(syy_gold);
+  free(out_gold);
+  destroyBuffer(ctx, input_ix);
+  destroyBuffer(ctx, input_iy);
+  destroyBuffer(ctx, output);
+  destroyContext(ctx);
+  return EXIT_SUCCESS;
+}
+"""
+    util.ExecuteOpenCL.using_cpp(main, module, "one_copy")
+  }
+
   val base: ToBeTyped[Expr] =
     depFun(hFrom(3), (h: Nat) =>
     depFun(wFrom(12), (w: Nat) => fun(
