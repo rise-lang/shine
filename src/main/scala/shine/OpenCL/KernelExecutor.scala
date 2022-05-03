@@ -21,8 +21,8 @@ object KernelExecutor {
   sealed case class KernelWithSizes(ktu: KernelModule,
                                     localSize: LocalSize,
                                     globalSize: GlobalSize) {
-    def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      FromKernelModule(ktu).as[F](localSize, globalSize)
+    def as[T, R](implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
+      FromKernelModule(ktu).as[T, R](localSize, globalSize)
     }
 
     def code: String = util.gen.opencl.kernel.asString(ktu)
@@ -31,18 +31,15 @@ object KernelExecutor {
   }
 
   sealed case class KernelNoSizes(ktu: KernelModule) {
-    //noinspection TypeAnnotation
-    def as[F <: FunctionHelper](implicit ev: F#T <:< HList): Object {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
+    def as[T, R](implicit ev: T <:< HList): AS[T, R] = AS()
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[ms])
-    } = new {
-      def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelModule(ktu).as[F](localSize, globalSize)
+    case class AS[T, R]()(implicit ev: T <:< HList) {
+      def apply(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
+        FromKernelModule(ktu).as[T, R](localSize, globalSize)
       }
 
-      def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) = {
-        FromKernelModule(ktu).as[F](localSize, globalSize)
+      def withSizes(localSize: LocalSize, globalSize: GlobalSize): T => (R, TimeSpan[Time.ms]) = {
+        FromKernelModule(ktu).as[T, R](localSize, globalSize)
       }
     }
 
@@ -83,9 +80,9 @@ object KernelExecutor {
       val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
       val (result, time) = kernelF(xs `;`)
       */
-    def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
-                               (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-      hArgs: F#T => {
+    def as[T, R](localSize: LocalSize, globalSize: GlobalSize)
+                (implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
+      hArgs: T => {
         val args: List[Any] = hArgs.toList
         assert(kernel.inputParams.length == args.length)
 
@@ -141,7 +138,7 @@ object KernelExecutor {
           kernelArgs.toArray
         )
 
-        val output = castToOutputType[F#R](outputParam._2.typ, outputArg)
+        val output = castToOutputType[R](outputParam._2.typ, outputArg)
 
         kernelArgs.foreach(_.dispose)
         kernelJNI.dispose()

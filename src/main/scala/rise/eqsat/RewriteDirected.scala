@@ -53,13 +53,13 @@ object RewriteDirected {
 
     val toRemove = HashMap.empty[EClassId, HashSet[ENode]]
     var removed = 0
-    def remove(id: EClassId, enode: ENode): () = {
+    def remove(id: EClassId, enode: ENode): Unit = {
       if (toRemove.getOrElseUpdate(id, HashSet.empty).add(enode)) {
         removed += 1
       }
     }
 
-    def tryToRemove(m: Match, atRoot: Boolean): () = {
+    def tryToRemove(m: Match, atRoot: Boolean): Unit = {
       m match {
         case MatchNode(mnode, enode, id) =>
           val eclass = egraph.get(id)

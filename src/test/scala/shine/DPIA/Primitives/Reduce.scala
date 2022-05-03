@@ -77,8 +77,8 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val gold = A.reduce((row1, row2) => row1.zip(row2).map(in => in._1 + in._2))
 
-    val runKernel = gen.opencl.kernel.fromExpr(e(m)(n)).as[ScalaFunction `(`
-      Array[Array[Float]] `)=>` Array[Float]]
+    val runKernel = gen.opencl.kernel.fromExpr(e(m)(n)).as[In `=`
+      Array[Array[Float]], Out[Array[Float]]]
     val (out, _)  = runKernel(LocalSize(1), GlobalSize(1))(A`;`)
 
     assertResult(gold)(out)
@@ -121,7 +121,7 @@ class Reduce extends test_util.TestsWithExecutor {
 
     def runKernel(initWithRecordAccess: ToBeTyped[Expr]) =
       gen.opencl.kernel.fromExpr(e(initWithRecordAccess))
-        .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
+        .as[In `=`Int`,`Array[Float], Out[Array[Float]]]
 
     val (out1, _) =
       runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)

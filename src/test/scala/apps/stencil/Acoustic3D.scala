@@ -47,11 +47,11 @@ class Acoustic3D extends test_util.TestsWithExecutor {
   def runKernel(k: KernelExecutor.KernelNoSizes,
                 mat1: Array[Array[Array[Float]]],
                 mat2: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[Time.ms]) = {
-    val f = k.as[ScalaFunction `(`
+    val f = k.as[In `=`
       Int `,` Int `,` Int `,`
       Array[Array[Array[Float]]] `,`
-      Array[Array[Array[Float]]]
-      `)=>` Array[Float]]
+      Array[Array[Array[Float]]],
+      Out[Array[Float]]]
     f(localSize, globalSize)(O `,` N `,` M `,` mat1 `,` mat2)
   }
 

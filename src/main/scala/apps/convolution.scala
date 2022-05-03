@@ -143,9 +143,7 @@ object convolution {
     matrix: Array[Array[Float]],
     weights: Array[Float]
   ): (Array[Float], TimeSpan[Time.ms]) = {
-    val f = k.as[ScalaFunction `(`
-      Array[Array[Float]] `,` Array[Float]
-      `)=>` Array[Float]]
+    val f = k.as[In `=` Array[Array[Float]] `,` Array[Float], Out[Array[Float]]]
     f(localSize, globalSize)(matrix `,` weights)
   }
 }

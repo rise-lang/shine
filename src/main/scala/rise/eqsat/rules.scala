@@ -123,7 +123,7 @@ object rules {
   )
 
   def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",
-    ("in" :: ((`_`: Nat)`.``_`))
+    ("in" :: (`?n``.``?dt`))
       -->
     app(join, app(nApp(split, n), "in"))
   )
@@ -272,8 +272,8 @@ object rules {
 
   val mapOutsidePair = NamedRewrite.init("map-outside-pair",
     app(app(makePair,
-      app(app(map, "fa"), "a" :: (("n": Nat)`.``_`))),
-      app(app(map, "fb"), "b" :: (("n": Nat)`.``_`)))
+      app(app(map, "fa"), "a" :: (("n": Nat)`.``?dt`))),
+      app(app(map, "fb"), "b" :: (("n": Nat)`.``?dt`)))
       -->
     app(unzip,
       app(app(map,
@@ -319,22 +319,22 @@ object rules {
     ("x": Pattern) --> app(lam("y", "y"), "x")
   )
   val transposePairAfter = NamedRewrite.init("transpose-pair-after",
-    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) --> app(transpose, app(transpose, "x"))
+    ("x" :: (`?n``.`(`?n``.``?dt`))) --> app(transpose, app(transpose, "x"))
   )
   val transposePairAfter2 = NamedRewrite.init("transpose-pair-after-2",
-    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) -->
+    ("x" :: (`?n``.`(`?n``.``?dt`))) -->
       app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
   val transposePairAfter3 = NamedRewrite.init("transpose-pair-after-3",
-    ("f" :: ("in" ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
+    ("f" :: ("in" ->: (`?n``.`(`?n``.``?dt`)))) -->
       lam("x", app(lam("y", app(transpose, app(transpose, "y"))), app("f", "x")))
   )
   val transposePairAfter4 = NamedRewrite.init("transpose-pair-after-4",
-    ("f" :: ("in" ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
+    ("f" :: ("in" ->: (`?n``.`(`?n``.``?dt`)))) -->
     lam("x", app(transpose, app(lam("y", app(transpose, app("f", "y"))), "x")))
   )
   val createTransposePair = NamedRewrite.init("create-transpose-pair",
-    app(lam("y", "y"), "x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))
+    app(lam("y", "y"), "x" :: (`?n``.`(`?n``.``?dt`)))
       -->
     app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
@@ -345,7 +345,7 @@ object rules {
     lam("y", "y")
   )
   val mapIdentityAfter = NamedRewrite.init("map-identity-after",
-    ("e" :: ((`_`: Nat)`.``_`))
+    ("e" :: (`?n``.``?dt`))
       -->
     app(app(map, lam("x", "x")), "e")
   )
@@ -358,12 +358,12 @@ object rules {
   )
 
   val slideAfter = NamedRewrite.init("slide-after",
-    ("e" :: ((`_`: Nat)`.``_`))
+    ("e" :: (`?n``.``?dt`))
       -->
     app(join, app(nApp(nApp(slide, 1), 1), "e"))
   )
   val slideAfter2 = NamedRewrite.init("slide-after-2",
-    ("e" :: ((`_`: Nat)`.``_`))
+    ("e" :: (`?n``.``?dt`))
       -->
     app(app(map, lam("x", app(app(rcp.idx.primitive, lidx(0, 1)), "x"))),
       app(nApp(nApp(slide, 1), 1), "e"))
@@ -377,7 +377,7 @@ object rules {
     app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1), "in"))
   )
   val takeInSlide = NamedRewrite.init("take-in-slide",
-    app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1), "in"))
+    app(nApp(take, "r") :: ((("s": Nat)`.``?dt`) ->: `?t`), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
     app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1), "in"))
   )
@@ -536,7 +536,7 @@ object rules {
     app(app(rcp.let.primitive, app(rcp.toMem.primitive, "in")), lam("x", "x"))
   )
   val hoistLetApp1 = NamedRewrite.init("hoist-let-app-1",
-    (app("y", app(app(rcp.let.primitive, "v"), lam("x", "b"))) :: (`_`: DataType))
+    (app("y", app(app(rcp.let.primitive, "v"), lam("x", "b"))) :: `?dt`)
       -->
     app(app(rcp.let.primitive, "v"), lam("x", app("y", "b")))
   )
@@ -576,24 +576,24 @@ object rules {
    */
 
   val mapArray = NamedRewrite.init("map-array",
-    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+    ("x" :: (`?n``.``?dt`))
       -->
     app(app(map, lam("y", "y")), "x")
   )
   val mapSeqArray = NamedRewrite.init("map-seq-array",
-    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+    ("x" :: (`?n``.``?dt`))
       -->
     app(app(rcp.mapSeq.primitive, lam("y", "y")), "x")
   )
 
   // TODO: condition typeHasTrivialCopy(t) / or synthesise trivial write function
   val mapSeqUnrollWrite = NamedRewrite.init("map-seq-unroll-write",
-    ("x" :: ((`_`: Nat)`.`"dt"))
+    ("x" :: (`?n``.`"dt"))
       -->
     app(app(rcp.mapSeqUnroll.primitive, lam("y", "y")), "x")
   )
   val mapSeqUnrollMapSeqWrite = NamedRewrite.init("map-seq-unroll-map-seq-write",
-    ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.`"dt")))
+    ("x" :: (`?n``.`(`?n``.`"dt")))
       -->
       app(app(rcp.mapSeqUnroll.primitive, app(rcp.mapSeq.primitive, lam("y", "y"))), "x")
   )
@@ -663,7 +663,7 @@ object rules {
     )
 
     val asScalarAsVectorId = NamedRewrite.init("as-scalar-as-vector-id",
-      (app(nApp(asVector, `_`), app(asScalar, "e" :: t("t"))) :: t("t"))
+      (app(nApp(asVector, `?n`), app(asScalar, "e" :: t("t"))) :: t("t"))
         --> "e"
     )
 
@@ -915,7 +915,7 @@ object rules {
     )
 
     val transposePairAfter = NamedRewrite.init("transpose-pair-after-cnf",
-      ("f" :: (t("in") ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
+      ("f" :: (t("in") ->: (`?n``.`(`?n``.``?dt`)))) -->
       ("f" >> transpose >> transpose)
     )
 
