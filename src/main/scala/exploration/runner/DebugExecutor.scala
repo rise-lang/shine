@@ -1,21 +1,18 @@
 package exploration.runner
 
-import arithexpr.arithmetic.RangeMul
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{Solution, hashProgram}
 import exploration.runner
-import rise.{autotune, core}
-import rise.autotune.{tuningParam, wrapOclRun}
-import rise.core.Expr
-import rise.core.types.{Nat, NatIdentifier}
+
 import rise.elevate.Rise
-import shine.OpenCL.{GlobalSize, LocalSize}
+import shine.C.AST._
 import util.{Time, TimeSpan, gen}
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
+
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -25,39 +22,36 @@ case class DebugExecutor(lowering: Strategy[Rise],
                          inputSize: Int,
                          threshold: Double,
                          output: String
-                             ) extends Runner[Rise] {
+                        ) extends Runner[Rise] {
 
 
   case class TuningResultStatistic(
-                                  number: Int,
-                                  solution: String,
-                                  timestamp: Long,
-                                  duration: TimeSpan[Time.ms],
-                                  durationTuning: TimeSpan[Time.ms],
-                                  durationLowering: TimeSpan[Time.ms],
-                                  samples: Int,
-                                  executions: Int,
-                                  runtime: Option[TimeSpan[Time.ms]]
+                                    number: Int,
+                                    solution: String,
+                                    timestamp: Long,
+                                    duration: TimeSpan[Time.ms],
+                                    durationTuning: TimeSpan[Time.ms],
+                                    durationLowering: TimeSpan[Time.ms],
+                                    samples: Int,
+                                    executions: Int,
+                                    runtime: Option[TimeSpan[Time.ms]]
                                   )
 
   case class Statistics(
-                       samples: ListBuffer[TuningResultStatistic]
+                         samples: ListBuffer[TuningResultStatistic]
                        )
 
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
   val random = new scala.util.Random
 
-//  override def checkSolution(solution: Solution[Rise]): Boolean = {
-//
-//    true
-//  }
-
+  // todo make this generic
   def checkSolution(solution: Solution[Rise]): Boolean = {
-    runner.checkSolution(lowering, solution)
+    //    runner.checkSolution(lowering, solution)
+    runner.checkSolutionC(lowering, solution)
   }
 
-  def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
     number = number + 1
 
     // throw the dices
@@ -77,14 +71,13 @@ case class DebugExecutor(lowering: Strategy[Rise],
     //    val result = constant()
     val result = performanceModel(solution)
 
-//    println("result: " + result)
+    //    println("result: " + result)
 
     // convert Double to timespan for tuning output
     val resultTuning: Option[TimeSpan[Time.ms]] = result match {
       case Some(value) => Some(TimeSpan.inMilliseconds(value))
       case None => None
     }
-
 
 
     val tresult =
@@ -94,7 +87,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
         timestamp = System.currentTimeMillis(),
         duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
         durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
-        durationLowering =  TimeSpan.inMilliseconds(loweringDuration.toDouble),
+        durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
         samples = samples,
         executions = executions,
         runtime = resultTuning
@@ -104,22 +97,22 @@ case class DebugExecutor(lowering: Strategy[Rise],
     // add to
     tuningResults += tresult
 
-    core.freshName.reset()
+    //    core.freshName.reset()
 
     (solution.expression, result)
   }
 
   def randomFunction(number: Int): Option[Double] = {
-    if (number == 1){
+    if (number == 1) {
       // make sure initialization always succeeds
 
       Some(random.nextInt(100).toDouble + 1.0)
-    }else{
+    } else {
       // get random performance value
       val index = random.nextInt(100)
 
       // chance to fail 50 %
-      val runtime = index < 50 match{
+      val runtime = index < 50 match {
         case true => Some(index.toDouble)
         case false => None
       }
@@ -129,7 +122,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
   }
 
   def decrease(number: Int): Option[Double] = {
-    Some(100.0/(number*0.9))
+    Some(100.0 / (number * 0.9))
   }
 
   def increase(number: Int): Option[Double] = {
@@ -137,27 +130,123 @@ case class DebugExecutor(lowering: Strategy[Rise],
   }
 
   def constant(): Option[Double] = {
-   Some(1.0)
+    Some(1.0)
   }
 
   var counter = 0
 
-  def performanceModel(solution: Solution[Rise]): Option[Double] = {
+  def performanceModel2(solution: Solution[Rise]): Option[Double] = {
     // evaluate, if expression is invalid
-//    counter += 1
+    //    counter += 1
 
-//    if(counter <= 10){
-      // try to maximize programs size
-      val value = 100000/solution.expression.toString.size.toDouble
+    //    if(counter <= 10){
+    // try to maximize programs size
+    val value = 100000 / solution.expression.toString.size.toDouble
 
-//          val value = solution.expression.toString.size
+    //          val value = solution.expression.toString.size
 
-//      Some(value)
-//    }else{
-//      val value = solution.expression.toString.size
-//
-      Some(value)
-//    }
+    //      Some(value)
+    //    }else{
+    //      val value = solution.expression.toString.size
+    //
+    Some(value)
+    //    }
+  }
+
+  def performanceModel(solution: Solution[Rise]): Option[Double] = {
+    // WARNING: Only for C, not opencl, implementation is not generic
+
+    println("solution: " + hashProgram(solution.expression))
+    println("strategies: " + solution.strategies.mkString(", "))
+
+    //    val code = gen.openmp.function("riseFun").asStringFromExpr(lowered.get)
+    //    println("code: \n" + code)
+
+    // generate code
+    val lowered = lowering.apply(solution.expression)
+    val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
+
+    // todo check case of multiple functions
+    val function = p.functions(0)
+
+    val result = price(function.code.body)
+
+    println("result: " + result)
+
+    Some(result)
+  }
+
+  def priceExpr(expr: shine.C.AST.Expr): Double = {
+    // todo implement this
+
+    1.0
+  }
+
+  // determine number of iterations
+  def countForLoop(stmt: Stmt, expr: shine.C.AST.Expr, expr1: shine.C.AST.Expr): Double = {
+
+    // todo check initial value
+    // initial value (mostly 0)
+
+    // todo check assignment
+
+    val bound = expr match {
+      case BinaryExpr(one, two, three) => three match {
+        case Literal(str) => str.toInt
+        case _ => 0
+      }
+      case _ => 0
+    }
+
+    //    println("bound: " + bound)
+
+    //    512
+    bound
+  }
+
+  def price(stmt: Stmt): Double = {
+    //    println()
+
+    stmt match {
+
+      // just call
+      case Block(value) => // recursive for each statement of block
+        //        println("block: " + value)
+        value.map(elem => price(elem)).reduceLeft(_ + _)
+
+      case Stmts(stmt, stmt1) => // recursive for each elem
+        //        println("Stmts: " + stmt + " - " + stmt1)
+        price(stmt) + price(stmt1)
+
+      // count iterations
+      case ForLoop(stmt, expr, expr1, stmt1) => // count iterations, then recursive on body
+        //        println("for loop: " + stmt + " - " + expr + " - " + expr1 + " - " + stmt1)
+        price(stmt) + countForLoop(stmt, expr, expr1) * (priceExpr(expr) + priceExpr(expr1) + price(stmt1))
+
+      // count
+      case DeclStmt(decl) =>
+        //        println("declStmt: " + decl)
+        1.0 // count
+      case ExprStmt(expr) =>
+        //        println("exprStmt: " + expr)
+        1.0 // count
+
+      case _ => 0.0
+      //
+      //      // ignore
+      //      case Comment(str) => // ignore
+      //      // not sure for now
+      //      case IfThenElse(expr, stmt, maybeStmt) => // ignore for now
+      //      case break: Break => // ignore for now
+      //      case Code(str) => // ignore for now
+      //      case value: Return => // ignore for now
+      //      case GOTO(str) => // ignore for now
+      //      case continue: Continue => // ignore for now
+      //      case SynchronizeWarp() => // ignore for now
+      //      case SynchronizeThreads() => // ignore for now
+      //      case WhileLoop(expr, stmt) => // ignore for now
+      //      case Barrier(local, global) => // ignore for now
+    }
   }
 
   def plot() = {
@@ -202,7 +291,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     fWriter.close()
 
     // plot results
-//    val outputFilePath = output + "/" + "tuningStatistics_hm.csv"
+    //    val outputFilePath = output + "/" + "tuningStatistics_hm.csv"
 
     // mkdir output folder
     (s"mkdir -p ${output}/hm " !!)
@@ -225,7 +314,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     val fWriter = new PrintWriter(new FileOutputStream(new File(filePath), true))
     val fWriterHm = new PrintWriter(new FileOutputStream(new File(filePathHm), true))
 
-    if(!exists) {
+    if (!exists) {
       val header = "number, solution, timestamp, duration, durationTuning, durationLowering, samples, executions, runtime" + "\n"
       val headerHm = "index,runtime,Valid,Timestamp" + "\n"
 

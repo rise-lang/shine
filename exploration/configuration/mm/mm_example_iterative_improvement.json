@@ -1,0 +1,17 @@
+{
+  "name": "mm_example_iterative_improvement",
+  "output": "exploration",
+  "inputSize": 512,
+  "metaheuristic": [
+    {
+      "heuristic": "IterativeImprovement",
+      "depth": 10,
+      "iterations": 1
+    }
+  ],
+  "executor": {
+    "name": "Debug",
+    "iterations": 10,
+    "threshold": 1000
+  }
+}

@@ -4,6 +4,7 @@ import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
 import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
+import exploration.runner
 import rise.elevate.Rise
 import shine.C
 import shine.C.AST.ParamDecl
@@ -26,17 +27,72 @@ case class CExecutor(lowering: Strategy[Rise],
   var gold: C.Module = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
   var errorLevel: ExplorationErrorLevel = LoweringError
+  var samples = 0
 
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
+  // todo implement this based on debug executor implementation
   def plot(): Unit = {
 
+    // also write config file
+    val doe = counter
+
+    val configString = {
+      s"""{
+      "application_name": "mm_exploration",
+      "optimization_objectives": ["runtime"],
+      "feasible_output" : {
+        "enable_feasible_predictor" : true,
+        "name" : "Valid",
+        "true_value" : "True",
+        "false_value" : "False"
+      },
+      "hypermapper_mode" : {
+        "mode" : "client-server"
+      },
+      "design_of_experiment": {
+        "doe_type": "random sampling",
+        "number_of_samples": ${doe}
+      },
+      "optimization_iterations": 0,
+      "input_parameters" : {
+        "index": {
+        "parameter_type" : "integer",
+        "values" : [0, ${doe}],
+        "dependencies" : [],
+        "constraints" : []
+      }
+      }
+    }"""
+    }
+
+    // write configstring
+    val configFilePath = output + "/" + "tuningStatistics.json"
+    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), true))
+    fWriter.write(configString)
+    fWriter.close()
+
+    // plot results
+    //    val outputFilePath = output + "/" + "tuningStatistics_hm.csv"
+
+    output + "/" + "executor.csv"
+
+    // mkdir output folder
+    (s"mkdir -p ${output}/hm " !!)
+    (s"mv ${output}/executor_hm.csv ${output}/hm" !!)
+
+
+    try {
+      // call plot
+      (s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration" !!)
+    } catch {
+      case e: Throwable => // ignore
+    }
   }
 
-  override def checkSolution(solution: Solution[Rise]): Boolean = {
-
-    true
+  def checkSolution(solution: Solution[Rise]): Boolean = {
+    runner.checkSolutionC(lowering, solution)
   }
 
   def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
@@ -516,9 +572,15 @@ int main(int argc, char** argv) {
                   result: (Rise, Rise, Option[Double], ExplorationErrorLevel),
                   rewrite: Seq[Strategy[Rise]],
                   name: String): Unit = {
+
+    //    samples += 1
+
     // open file to append values
     val file = new PrintWriter(
       new FileOutputStream(new File(path), true))
+
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
 
     // create string to write to file
     var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
@@ -526,15 +588,28 @@ int main(int argc, char** argv) {
       hashProgram(result._2) + ", " +
       rewrite.mkString(" | ") + ", " +
       result._4.toString + ", "
+
     result._3 match {
       case Some(value) => string += value.toString + "\n"
       case _ => string += "-1 \n"
     }
 
+
+    val stringHmAppendix = result._3 match {
+      case Some(value) => value.toString + "," + "True" + "," + System.currentTimeMillis().toString + "\n"
+      case None => "-1" + "," + "False" + "," + System.currentTimeMillis().toString + "\n"
+    }
+
+    val stringHm = s"${counter}" + "," + stringHmAppendix
+
     // write to file and close
     file.write(string)
+    fileHM.write(stringHm)
+
     counter += 1
+
     file.close()
+    fileHM.close()
   }
 
   def writeHeader(path: String): Unit = {
@@ -542,14 +617,23 @@ int main(int argc, char** argv) {
     val file = new PrintWriter(
       new FileOutputStream(new File(path), false))
 
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
+
+    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+
     // create string to write to file
     val string = "iteration, runner, timestamp, high-level hash, " +
       "low-level hash, rewrite, error-level, runtime\n"
 
+    val stringHM = "index,runtime,Valid,Timestamp" + "\n"
+
     // write to file and close
     file.write(string)
+    fileHM.write(stringHM)
+
+    fileHM.close()
     file.close()
   }
-
 
 }

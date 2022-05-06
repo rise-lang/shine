@@ -108,6 +108,7 @@ object defaultStrategies {
     )
 
   val strategies: Set[Strategy[Rise]] = Set(
+    baseline,
     blocking,
     vectorization,
     loopPerm,
@@ -118,4 +119,14 @@ object defaultStrategies {
 
   val lowering = lowerToC
 
+
+  // lowering
+  // maps inside map reduce will stay maps instead of mapSeqs
+  //  val lowering =
+  //  addRequiredCopies() `;`
+  //    fuseReduceMap2 `;` // fuse map and reduce
+  //    rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
+  //    reduceMapFission2 `;` // fission map and reduce
+  //    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
+  //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 }

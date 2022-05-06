@@ -1,0 +1,17 @@
+{
+  "name": "mm_example_cot2",
+  "output": "exploration",
+  "inputSize": 512,
+  "metaheuristic": [
+    {
+      "heuristic": "cot2",
+      "depth": 6,
+      "iterations": 1
+    }
+  ],
+  "executor": {
+    "name": "C",
+    "iterations": 10,
+    "threshold": 1000
+  }
+}
