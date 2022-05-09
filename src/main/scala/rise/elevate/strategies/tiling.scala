@@ -3,7 +3,7 @@ package rise.elevate.strategies
 import elevate.core.Strategy
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic._
-import rise.elevate.Rise
+import rise.elevate.{Rise, tunable}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.{argument, function}
@@ -14,19 +14,35 @@ object tiling {
 
   def tileND(implicit ev: Traversable[Rise]): Int => Int => Strategy[Rise] = d => n => tileNDList(ev)(List.tabulate(d)(_ => n))
 
+
+  // special syntax for 2D case - for ICFP'20 paper generic
+  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(List(32, 32))
+
+  def tileNDList2(implicit ev: Traversable[Rise]): List[Int] => Strategy[Rise] =
+
+    n => n.size match {
+      case x if x <= 0 => id
+      // ((map f) arg)
+      case 1 => function(tunable("tile", splitJoin)) // loop-blocking
+      case i => fmap(tileNDList2(ev)(n.tail)) `;` // recurse
+        function(tunable("tile", splitJoin)) `;` // loop-blocking
+        interchange(ev)(i) // loop-interchange
+    }
+
+
   // special syntax for 2D case - for ICFP'20 paper
-  def tile(x: Int, y: Int)(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList(ev)(List(x,y))
+  def tile(x: Int, y: Int)(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList(ev)(List(x, y))
 
   def tileNDList(implicit ev: Traversable[Rise]): List[Int] => Strategy[Rise] =
 
     n => n.size match {
-        case x if x <= 0 => id
-        // ((map f) arg)
-        case 1 => function(splitJoin(n.head))      // loop-blocking
-        case i => fmap(tileNDList(ev)(n.tail)) `;`     // recurse
-                  function(splitJoin(n.head)) `;`  // loop-blocking
-                  interchange(ev)(i)                      // loop-interchange
-      }
+      case x if x <= 0 => id
+      // ((map f) arg)
+      case 1 => function(splitJoin(n.head)) // loop-blocking
+      case i => fmap(tileNDList(ev)(n.tail)) `;` // recurse
+        function(splitJoin(n.head)) `;` // loop-blocking
+        interchange(ev)(i) // loop-interchange
+    }
 
 
   // Notation: A.a -> a == tile dimension; A == original dimension
@@ -43,8 +59,8 @@ object tiling {
   def interchange(implicit ev: Traversable[Rise]): Int => Strategy[Rise] =
     d => {
       val joins = d
-      val transposes = (1 to d-2).sum
-      RNF() `;` shiftDimRec(ev)(joins + transposes)(d-1)
+      val transposes = (1 to d - 2).sum
+      RNF() `;` shiftDimRec(ev)(joins + transposes)(d - 1)
     }
 
   // position: how far to move right until we reach maps
@@ -52,14 +68,14 @@ object tiling {
   def shiftDimRec(implicit ev: Traversable[Rise]): Int => Int => Strategy[Rise] =
     position => level => DFNF() `;`
       (level match {
-      case 1 => moveTowardsArgument(position)(loopInterchangeAtLevel(ev)(1))
-      case l => shiftDimRec(ev)(position)(l - 1) `;` RNF() `;`
-        moveTowardsArgument(position + l - 1)(loopInterchangeAtLevel(ev)(l))
-    })
+        case 1 => moveTowardsArgument(position)(loopInterchangeAtLevel(ev)(1))
+        case l => shiftDimRec(ev)(position)(l - 1) `;` RNF() `;`
+          moveTowardsArgument(position + l - 1)(loopInterchangeAtLevel(ev)(l))
+      })
 
   // in front of **f, creating transpose pairs, move one transpose over **f
   def loopInterchange(implicit ev: Traversable[Rise]): Strategy[Rise] =
-      idAfter `;` createTransposePair `;` DFNF() `;` argument(mapMapFBeforeTranspose())
+    idAfter `;` createTransposePair `;` DFNF() `;` argument(mapMapFBeforeTranspose())
 
   // level == 0: A.B.C.D => A.B.D.C
   //             ^ ^        ^ ^

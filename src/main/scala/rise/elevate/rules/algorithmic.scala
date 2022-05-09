@@ -527,7 +527,7 @@ object algorithmic {
       )
   }
 
-  
+
 
   private val mulT: ToBeTyped[Rise] = fun(x => fst(x) * snd(x))
   private val sum: ToBeTyped[Rise] = reduce(add)(lf32(0.0f))

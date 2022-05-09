@@ -2,10 +2,12 @@ package rise
 
 import _root_.rise.core._
 import _root_.rise.core.primitives._
-import _root_.rise.core.types.ExprType
+import _root_.rise.core.types.{ExprType, Nat}
 import rise.elevate.strategies.normalForm.DFNF
 import _root_.elevate.core.Strategy
 import _root_.elevate.core.strategies.Traversable
+import arithexpr.arithmetic.{RangeMul, RangeUnknown}
+import rise.autotune.tuningParam
 
 package object elevate {
   type Rise = Expr
@@ -25,10 +27,22 @@ package object elevate {
   }
 
 
-//   scalastyle:off
-     implicit class NormalizedThen(f: Strategy[Rise])(implicit ev: Traversable[Rise]) {
-       def `;;`(s: Strategy[Rise]): Strategy[Rise] = f `;` DFNF() `;` s
-     }
-//   scalastyle:on
+  //   scalastyle:off
+  implicit class NormalizedThen(f: Strategy[Rise])(implicit ev: Traversable[Rise]) {
+    def `;;`(s: Strategy[Rise]): Strategy[Rise] = f `;` DFNF() `;` s
+  }
+  //   scalastyle:on
+
+
+  // wrapper to create strategies with tuning parameters
+  def tunable[T](f: Nat => T) = {
+    //    rise.core.freshName.reset()
+    tuningParam(rise.core.freshName.apply("tp"), RangeUnknown, f)
+  }
+
+  def tunable[T](name: String, f: Nat => T) = {
+    //    rise.core.freshName.reset()
+    tuningParam(rise.core.freshName.apply(name), RangeUnknown, f)
+  }
 
 }
