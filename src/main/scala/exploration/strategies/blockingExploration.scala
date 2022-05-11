@@ -29,15 +29,15 @@ object blockingExploration {
 
   // lowering
   // maps inside map reduce will stay maps instead of mapSeqs
-  val lowering =
-  addRequiredCopies() `;`
-    fuseReduceMap2 `;` // fuse map and reduce
-    rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
-    reduceMapFission2 `;` // fission map and reduce
-    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
+  //  val lowering =
+  //  addRequiredCopies() `;`
+  //    fuseReduceMap2 `;` // fuse map and reduce
+  //    rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
+  //    reduceMapFission2 `;` // fission map and reduce
+  //    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
   //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 
-  //  val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+  val lowering = fuseReduceMap `@` everywhere `;` lowerToC
 
 
   // -- BASELINE ---------------------------------------------------------------
@@ -68,13 +68,13 @@ object blockingExploration {
 
 
   // blocking (including baseline)
-  @rule def blocking_step0: Strategy[Rise] = baseline `;` DFNF()
+  @rule def blocking_step0: Strategy[Rise] = baseline `;` DFNF() // fusion
 
-  @rule def blocking_step1: Strategy[Rise] = DFNF() `;` (tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()
+  @rule def blocking_step1: Strategy[Rise] = DFNF() `;` (tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF() // tile
 
-  @rule def blocking_step2: Strategy[Rise] = (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;` DFNF()
+  @rule def blocking_step2: Strategy[Rise] = (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;` DFNF() // reduceMapFission
 
-  @rule def blocking_step3: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()
+  @rule def blocking_step3: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF() // splitStrategy
 
   // vectorization
   @rule def vectorization_step0: Strategy[Rise] = (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
@@ -127,13 +127,14 @@ object blockingExploration {
 
 
   val strategies: Set[Strategy[Rise]] = Set(
+    //    baseline,
     blocking_step0,
     blocking_step1, // can rewrite but not execute
     blocking_step2,
     blocking_step3,
-    vectorization_step0,
-    loopPerm_step2,
-    packB
+    //    vectorization_step0,
+    //    loopPerm_step2,
+    //    packB
     //    loopPerm_step0,
     //    loopPerm_step1,
     //    loopPerm_step3,

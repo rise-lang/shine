@@ -121,6 +121,8 @@ case class CExecutor(lowering: Strategy[Rise],
       try {
         val bin = compile(code)
 
+        println("compilation nice!")
+
         // execute
         try {
           errorLevel = ExecutionError
@@ -144,6 +146,8 @@ case class CExecutor(lowering: Strategy[Rise],
 
         } catch {
           case e: Throwable =>
+            println("error handling")
+            println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 11 =>
@@ -156,14 +160,18 @@ case class CExecutor(lowering: Strategy[Rise],
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                throw new Exception("segmentation fault")
+                println("execution failed with segmentation fault")
+                errorLevel = ExecutionFail
+                performanceValue = None
               case _ =>
-                throw new Exception("unknow error code")
+                println("execution failed with unknown error")
+                errorLevel = ExecutionFail
+                performanceValue = None
             }
         }
       } catch {
-        case _: Throwable =>
-          println("compiling error")
+        case e: Throwable =>
+          println("compiling error: " + e)
       }
 
     } catch {
@@ -513,9 +521,12 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
+    println("attempt to compile")
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
+
+    println("success")
 
     // todo: make this configable using json file
     // compile

@@ -10,7 +10,7 @@
     }
   ],
   "executor": {
-    "name": "Debug",
+    "name": "C",
     "iterations": 10,
     "threshold": 1000
   }

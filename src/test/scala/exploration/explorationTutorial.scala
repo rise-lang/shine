@@ -14,7 +14,7 @@ import rise.elevate.strategies.traversal._
 object explorationTutorial {
   // see: docs/exploration/tutorial.md
   // input size
-  val N = 1 << 10
+  val N = 1 << 9
 
   // define matrix-matrix multiplication in RISE
   val mm =
@@ -41,10 +41,10 @@ object explorationTutorial {
 
     // todo update exhaustive to tree strucutre?
 
-    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_iterative_improvement.json")
-    //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_exhaustive.json")
+    //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_iterative_improvement.json")
+    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_exhaustive.json")
     //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_cot2.json")
-    //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_random_sampling.json")
+    //            riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_random_sampling.json")
     //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_autotuner.json")
     //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_random.json")
 

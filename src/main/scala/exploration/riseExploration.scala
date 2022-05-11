@@ -29,10 +29,10 @@ object riseExploration {
 
 
   // entry point for exploration
-  def apply(solution:Rise,
-            lowering:Strategy[Rise],
+  def apply(solution: Rise,
+            lowering: Strategy[Rise],
             strategies: Set[Strategy[Rise]],
-            filePath:String,
+            filePath: String,
             hostCode: Option[HostCode] = None,
            )
   : (Rise, Option[Double]) = {
@@ -62,8 +62,8 @@ object riseExploration {
     result
   }
 
-    // todo command line parser (replace apply function by main)
-    // def main(args: Array[String], solution:Rise, filePath:String):Unit = {
+  // todo command line parser (replace apply function by main)
+  // def main(args: Array[String], solution:Rise, filePath:String):Unit = {
 
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
@@ -88,10 +88,10 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-//    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-//    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
-//    val lowering = exploration.strategies.scalStrategies.lowering
-//    val lowerings = exploration.strategies.scalStrategies.lowerings
+    //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
+    //    val lowering = exploration.strategies.scalStrategies.lowering
+    //    val lowerings = exploration.strategies.scalStrategies.lowerings
     // add lowering for scal
 
     // use set
@@ -128,8 +128,8 @@ object riseExploration {
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
-//    (s"mkdir ${executorOutput + "/C"}" !!)
-//    (s"mkdir ${executorOutput + "/lowered"}" !!)
+    //    (s"mkdir ${executorOutput + "/C"}" !!)
+    //    (s"mkdir ${executorOutput + "/lowered"}" !!)
 
     // begin with executor
     val executor = result.executor.name match {
@@ -147,8 +147,11 @@ object riseExploration {
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
 
+    println("result.executor: " + result.executor.name)
+    println("executro?: " + executor)
+
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-            rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[Runner[Rise]], strategies, nameList.reverse.apply(index))
+      rootChoice.depth, rootChoice.iteration, executor.asInstanceOf[Runner[Rise]], strategies, nameList.reverse.apply(index))
 
     index = index + 1
 
@@ -157,17 +160,17 @@ object riseExploration {
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,elem.iteration, metaheuristic, strategies, nameList.reverse.apply(index))
+        elem.depth, elem.iteration, metaheuristic, strategies, nameList.reverse.apply(index))
       index = index + 1
     })
 
     metaheuristic
   }
 
-  def uniqueFilename(path:String):String = {
+  def uniqueFilename(path: String): String = {
     // check if output path already exists
     var uniqueFilename_full = path
-    if(Files.exists(Paths.get(uniqueFilename_full))){
+    if (Files.exists(Paths.get(uniqueFilename_full))) {
       // wait for next millisecond to create unique filename using timestamp
       Thread.sleep(1)
       uniqueFilename_full = uniqueFilename_full + "_" + System.currentTimeMillis()
