@@ -15,16 +15,17 @@ object tiling {
   def tileND(implicit ev: Traversable[Rise]): Int => Int => Strategy[Rise] = d => n => tileNDList(ev)(List.tabulate(d)(_ => n))
 
 
+  // todo add dimensions
   // special syntax for 2D case - for ICFP'20 paper generic
-  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(List(32, 32))
+  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
 
-  def tileNDList2(implicit ev: Traversable[Rise]): List[Int] => Strategy[Rise] =
+  def tileNDList2(implicit ev: Traversable[Rise]): Int => Strategy[Rise] =
 
-    n => n.size match {
+    n => n match {
       case x if x <= 0 => id
       // ((map f) arg)
       case 1 => function(tunable("tile", splitJoin)) // loop-blocking
-      case i => fmap(tileNDList2(ev)(n.tail)) `;` // recurse
+      case i => fmap(tileNDList2(ev)(n - 1)) `;` // recurse
         function(tunable("tile", splitJoin)) `;` // loop-blocking
         interchange(ev)(i) // loop-interchange
     }

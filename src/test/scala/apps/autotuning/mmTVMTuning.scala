@@ -34,6 +34,22 @@ import rise.elevate.strategies.traversal._
 import elevate.heuristic_search.util.{IOHelper, Solution}
 
 import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
+import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
+import rise.autotune.configFileGeneration._
+import rise.autotune.constraints._
+import rise.autotune.execution._
+import rise.core.DSL.Type.NatFunctionWrapper
+import rise.core._
+import rise.core.types._
+import rise.openCL.DSL.oclRun
+import shine.OpenCL.{GlobalSize, LocalSize}
+
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.util
+import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
+import scala.sys.process._
 
 class mmTVMTuning extends test_util.Tests {
 
@@ -73,10 +89,43 @@ class mmTVMTuning extends test_util.Tests {
     reorder(List(1, 2, 5, 3, 6, 4)) `;;`
     (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
 
+  // just apply loopPerm with tuned values
+
   val mm2: Rise = loopPerm.apply(mm).get
 
   val mm_par = par.apply(mm)
   val gold = lowerToC.apply(mm_par.get).get
+
+
+  // arguments for stuff
+  //  Map[String, Int]
+  //  val testMap[String, List[Int]]
+  // get from ech
+
+  // tune parameterized strategies
+
+  def inject(e: Expr, tuningParameterMap: Map[String, Int], permutationMap: Map[String, List[Int]]): Either[String, Expr] = {
+
+    val tileX = tuningParameterMap.get("tileX").get
+    val tileY = tuningParameterMap.get("tileY").get
+    val split = tuningParameterMap.get("split").get
+    val reordering = permutationMap.get("reordering").get
+    val vec = tuningParameterMap.get("vec").get
+
+    val loopPerm: Strategy[Rise] = baseline `;`
+      (tile(tileX, tileY) `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(split) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(reordering) `;;`
+      (vectorize(vec) `@` innermost(isFullyAppliedMap))
+
+    loopPerm.apply(e) match {
+      case Success(expression) => Right(expression)
+      case Failure(value) => Left("Error")
+    }
+  }
+
+
 
   // yo
   //  mm2
@@ -84,6 +133,126 @@ class mmTVMTuning extends test_util.Tests {
   // use CExecutor?
 
   // how to inject tps?
+
+  test("parse permutationvar") {
+    //    val request = "(1, 2, 3),1024.0,1.0,16.0,32.0,(5, 4, 3, 0, 1, 2),(1, 2, 4), 1024.0, 32.0,(1, 2, 3)".replaceAll(" +", "")
+    val request = "1024.0,1.0,16.0,32.0,(5, 4, 3, 0, 1, 2)".replaceAll(" +", "")
+    //    val request = "1024.0,1.0,16.0,32.0,(5, 4, 3, 0, 1, 2)".r
+
+    val header = "tuned_tile51,tuned_tile52,tuned_vec101,tuned_split100,tuned_reorder".split(",").map(x => x.trim())
+
+    //    val test = """\[[^\]]+\]""".r
+    println("request: " + request)
+
+    //    case class Uwe
+    //    case class Test
+    type defaultTPs = Seq[Int]
+    type permutationTP = Seq[Int]
+
+    //    val test5 = request.replaceAll("""(\()([^\)]*)(\)(,?))""", "")
+    //    val test5 = request.replaceAll("""(\()([^\)]*)(\)(,?))""", "")
+
+    val pattern = """(\()([^\)]*)(\))""".r
+
+
+    // use this as parsing object
+    case class ParsedValues(tps: Seq[Int], perm: Seq[Seq[Int]])
+
+    // perms
+    val test6 = pattern.findAllIn(request)
+
+    //    test6
+
+    //    val pattern(request2) = request
+
+    //    println("request2: " + request2)
+
+    println("matched: " + test6.mkString(","))
+
+    val test7 = request.split("""\([^\)]*\)""").toSeq
+
+    val it = request.replaceAll(""" +""", "").split(",").iterator
+
+    // parse beginning
+    //
+
+    var output = scala.collection.Seq.empty[String]
+    //    var output = new ListBuffer[String]
+
+    while (it.hasNext) {
+      var value = scala.collection.Seq.empty[String]
+      val elem = it.next().replaceAll(",", "")
+      println("elem: " + elem)
+      elem match {
+        case x if x.contains("(") => {
+          value = value ++ scala.collection.Seq(x.replaceAll("""\(""", ""))
+          // add until )
+          var inPerm = true
+          while (it.hasNext && inPerm) {
+            val perm2 = it.next().replaceAll(",", "")
+            println("perm2: " + perm2)
+
+            perm2 match {
+              case y if y.contains(")") =>
+                value = value ++ scala.collection.Seq(y.replaceAll("""\)""", ""))
+                inPerm = false
+              case _ => value = value ++ scala.collection.Seq(perm2)
+            }
+          }
+        }
+        case y => value = value ++ scala.collection.Seq(y)
+      }
+
+
+      //        .map { case (h, p) =>
+      //        NatIdentifier(h) -> (p.toFloat.toInt: Nat)
+      //      }.toMap
+
+      println("value: " + value)
+
+      output = output ++ scala.collection.Seq(value.mkString(","))
+    }
+
+
+    val paramMap = header.zip(output)
+    println("paramMap: ")
+    paramMap.foreach(println)
+    println("\n")
+
+    println("output: ")
+    output.foreach(println)
+
+    println("test7: ")
+    test7.foreach(println)
+
+    // tps
+    val test5 = request.replaceAll("""(\()([^\)]*)(\))""", "").split(",").filter(elem => elem.size != 0).toSeq
+
+
+    println("filtered: " + test5)
+    println("matched: " + test6)
+    println("matched: " + test6.mkString(","))
+    println("test6: " + test6.groupNames)
+
+    //    val parse: Either[defaultTPs, permutationTP]
+    //    request.toSeq.foreach(elem => elem match {
+    //      case
+    //    })
+
+    //    val headerLine = request.split("""\(|,\(|\),|\),\(,|\)""")
+    val headerLine = request.split("""\(|\)""")
+
+    println("header: ")
+    headerLine.foreach(println)
+
+    val test = headerLine.toSeq.map(elem => elem.split(",").toSeq).toSeq
+    test.foreach(elem => println("elem: " + elem + " " + elem.size))
+
+    println("\n")
+
+    val test2 = headerLine.toSeq.filter(elem => elem.size != 0).map(elem => elem.split(",").toSeq).toSeq
+    test2.foreach(elem => println("elem: " + elem + " " + elem.size))
+  }
 
 
   test("test tvm gemm") {
@@ -94,6 +263,25 @@ class mmTVMTuning extends test_util.Tests {
     println("mm: \n" + mm2)
     println("params: " + params)
     println("constr: " + constr.mkString(", "))
+
+
+    val tuner = Tuner(
+      hostCode = HostCode("", "", ""),
+      samples = 100,
+      name = "rs_cot_1024",
+      output = "autotuning/mm_128",
+      timeouts = Timeouts(5000, 5000, 1000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("autotuning/config/mm/rs_cot_128.json"),
+      hmConstraints = true
+    )
+
+
+    val configFile = autotune.configFileGeneration.generateJSON(params, constr, tuner)
+
+    println("configFile: \n" + configFile)
+
 
     // inject parameters
     val params2: Map[Nat, Nat] = Map(
@@ -119,6 +307,7 @@ class mmTVMTuning extends test_util.Tests {
       threshold = 1000,
       output = "autotuning"
     )
+
 
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
