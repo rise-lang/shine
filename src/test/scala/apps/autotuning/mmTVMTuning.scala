@@ -51,6 +51,7 @@ import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
 
+
 class mmTVMTuning extends test_util.Tests {
 
   // tvm gemm
@@ -104,7 +105,10 @@ class mmTVMTuning extends test_util.Tests {
 
   // tune parameterized strategies
 
-  def inject(e: Expr, tuningParameterMap: Map[String, Int], permutationMap: Map[String, List[Int]]): Either[String, Expr] = {
+  //  val inject (e: Expr, tuningParameterMap: Map[String, Int], permutationMap: Map[String, List[Int]]): Either[String, Expr] = {
+  //    val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
+
+  val inject: (Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr] = (e, tuningParameterMap, permutationMap) => {
 
     val tileX = tuningParameterMap.get("tileX").get
     val tileY = tuningParameterMap.get("tileY").get
@@ -125,7 +129,84 @@ class mmTVMTuning extends test_util.Tests {
     }
   }
 
+  val execute: Expr => ExecutionResult = e => {
 
+    val executor = CExecutor(
+      lowering = lowerToC,
+      goldExpression = gold,
+      iterations = 10,
+      inputSize = 1024,
+      threshold = 1000,
+      output = "autotuning"
+    )
+
+    val strategies = immutable.Seq.empty[Strategy[Rise]]
+
+    println("now execute")
+    val result = executor.execute(Solution(baseline.apply(mm).get, strategies))._2
+
+    // execution result here
+
+
+    //    ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
+    //                               codegenTime: Option[TimeSpan[Time.ms]],
+    //                               compilationTime: Option[TimeSpan[Time.ms]],
+    //                               executionTime: Option[TimeSpan[Time.ms]],
+    //                              )
+
+    // todo move to other thing
+    val runtime: Either[AutoTuningError, TimeSpan[Time.ms]] = result match {
+      case Some(value) => Right(TimeSpan.inMilliseconds(value))
+      case None => Left(AutoTuningError(EXECUTION_ERROR, None))
+    }
+
+
+    ExecutionResult(
+      runtime,
+      None,
+      None,
+      None
+    )
+  }
+
+
+  test("tune tvmgemm example") {
+
+    // todo check dependend function!
+
+    val tuner = Tuner(
+      hostCode = HostCode("", "", ""), // we don't need that
+      samples = 100,
+      name = "rs_cot_1024",
+      output = "autotuning/tvm_gemm",
+      timeouts = Timeouts(5000, 5000, 1000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = Some("autotuning/config/tvmGEMM/rs_cot_1024.json"),
+      hmConstraints = true,
+      strategyMode = Some(inject),
+      executor = Some(execute)
+    )
+
+    val executor = CExecutor(
+      lowering = lowerToC,
+      goldExpression = gold,
+      iterations = 10,
+      inputSize = 1024,
+      threshold = 1000,
+      output = "autotuning"
+    )
+
+    val strategies = immutable.Seq.empty[Strategy[Rise]]
+
+    println("now execute")
+    val result = executor.execute(Solution(baseline.apply(mm).get, strategies))._2
+
+
+    println("result: " + result)
+
+
+  }
 
   // yo
   //  mm2
