@@ -19,7 +19,8 @@ case class CExecutor(lowering: Strategy[Rise],
                      iterations: Int,
                      inputSize: Int,
                      threshold: Double,
-                     output: String) extends Runner[Rise] {
+                     output: String,
+                     saveToDisk: Boolean = true) extends Runner[Rise] {
   var globalBest: Option[Double] = None
   val N: Int = inputSize
   var best: Option[Double] = None
@@ -118,98 +119,104 @@ case class CExecutor(lowering: Strategy[Rise],
     //compile and execute program
     // val performanceValue = compileAndExecute(lowered.get, code, iterations)
 
-    // print code to file
-    var codeOutput = ""
+    saveToDisk match {
+      case true =>
 
-    // add high/low-level hash, performance value and code
-    codeOutput += "// high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + " \n"
-    codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
+        // print code to file
+        var codeOutput = ""
 
-    // check if execution was valid
-    var filenameC = Integer.toHexString(solution.expression.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
-    var filenameLowered = Integer.toHexString(lowered.get.hashCode())
-    var filenameHigh = Integer.toHexString(solution.expression.hashCode())
-    var folder = output + "/" + Integer.toHexString(solution.expression.hashCode())
+        // add high/low-level hash, performance value and code
+        codeOutput += "// high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + " \n"
+        codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
 
-    performanceValue match {
-      case None =>
-        codeOutput += "// runtime: " + -1 + "\n \n"
-        //        filenameC += "_error"
-        filenameC += "_" + errorLevel.toString
-        filenameLowered += "_" + errorLevel.toString
-        filenameHigh += "_" + errorLevel.toString
-        folder += "_" + errorLevel.toString
-      case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
+        // check if execution was valid
+        var filenameC = Integer.toHexString(solution.expression.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
+        var filenameLowered = Integer.toHexString(lowered.get.hashCode())
+        var filenameHigh = Integer.toHexString(solution.expression.hashCode())
+        var folder = output + "/" + Integer.toHexString(solution.expression.hashCode())
+
+        performanceValue match {
+          case None =>
+            codeOutput += "// runtime: " + -1 + "\n \n"
+            //        filenameC += "_error"
+            filenameC += "_" + errorLevel.toString
+            filenameLowered += "_" + errorLevel.toString
+            filenameHigh += "_" + errorLevel.toString
+            folder += "_" + errorLevel.toString
+          case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
+        }
+
+        // create folder for high-level expression
+        folder = IOHelper.getUniqueFilename(folder, 0)
+        s"mkdir $folder" !!
+
+        codeOutput += code
+
+        // print code to file
+        val uniqueFilenameCode = IOHelper.getUniqueFilename(folder + "/" + filenameC + ".c", 2)
+
+        // create file for code
+        val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
+
+        // write code to file
+        pwCode.write(codeOutput)
+
+        // close files
+        pwCode.close()
+
+        // write lowered expressions
+
+        // write runtime to output file
+        writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), "executor")
+
+        // print lowered expression to file
+        val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
+
+        // create file for for lowered expression
+        val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
+
+        // lowered string
+        var loweredString = "high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + "\n"
+        loweredString += lowered.get
+
+        // write code to file
+        pwLowered.write(loweredString)
+
+        // close files
+        pwLowered.close()
+
+        // write high-level expressions
+
+        // print lowered expression to file
+        val uniqueFilenameHigh = IOHelper.getUniqueFilename(folder + "/" + filenameHigh, 0)
+
+        // create file for for lowered expression
+        val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
+
+        // write code to file
+        pwHigh.write(solution.expression.toString)
+
+        // close files
+        pwHigh.close()
+
+        // write strategies
+        val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
+
+        // create file for for lowered expression
+        val pwStrategy = new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
+
+        // create strategy string
+        var strategyString = ""
+        solution.strategies.foreach(elem => {
+          strategyString += s"$elem\n"
+        })
+
+        // write and close
+        pwStrategy.write(strategyString)
+        pwStrategy.close()
+
+      case false => // nothing
     }
-
-    // create folder for high-level expression
-    folder = IOHelper.getUniqueFilename(folder, 0)
-    s"mkdir $folder" !!
-
-    codeOutput += code
-
-    // print code to file
-    val uniqueFilenameCode = IOHelper.getUniqueFilename(folder + "/" + filenameC + ".c", 2)
-
-    // create file for code
-    val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
-
-    // write code to file
-    pwCode.write(codeOutput)
-
-    // close files
-    pwCode.close()
-
-    // write lowered expressions
-
-    // write runtime to output file
-    writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), "executor")
-
-    // print lowered expression to file
-    val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
-
-    // create file for for lowered expression
-    val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
-
-    // lowered string
-    var loweredString = "high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + "\n"
-    loweredString += lowered.get
-
-    // write code to file
-    pwLowered.write(loweredString)
-
-    // close files
-    pwLowered.close()
-
-    // write high-level expressions
-
-    // print lowered expression to file
-    val uniqueFilenameHigh = IOHelper.getUniqueFilename(folder + "/" + filenameHigh, 0)
-
-    // create file for for lowered expression
-    val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
-
-    // write code to file
-    pwHigh.write(solution.expression.toString)
-
-    // close files
-    pwHigh.close()
-
-    // write strategies
-    val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
-
-    // create file for for lowered expression
-    val pwStrategy = new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
-
-    // create strategy string
-    var strategyString = ""
-    solution.strategies.foreach(elem => {
-      strategyString += s"$elem\n"
-    })
-
-    // write and close
-    pwStrategy.write(strategyString)
-    pwStrategy.close()
 
     (solution.expression, performanceValue)
   }
@@ -459,7 +466,9 @@ int main(int argc, char** argv) {
 
     // todo: make this configable using json file
     // compile
-    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
   }

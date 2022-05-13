@@ -1,6 +1,7 @@
 package rise
 
 import apps.tvmGemm.par
+import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
 import exploration.runner.CExecutor
 import rise.autotune.configFileGeneration._
@@ -39,7 +40,7 @@ package object autotune {
                    saveToFile: Boolean = false,
                    failureMode: FailureMode = IntMax,
                    strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
-                   executor: Option[Expr => ExecutionResult] = None
+                   executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None // todo change this to exeuction result
                   )
 
   // necessary host-code parts to execute the program
@@ -62,11 +63,40 @@ package object autotune {
   // parameter : either[NatIdentifier to Nat, String to List?]
 
   // tuning sample representing result of one specific parameter configuration
-  case class Sample(parameters: Map[NatIdentifier, Nat], // specific parameter configuration
+  case class Sample2(parameters: Map[NatIdentifier, Nat], // specific parameter configuration
+                     runtime: Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
+                     timestamp: Long, // timestamp of sample
+                     tuningTimes: TuningTimes // durations of sub-parts
+                    )
+
+  // tuning sample representing result of one specific parameter configuration
+  case class Sample(parameters: Map[String, TuningParameterValues], // specific parameter configuration
                     runtime: Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
                     timestamp: Long, // timestamp of sample
                     tuningTimes: TuningTimes // durations of sub-parts
                    )
+
+  // just example code here
+  val test = Map.empty[String, TuningParameterValues]
+
+  test.foreach(elem => {
+    val test = elem._2
+    test match {
+      case ClassicParameter(value) =>
+      case PermutationParameter(value) =>
+    }
+  })
+
+  // workaround to support permutation variables
+  trait TuningParameterValues
+
+  case class ClassicParameter(
+                               value: Int
+                             ) extends TuningParameterValues
+
+  case class PermutationParameter(
+                                   value: List[Int]
+                                 ) extends TuningParameterValues
 
   // durations of sub-parts of a tuning sample
   case class TuningTimes(total: Option[TimeSpan[Time.ms]], // total time
@@ -146,6 +176,11 @@ package object autotune {
           // parse elems?
           val values = header.zip(parseParameters(parametersValues.mkString(","))).toMap
 
+          val tuningParameterValues: Map[String, TuningParameterValues] = values.map(elem => elem._2 match {
+            case x if x.contains(",") => (elem._1, PermutationParameter(elem._2.split(",").toList.map(elem => elem.toFloat.toInt)))
+            case y => (elem._1, ClassicParameter(y.toFloat.toInt))
+          })
+
           val values2 = values.map(elem => elem._2 match {
             case x if x.contains(",") => (elem._1, elem._2.split(",").toList.map(elem => elem.toFloat.toInt))
             case y => (elem._1, List(y.toFloat.toInt))
@@ -156,6 +191,7 @@ package object autotune {
 
           val e2 = fun(e, tuningParams, permutationParams)
 
+
           e2 match {
             case Right(expression) =>
 
@@ -164,18 +200,33 @@ package object autotune {
               val totalTime = Some(TimeSpan.inMilliseconds(
                 (System.currentTimeMillis() - totalStart).toDouble)
               )
-              Sample(
-                parameters = Map.empty[NatIdentifier, Nat],
-                runtime = result.runtime,
-                timestamp = System.currentTimeMillis() - start,
-                tuningTimes = TuningTimes(
-                  totalTime, result.codegenTime, result.compilationTime, result.executionTime)
-              )
+
+              result._1 match {
+                case Right(value) =>
+
+                  Sample(
+                    parameters = tuningParameterValues,
+                    runtime = Right(TimeSpan.inMilliseconds(value)),
+                    timestamp = System.currentTimeMillis() - start,
+                    tuningTimes = TuningTimes(
+                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                  )
+
+                case Left(error) =>
+
+                  Sample(
+                    parameters = tuningParameterValues,
+                    runtime = Left(error),
+                    timestamp = System.currentTimeMillis() - start,
+                    tuningTimes = TuningTimes(
+                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                  )
+              }
             case Left(error) =>
 
               val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
               Sample(
-                parameters = Map.empty[NatIdentifier, Nat],
+                parameters = tuningParameterValues,
                 runtime = Left(AutoTuningError(SUBSTITUTION_ERROR, Some(error))),
                 timestamp = System.currentTimeMillis() - start,
                 tuningTimes = TuningTimes(totalTime, None, None, None)
@@ -201,7 +252,7 @@ package object autotune {
               (System.currentTimeMillis() - totalStart).toDouble)
             )
             Sample(
-              parameters = parametersValuesMap,
+              parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
               runtime = result.runtime,
               timestamp = System.currentTimeMillis() - start,
               tuningTimes = TuningTimes(
@@ -210,7 +261,7 @@ package object autotune {
           } else {
             val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
             Sample(
-              parameters = parametersValuesMap,
+              parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
               runtime = Left(AutoTuningError(CONSTRAINTS_ERROR, None)),
               timestamp = System.currentTimeMillis() - start,
               tuningTimes = TuningTimes(totalTime, None, None, None)
@@ -292,10 +343,37 @@ package object autotune {
                   case IntMax => "2147483647"
                 }
 
-                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${runtime},False\n"
+                //                println("parametersValues: ")
+                //                parametersValues.foreach(println)
+
+                response += s"${
+                  parametersValues.map(x => {
+                    try {
+                      x.toFloat.toInt.toString
+                    } catch {
+                      case e: Throwable => x
+                    }
+                  }).mkString(",")
+                },${runtime},False\n"
+
+              //                println("response: \n" + response)
+              //                println("response: \n" + response)
               case Right(value) =>
+
                 // make sure to response int values
-                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
+                response += s"${
+                  parametersValues.map(x => {
+                    try {
+                      x.toFloat.toInt.toString
+                    } catch {
+                      case e: Throwable => x
+                    }
+                  }).mkString(",")
+                },${value.value},True\n"
+
+              //                println("response: \n" + response)
+
+              //                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
             }
           }
 
@@ -344,17 +422,19 @@ package object autotune {
     }
   }
 
-  def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
-    val best = getBest(samples)
-    best match {
-      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters.toMap[Nat, Nat], e)
-      case None => e
-    }
-  }
+  // todo adjust this
+  //  def applyBest(e: Expr, samples: Seq[Sample]): Expr = {
+  //    val best = getBest(samples)
+  //    best match {
+  //      case Some(_) => rise.core.substitute.natsInExpr(best.get.parameters.toMap[Nat, Nat], e)
+  //      case None => e
+  //    }
+  //  }
 
-  def applySample(e: Expr, sample: Sample): Expr = {
-    rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
-  }
+  // todo adjust this
+  //  def applySample(e: Expr, sample: Sample): Expr = {
+  //    rise.core.substitute.natsInExpr(sample.parameters.toMap[Nat, Nat], e)
+  //  }
 
   def getDuration(tuningResult: TuningResult): TimeSpan[Time.ms] = {
     val duration = tuningResult.samples.apply(tuningResult.samples.size).timestamp -
@@ -455,11 +535,18 @@ package object autotune {
     }
 
     // write header
-    var header = ""
-    tuningResult.samples.head.parameters.foreach {
-      case (id: NatIdentifier, _: Nat) => header += id.name + ","
-      case _ => throw Exception("This should not happen")
-    }
+    //    var header = ""
+    //    tuningResult.samples.head.parameters.foreach {
+    //      case (id: NatIdentifier, _: Nat) => header += id.name + ","
+    //      case _ => throw Exception("This should not happen")
+    //    }
+    //
+    //    tuningResult.samples.head.parameters.foreach(param => {
+    //      header += param._1 + ", "
+    //    })
+
+    // write header
+    var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString(", ")
 
     header += "runtime" + ","
     header += "timestamp" + ","
@@ -475,8 +562,13 @@ package object autotune {
 
       // write parameter
       sample.parameters.foreach(param => {
-        content += param._2.eval.toString + ","
+        param._2 match {
+          case ClassicParameter(value) => content += value.toString + ", "
+          case PermutationParameter(value) => content += value.mkString("\"(", ",", ")\"") + ", "
+        }
       })
+
+      //              content += param._2.eval.toString + ","
 
       // write runtime
       sample.runtime match {
@@ -549,7 +641,6 @@ package object autotune {
 
     // save statistics to csv file (don't overwrite -> append)
 
-
     // return unique filename
     ""
   }
@@ -597,7 +688,7 @@ package object autotune {
     while (it.hasNext) {
       var value = scala.collection.Seq.empty[String]
       val elem = it.next().replaceAll(",", "")
-      println("elem: " + elem)
+      //      println("elem: " + elem)
       elem match {
         case x if x.contains("(") => {
           value = value ++ scala.collection.Seq(x.replaceAll("""\(""", ""))
@@ -605,7 +696,7 @@ package object autotune {
           var inPerm = true
           while (it.hasNext && inPerm) {
             val perm2 = it.next().replaceAll(",", "")
-            println("perm2: " + perm2)
+            //            println("perm2: " + perm2)
 
             perm2 match {
               case y if y.contains(")") =>
