@@ -10,7 +10,6 @@ import rise.elevate.rules._
 import rise.core.{Opaque, TypeAnnotation, TypeAssertion, semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
-import rise.core.types.DataTypeOps._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
 
@@ -754,7 +753,7 @@ object fromRise {
           expT(ArrayType(m, VectorType(_, t)), _))
         =>
         depFun(NatKind, n)(
-          fun[ExpType](expT(mn`.`t, read), e =>
+          fun[ExpType](expT(mn`.`t, a), e =>
             AsVectorAligned(n, m, t, a, e)))
       }
 
@@ -1015,38 +1014,6 @@ object fromRise {
 //      NatToNatIdentifier(name)
 //    case rt.NatToNatLambda(x, body) =>
 //      NatToNatLambda(x.range, NatIdentifier(x.name), body)
-//  }
-
-//  def dataType(t: rt.DataType): DataType = t match {
-//    case st: rt.ScalarType => scalarType(st)
-//    case rt.NatType => NatType
-//    case rt.IndexType(sz) => IndexType(sz)
-//    case rt.VectorType(sz, et) => et match {
-//      case e : rt.ScalarType => VectorType(sz, scalarType(e))
-//      case _ => ???
-//    }
-//    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
-//    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-//    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-//    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
-//    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-//    case rt.DepPairType(_, x, t) =>
-//      x match {
-//      case x:rt.NatIdentifier => DepPairType(x, dataType(t))
-//      case _ => ???
-//    }
-//    case f: rt.FragmentType =>
-//      f.fragmentKind match {
-//        case rt.Fragment.AMatrix =>
-//          FragmentType(f.rows, f.d3, f.columns, dataType(f.dataType), Fragment.AMatrix, f.layout)
-//        case rt.Fragment.BMatrix =>
-//          FragmentType(f.d3, f.columns, f.rows, dataType(f.dataType), Fragment.BMatrix, f.layout)
-//        case rt.Fragment.Accumulator =>
-//          FragmentType(f.rows, f.columns, f.d3, dataType(f.dataType), Fragment.Accumulator, f.layout)
-//        case _ => throw new Exception("this should not happen")
-//      }
-//    case rt.OpaqueType(name) => OpaqueType(name)
-//    case rt.ManagedBufferType(dt) => ManagedBufferType(dataType(dt))
 //  }
 
 //  def scalarType(t: rt.ScalarType): ScalarType = t match {

@@ -128,7 +128,7 @@ class asum extends test_util.TestsWithExecutor {
     )(n: Int, input: Array[Float]): Array[Float] = {
       import shine.OpenCL._
       val k = gen.opencl.kernel.fromExpr(kernel)
-      val runKernel = k.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
+      val runKernel = k.as[In `=` Int `,` Array[Float], Out[Array[Float]]]
       val (output, _) = runKernel(localSize, globalSize)(n `,` input)
       output
     }

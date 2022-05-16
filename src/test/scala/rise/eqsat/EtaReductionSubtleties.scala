@@ -14,12 +14,11 @@ class EtaReductionSubtleties extends test_util.Tests {
     // note: breaks advanced Var TypeCheck
     // note: saturates without finding the goal with rules.beta
     ProveEquiv.init()
-      .withAnalysis(DefaultAnalysisWithFreeIntersection)
-      .run(start, goal, Seq(rules.eta, rules.betaExtract))
+      .run(start, goal, Seq(rules.etaWithFreeIntersection, rules.betaExtract), Seq())
 
     try {
       ProveEquiv.init()
-        .run(start, goal, Seq(rules.eta, rules.betaExtract))
+        .run(start, goal, Seq(rules.eta, rules.betaExtract), Seq())
       assert(false)
     } catch {
       case CouldNotProveEquiv =>
@@ -40,12 +39,11 @@ class EtaReductionSubtleties extends test_util.Tests {
     // note: saturates without finding the goal with rules.beta
 
     ProveEquiv.init()
-      .withAnalysis(DefaultAnalysisWithFreeIntersection)
-      .run(start, goal, Seq(rules.eta, rules.betaExtract))
+      .run(start, goal, Seq(rules.etaWithFreeIntersection, rules.betaExtract), Seq())
 
     try {
       ProveEquiv.init()
-        .run(start, goal, Seq(rules.eta, rules.betaExtract))
+        .run(start, goal, Seq(rules.eta, rules.betaExtract), Seq())
       assert(false)
     } catch {
       case CouldNotProveEquiv =>

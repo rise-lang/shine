@@ -93,9 +93,9 @@ int main(int argc, char** argv) {
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
-    val run = kernel.as[ScalaFunction `(`
-      Int `,` Int `,` Array[Array[Float]]
-      `)=>` Array[Float]]
+    val run = kernel.as[In `=`
+      Int `,` Int `,` Array[Array[Float]],
+      Out[Array[Float]]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
     logger.debug(s"time: $time")

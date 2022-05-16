@@ -7,11 +7,13 @@ import rise.core.semantics
   * @tparam E abstracts over children nodes, and differs for [[Expr]], [[ENode]], [[Pattern]], etc
   * @tparam N abstracts over contained nats
   * @tparam DT abstracts over contained data types
+  * @tparam A abstracts over contained address spaces
   */
-sealed trait Node[+E, +N, +DT] {
-  def map[OE, ON, ODT](fe: E => OE,
-                       fn: N => ON,
-                       fdt: DT => ODT): Node[OE, ON, ODT] = this match {
+sealed trait Node[+E, +N, +DT, +A] {
+  def map[OE, ON, ODT, OA](fe: E => OE,
+                           fn: N => ON,
+                           fdt: DT => ODT,
+                           fa: A => OA): Node[OE, ON, ODT, OA] = this match {
     case v @ Var(_) => v
     case l @ Literal(_) => l
     case p @ Primitive(_) => p
@@ -21,12 +23,14 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => NatLambda(fe(e))
     case DataApp(f, x) => DataApp(fe(f), fdt(x))
     case DataLambda(e) => DataLambda(fe(e))
+    case AddrApp(f, x) => AddrApp(fe(f), fa(x))
+    case AddrLambda(e) => AddrLambda(fe(e))
 
     case Composition(f, g) => Composition(fe(f), fe(g))
   }
 
-  def mapChildren[OE](fc: E => OE): Node[OE, N, DT] =
-    map(fc, n => n, dt => dt)
+  def mapChildren[OE](fc: E => OE): Node[OE, N, DT, A] =
+    map(fc, n => n, dt => dt, a => a)
   def children(): Iterator[E] = this match {
     case Var(_) | Literal(_) | Primitive(_) => Iterator()
     case App(f, e) => Iterator(f, e)
@@ -35,6 +39,8 @@ sealed trait Node[+E, +N, +DT] {
     case NatLambda(e) => Iterator(e)
     case DataApp(f, _) => Iterator(f)
     case DataLambda(e) => Iterator(e)
+    case AddrApp(f, _) => Iterator(f)
+    case AddrLambda(e) => Iterator(e)
 
     case Composition(f, g) => Iterator(f, g)
   }
@@ -53,30 +59,40 @@ sealed trait Node[+E, +N, +DT] {
   }
   def dataTypesCount(): Int = dataTypes().length
 
+  def addresses(): Iterator[A] = this match {
+    case AddrApp(_, a) => Iterator(a)
+    case _ => Iterator()
+  }
+  def addressCount(): Int = addresses().length
+
   def matchHash(): Int = this match {
-    case Var(i) => 7 * i
+    case Var(i) => 13 * i
     case App(_, _) => 1
     case Lambda(_) => 2
     case NatApp(_, _) => 3
     case NatLambda(_) => 4
     case DataApp(_, _) => 5
     case DataLambda(_) => 6
-    case Literal(d) => 13 * d.hashCode()
-    case Primitive(p) => 17 * p.setType(rct.TypePlaceholder).hashCode()
+    case AddrApp(_, _) => 7
+    case AddrLambda(_) => 8
+    case Literal(d) => 17 * d.hashCode()
+    case Primitive(p) => 19 * p.setType(rct.TypePlaceholder).hashCode()
 
-    case Composition(_, _) => 0
+    case Composition(_, _) => 9
   }
 
   // Returns true if this enode matches another enode.
   // This should only consider the operator, not the children ids or nats.
-  def matches(other: Node[_, _, _]): Boolean = (this, other) match {
+  def matches(other: Node[_, _, _, _]): Boolean = (this, other) match {
     case (Var(i1), Var(i2)) => i1 == i2
     case (App(_, _), App(_, _)) => true
     case (Lambda(_), Lambda(_)) => true
     case (NatApp(_, _), NatApp(_, _)) => true
     case (DataApp(_, _), DataApp(_, _)) => true
+    case (AddrApp(_, _), AddrApp(_, _)) => true
     case (NatLambda(_), NatLambda(_)) => true
     case (DataLambda(_), DataLambda(_)) => true
+    case (AddrLambda(_), AddrLambda(_)) => true
     case (Literal(d1), Literal(d2)) => d1 == d2
     case (Primitive(p1), Primitive(p2)) =>
       // TODO: type should not be inside the primitive?
@@ -87,37 +103,41 @@ sealed trait Node[+E, +N, +DT] {
   }
 }
 
-case class Var(index: Int) extends Node[Nothing, Nothing, Nothing] {
+case class Var(index: Int) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = s"%$index"
 }
-case class App[E](f: E, e: E) extends Node[E, Nothing, Nothing]
-case class Lambda[E](e: E) extends Node[E, Nothing, Nothing]
-case class NatApp[E, N](f: E, x: N) extends Node[E, N, Nothing]
-case class DataApp[E, DT](f: E, x: DT) extends Node[E, Nothing, DT]
-case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing]
-case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing]
-case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing] {
+case class App[E](f: E, e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class Lambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class NatApp[E, N](f: E, x: N) extends Node[E, N, Nothing, Nothing]
+case class DataApp[E, DT](f: E, x: DT) extends Node[E, Nothing, DT, Nothing]
+case class AddrApp[E, A](f: E, x: A) extends Node[E, Nothing, Nothing, A]
+case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class AddrLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = d.toString
 }
-case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing] {
+case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = p.toString.trim
 }
 
-case class Composition[E](f: E, g: E) extends Node[E, Nothing, Nothing] {
+case class Composition[E](f: E, g: E) extends Node[E, Nothing, Nothing, Nothing] {
   override def toString: String = s"$f >> $g"
 }
 
 object Node {
   import math.Ordering.Implicits.seqOrdering
 
-  def collect[T](n: Node[T, T, T]): Seq[T] = n match {
+  def collect[T](n: Node[T, T, T, T]): Seq[T] = n match {
     case Var(_) => Seq()
     case App(f, e) => Seq(f, e)
     case Lambda(e) => Seq(e)
     case NatApp(f, x) => Seq(f, x)
     case DataApp(f, x) => Seq(f, x)
+    case AddrApp(f, x) => Seq(f, x)
     case NatLambda(e) => Seq(e)
     case DataLambda(e) => Seq(e)
+    case AddrLambda(e) => Seq(e)
     case Literal(_) => Seq()
     case Primitive(_) => Seq()
 
@@ -206,17 +226,38 @@ object Node {
       }
   }
 
+  implicit val addressOrdering: Ordering[Address] = new Ordering[Address] {
+    def compare(id1: Address, id2: Address): Int = {
+      (id1, id2) match {
+        case (AddressVar(i1), AddressVar(i2)) => i1 compare i2
+        case (AddressVar(_), _) => -1
+        case (_, AddressVar(_)) => 1
+        case (Global, Global) => 0
+        case (Global, _) => -1
+        case (_, Global) => 1
+        case (Local, Local) => 0
+        case (Local, _) => -1
+        case (_, Local) => 1
+        case (Private, Private) => 0
+        case (Private, _) => -1
+        case (_, Private) => 1
+        case (Constant, Constant) => 0
+      }
+    }
+  }
+
   implicit val eclassIdOrdering: Ordering[EClassId] = new Ordering[EClassId] {
     def compare(id1: EClassId, id2: EClassId): Int =
       id1.i compare id2.i
   }
 
-  implicit def ordering[E, N, DT](implicit
-                                  eOrd: Ordering[E],
-                                  nOrd: Ordering[N],
-                                  dtOrd: Ordering[DT]
-                                 ): Ordering[Node[E, N, DT]] = new Ordering[Node[E, N, DT]] {
-    def compare(n1: Node[E, N, DT], n2: Node[E, N, DT]): Int =
+  implicit def ordering[E, N, DT, A](implicit
+                                     eOrd: Ordering[E],
+                                     nOrd: Ordering[N],
+                                     dtOrd: Ordering[DT],
+                                     aOrd: Ordering[A],
+                                    ): Ordering[Node[E, N, DT, A]] = new Ordering[Node[E, N, DT, A]] {
+    def compare(n1: Node[E, N, DT, A], n2: Node[E, N, DT, A]): Int =
       (n1, n2) match {
         case (Var(i1), Var(i2)) => i1 compare i2
         case (Var(_), _) => -1
@@ -236,12 +277,19 @@ object Node {
           implicitly[Ordering[(E, DT)]].compare((f1, x1), (f2, x2))
         case (DataApp(_, _), _) => -1
         case (_, DataApp(_, _)) => 1
+        case (AddrApp(f1, x1), AddrApp(f2, x2)) =>
+          implicitly[Ordering[(E, A)]].compare((f1, x1), (f2, x2))
+        case (AddrApp(_, _), _) => -1
+        case (_, AddrApp(_, _)) => 1
         case (NatLambda(e1), NatLambda(e2)) => eOrd.compare(e1, e2)
         case (NatLambda(_), _) => -1
         case (_, NatLambda(_)) => 1
         case (DataLambda(e1), DataLambda(e2)) => eOrd.compare(e1, e2)
         case (DataLambda(_), _) => -1
         case (_, DataLambda(_)) => 1
+        case (AddrLambda(e1), AddrLambda(e2)) => eOrd.compare(e1, e2)
+        case (AddrLambda(_), _) => -1
+        case (_, AddrLambda(_)) => 1
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1

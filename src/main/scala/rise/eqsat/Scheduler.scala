@@ -1,5 +1,7 @@
 package rise.eqsat
 
+import scala.util.Random
+
 /**
   * A way to customize how a [`Runner`] runs [`Rewrite`]s.
   * This gives you a way to prevent certain [`Rewrite`]s from exploding
@@ -9,30 +11,31 @@ package rise.eqsat
   */
 trait Scheduler {
   def canSaturate(iteration: Int): Boolean
-  def searchRewrite[ED, ND, TD](iteration: Int,
-                                egraph: EGraph[ED, ND, TD],
-                                shc: SubstHashCons,
-                                rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches]
+  def searchRewrite(iteration: Int,
+                    egraph: EGraph,
+                    shc: Substs,
+                    rewrite: Rewrite): Vec[SearchMatches[shc.Subst]]
 
   // returns the number of applications
-  def applyRewrite[ED, ND, TD](iteration: Int,
-                               egraph: EGraph[ED, ND, TD],
-                               shc: SubstHashCons,
-                               rewrite: Rewrite[ED, ND, TD],
-                               matches: Vec[SearchMatches]): Int =
-    rewrite.apply(egraph, shc, matches).size
+  def applyRewrite(iteration: Int,
+                   egraph: EGraph,
+                   shc: Substs,
+                   rewrite: Rewrite)(
+                   matches: Vec[SearchMatches[shc.Subst]]): Int =
+    rewrite.apply(egraph, shc)(matches).size
 }
 
 object SimpleScheduler extends Scheduler {
   override def canSaturate(iteration: Int): Boolean = true
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] =
+  override def searchRewrite(iteration: Int,
+                             egraph: EGraph,
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] =
     rewrite.search(egraph, shc)
 }
 
+/* TODO: only for SubstHC
 object CuttingScheduler {
   def init(): CuttingScheduler = new CuttingScheduler(
     notApplied = HashSet.empty,
@@ -53,12 +56,12 @@ class CuttingScheduler(var notApplied: HashSet[Object],
   override def canSaturate(iteration: Int): Boolean =
     notApplied.isEmpty
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
+  override def searchRewrite(iteration: Int,
+                             egraph: EGraph,
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
     if (iteration > currentIteration) {
-      println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite[ED, ND, TD]].name).mkString(", ")}")
+      println(s"not applied: ${notApplied.map(_.asInstanceOf[Rewrite].name).mkString(", ")}")
       currentIteration = iteration
     }
 
@@ -78,7 +81,6 @@ class CuttingScheduler(var notApplied: HashSet[Object],
 
     notApplied -= rewrite
     val matches = rewrite.search(egraph, shc)
-/*
     def check(b: Boolean) =
       if (!b) { throw new Exception("check") }
     var uniqueSubsts = HashSet[Object]()
@@ -103,9 +105,54 @@ class CuttingScheduler(var notApplied: HashSet[Object],
       }
     }
 
- */
-
     matches
+  }
+}
+*/
+
+object SamplingScheduler {
+  def init(): SamplingScheduler = new SamplingScheduler(
+    defaultLimit = 1_000,
+    limits = HashMap.empty,
+    lastSampledIteration = -1,
+    random = new Random
+  )
+  
+  def initWithSeed(seed: Int): SamplingScheduler = new SamplingScheduler(
+    defaultLimit = 1_000,
+    limits = HashMap.empty,
+    lastSampledIteration = -1,
+    random = new Random(seed)
+  )
+}
+
+/** A [`Scheduler`] that implements rule sampling.
+  *
+  * For each rewrite, there exists a configurable match limit.
+  * If a rewrite search yield more than this limit,
+  * random match samples will be kept, and the rest discarded.
+  *
+  */
+class SamplingScheduler(var defaultLimit: Int,
+                        var limits: HashMap[Rewrite, Int],
+                        var lastSampledIteration: Int,
+                        var random: Random)
+extends Scheduler {
+  def withDefaultLimit(l: Int): SamplingScheduler = {
+    this.defaultLimit = l; this
+  }
+
+  override def canSaturate(iteration: Int): Boolean = iteration > lastSampledIteration
+
+  override def searchRewrite(iteration: Int, egraph: EGraph, shc: Substs, rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
+    val limit = limits.getOrElse(rewrite, defaultLimit)
+    val matches = rewrite.search(egraph, shc)
+    if (matches.size > limit) {
+      println(s"sampled $limit from ${matches.size} matches")
+      random.shuffle(matches).take(limit)
+    } else {
+      matches
+    }
   }
 }
 
@@ -117,8 +164,8 @@ class RuleStats(var timesApplied: Int,
 
 object BackoffScheduler {
   def init(): BackoffScheduler = new BackoffScheduler(
-    defaultMatchLimit = 10_000,
-    defaultBanLength = 2,
+    defaultMatchLimit = 1_000,
+    defaultBanLength = 5,
     stats = HashMap.empty,
   )
 }
@@ -136,7 +183,7 @@ object BackoffScheduler {
   */
 class BackoffScheduler(var defaultMatchLimit: Int,
                        var defaultBanLength: Int,
-                       val stats: HashMap[Object, RuleStats]) extends Scheduler {
+                       val stats: HashMap[Rewrite, RuleStats]) extends Scheduler {
   def withInitialMatchLimit(limit: Int): BackoffScheduler = {
     defaultMatchLimit = limit; this
   }
@@ -145,19 +192,19 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     defaultBanLength = length; this
   }
 
-  def doNotBan[ED, ND, TD](rewrite: Rewrite[ED, ND, TD]): BackoffScheduler = {
+  def doNotBan(rewrite: Rewrite): BackoffScheduler = {
     matchLimit(rewrite, Int.MaxValue)
   }
 
-  def matchLimit[ED, ND, TD](rewrite: Rewrite[ED, ND, TD], limit: Int): BackoffScheduler = {
+  def matchLimit(rewrite: Rewrite, limit: Int): BackoffScheduler = {
     ruleStats(rewrite).matchLimit = limit; this
   }
 
-  def banLength[ED, ND, TD](rewrite: Rewrite[ED, ND, TD], length: Int): BackoffScheduler = {
+  def banLength(rewrite: Rewrite, length: Int): BackoffScheduler = {
     ruleStats(rewrite).banLength = length; this
   }
 
-  private def ruleStats(rewrite: Object): RuleStats =
+  private def ruleStats(rewrite: Rewrite): RuleStats =
     stats.getOrElseUpdate(rewrite, {
       new RuleStats(
         timesApplied = 0,
@@ -169,14 +216,23 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     })
 
   override def canSaturate(iteration: Int): Boolean = {
-    val banned = stats.view.filter { case (_, rs) => rs.bannedUntil >= iteration }.to(Seq)
+    val banned = stats.view.filter { case (_, rs) => rs.bannedUntil > iteration }.to(Seq)
+    if (banned.nonEmpty) {
+      val minBan = banned.map { case (_, s) => s.bannedUntil }.min
+      assert(minBan >= iteration)
+      val delta = minBan - iteration
+
+      for ((_, s) <- banned) {
+        s.bannedUntil -= delta
+      }
+    }
     banned.isEmpty
   }
 
-  override def searchRewrite[ED, ND, TD](iteration: Int,
-                                         egraph: EGraph[ED, ND, TD],
-                                         shc: SubstHashCons,
-                                         rewrite: Rewrite[ED, ND, TD]): Vec[SearchMatches] = {
+  override def searchRewrite(iteration: Int,
+                             egraph: EGraph,
+                             shc: Substs,
+                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
     val rs = ruleStats(rewrite)
 
     if (iteration < rs.bannedUntil) {
@@ -188,7 +244,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
     val totalLen = matches.view.map(_.substs.size).sum
     val threshold = rs.matchLimit << rs.timesBanned
     if (totalLen > threshold) {
-      val banLength = rs.banLength + rs.timesBanned
+      val banLength = rs.banLength << rs.timesBanned
       rs.timesBanned += 1
       rs.bannedUntil = iteration + banLength
       return Vec.empty

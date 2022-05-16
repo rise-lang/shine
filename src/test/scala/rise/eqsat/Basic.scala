@@ -12,7 +12,7 @@ class Basic extends test_util.Tests {
 
     val m = map((f32 ->: f32) ->: (`%n`(0)`.`f32) ->: (`%n`(0)`.`f32))
     assert(
-      BENF(lam(`%n`(0)`.`f32,
+      BENF.normalize(lam(`%n`(0)`.`f32,
         app(app(lam(f32 ->: f32, app(m, %(0, f32 ->: f32))), %(2, f32 ->: f32)),
           %(0, `%n`(0)`.`f32)))) ==
       app(m, %(1, f32 ->: f32)))
@@ -35,7 +35,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0) >> f(1)) |> map(f(2) >> f(3))),
-      Seq(rules.eta, rules.beta, rules.mapFusion)
+      Seq(rules.mapFusion)
     )
   }
 
@@ -47,7 +47,8 @@ class Basic extends test_util.Tests {
         in |> map(f(0) >> f(1)) |> map(f(2) >> f(3))),
       Seq(rules.combinatory.compositionAssoc1,
         rules.combinatory.compositionAssoc2,
-        rules.combinatory.mapFusion)
+        rules.combinatory.mapFusion),
+      Seq()
     )
   }
 
@@ -57,7 +58,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) |> map(f(1)) |> map(f(2)) |> map(f(3))),
-      Seq(rules.eta, rules.betaExtract, rules.mapFission)
+      Seq(rules.mapFission)
     )
   }
 
@@ -79,7 +80,7 @@ class Basic extends test_util.Tests {
         in |> map(f(0) >> f(1) >> f(2) >> f(3))),
       withArrayAndFuns(4, in => f =>
         in |> map(f(0)) >> map(f(1) >> f(2) >> f(3))),
-      Seq(rules.eta, rules.betaExtract, rules.mapFission, rules.mapFusion)
+      Seq(rules.mapFission, rules.mapFusion)
     )
   }
 
@@ -92,18 +93,19 @@ class Basic extends test_util.Tests {
       Seq(rules.combinatory.compositionAssoc1,
         rules.combinatory.compositionAssoc2,
         rules.combinatory.mapFission,
-        rules.combinatory.mapFusion)
+        rules.combinatory.mapFusion),
+      Seq()
     )
   }
 
   test("slideBeforeMapMapF") {
-    val `_` = rct.TypePlaceholder
+    val `__` = rct.TypePlaceholder
     def wrap(inner: ToBeTyped[rc.Expr] => ToBeTyped[rc.Expr])
     : rc.Expr =
       depFun((n: rct.Nat) =>
       depFun((dt1: rct.DataType) => depFun((dt2: rct.DataType) =>
       fun(f =>
-        inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `_`)
+        inner(f :: dt1 ->: dt2) :: ((n`.`dt1) ->: `__`)
       ))))
 
     ProveEquiv.init().runBENF(
@@ -111,7 +113,7 @@ class Basic extends test_util.Tests {
         slide(3)(1) >> slide(4)(2) >> map(map(map(f)))),
       wrap(f =>
         map(f) >> slide(3)(1) >> slide(4)(2)),
-      Seq(rules.eta, rules.betaExtract, rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
+      Seq(rules.mapFusion, rules.mapFission, rules.slideBeforeMapMapF)
     )
   }
 

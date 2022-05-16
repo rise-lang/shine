@@ -1,71 +1,44 @@
 package rise.eqsat
 
+import apps.tvmGemm
 import rise.core.Expr
-import rise.elevate.tvmGemm
 import ProveEquiv.syntax._
-import rise.eqsat.PredicateDSL._
+import PredicateDSL._
 
 class TvmGemm extends test_util.Tests {
-  ignore("TVM GEMM") {
+  ignore("blocking") {
     val mm: Expr = tvmGemm.mm
-    val variants = util.printTime("Elevate rewrite", Seq(
-      tvmGemm.baseline(mm).get,
-      tvmGemm.blockingPartial(mm).get,
-      // tvmGemm.vectorization(mm).get,
-      // tvmGemm.loopPerm(mm).get,
-      // tvmGemm.arrayPacking(mm).get,
-      // tvmGemm.cacheBlocks(mm).get,
-      // tvmGemm.par(mm).get
-    ))
-/*
-    proveEquivBENF(mm, variants(0), Seq(
-      rules.eta,
-      rules.betaExtract, rules.betaNatExtract,
-      // rules.beta, rules.betaNat,
-      // rules.mapFusion, rules.mapFission,
-      rules.reduceSeq, rules.reduceSeqMapFusion,
-      // rules.splitJoin(32), rules.blockedReduce(4),
-      // rules.splitBeforeMap, rules.transposePairAfter,
-      // rules.mapMapFBeforeTranspose,
-      // rules.liftReduce
-    ))
-*/
+    val start = tvmGemm.baseline(mm).get
+    val goal = tvmGemm.blocking(mm).get
+
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(4) && ASTSizePredicate(80))
-      .runCNF(mm, variants, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      // rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionLeftId,
-      rules.combinatory.compositionRightId,
-      rules.combinatory.mapFusion,
-      rules.combinatory.mapFusion2,
-      rules.combinatory.mapFission, // TODO: mapFission2, etc?
-      rules.combinatory.transposePairAfter,
-      rules.combinatory.mapMapFBeforeTranspose,
-      rules.combinatory.mapMapFBeforeTranspose1,
-      rules.reduceSeq,
-      rules.combinatory.reduceSeqMapFusion,
-      rules.combinatory.reduceSeqMapFusion2,
-      rules.combinatory.splitJoin(32),
-      // rules.combinatory.blockedReduce(4),
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) && StandardConstraintsPredicate)
+      .withRunnerTransform(r =>
+        r.withScheduler(BackoffScheduler.init())
+         .withIterationLimit(1_000)
+         .withTimeLimit(java.time.Duration.ofMinutes(5))
+         .withNodeLimit(10_000_000)
+         .withMemoryLimit(3L * 1024L * 1024L * 1024L /* 3GiB */))
+      .runBENF(start, goal, benchmarks.eqsat.mm.tilingStepBENF.rules)
+  }
+
+  test("baseline") {
+    val mm: Expr = tvmGemm.mm
+    val goal = tvmGemm.baseline(mm).get
+
+    ProveEquiv.init().runBENF(mm, goal, Seq(
+      rules.reduceSeq, rules.reduceSeqMapFusion
     ))
   }
 
-  test("blocking partial") {
+  test("blocking partial 1") {
     val mm: Expr = tvmGemm.mm
     val start = tvmGemm.baseline(mm).get
-    val goals = Seq(
-      tvmGemm.blockingPartial(mm).get,
-      tvmGemm.blockingPartial2(mm).get,
-      tvmGemm.blockingPartial3(mm).get
-    )
+    val goal = tvmGemm.blockingPartial1(mm).get
 
     ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(80))
-      .runBENF(start, goals, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .runBENF(start, goal, Seq(
         rules.mapFission,
         // rules.transposeAroundMapMapF,
         rules.transposeAroundMapMapF1M,
@@ -74,33 +47,43 @@ class TvmGemm extends test_util.Tests {
         // rules.splitJoin1M(32),
         rules.splitJoin2M(32),
         rules.reduceSeqMapFission,
-        rules.undoReduceSeqForAdd,
-        rules.blockedReduce(4),
+        rules.undoReduceSeqForAdd
     ))
-/*
-    ProveEquiv.init()
-      .runCNF(start, goals, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
-        rules.combinatory.compositionAssoc2,
-        rules.combinatory.compositionIntro,
-        rules.combinatory.compositionElim,
-        rules.combinatory.compositionLeftId,
-        rules.combinatory.compositionRightId,
-        rules.undoReduceSeqForAdd,
-        rules.combinatory.reduceSeqMapFission,
-        rules.combinatory.blockedReduce(4),
-      ))
- */
   }
 
-  test("blocking reorder") {
+  test("blocking partial 2") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.blockingPartial1(mm).get
+    val goal = tvmGemm.blockingPartial2(mm).get
+
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .runBENF(start, goal, Seq(
+        rules.mapFission,
+        rules.reduceSeqMapFission,
+        rules.undoReduceSeqForAdd
+      ))
+  }
+
+  test("blocking partial 3") {
+    val mm: Expr = tvmGemm.mm
+    val start = tvmGemm.blockingPartial2(mm).get
+    val goal = tvmGemm.blockingPartial3(mm).get
+
+    ProveEquiv.init()
+      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(200))
+      .runBENF(start, goal, Seq(rules.blockedReduce(4)))
+  }
+
+  // FIXME: this times out since recent changes
+  ignore("blocking reorder") {
     val mm: Expr = tvmGemm.mm
     val start = tvmGemm.blockingPartial3(mm).get
     val goal = tvmGemm.blocking(mm).get
 
     ProveEquiv.init()
       .runBENF(start, goal, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
+        // rules.eta, rules.betaExtract, rules.betaNatExtract,
         rules.mapFission,
         rules.reduceSeq,
         rules.reduceSeqMapFusion,
@@ -131,43 +114,13 @@ class TvmGemm extends test_util.Tests {
  */
   }
 
-  // search is too difficult as-is
-  ignore("blocking") {
-    val mm: Expr = tvmGemm.mm
-    val start = tvmGemm.baseline(mm).get
-    val goal = tvmGemm.blocking(mm).get
-
-    ProveEquiv.init()
-      .withFilter(ArrayDimensionPredicate(5) && ASTSizePredicate(120))
-      .withRunnerTransform(r => r.withTimeLimit(java.time.Duration.ofMinutes(5)))
-      .runBENF(start, goal, Seq(
-        rules.eta, rules.betaExtract, rules.betaNatExtract,
-        rules.mapFission,
-        rules.reduceSeq,
-        rules.reduceSeqMapFusion,
-        rules.reduceSeqMapFission,
-        rules.undoReduceSeqForAdd, //?
-        rules.splitBeforeMap,
-        rules.liftReduceSeq,
-        rules.liftReduceSeq2,
-        rules.liftReduceSeq3,
-        // rules.transposeAroundMapMapF,
-        rules.transposeAroundMapMapF1M,
-        // rules.mapEtaAbstraction,
-        rules.splitJoin(32),
-        // rules.splitJoin1M(32),
-        rules.splitJoin2M(32),
-        rules.blockedReduce(4),
-      ))
-  }
-
   ignore("vectorize") {
     val mm: Expr = tvmGemm.mm
     val start = tvmGemm.blocking(mm).get
     val goal = tvmGemm.vectorization(mm).get
 
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
+      // rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.combinatory.compositionAssoc2,
       rules.combinatory.compositionIntro,
       rules.combinatory.compositionElim,
@@ -200,14 +153,10 @@ class TvmGemm extends test_util.Tests {
     )))(generate(fun(_ => lf32(0))))(transpose(in))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq
     ))
 
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionAssoc2,
       rules.combinatory.liftReduceSeq
     ))
   }
@@ -239,8 +188,11 @@ class TvmGemm extends test_util.Tests {
     )))(generate(fun(_ => generate(fun(_ => lf32(0))))))(transpose(in))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq
+    ))
+
+    ProveEquiv.init().runCNF(start, goal, Seq(
+      rules.combinatory.liftReduceSeq
     ))
   }
 
@@ -264,19 +216,12 @@ class TvmGemm extends test_util.Tests {
     )))(fst(unzip(in)))(transpose(snd(unzip(in))))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq2
     ))
-/*
+
     ProveEquiv.init().runCNF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
-      rules.combinatory.compositionIntro,
-      rules.combinatory.compositionElim,
-      rules.combinatory.compositionAssoc1,
-      rules.combinatory.compositionAssoc2,
       rules.combinatory.liftReduceSeq2
     ))
- */
   }
 
   test("lift-reduce-seq 4") {
@@ -299,8 +244,11 @@ class TvmGemm extends test_util.Tests {
     )))(fst(unzip(map(unzip)(in))))(transpose(map(transpose)(snd(unzip(map(unzip)(in))))))) :: t
 
     ProveEquiv.init().runBENF(start, goal, Seq(
-      rules.eta, rules.betaExtract, rules.betaNatExtract,
       rules.liftReduceSeq3
+    ))
+
+    ProveEquiv.init().runCNF(start, goal, Seq(
+      rules.combinatory.liftReduceSeq3
     ))
   }
 }

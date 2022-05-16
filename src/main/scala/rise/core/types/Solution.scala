@@ -136,6 +136,7 @@ case class Solution(ts: Map[ExprType, ExprType],
     case TypeConstraint(a, b) => TypeConstraint(apply(a), apply(b))
     case NatConstraint(a, b) => NatConstraint(apply(a), apply(b))
     case BoolConstraint(a, b) => BoolConstraint(apply(a), apply(b))
+    case AddressSpaceConstraint(a, b) => AddressSpaceConstraint(apply(a), apply(b))
     case MatrixLayoutConstraint(a, b) => MatrixLayoutConstraint(apply(a), apply(b))
     case FragmentTypeConstraint(a, b) => FragmentTypeConstraint(apply(a), apply(b))
     case NatToDataConstraint(a, b) => NatToDataConstraint(apply(a), apply(b))

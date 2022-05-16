@@ -8,7 +8,7 @@ import java.io.{File, Writer, BufferedWriter, FileWriter}
   * @param flooding: if not empty,
   *   only print classes which are reachable from the given ones
   */
-case class EGraphDot(egraph: EGraph[_, _, _],
+case class EGraphDot(egraph: EGraph,
                      flooding: Seq[EClassId] = Seq(),
                      printTypes: Boolean = true) {
   def toSVG(path: String): Unit = {
@@ -60,7 +60,8 @@ case class EGraphDot(egraph: EGraph[_, _, _],
       for ((node, i) <- eclass.nodes.zipWithIndex) {
         writeln(s"""    ${eclass.id.i}.$i[label = "${nodeLabel(node)}"]""")
       }
-      if (printTypes) writeln(s"""    label = "#${eclass.id.i} : ${eclass.t}"""")
+      val t = ExprWithHashCons.`type`(egraph)(eclass.t)
+      if (printTypes) writeln(s"""    label = "#${eclass.id.i} : $t"""")
       writeln("  }")
     }
 
@@ -109,6 +110,8 @@ case class EGraphDot(egraph: EGraph[_, _, _],
       case NatLambda(_) => "Λ : nat"
       case DataApp(_, dt) => s"dtApp $dt"
       case DataLambda(_) => "Λ : data"
+      case AddrApp(_, a) => s"aApp $a"
+      case AddrLambda(_) => "Λ : addr"
       case Literal(d) => s"$d"
       case Primitive(p) => s"${p.toString.trim}"
       case Composition(_, _) => ">>"
