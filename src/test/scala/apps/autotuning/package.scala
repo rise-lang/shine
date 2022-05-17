@@ -1,7 +1,7 @@
 package apps
 
 import rise.autotune
-import rise.autotune.{HostCode, Minimum, Timeouts, Tuner}
+import rise.autotune.{AutoTuningError, HostCode, Minimum, Timeouts, Tuner}
 import rise.core.Expr
 import rise.core.types.Nat
 
@@ -11,14 +11,25 @@ import scala.sys.process._
 
 package object autotuning {
 
-  def runExperiment(name: String, configFiles: Seq[String], iterations: Int, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat], plotOnly: Boolean = false) = {
+  def runExperiment(
+                     name: String,
+                     configFiles: Seq[String],
+                     iterations: Int,
+                     output: String,
+                     e: Expr,
+                     hostCode: HostCode,
+                     inputSizes: Seq[Nat],
+                     strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
+                     executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
+                     plotOnly: Boolean = false
+                   ) = {
 
     plotOnly match {
       case true => plotExperiment(name, configFiles, output)
       case false =>
         // run tuning
         for (i <- 1 to iterations) {
-          configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes))
+          configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor))
 
           // plot experiments after each iteration of all configs
           plotExperiment(name, configFiles, output)
@@ -26,9 +37,18 @@ package object autotuning {
     }
   }
 
-  def runTuning(configFile: String, output: String, e: Expr, hostCode: HostCode, inputSizes: Seq[Nat]) = {
+  def runTuning(
+                 configFile: String,
+                 output: String,
+                 e: Expr,
+                 hostCode: HostCode,
+                 inputSizes: Seq[Nat],
+                 strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]],
+                 executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])]
+               ) = {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
+    // todo pass strategy mode through
     val tuner = Tuner(
       hostCode = hostCode,
       inputSizes = inputSizes,
@@ -41,6 +61,8 @@ package object autotuning {
       configFile = Some(configFile),
       hmConstraints = true,
       runtimeStatistic = Minimum,
+      strategyMode = strategyMode,
+      executor = executor,
       saveToFile = true
     )
 
@@ -66,7 +88,7 @@ package object autotuning {
       "-l " +
       names +
       s"-o ${output}/${name}.pdf " +
-      "-log --y_label \"Log Runtime(ms)\" "  +
+      "-log --y_label \"Log Runtime(ms)\" " +
       s"--title ${name} "
 
     println("plot: \n" + command)
@@ -88,7 +110,6 @@ package object autotuning {
 
     command !!
   }
-
 
 
 }

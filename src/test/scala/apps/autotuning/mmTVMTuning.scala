@@ -77,6 +77,11 @@ class mmTVMTuning extends test_util.Tests {
     val reordering = permutationMap.get("tuned_reorder").get.map(x => x + 1)
     val vec = tuningParameterMap.get("tuned_vec101").get
 
+    //    val tileX = 32
+    //    val tileY = 32
+    //    val split = 4
+    //    val vec = 32
+
     val loopPerm: Strategy[Rise] = baseline `;`
       (tile(tileX, tileY) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
@@ -111,7 +116,7 @@ class mmTVMTuning extends test_util.Tests {
       goldExpression = gold,
       iterations = 10,
       inputSize = 512,
-      threshold = 1000,
+      threshold = 100,
       output = "autotuning",
       saveToDisk = false
     )
@@ -139,19 +144,47 @@ class mmTVMTuning extends test_util.Tests {
   }
 
 
-  test("tune tvmgemm example") {
+  test("run experiment tvm gemm tuning") {
+    val inputSize: Int = 1024
 
-    // todo check dependend function!
+    val configs = Seq(
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
+    )
+
+    runExperiment(
+      name = s"mmCPU_${inputSize}",
+      configFiles = configs,
+      iterations = 3,
+      //      s"autotuning/mm_${inputSize}",
+      s"experiment/results/mmCPU_${inputSize}",
+      mm,
+      HostCode("", "", ""),
+      Seq(inputSize, inputSize, inputSize),
+      strategyMode = Some(inject),
+      executor = Some(execute),
+      false
+    )
+  }
+
+
+  test("tune tvmgemm example") {
 
     val tuner = Tuner(
       hostCode = HostCode("", "", ""), // we don't need that
       samples = 100,
-      name = "rs_cot_1024",
+      name = "rs_emb_1024",
       output = "autotuning/tvm_gemm",
       timeouts = Timeouts(5000, 5000, 1000),
       executionIterations = 10,
       speedupFactor = 100,
-      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
+      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
+      configFile = Some("autotuning/config/mmCPU/rs_emb_1024.json"),
+      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024_reorder.json"),
       hmConstraints = true,
       strategyMode = Some(inject),
       executor = Some(execute),

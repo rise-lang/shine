@@ -24,7 +24,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
   val init: (Int, Int) => String = (Ho, Wo) => {
     s"""
-       |const int Hi = ${Ho+4};
+       |const int Hi = ${Ho + 4};
        |const int Wi = ${Wo};
        |const int Ho = ${Ho};
        |const int Wo = ${Wo};
@@ -59,7 +59,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   def lowerOCL(e: ToBeTyped[Expr]): Expr =
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
-  ignore("execute harris"){
+  ignore("execute harris") {
     // expression
     val tileX = 8
     val tileY = 8
@@ -93,8 +93,8 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
   ignore("harris tuning ") {
     // expression
-//    val tileX = 8
-//    val tileY = 8
+    //    val tileX = 8
+    //    val tileY = 8
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -103,14 +103,14 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             lowerOCL(
               ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
                 ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
-    )))
+          )))
 
     val harrisOCLTuning =
       tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
         tuningParam("gs1", RangeMul(1, 256, 2), (gs1: Nat) =>
           tuningParam("ls0", RangeMul(1, 256, 2), (ls0: Nat) =>
             tuningParam("ls1", RangeMul(1, 256, 2), (ls1: Nat) =>
-                wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
 
     // start auto tuning
@@ -134,7 +134,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-  test("run harris autotuning"){
+  test("run harris autotuning") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -154,7 +154,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             ))))
 
 
-    val configs= Seq(
+    val configs = Seq(
       "autotuning/config/harris/rs_cot_harris.json",
       "autotuning/config/harris/rs_emb_harris.json",
       "autotuning/config/harris/atf_emb_harris.json",
@@ -167,12 +167,12 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       name = "harris",
       configFiles = configs,
       iterations = 10,
-//      "autotuning/harris_test",
+      //      "autotuning/harris_test",
       "experiment/results/harris_test",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
       inputSizes = Seq(128, 256),
-      true
+      plotOnly = true
     )
   }
 }
