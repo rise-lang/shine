@@ -1,11 +1,11 @@
 {
-  "name": "mm_example_autotuner",
+  "name": "mm_example_cot",
   "output": "exploration",
   "inputSize": 512,
   "metaheuristic": [
     {
-      "heuristic": "autotuner",
-      "depth": 3,
+      "heuristic": "cot",
+      "depth": 4,
       "iterations": 1
     }
   ],

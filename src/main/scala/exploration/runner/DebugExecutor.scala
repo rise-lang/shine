@@ -135,7 +135,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
   var counter = 0
 
-  def performanceModel2(solution: Solution[Rise]): Option[Double] = {
+  def performanceModel(solution: Solution[Rise]): Option[Double] = {
     // evaluate, if expression is invalid
     //    counter += 1
 
@@ -153,7 +153,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     //    }
   }
 
-  def performanceModel(solution: Solution[Rise]): Option[Double] = {
+  def performanceModel2(solution: Solution[Rise]): Option[Double] = {
     // WARNING: Only for C, not opencl, implementation is not generic
 
     println("solution: " + hashProgram(solution.expression))

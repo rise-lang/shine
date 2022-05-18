@@ -38,6 +38,7 @@ object blockingExploration {
   //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 
   val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+  //  val lowering = lowerToC
 
 
   // -- BASELINE ---------------------------------------------------------------
@@ -139,6 +140,15 @@ object blockingExploration {
     //    loopPerm_step1,
     //    loopPerm_step3,
     //    loopPerm_step4
+  )
+
+  val rules: Set[Strategy[Rise]] = Set(
+    //    fuseReduceMap,
+    tile(32, 32),
+    reduceMapFission(),
+    splitStrategy(4),
+    //    reorder(List(1, 2, 5, 6, 3, 4)),
+    //    vectorize(32)
   )
 
   //  val lowering = lowerToC

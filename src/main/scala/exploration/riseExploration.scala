@@ -34,6 +34,8 @@ object riseExploration {
             strategies: Set[Strategy[Rise]],
             filePath: String,
             hostCode: Option[HostCode] = None,
+            rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+            afterRewrite: Option[Strategy[Rise]] = None
            )
   : (Rise, Option[Double]) = {
 
@@ -49,7 +51,10 @@ object riseExploration {
       lowering,
       strategies,
       filePath,
-      hostCode)
+      hostCode,
+      rewriteFunction = rewriteFunction,
+      afterRewrite = afterRewrite
+    )
 
     // start
     val result = startingPoint.execute(Solution(solution,
@@ -70,7 +75,9 @@ object riseExploration {
                          lowering: Strategy[Rise],
                          strategies: Set[Strategy[Rise]],
                          filePath: String,
-                         hostCode: Option[HostCode]
+                         hostCode: Option[HostCode],
+                         rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+                         afterRewrite: Option[Strategy[Rise]]
                         ): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
@@ -150,8 +157,17 @@ object riseExploration {
     println("result.executor: " + result.executor.name)
     println("executro?: " + executor)
 
-    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth, rootChoice.iteration, executor.asInstanceOf[Runner[Rise]], strategies, nameList.reverse.apply(index))
+    val rootMetaheuristic = new Metaheuristic[Rise](
+      rootChoice.heuristic,
+      jsonParser.getHeuristic(rootChoice.heuristic),
+      rootChoice.depth,
+      rootChoice.iteration,
+      executor.asInstanceOf[Runner[Rise]],
+      strategies,
+      nameList.reverse.apply(index),
+      rewriteFunction = rewriteFunction,
+      afterRewrite = afterRewrite
+    )
 
     index = index + 1
 
@@ -159,8 +175,17 @@ object riseExploration {
     var metaheuristic = rootMetaheuristic
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
-      metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth, elem.iteration, metaheuristic, strategies, nameList.reverse.apply(index))
+      metaheuristic = new Metaheuristic[Rise](
+        elem.heuristic,
+        jsonParser.getHeuristic(elem.heuristic),
+        elem.depth,
+        elem.iteration,
+        metaheuristic,
+        strategies,
+        nameList.reverse.apply(index),
+        rewriteFunction = rewriteFunction,
+        afterRewrite = afterRewrite
+      )
       index = index + 1
     })
 
