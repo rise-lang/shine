@@ -104,72 +104,14 @@ object explorationTutorial {
 
   def main(args: Array[String]): Unit = {
 
-    // todo think about of applying normal form
-    // todo think about checking
-    // todo think about how to get this into rewriting via heuristics
-    // e.g. pass function how to create expand strategy
-
-
-    //
-    //    val mm_tiled = expandStrategy.apply(mm_normal)
-    //
-    //    println("mm_tiled variants: " + mm_tiled.size)
-    //
-    //    println("mm: \n")
-    //    mm_tiled.foreach(elem => println(DFNF().apply(elem).get))
-    //
-    //    println("\n\n")
-    //    val mm_conservative = blockingExploration.blocking_step1.apply(mm).get
-    //    println("mm_convervative: \n" + mm_conservative)
-
-    // run exploration with iterative improvement
-    //    riseExploration(mm, defaultStrategies.lowering, defaultStrategies.strategies, "exploration/configuration/mm_example_iterative_improvement.json")
-
-    // heuristics
-
-    // todo update exhaustive to tree structure?
-
-    //    riseExploration(
-    //      mm,
-    //      blockingExploration.lowering,
-    //      blockingExploration.strategies,
-    //      "exploration/configuration/mm/mm_example_exhaustive.json",
-    //      rewriteFunction = Some(rewriteFunction),
-    //      afterRewrite = Some(DFNF())
-    //    )
-
     riseExploration(
       mm,
       blockingExploration.lowering,
       blockingExploration.strategies,
-      "exploration/configuration/mm/mm_example_cot.json",
+      "exploration/configuration/mm/mm_example_autotuner.json",
       rewriteFunction = Some(rewriteFunction),
       afterRewrite = Some(DFNF())
     )
-
-
-    //    riseExploration(
-    //      mm,
-    //      blockingExploration.lowering,
-    //      blockingExploration.strategies,
-    //      "exploration/configuration/mm/mm_example_autotuner.json",
-    //      rewriteFunction = Some(rewriteFunction),
-    //      afterRewrite = Some(DFNF())
-    //    )
-
-
-    //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_iterative_improvement.json")
-    //        riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_exhaustive.json")
-    //            riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_random_sampling.json")
-    //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_random.json")
-
-    // hm index
-
-    // cot
-
-    //    riseExploration(mm, lowering, defaultStrategies.strategies, "exploration/configuration/mm_example_random.json")
-
-    // find results in exploration/ folder
   }
 
 }
