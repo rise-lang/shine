@@ -56,53 +56,29 @@ class mmTVMTuning extends test_util.Tests {
   val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
 
   //  // -- LOOP PERMUTATION -------------------------------------------------------
-  //
-  //  val loopPerm: Strategy[Rise] = baseline `;`
-  //    (tile() `@` outermost(mapNest(2))) `;;`
-  //    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-  //    (tunable("split", splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;`
-  //    reorder(List(1, 2, 5, 3, 6, 4)) `;;`
-  //    (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
-  //
-  //  val mm2: Rise = loopPerm.apply(mm).get
+
+  val loopPerm: Strategy[Rise] = baseline `;`
+    (tile() `@` outermost(mapNest(2))) `;;`
+    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+    (tunable("split", splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;`
+    reorder(List(1, 2, 5, 3, 6, 4)) `;;`
+    (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
+
+  val mm2: Rise = loopPerm.apply(mm).get
+  //  val mm_lowered = lowerToC.apply(mm2).get
 
   val mm_par = par.apply(mm)
   val gold = lowerToC.apply(mm_par.get).get
 
-  val inject: (Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr] = (e, tuningParameterMap, permutationMap) => {
-
-    val tileX = tuningParameterMap.get("tuned_tile51").get
-    val tileY = tuningParameterMap.get("tuned_tile52").get
-    val split = tuningParameterMap.get("tuned_split100").get
-    val reordering = permutationMap.get("tuned_reorder").get.map(x => x + 1)
-    val vec = tuningParameterMap.get("tuned_vec101").get
-
-    //    val tileX = 32
-    //    val tileY = 32
-    //    val split = 4
-    //    val vec = 32
-
-    val loopPerm: Strategy[Rise] = baseline `;`
-      (tile(tileX, tileY) `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(split) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(reordering) `;;`
-      (vectorize(vec) `@` innermost(isFullyAppliedMap))
-
-    val result = try {
-      loopPerm.apply(e)
-    } catch {
-      case e: Throwable => {
-        println("e: " + e)
-        Failure(loopPerm)
-      }
-    }
-
-    result match {
-      case Success(expression) => Right(expression)
-      case Failure(value) => Left(value.toString())
-    }
-  }
+  val executor = CExecutor(
+    lowering = lowerToC,
+    goldExpression = gold,
+    iterations = 10,
+    inputSize = 512,
+    threshold = 100,
+    output = "autotuning",
+    saveToDisk = false
+  )
 
   val execute: Expr => (
     Either[AutoTuningError, Double],
@@ -111,15 +87,8 @@ class mmTVMTuning extends test_util.Tests {
       Option[Double]
     ) = e => {
 
-    val executor = CExecutor(
-      lowering = lowerToC,
-      goldExpression = gold,
-      iterations = 10,
-      inputSize = 512,
-      threshold = 100,
-      output = "autotuning",
-      saveToDisk = false
-    )
+    println("execute from here!!")
+
 
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
@@ -149,9 +118,9 @@ class mmTVMTuning extends test_util.Tests {
 
     val configs = Seq(
       s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
     )
@@ -159,15 +128,15 @@ class mmTVMTuning extends test_util.Tests {
     runExperiment(
       name = s"mmCPU_${inputSize}",
       configFiles = configs,
-      iterations = 3,
+      iterations = 1,
       //      s"autotuning/mm_${inputSize}",
       s"experiment/results/mmCPU_${inputSize}",
-      mm,
+      mm2,
       HostCode("", "", ""),
       Seq(inputSize, inputSize, inputSize),
-      strategyMode = Some(inject),
+      //      strategyMode = Some(inject),
       executor = Some(execute),
-      false
+      plotOnly = true
     )
   }
 
@@ -186,7 +155,7 @@ class mmTVMTuning extends test_util.Tests {
       configFile = Some("autotuning/config/mmCPU/rs_emb_1024.json"),
       //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024_reorder.json"),
       hmConstraints = true,
-      strategyMode = Some(inject),
+      //      strategyMode = None,
       executor = Some(execute),
       saveToFile = true
     )

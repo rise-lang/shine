@@ -239,25 +239,59 @@ package object autotune {
             NatIdentifier(h) -> (p.toFloat.toInt: Nat)
           }.toMap
           if (checkConstraints(constraints, parametersValuesMap)) {
-            // execute
-            val result = execute(
-              rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e),
-              tuner.hostCode,
-              tuner.timeouts,
-              tuner.executionIterations,
-              tuner.speedupFactor,
-              tuner.runtimeStatistic
-            )
-            val totalTime = Some(TimeSpan.inMilliseconds(
-              (System.currentTimeMillis() - totalStart).toDouble)
-            )
-            Sample(
-              parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
-              runtime = result.runtime,
-              timestamp = System.currentTimeMillis() - start,
-              tuningTimes = TuningTimes(
-                totalTime, result.codegenTime, result.compilationTime, result.executionTime)
-            )
+
+            tuner.executor match {
+              case Some(exec) =>
+                val result = exec(rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e))
+
+                val totalTime = Some(TimeSpan.inMilliseconds(
+                  (System.currentTimeMillis() - totalStart).toDouble)
+                )
+
+                result._1 match {
+                  case Right(value) =>
+
+                    Sample(
+                      parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
+                      runtime = Right(TimeSpan.inMilliseconds(value)),
+                      timestamp = System.currentTimeMillis() - start,
+                      tuningTimes = TuningTimes(
+                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                    )
+
+                  case Left(error) =>
+
+                    Sample(
+                      parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
+                      runtime = Left(error),
+                      timestamp = System.currentTimeMillis() - start,
+                      tuningTimes = TuningTimes(
+                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                    )
+                }
+
+              case None =>
+
+                // execute
+                val result = execute(
+                  rise.core.substitute.natsInExpr(parametersValuesMap.toMap[Nat, Nat], e),
+                  tuner.hostCode,
+                  tuner.timeouts,
+                  tuner.executionIterations,
+                  tuner.speedupFactor,
+                  tuner.runtimeStatistic
+                )
+                val totalTime = Some(TimeSpan.inMilliseconds(
+                  (System.currentTimeMillis() - totalStart).toDouble)
+                )
+                Sample(
+                  parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
+                  runtime = result.runtime,
+                  timestamp = System.currentTimeMillis() - start,
+                  tuningTimes = TuningTimes(
+                    totalTime, result.codegenTime, result.compilationTime, result.executionTime)
+                )
+            }
           } else {
             val totalTime = Some(TimeSpan.inMilliseconds((System.currentTimeMillis() - totalStart).toDouble))
             Sample(

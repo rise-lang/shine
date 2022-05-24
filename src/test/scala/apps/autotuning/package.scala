@@ -88,7 +88,8 @@ package object autotuning {
       "-l " +
       names +
       s"-o ${output}/${name}.pdf " +
-      "-log --y_label \"Log Runtime(ms)\" " +
+      "-log " +
+      "--y_label \"Log Runtime(ms)\" " +
       s"--title ${name} "
 
     println("plot: \n" + command)

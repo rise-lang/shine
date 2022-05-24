@@ -1,28 +1,23 @@
 {
-  "application_name": "rs_cot_1024",
+  "application_name": "atf_emb_1024",
   "optimization_objectives": [
     "runtime"
   ],
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_cot_1024.log",
+  "log_file": "atf_emb_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 20
-  },
-  "optimization_iterations": 0,
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
-  "models": {
-    "model": "gaussian_process"
-  },
-  "optimization_method": "bayesian_optimization",
+  "optimization_method": "opentuner",
+  "optimization_iterations": 20,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

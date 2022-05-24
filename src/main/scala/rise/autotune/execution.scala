@@ -48,6 +48,7 @@ object execution {
   : ExecutionResult = {
     // call C Executo here
 
+
     null
   }
 
@@ -60,6 +61,9 @@ object execution {
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
+
+
+    println("expression: " + expression)
 
     val codegenResult = try {
 
