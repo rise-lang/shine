@@ -119,5 +119,17 @@
         "(tuned_split100) >= (1)"
       ],
       "dependencies": []
+    },
+    "tuned_reorder": {
+      "parameter_type": "permutation",
+      "values": [
+        6
+      ],
+      "parametrization": "spearman",
+      "constraints": [
+        "((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 2) & (tuned_reorder_3 == 4) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 4) & (tuned_reorder_1 == 0) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 4) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 4) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 4) & (tuned_reorder_1 == 0) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 4) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 4) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3))"
+      ],
+      "dependencies": []
     }
+  }
 }

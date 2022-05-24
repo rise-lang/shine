@@ -27,7 +27,7 @@ object riseExploration {
 
 
   // entry point for exploration
-  def apply(solution:Rise, filePath:String): (Rise, Option[Double]) = {
+  def apply(solution: Rise, filePath: String): (Rise, Option[Double]) = {
 
     // parse config file
     val parsedConfiguration = jsonParser.parse(filePath)
@@ -48,8 +48,8 @@ object riseExploration {
 
   }
 
-    // todo command line parser (replace apply function by main)
-    // def main(args: Array[String], solution:Rise, filePath:String):Unit = {
+  // todo command line parser (replace apply function by main)
+  // def main(args: Array[String], solution:Rise, filePath:String):Unit = {
 
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
@@ -103,8 +103,8 @@ object riseExploration {
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
-//    (s"mkdir ${executorOutput + "/C"}" !!)
-//    (s"mkdir ${executorOutput + "/lowered"}" !!)
+    //    (s"mkdir ${executorOutput + "/C"}" !!)
+    //    (s"mkdir ${executorOutput + "/lowered"}" !!)
 
     // begin with executor
     val executor = result.executor.name match {
@@ -120,7 +120,7 @@ object riseExploration {
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
     val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index))
+      rootChoice.depth, rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index), None, None)
     index = index + 1
 
     // iterate reverse direction
@@ -128,17 +128,17 @@ object riseExploration {
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index))
+        elem.depth, elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index), None, None)
       index = index + 1
     })
 
     metaheuristic
   }
 
-  def uniqueFilename(path:String):String = {
+  def uniqueFilename(path: String): String = {
     // check if output path already exists
     var uniqueFilename_full = path
-    if(Files.exists(Paths.get(uniqueFilename_full))){
+    if (Files.exists(Paths.get(uniqueFilename_full))) {
       // wait for next millisecond to create unique filename using timestamp
       Thread.sleep(1)
       uniqueFilename_full = uniqueFilename_full + "_" + System.currentTimeMillis()
