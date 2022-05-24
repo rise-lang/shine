@@ -143,7 +143,7 @@ object blockingExploration {
   )
 
   val rules: Set[Strategy[Rise]] = Set(
-    //    fuseReduceMap,
+    fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
     splitStrategy(4),
