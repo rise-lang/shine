@@ -25,7 +25,12 @@ package object autotuning {
                    ) = {
 
     plotOnly match {
-      case true => plotExperiment(name, configFiles, output)
+      case true =>
+
+        os.isDir(os.Path(output)) match {
+          case true => plotExperiment(name, configFiles, output)
+          case false => println("experiment's output does not exist - ignore plotting")
+        }
       case false =>
         // run tuning
         for (i <- 1 to iterations) {
