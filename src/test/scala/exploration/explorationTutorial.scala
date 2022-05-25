@@ -138,15 +138,24 @@ object explorationTutorial {
     //      afterRewrite = Some(DFNF())
     //    )
 
+    //    riseExploration(
+    //      mm,
+    //      blockingExploration.lowering,
+    //      blockingExploration.strategies,
+    //      "exploration/configuration/mm/mm_example_cot.json",
+    //      rewriteFunction = Some(rewriteFunction),
+    //      afterRewrite = Some(DFNF())
+    //    )
+
+
     riseExploration(
       mm,
       blockingExploration.lowering,
       blockingExploration.strategies,
-      "exploration/configuration/mm/mm_example_cot.json",
+      "exploration/configuration/mm/mm_example_autotuner.json",
       rewriteFunction = Some(rewriteFunction),
       afterRewrite = Some(DFNF())
     )
-
 
     //    riseExploration(
     //      mm,

@@ -5,13 +5,13 @@
   "metaheuristic": [
     {
       "heuristic": "autotuner",
-      "depth": 3,
+      "depth": 4,
       "iterations": 1
     }
   ],
   "executor": {
     "name": "C",
-    "iterations": 10,
+    "iterations": 1,
     "threshold": 1000
   }
 }

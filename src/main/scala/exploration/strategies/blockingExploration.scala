@@ -142,14 +142,29 @@ object blockingExploration {
     //    loopPerm_step4
   )
 
+
+  @rule def splitStrategos: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
+
+
   val rules: Set[Strategy[Rise]] = Set(
     fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
-    splitStrategy(4),
+    //    splitStrategy(4),
+    splitStrategos
+    //    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
     //    reorder(List(1, 2, 5, 6, 3, 4)),
     //    vectorize(32)
   )
+
+  val rules2: Set[Strategy[Rise]] = Set(
+    fuseReduceMap,
+    tile(32, 32),
+    reduceMapFission(),
+    splitStrategy(4),
+    reorder(List(1, 2, 5, 6, 3, 4)),
+  )
+
 
   //  val lowering = lowerToC
 
