@@ -1,28 +1,27 @@
 {
-  "application_name": "rs_emb_1024",
+  "application_name": "ls_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_emb_1024.log",
+  "log_file": "ls_cot_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
-  "design_of_experiment": {
-    "doe_type": "embedding random sampling",
-    "number_of_samples": 100
-  },
-  "optimization_iterations": 0,
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "bayesian_optimization",
+  "optimization_method": "local_search",
+  "local_search_random_points": 20,
+  "local_search_evaluation_limit": 100,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

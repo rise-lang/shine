@@ -150,8 +150,8 @@ class mmTVMTuningReordering extends test_util.Tests {
 
     val configs = Seq(
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
@@ -160,7 +160,7 @@ class mmTVMTuningReordering extends test_util.Tests {
     runExperiment(
       name = s"mmCPU_reordering_${inputSize}",
       configFiles = configs,
-      iterations = 1,
+      iterations = 2,
       //      s"autotuning/mm_${inputSize}",
       s"experiment/results/mmCPU_reordering_${inputSize}",
       mm,
@@ -173,7 +173,7 @@ class mmTVMTuningReordering extends test_util.Tests {
   }
 
 
-  test("tune tvmgemm example reordering") {
+  ignore("tune tvmgemm example reordering") {
 
     val tuner = Tuner(
       hostCode = HostCode("", "", ""), // we don't need that
