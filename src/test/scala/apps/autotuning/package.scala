@@ -29,7 +29,13 @@ package object autotuning {
       case false =>
         // run tuning
         for (i <- 1 to iterations) {
-          configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor))
+          configFiles.foreach(configFile =>
+            try {
+              runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor)
+            } catch {
+              case e: Throwable => println("tuning failed for configFile: " + configFile)
+            }
+          )
 
           // plot experiments after each iteration of all configs
           plotExperiment(name, configFiles, output)
