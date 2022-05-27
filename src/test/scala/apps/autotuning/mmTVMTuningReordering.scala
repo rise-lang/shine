@@ -160,7 +160,7 @@ class mmTVMTuningReordering extends test_util.Tests {
     runExperiment(
       name = s"mmCPU_reordering_${inputSize}",
       configFiles = configs,
-      iterations = 2,
+      iterations = 5,
       //      s"autotuning/mm_${inputSize}",
       s"experiment/results/mmCPU_reordering_${inputSize}",
       mm,

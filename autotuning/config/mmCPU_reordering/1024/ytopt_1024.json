@@ -17,7 +17,7 @@
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "optimization_method": "ytopt",
-  "optimization_iterations": 20,
+  "optimization_iterations": 500,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

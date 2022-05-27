@@ -20,8 +20,8 @@
     "model": "gaussian_process"
   },
   "optimization_method": "local_search",
-  "local_search_random_points": 5,
-  "local_search_evaluation_limit": 10,
+  "local_search_random_points": 50,
+  "local_search_evaluation_limit": 500,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

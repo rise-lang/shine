@@ -16,7 +16,7 @@
   "log_transform_output": true,
   "design_of_experiment": {
     "doe_type": "embedding random sampling",
-    "number_of_samples": 20
+    "number_of_samples": 500
   },
   "scalarization_method": "linear",
   "models": {
