@@ -90,19 +90,21 @@ package object autotuning {
 
       // use first config for printing
       val name = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
-      val config = output + "/" + name + ".json"
+      val configPrinting = output + "/" + name + "/" + name + ".json"
+      val configScript = name + "/" + name + ".json"
 
       // plot
-      val command = "hm-plot-optimization-results " +
-        s"-j ${config} " +
-        "-i " +
-        folders +
-        "-l " +
-        names +
-        s"-o ${output}/${name}.pdf " +
-        "-log " +
-        "--y_label \"Log Runtime(ms)\" " +
-        s"--title ${name} "
+      val command: String => String = config =>
+        "hm-plot-optimization-results " +
+          s"-j ${config} " +
+          "-i " +
+          folders +
+          "-l " +
+          names +
+          s"-o ${output}/${name}.pdf " +
+          "-log " +
+          "--y_label \"Log Runtime(ms)\" " +
+          s"--title ${name} "
 
       println("plot: \n" + command)
 
@@ -118,10 +120,10 @@ package object autotuning {
 
       // write plotting script
       val header = "#!/bin/bash\n"
-      val content = header + command
+      val content = header + command(configScript)
       util.writeToPath(uniqueFilepath, content)
 
-      command !!
+      command(configPrinting) !!
     } catch {
       case e: Throwable => println("printing of experiment failed")
     }
