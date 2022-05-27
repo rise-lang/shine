@@ -29,4 +29,3 @@ elif [ ${gpu} = "A100" ]; then
 else
 	echo "error"
 fi
-

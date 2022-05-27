@@ -1,33 +1,38 @@
 package rise.eqsat
 
+import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.eqsat.ematching.MNode
 
-// TODO: think about what the predicate interface should be
-trait Predicate[ED, ND, TD] {
-  def start(egraph: EGraph[ED, ND, TD],
+trait Predicate {
+  def start(egraph: EGraph,
             roots: Seq[EClassId]): Unit = {}
   def stop(): Unit = {}
 
-  def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED]): Boolean = true
-  def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED], en: ENode): Boolean = true
+  def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis])
+
+  def apply(egraph: EGraph, ec: EClass): Boolean = true
+  def apply(egraph: EGraph, ec: EClass, en: ENode): Boolean = true
 }
 
 object PredicateDSL {
   import scala.language.implicitConversions
 
-  implicit final class Operators[ED, ND, TD](private val a: Predicate[ED, ND, TD])
+  implicit final class PredicateOperators(private val a: Predicate)
     extends AnyVal
   {
-    @inline def &&(b: Predicate[ED, ND, TD]): Predicate[ED, ND, TD] = new AndPredicate(a, b)
-    @inline def ||(b: Predicate[ED, ND, TD]): Predicate[ED, ND, TD] = new OrPredicate(a, b)
+    @inline def &&(b: Predicate): Predicate = new AndPredicate(a, b)
+    @inline def ||(b: Predicate): Predicate = new OrPredicate(a, b)
   }
 }
 
-case class NoPredicate[ED, ND, TD]() extends Predicate[ED, ND, TD]
+case class NoPredicate() extends Predicate {
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+}
 
-abstract class PairPredicate[ED, ND, TD](val a: Predicate[ED, ND, TD],
-                                         val b: Predicate[ED, ND, TD]) extends Predicate[ED, ND, TD] {
-  override def start(egraph: EGraph[ED, ND, TD],
+abstract class PairPredicate(val a: Predicate,
+                                         val b: Predicate) extends Predicate {
+  override def start(egraph: EGraph,
                      roots: Seq[EClassId]): Unit = {
     a.start(egraph, roots)
     b.start(egraph, roots)
@@ -37,35 +42,39 @@ abstract class PairPredicate[ED, ND, TD](val a: Predicate[ED, ND, TD],
     a.stop()
     b.stop()
   }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    Analysis.mergeRequired(a.requiredAnalyses(), b.requiredAnalyses())
 }
 
-class AndPredicate[ED, ND, TD](override val a: Predicate[ED, ND, TD],
-                               override val b: Predicate[ED, ND, TD]) extends PairPredicate[ED, ND, TD](a, b) {
-  override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED]): Boolean =
+class AndPredicate(override val a: Predicate,
+                               override val b: Predicate) extends PairPredicate(a, b) {
+  override def apply(egraph: EGraph, ec: EClass): Boolean =
     a(egraph, ec) && b(egraph, ec)
 
-  override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED], en: ENode): Boolean =
+  override def apply(egraph: EGraph, ec: EClass, en: ENode): Boolean =
     a(egraph, ec, en) && b(egraph, ec, en)
 }
 
-class OrPredicate[ED, ND, TD](override val a: Predicate[ED, ND, TD],
-                              override val b: Predicate[ED, ND, TD]) extends PairPredicate[ED, ND, TD](a, b) {
-  override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED]): Boolean =
+class OrPredicate(override val a: Predicate,
+                              override val b: Predicate) extends PairPredicate(a, b) {
+  override def apply(egraph: EGraph, ec: EClass): Boolean =
     a(egraph, ec) || b(egraph, ec)
 
-  override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED], en: ENode): Boolean =
+  override def apply(egraph: EGraph, ec: EClass, en: ENode): Boolean =
     a(egraph, ec, en) || b(egraph, ec, en)
 }
 
-case class ArrayDimensionPredicate[ED, ND, TD](limit: Int) extends Predicate[ED, ND, TD] {
-  override def apply(egraph: EGraph[ED, ND, TD], ec: EClass[ED]): Boolean = {
+case class ArrayDimensionPredicate(limit: Int) extends Predicate {
+  override def apply(egraph: EGraph, ec: EClass): Boolean = {
     // TODO: e-class analysis?
     def countArrayDims(t: TypeId): Int = {
-      egraph(t)._1 match {
+      egraph(t) match {
         case FunType(inT, outT) =>
           countArrayDims(inT) max countArrayDims(outT)
         case NatFunType(t) => countArrayDims(t)
         case DataFunType(t) => countArrayDims(t)
+        case AddrFunType(t) => countArrayDims(t)
         case ArrayType(_, et) => 1 + countArrayDims(et)
         case PairType(dt1, dt2) =>
           countArrayDims(dt1) max countArrayDims(dt2)
@@ -76,12 +85,52 @@ case class ArrayDimensionPredicate[ED, ND, TD](limit: Int) extends Predicate[ED,
 
     countArrayDims(ec.t) <= limit
   }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+}
+
+// TODO: nats should have no real part (1 divides n)
+// TODO: VectorType(n, ) --> RangeConstraint(n, RangeMul(2, 16, 2))
+// TODO: num /^ denum    --> RangeConstraint(num, RangeAdd(0, PosInf, denum)) [denum divides num]
+// TODO: x % _           --> ArithPredicate(x, 0, >=) [x >= 0]
+object StandardConstraintsPredicate extends Predicate {
+  override def apply(egraph: EGraph, ec: EClass): Boolean = {
+    // TODO: e-class analysis?
+    def checkType(t: TypeId): Boolean = {
+      egraph(t) match {
+        case FunType(inT, outT) =>
+          checkType(inT) && checkType(outT)
+        case NatFunType(t) => checkType(t)
+        case DataFunType(t) => checkType(t)
+        case AddrFunType(t) => checkType(t)
+        case ArrayType(n, et) => checkArraySize(n) && checkType(et)
+        case VectorType(n, _) => checkArraySize(n)
+        case IndexType(n) => checkArraySize(n)
+        case PairType(dt1, dt2) =>
+          checkType(dt1) && checkType(dt2)
+        case DataTypeVar(_) | ScalarType(_) | NatType => true
+      }
+    }
+
+    def checkArraySize(n: NatId): Boolean = {
+      val named = Nat.toNamedGeneric(ExprWithHashCons.nat(egraph)(n),
+        i => rise.core.types.NatIdentifier(s"n$i"))
+      !ArithPredicate(named, 1, ArithPredicate.Operator.>=).evaluate.contains(false)
+    }
+
+    checkType(ec.t)
+  }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
 }
 
 object ASTSizePredicate {
   def apply(limit: Int): ASTSizePredicate = new ASTSizePredicate(
     limit = limit,
-    minimumUpstreamSize = HashMap.empty
+    minimumUpstreamSize = HashMap.empty,
+    minimumDownstreamSize = _ => throw new Exception("this should not happen")
   )
 }
 
@@ -90,15 +139,21 @@ class ASTSizePredicate(limit: Int,
                        // leading up to a given e-class;
                        // in other words minimum size that must be produced
                        // before reaching this e-class.
-                       minimumUpstreamSize: HashMap[EClassId, Double])
-  extends DefaultAnalysis.Predicate
+                       minimumUpstreamSize: HashMap[EClassId, Double],
+                       var minimumDownstreamSize: EClassId => Double)
+  extends Predicate
 {
-  override def start(egraph: DefaultAnalysis.EGraph,
+  override def start(egraph: EGraph,
                      roots: Seq[EClassId]): Unit = {
     import Node.eclassIdOrdering
     // find the minimum upstream sizes using Dijkstra
 
     val rootsCanonical = roots.map(egraph.findMut)
+    val smallestSizeOf = egraph.getAnalysis(SmallestSizeAnalysis)
+
+    minimumDownstreamSize = { (id: EClassId) =>
+      smallestSizeOf(id)._2.toDouble
+    }
 
     val todo = scala.collection.mutable.TreeSet(rootsCanonical.map(r => (0.0, r)): _*)
     assert(minimumUpstreamSize.isEmpty)
@@ -118,7 +173,7 @@ class ASTSizePredicate(limit: Int,
 
         val children = n.children().toSeq
         val childrenMds = children.map { c =>
-          minimumDownstreamSize(egraph.get(c))
+          minimumDownstreamSize(c)
         }
         val nodeMds = 1 + childrenMds.sum
 
@@ -153,15 +208,15 @@ class ASTSizePredicate(limit: Int,
 
   override def stop(): Unit = minimumUpstreamSize.clear()
 
-  private def minimumDownstreamSize(ec: DefaultAnalysis.EClass): Double =
-    ec.data.extracted.map(_._2.toDouble).getOrElse(Double.PositiveInfinity)
-
-  override def apply(egraph: DefaultAnalysis.EGraph, ec: DefaultAnalysis.EClass): Boolean = {
+  override def apply(egraph: EGraph, ec: EClass): Boolean = {
     val mus = minimumUpstreamSize.getOrElse(ec.id, Double.PositiveInfinity)
-    val mds = minimumDownstreamSize(ec)
+    val mds = minimumDownstreamSize(ec.id)
     val minimumSize = mus + mds
     minimumSize <= limit
   }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(SmallestSizeAnalysis), Set())
 }
 
 /* TODO: generic algorithm for top-down + bottom-up predicates?

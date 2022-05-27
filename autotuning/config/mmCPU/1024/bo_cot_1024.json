@@ -1,0 +1,126 @@
+{
+  "application_name": "bo_cot_1024",
+  "optimization_objectives": [
+    "runtime"
+  ],
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "bo_cot_1024.log",
+  "feasible_output": {
+    "enable_feasible_predictor": true,
+    "name": "Valid",
+    "true_value": "True",
+    "false_value": "False"
+  },
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 6
+  },
+  "scalarization_method": "linear",
+  "models": {
+    "model": "gaussian_process"
+  },
+  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 94,
+  "input_parameters": {
+    "tuned_tile51": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_tile51 >= 0",
+        "tuned_tile51 % tuned_vec101 == 0",
+        "1024 >= 0",
+        "1024 % tuned_tile51 == 0",
+        "((tuned_tile51*(1/(tuned_vec101)))) >= (1)",
+        "(tuned_tile51) >= (1)",
+        "((1024*(1/(tuned_tile51)))) >= (1)"
+      ],
+      "dependencies": [
+        "tuned_vec101"
+      ]
+    },
+    "tuned_tile52": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "((1024*(1/(tuned_tile52)))) >= (1)",
+        "1024 >= 0",
+        "1024 % tuned_tile52 == 0",
+        "(tuned_tile52) >= (1)"
+      ],
+      "dependencies": []
+    },
+    "tuned_vec101": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_vec101 >= 2",
+        "tuned_vec101 <= 16",
+        "tuned_vec101 % 2 == 0"
+      ],
+      "dependencies": []
+    },
+    "tuned_split100": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "((1024*(1/(tuned_split100)))) >= (1)",
+        "1024 >= 0",
+        "1024 % tuned_split100 == 0",
+        "(tuned_split100) >= (1)"
+      ],
+      "dependencies": []
+    }
+  }
+}

@@ -58,25 +58,29 @@ object molecularDynamics {
     util.gen.opencl.LocalAndGlobalSize(LocalSize(128), GlobalSize(n))
   })
 
-  val shocOcl: Expr = depFun((n: Nat, m: Nat) => fun(
-    (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
-      f32 ->: f32 ->: f32 ->:
-      (n`.`vec(4, f32))
+  val shocOcl = shocOclWithParams(128)
+
+  def shocOclWithParams(s0: Nat): Expr = {
+    depFun((n: Nat, m: Nat) => fun(
+      (n `.` vec(4, f32)) ->: (m `.` n `.` IndexType(n)) ->:
+        f32 ->: f32 ->: f32 ->:
+        (n `.` vec(4, f32))
     )((particles, neighbourIds, cutsq, lj1, lj2) =>
       zip(particles)(transpose(neighbourIds)) |>
-      split(128) |>
-      mapWorkGroup(
-        mapLocal(fun(p =>
-          let (toPrivate(p._1))
-          be (particle =>
-            gather(p._2)(particles) |>
-            oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
-              mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-            )))(vectorFromScalar(lf32(0.0f)))
-          )
-        ))
-      ) |> join
-  ))
+        split(s0) |>
+        mapWorkGroup(
+          mapLocal(fun(p =>
+            let(toPrivate(p._1))
+              be (particle =>
+              gather(p._2)(particles) |>
+                oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
+                  mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
+                )))(vectorFromScalar(lf32(0.0f)))
+              )
+          ))
+        ) |> join
+    ))
+  }
 
   def buildNeighbourList(
     position: Array[(Float, Float, Float, Float)],

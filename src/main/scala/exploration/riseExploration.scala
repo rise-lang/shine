@@ -186,6 +186,7 @@ object riseExploration {
         rewriteFunction = rewriteFunction,
         afterRewrite = afterRewrite
       )
+
       index = index + 1
     })
 

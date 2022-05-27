@@ -12,7 +12,7 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class nnTuning extends test_util.Tests {
 
-  val nn:Expr =
+  val nn: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
         wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(apps.nearestNeighbour.nnOcl)))
@@ -51,9 +51,9 @@ class nnTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute nn"){
+  test("execute nn") {
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
       TuningParameter("gs0") -> (1: Nat)
     )
@@ -72,7 +72,7 @@ class nnTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("search nn with generated config file"){
+  test("search nn with generated config file") {
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
@@ -99,9 +99,8 @@ class nnTuning extends test_util.Tests {
   }
 
 
-
   def runExperiments(configFiles: Seq[String], iterations: Int) = {
-    for(i <- 1 to iterations) {
+    for (i <- 1 to iterations) {
       configFiles.foreach(runTuning)
     }
   }
@@ -125,7 +124,7 @@ class nnTuning extends test_util.Tests {
     autotune.search(tuner)(nn)
   }
 
-  ignore("run nn autotuning"){
+  test("run nn autotuning") {
 
     val configs = Seq(
       "autotuning/config/nn/nn_rs_cot.json",

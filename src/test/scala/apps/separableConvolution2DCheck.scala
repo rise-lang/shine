@@ -9,6 +9,7 @@ import rise.core.primitives._
 import rise.core.types.DataType._
 import rise.core.types._
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
+import shine.OpenCL.KernelModule.translationToString
 import util.gen
 import util.gen.c.function
 
@@ -19,11 +20,12 @@ object separableConvolution2DCheck {
     // at least 3*4 = 12 for one vector sliding window
     depFun(RangeAdd(3, PosInf, 1), (h: Nat) =>
       depFun(RangeAdd(12, PosInf, 4), (w: Nat) =>
-        fun(h`.`w`.`f32)(a => e(a))))
+        fun(h `.` w `.` f32)(a => e(a))))
   }
 }
 
 class separableConvolution2DCheck extends test_util.Tests {
+
   import separableConvolution2DCheck._
 
   private val H = 20
@@ -35,6 +37,9 @@ class separableConvolution2DCheck extends test_util.Tests {
     val gold = computeGold(H, W, input, binomialWeights2d)
 
     val compute = function("compute").asStringFromExpr(wrapExpr(e))
+
+    println("compute: \n" + compute)
+
     val testCode =
       s"""
 #include <stdio.h>
@@ -79,13 +84,17 @@ int main(int argc, char** argv) {
     checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
+  test("scanlineSeq compiles to C code that passes checks") {
+    checkC(scanlineSeq(binomialWeightsV)(binomialWeightsH))
+  }
+
   import shine.OpenCL.{GlobalSize, LocalSize}
 
   private def checkOCL(
-    localSize: LocalSize,
-    globalSize: GlobalSize,
-    e: ToBeTyped[Expr]
-  ): Unit = {
+                        localSize: LocalSize,
+                        globalSize: GlobalSize,
+                        e: ToBeTyped[Expr]
+                      ): Unit = {
     import shine.OpenCL._
 
     val random = new scala.util.Random()
@@ -93,6 +102,9 @@ int main(int argc, char** argv) {
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.opencl.kernel.fromExpr(wrapExpr(e))
+
+    println("kernel: \n" + translationToString(kernel))
+
     val run = kernel.as[ScalaFunction `(`
       Int `,` Int `,` Array[Array[Float]]
       `)=>` Array[Float]]
@@ -129,9 +141,9 @@ int main(int argc, char** argv) {
     val id = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
-      map(dotSeqUnroll(binomialWeightsV)) >>
-      rotateValues(3)(id) >>
-      iterateStream(dotSeqUnroll(binomialWeightsH))
+        map(dotSeqUnroll(binomialWeightsV)) >>
+        rotateValues(3)(id) >>
+        iterateStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = function.asStringFromExpr(wrapExpr(e))
     " % ".r.findAllIn(code).length shouldBe 0
@@ -149,7 +161,7 @@ int main(int argc, char** argv) {
 
     val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(mapGlobal(1)(
       toPrivateFun(mapSeq(dotSeqPrivate(binomialWeightsV))) >>
-      dotSeqPrivate(binomialWeightsH)
+        dotSeqPrivate(binomialWeightsH)
     ))
 
     val code = gen.opencl.kernel.asStringFromExpr(wrapExpr(e))

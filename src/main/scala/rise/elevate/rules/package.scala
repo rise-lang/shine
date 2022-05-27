@@ -3,16 +3,15 @@ package rise.elevate
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.predicate._
 import elevate.core.strategies.traversal._
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.macros.RuleMacro.rule
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 
 package object rules {
-
   //TODO @rule
-  def betaReduction: Strategy[Rise] = {
+  def betaReduction: Strategy[Rise] = elevate.core.countApplications {
     case App(Lambda(x, b), v) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case DepApp(k1, DepLambda(k2, x, b), v) if k1 == k2 =>
@@ -26,7 +25,7 @@ package object rules {
 
   // TODO: express as a combination of strategies
   // TODO @rule
-  def gentleBetaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+  def gentleBetaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = elevate.core.countApplications {
     case App(Lambda(x, b), v: Identifier) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case App(Lambda(x, b), v @ App(App(primitives.makePair(), _), _)) =>
@@ -39,7 +38,7 @@ package object rules {
   }
 
   //TODO @rule
-  def etaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+  def etaReduction()(implicit ev: Traversable[Rise]): Strategy[Rise] = elevate.core.countApplications {
     case e@Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Rise](x1).apply(f) => Success(f !: e.t)
     case _ => Failure(etaReduction())
   }
