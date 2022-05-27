@@ -76,46 +76,51 @@ package object autotuning {
   }
 
   def plotExperiment(name: String, configs: Seq[String], output: String) = {
+    try {
 
-    // parse names from configuration files
-    var names = ""
-    var folders = ""
-    configs.foreach(config => {
-      val name = rise.autotune.configFileGeneration.parseFromJson(config, "application_name")
-      names += name + " "
-      folders += output + "/" + name + "/" + name + "_hm "
-    })
 
-    // plot
-    val command = "hm-plot-optimization-results " +
-      s"-j ${configs(0)} " +
-      "-i " +
-      folders +
-      "-l " +
-      names +
-      s"-o ${output}/${name}.pdf " +
-      "-log " +
-      "--y_label \"Log Runtime(ms)\" " +
-      s"--title ${name} "
+      // parse names from configuration files
+      var names = ""
+      var folders = ""
+      configs.foreach(config => {
+        val name = rise.autotune.configFileGeneration.parseFromJson(config, "application_name")
+        names += name + " "
+        folders += output + "/" + name + "/" + name + "_hm "
+      })
 
-    println("plot: \n" + command)
+      // plot
+      val command = "hm-plot-optimization-results " +
+        s"-j ${configs(0)} " +
+        "-i " +
+        folders +
+        "-l " +
+        names +
+        s"-o ${output}/${name}.pdf " +
+        "-log " +
+        "--y_label \"Log Runtime(ms)\" " +
+        s"--title ${name} "
 
-    // create unique filepath
-    val path = output + "/" + "plot_hm.sh"
-    val file = new File(path)
-    val uniqueFilepath = if (file.exists()) {
-      val timeAppendix = System.currentTimeMillis().toString
-      path.substring(0, path.length - 3) + "_" + timeAppendix + ".sh"
-    } else {
-      path
+      println("plot: \n" + command)
+
+      // create unique filepath
+      val path = output + "/" + "plot_hm.sh"
+      val file = new File(path)
+      val uniqueFilepath = if (file.exists()) {
+        val timeAppendix = System.currentTimeMillis().toString
+        path.substring(0, path.length - 3) + "_" + timeAppendix + ".sh"
+      } else {
+        path
+      }
+
+      // write plotting script
+      val header = "#!/bin/bash\n"
+      val content = header + command
+      util.writeToPath(uniqueFilepath, content)
+
+      command !!
+    } catch {
+      case e: Throwable => println("printing of experiment failed")
     }
-
-    // write plotting script
-    val header = "#!/bin/bash\n"
-    val content = header + command
-    util.writeToPath(uniqueFilepath, content)
-
-    command !!
   }
 
 
