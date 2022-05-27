@@ -81,27 +81,31 @@ package object autotuning {
 
       // parse names from configuration files
       var names = ""
-      var folders = ""
+      var foldersPrinting = ""
+      var foldersScript = ""
       configs.foreach(config => {
         val name = rise.autotune.configFileGeneration.parseFromJson(config, "application_name")
         names += name + " "
-        folders += output + "/" + name + "/" + name + "_hm "
+        foldersPrinting += output + "/" + name + "/" + name + "_hm "
+        foldersScript += name + "/" + name + "_hm "
       })
 
       // use first config for printing
       val name = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
       val configPrinting = output + "/" + name + "/" + name + ".json"
       val configScript = name + "/" + name + ".json"
+      val outputPrinting = s"${output}/${name}"
+      val outputScript = s"${name}"
 
       // plot
-      val command: String => String = config =>
+      val command: (String, String, String) => String = (config, folders, output) =>
         "hm-plot-optimization-results " +
           s"-j ${config} " +
           "-i " +
           folders +
           "-l " +
           names +
-          s"-o ${output}/${name}.pdf " +
+          s"-o ${output}.pdf " +
           "-log " +
           "--y_label \"Log Runtime(ms)\" " +
           s"--title ${name} "
@@ -120,10 +124,10 @@ package object autotuning {
 
       // write plotting script
       val header = "#!/bin/bash\n"
-      val content = header + command(configScript)
+      val content = header + command(configScript, foldersScript, outputScript)
       util.writeToPath(uniqueFilepath, content)
 
-      command(configPrinting) !!
+      command(configPrinting, foldersPrinting, outputPrinting) !!
     } catch {
       case e: Throwable => println("printing of experiment failed")
     }
