@@ -3,21 +3,21 @@
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
-    "mode": "client-server"
-  },
-  "log_file": "atf_emb_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "atf_emb_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 100,
+  "optimization_iterations": 20,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

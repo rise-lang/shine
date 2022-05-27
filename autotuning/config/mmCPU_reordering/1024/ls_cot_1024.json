@@ -3,16 +3,16 @@
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
-    "mode": "client-server"
-  },
-  "log_file": "ls_cot_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "ls_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
@@ -20,8 +20,8 @@
     "model": "gaussian_process"
   },
   "optimization_method": "local_search",
-  "local_search_random_points": 20,
-  "local_search_evaluation_limit": 100,
+  "local_search_random_points": 5,
+  "local_search_evaluation_limit": 10,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

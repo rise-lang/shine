@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_emb_1024",
+  "application_name": "ytopt_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,17 +12,12 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_emb_1024.log",
+  "log_file": "ytopt_1024.log",
   "log_transform_output": true,
-  "design_of_experiment": {
-    "doe_type": "embedding random sampling",
-    "number_of_samples": 20
-  },
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
-  "models": {
-    "model": "gaussian_process"
-  },
-  "optimization_iterations": 0,
+  "optimization_method": "ytopt",
+  "optimization_iterations": 20,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

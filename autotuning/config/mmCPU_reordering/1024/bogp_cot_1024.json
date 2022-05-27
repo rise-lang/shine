@@ -1,18 +1,18 @@
 {
-  "application_name": "bo_cot_1024",
+  "application_name": "bogp_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
-    "mode": "client-server"
-  },
-  "log_file": "bo_cot_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "bogp_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -24,7 +24,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 94,
+  "optimization_iterations": 10,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",
