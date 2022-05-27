@@ -88,9 +88,13 @@ package object autotuning {
         folders += output + "/" + name + "/" + name + "_hm "
       })
 
+      // use first config for printing
+      val name = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
+      val config = output + "/" + name + ".json"
+
       // plot
       val command = "hm-plot-optimization-results " +
-        s"-j ${configs(0)} " +
+        s"-j ${config} " +
         "-i " +
         folders +
         "-l " +
