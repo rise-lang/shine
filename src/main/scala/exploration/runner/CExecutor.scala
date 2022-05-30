@@ -15,12 +15,15 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
-case class CExecutor(lowering: Strategy[Rise],
-                     goldExpression: Rise,
-                     iterations: Int,
-                     inputSize: Int,
-                     threshold: Double,
-                     output: String) extends Runner[Rise] {
+case class CExecutor(
+                      lowering: Strategy[Rise],
+                      goldExpression: Rise,
+                      iterations: Int,
+                      inputSize: Int,
+                      threshold: Double,
+                      output: String,
+                      timeout: Double = 1000
+                    ) extends Runner[Rise] {
   var globalBest: Option[Double] = None
   val N: Int = inputSize
   var best: Option[Double] = None
@@ -150,6 +153,10 @@ case class CExecutor(lowering: Strategy[Rise],
             println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
+              case 124 =>
+                println("timeout")
+                errorLevel = ExecutionTimeout
+                performanceValue = None
               case 11 =>
                 println("execution crashed")
                 System.exit(-1)
@@ -548,8 +555,13 @@ int main(int argc, char** argv) {
     var runtime = 0.0
     //check global execution time. Discard any with factor 10
     var i = 0
+
     while (i < N) {
-      runtimes(i) = (s"$bin" !!).toDouble
+      //      runtimes(i) = (s"$bin" !!).toDouble
+
+      runtimes(i) = (s"timeout " +
+        s"${(timeout * 1).toDouble / 1000.toDouble}s " +
+        s"$bin" !!).toDouble
 
       println("runtime:(" + i + "): " + runtimes(i))
       println("globalBest: " + globalBest)
@@ -597,7 +609,7 @@ int main(int argc, char** argv) {
     var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
       hashProgram(result._1) + ", " +
       hashProgram(result._2) + ", " +
-      rewrite.mkString(" | ") + ", " +
+      rewrite.mkString("\"[", ", ", "]\"") + ", " +
       result._4.toString + ", "
 
     result._3 match {
