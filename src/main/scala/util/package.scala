@@ -5,7 +5,7 @@ package object util {
 
   def createTempFile(prefix: String, suffix: String): File = {
     val tmp = File.createTempFile(prefix, suffix)
-    tmp.deleteOnExit()
+    //tmp.deleteOnExit()
     tmp
   }
 

@@ -22,8 +22,9 @@ object configFileGeneration {
 //    val doe = p.size * 10
 //    val optimization_iterations = tuner.samples
 
-    val doe = 25
-    val optimization_iterations = 50
+    val doe = p.size + 1
+    val optimization_iterations = 10 - doe
+
 
     // create header for hypermapper configuration file
     val header_old =
@@ -33,6 +34,12 @@ object configFileGeneration {
          | "hypermapper_mode" : {
          |   "mode" : "client-server"
          | },
+         | "scalarization_method": "linear",
+         | "models": {
+         |   "model": "gaussian_process"
+         | },
+         | "log_transform_output": true,
+         | "epsilon_greedy_threshold": 0,
          | "log_file" : "${tuner.name}.log",
          | "feasible_output" : {
          |   "enable_feasible_predictor" : true,
@@ -169,7 +176,8 @@ object configFileGeneration {
                |       "parameter_type" : "ordinal",
                |       "values" : ${values.mkString("[", ", ", "]")},
                |       "constraints" : ${constraints},
-               |       "dependencies" : ${dependencies}
+               |       "dependencies" : ${dependencies},
+               |       "transform" : "log"
                |   },
                |""".stripMargin
 

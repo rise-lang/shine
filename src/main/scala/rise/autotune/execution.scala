@@ -70,6 +70,9 @@ object execution {
 
         val program =
           s"""
+             |#include <stdio.h>
+             |#include <stdlib.h>
+             |
              |${shine.OpenCL.Module.translateToString(generatedModule)}
              |
              |int main(int argc, char** argv) {
@@ -89,6 +92,9 @@ object execution {
              |  return EXIT_SUCCESS;
              |}
              |""".stripMargin
+
+        println("Generated hostcode:")
+        println(program)
 
         assert(executionIterations > 0)
 

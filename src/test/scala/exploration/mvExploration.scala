@@ -1,6 +1,7 @@
 package exploration
 
 import apps.separableConvolution2D.mulT
+import exploration.MatrixOps.MV
 import exploration.strategies.{defaultStrategiesGPU, simpleStrategiesGPU}
 import meta.parser.Nat.AST
 import rise.autotune.HostCode
@@ -24,8 +25,6 @@ class mvExploration extends test_util.Tests {
     val test = Array.empty[String]
     mvExploration.main(test)
   }
-
-
 }
 
 object mvExploration {
@@ -97,69 +96,112 @@ object mvExploration {
       mapGlobal(0)(fun(x => x._1 + x._2))
   ))
 
-  object mvHostCode {
-    // scalastyle:off
-    val init: (Int, Int) => String = (N, M) => {
-      val mFile = writeMat(genMat((N, M), () => Math.random.toFloat))
-      val vFile = writeVec(genVec(N, () => Math.random.toFloat))
-      println(mFile)
-      println(vFile)
+  def writeMat[A] (mat: Mat[A]): File = writeToTempFile("mvInput", "", mat.cols.map(_.values.mkString(" ")).mkString("\n"))
+  def writeVec[A] (vec: Vec[A]): File = writeToTempFile("mvInput", "", vec.values.mkString(" "))
 
+  case class OCLBufferSpec(i: Int, dimension: (Int, Int), size: Int, dataFile: File)
+
+  /*
+  def oclFloatHostCode(inputs: Seq[Value[Float]], output: Value[Float]): HostCode = {
+    def declareVars(n:Int, value: Value[Float]) = {
+      case Mat(size,_) => declareInVars(n, size._1 * size._2)
+      case Vec(size, _) => declareInVars(n, size)
+      case Scalar(value) => s"float in$n = $value;"
+    }
+    def declareInVars(n:Int, length:Int) =
       s"""
-         |const int N = ${N};
-         |const int M = ${M};
-         |
-         |
-         |Buffer inputM = createBuffer(ctx, M * N * sizeof(float), HOST_WRITE | DEVICE_READ);
-         |Buffer inputV = createBuffer(ctx, N * sizeof(float), HOST_WRITE | DEVICE_READ);
-         |Buffer outputV = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
-         |
-         |float* inM = hostBufferSync(ctx, inputM, N * M * sizeof(float), HOST_WRITE);
-         |FILE* file = fopen("${mFile.getAbsolutePath}", "r");
-         |for (int i = 0; i < N * M ; i++) {
-         |  fscanf(file, "%f", &inM[i]);
-         |}
-         |fclose(file);
-         |
-         |float* inV = hostBufferSync(ctx, inputV, N * sizeof(float), HOST_WRITE);
-         |file = fopen("${vFile.getAbsolutePath}", "r");
-         |for (int i = 0; i < N; i++) {
-         |  fscanf(file, "%f", &inV[i]);
-         |}
-         |fclose(file);
-         |
-         |
+         |  int length$n = $length
+         |  Buffer inBuff$n = createBuffer(ctx, length * sizeof(float), HOST_WRITE | DEVICE_READ);
+         |  float* in$n = hostBufferSync(ctx, inBuff$n, length * sizeof(float), HOST_WRITE);
+         |""".stripMargin
+    def writeValue(value: Value[Float]) = {
+      case Mat(_, vecs*) =>
+      case Vec(_, values*) => writeToTempFile("mvInput", "", vec.values.mkString(" "))
+    }
+
+    def fillInVar(n:Int, value: Value[Float]) = {
+      def tmpFile = writeValue(value)
+      s"""
+         |  file = fopen("${spec.dataFile.getAbsolutePath}", "r");
+         |  for (int i = 0; i < ${spec.size}; i++) {
+         |    fscanf(file, "%f", &in${spec.i}[i]);
+         |  }
+         |  fclose(file);
          |""".stripMargin
     }
 
-    val compute =
+
+    val init = "FILE* file;" +
+      inputs.zipWithIndex.map(declareVars(_.))
+
+  }*/
+
+  def oclHostCode(inputs: Seq[(Int,Int)], output: (Int,Int), args: Seq[Int]): HostCode = {
+
+    val Seq(inputSpecs, Seq(outputSpec)) = Seq(inputs, Seq(output))
+      .map(_.zipWithIndex
+        .map { case (dimension, i) => OCLBufferSpec(
+          i = i,
+          dimension = dimension,
+          size = dimension._1 * dimension._2,
+          dataFile = writeMat(Mat.generate(dimension._1, dimension._2)(Math.random.toFloat))
+        )}
+      )
+
+
+    val init =
+      "FILE* file;" +
+      inputSpecs.map(spec =>
       s"""
-         |fun_run(ctx, &fun, outputV, M, N, inputM, inputV);
+         |  Buffer inBuff${spec.i} = createBuffer(ctx, ${spec.size} * sizeof(float), HOST_WRITE | DEVICE_READ);
+         |  float* in${spec.i} = hostBufferSync(ctx, inBuff${spec.i}, ${spec.size} * sizeof(float), HOST_WRITE);
+         |  file = fopen("${spec.dataFile.getAbsolutePath}", "r");
+         |  for (int i = 0; i < ${spec.size}; i++) {
+         |    fscanf(file, "%f", &in${spec.i}[i]);
+         |  }
+         |  fclose(file);
+         |
          |""".stripMargin
+    ).mkString +
+      s"""
+         | Buffer outBuff = createBuffer(ctx, ${outputSpec.size} * sizeof(float), HOST_READ | DEVICE_WRITE);
+         | float* out = hostBufferSync(ctx, outBuff, ${outputSpec.size} * sizeof(float), HOST_READ);
+         |""".stripMargin
+
+    val runArgs = Seq("ctx", "&fun", "outBuff") ++ args.map(_.toString) ++ inputSpecs.map("inBuff" + _.i)
+    val compute = s"  fun_run(${runArgs.mkString(", ")});";
 
     val finish =
       s"""
-         |// TODO: could check output here
+         |  file = fopen("${outputSpec.dataFile.getAbsolutePath}", "r");
+         |  float x;
+         |  int diffs = 0;
+         |  for (int i = 0; i < ${outputSpec.size}; i++) {
+         |    if(out[i] != fscanf(file, "%f", &x)){
+         |      diffs++;
+         |    }
+         |  }
          |
-         |destroyBuffer(ctx, inputM);
-         |destroyBuffer(ctx, inputV);
-         |destroyBuffer(ctx, outputV);
+         |${inputSpecs.map(spec => s" destroyBuffer(ctx, inBuff${spec.i});\n").mkString}
+         |  destroyBuffer(ctx, outBuff);
+         |
+         |  if(diffs > 0){ //Not OK
+         |    exit(42);
+         |  }
          |""".stripMargin
-    // scalastyle:on
+
+    HostCode(init , compute, finish)
   }
 
-  def genScal[A <: Number] (gen: () => A): A = gen()
-  def genVec[A] (size: Int, gen: () => A): Seq[A] = Seq.fill(size)(gen())
-  def genMat[A] (sizes: (Int, Int), gen: () => A): Seq[Seq[A]] = Seq.fill(sizes._1)(genVec(sizes._2,gen))
-
-  def writeMat[A] (mat: Seq[Seq[A]]): File = writeToTempFile("mvInput", "", mat.map(_.mkString(" ")).mkString("\n"))
-  def writeVec[A] (vec: Seq[A]): File = writeToTempFile("mvInput", "", vec.mkString(" "))
-
-
-
-
-
   def main(args: Array[String]): Unit = {
+    val m = Mat.generate(1024,1024)(Math.random.toFloat)
+    val v = Vec.generate(1024)(Math.random.toFloat)
+    val result = m * v
+
+
+    val hostCode = oclHostCode(Seq((1024,1024),(1,1024)),(1,1024), Seq(1024, 1024))
+    //val hostCode = mvHostCode(1024, 1024)
+    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(hostCode))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, simpleStrategiesGPU.lowering, simpleStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner_debug.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
