@@ -9,6 +9,7 @@ import rise.elevate.strategies.traversal.everywhere
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import elevate.core._
 import elevate.heuristic_search.util.Solution
+import rise.autotune.HostCode
 import rise.core.equality.{exprAlphaEq, typeAlphaEq, typeErasure}
 import rise.core.{App, DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Opaque, Primitive, TypeAnnotation, TypeAssertion}
 import rise.elevate.Rise
@@ -129,14 +130,18 @@ object explorationTutorial {
 
     // todo update exhaustive to tree structure?
 
-    //    riseExploration(
-    //      mm,
-    //      blockingExploration.lowering,
-    //      blockingExploration.strategies,
-    //      "exploration/configuration/mm/mm_example_exhaustive.json",
-    //      rewriteFunction = Some(rewriteFunction),
-    //      afterRewrite = Some(DFNF())
-    //    )
+    // todo make blocking parameter generic
+
+    // todo add default case, if no tuning parameter was injected? Just tune fake parameter?
+
+    riseExploration(
+      mm,
+      blockingExploration.lowering,
+      blockingExploration.strategies,
+      "exploration/configuration/mm/mm_example_exhaustive.json",
+      rewriteFunction = Some(rewriteFunction),
+      afterRewrite = Some(DFNF())
+    )
 
     //    riseExploration(
     //      mm,
@@ -147,15 +152,15 @@ object explorationTutorial {
     //      afterRewrite = Some(DFNF())
     //    )
 
-
-    riseExploration(
-      mm,
-      blockingExploration.lowering,
-      blockingExploration.strategies,
-      "exploration/configuration/mm/mm_example_autotuner.json",
-      rewriteFunction = Some(rewriteFunction),
-      afterRewrite = Some(DFNF())
-    )
+    //
+    //    riseExploration(
+    //      mm,
+    //      blockingExploration.lowering,
+    //      blockingExploration.strategies,
+    //      "exploration/configuration/mm/mm_example_autotuner.json",
+    //      rewriteFunction = Some(rewriteFunction),
+    //      afterRewrite = Some(DFNF())
+    //    )
 
     //    riseExploration(
     //      mm,
