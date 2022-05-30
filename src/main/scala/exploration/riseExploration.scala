@@ -142,7 +142,7 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode.get, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
@@ -186,6 +186,7 @@ object riseExploration {
         rewriteFunction = rewriteFunction,
         afterRewrite = afterRewrite
       )
+
       index = index + 1
     })
 

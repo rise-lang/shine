@@ -4,93 +4,131 @@ import PatternDSL._
 import rise.core.{primitives => rcp}
 
 object rules {
-  type Rule = DefaultAnalysis.Rewrite
-
-  def containsIdent(v: PatternVar, ident: Var)
-                   (egraph: DefaultAnalysis.EGraph,
-                    eclass: EClassId,
-                    shc: SubstHashCons,
-                    subst: Subst): Boolean =
-    egraph.getMut(subst(v, shc)).data.free.contains(ident.index)
-
-  def neg[ED, ND, TD](cond: (EGraph[ED, ND, TD], EClassId, Subst) => Boolean)
-                     (egraph: EGraph[ED, ND, TD], eclass: EClassId, subst: Subst): Boolean =
-    !cond(egraph, eclass, subst)
-
-  // TODO: find a way to combine different analysis requirements?
-
   // -- reduction --
 
-  val beta: Rule = Rewrite.init("beta",
+  val etaWithFreeIntersection = Rewrite.init("eta-wfi",
+    lam(app(?(0), %(0))).compile()
+      -->
+    (new ConditionalApplier(
+      Set(?(0)),
+      (Set(FreeIntersectionAnalysis), Set()),
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern)) {
+      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+        def notContainsIdent(v: PatternVar, ident: Var, freeAnalysis: FreeAnalysisCustomisable): Boolean = {
+          val freeOf = egraph.getAnalysis(freeAnalysis)
+          !freeOf(substs.get(v, subst)).free.contains(ident.index)
+        }
+        notContainsIdent(?(0), %(0), FreeIntersectionAnalysis)
+      }
+    })
+  )
+
+  val beta = Rewrite.init("beta",
     app(lam(?(0)), ?(1)).compile()
       -->
     BetaApplier(?(0), ?(1))
   )
-  val betaNat: Rule = Rewrite.init("beta-nat",
+  val betaNat = Rewrite.init("beta-nat",
     nApp(nLam(?(0)), `?n`(0)).compile()
       -->
     BetaNatApplier(?(0), `?n`(0))
   )
-  val betaExtract: Rule = Rewrite.init("beta-extract",
+  val betaExtract = Rewrite.init("beta-extract",
     app(lam(?(0)), ?(1)).compile()
       -->
     BetaExtractApplier(?(0), ?(1))
   )
-  val betaNatExtract: Rule = Rewrite.init("beta-nat-extract",
+  val betaNatExtract = Rewrite.init("beta-nat-extract",
     nApp(nLam(?(0)), `?n`(0)).compile()
       -->
     BetaNatExtractApplier(?(0), `?n`(0))
   )
 
-  import rise.core.types.{Nat, DataType, ExprType}
+  import rise.core.types.{Nat, DataType, AddressSpace}
   import NamedRewriteDSL._
 
-  val etaAbstraction: Rule = NamedRewrite.init("eta-abstraction",
+  val etaAbstraction = NamedRewrite.init("eta-abstraction",
     ("f" :: (t("a") ->: t("b"))) --> lam("x", app("f", "x"))
   )
-  val mapEtaAbstraction: Rule = NamedRewrite.init("map-eta-abstraction",
+  val mapEtaAbstraction = NamedRewrite.init("map-eta-abstraction",
     app(map, "f") --> lam("x", app(app(map, "f"), "x"))
   )
 
-  val eta: Rule = NamedRewrite.init("eta",
+  val eta = NamedRewrite.init("eta",
     lam("x", app("f", "x")) --> "f",
     Seq("f" notFree "x"))
-  val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair",
+
+  val removeTransposePair = NamedRewrite.init("remove-transpose-pair",
     app(transpose, app(transpose, "x")) --> "x"
   )
 
-  val fstReduction: Rule = NamedRewrite.init("fst-reduction",
+  val fstReduction = NamedRewrite.init("fst-reduction",
     app(fst, app(app(makePair, "a"), "b")) --> "a"
   )
 
-  val sndReduction: Rule = NamedRewrite.init("snd-reduction",
+  val sndReduction = NamedRewrite.init("snd-reduction",
     app(snd, app(app(makePair, "a"), "b")) --> "b"
   )
 
-  /* TODO
-  val idxReduction: Rule = NamedRewrite.init("idx-reduction",
-    app(app(rise.core.primitives.idx.primitive, "i"), "mka")
+  // TODO: generalize?
+  val idxReduction_0_1 = NamedRewrite.init("idx-reduction-0-1",
+    app(app(rcp.idx.primitive, lidx(0, 1)),
+      app(rcp.makeArray(1).primitive, "e0"))
       -->
-    ???
+    "e0"
   )
-  */
+  val idxReduction_0_2 = NamedRewrite.init("idx-reduction-0-2",
+    app(app(rcp.idx.primitive, lidx(0, 2)),
+      app(app(rcp.makeArray(2).primitive, "e0"), "e1"))
+      -->
+    "e0"
+  )
+  val idxReduction_1_2 = NamedRewrite.init("idx-reduction-1-2",
+    app(app(rcp.idx.primitive, lidx(1, 2)),
+      app(app(rcp.makeArray(2).primitive, "e0"), "e1"))
+      -->
+    "e1"
+  )
+  val idxReduction_0_3 = NamedRewrite.init("idx-reduction-0-3",
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e0"
+  )
+  val idxReduction_1_3 = NamedRewrite.init("idx-reduction-1-3",
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e1"
+  )
+  val idxReduction_2_3 = NamedRewrite.init("idx-reduction-2-3",
+    app(app(rcp.idx.primitive, lidx(1, 3)),
+      app(app(app(rcp.makeArray(3).primitive, "e0"), "e1"), "e2"))
+      -->
+    "e2"
+  )
 
   // -- algorithmic --
 
-  val mapFusion: Rule = NamedRewrite.init("map-fusion",
+  val mapFusion = NamedRewrite.init("map-fusion",
     app(app(map, "f"), app(app(map, "g"), "in"))
       -->
     app(app(map, lam("x", app("f", app("g", "x")))), "in")
   )
-  val mapFission: Rule = NamedRewrite.init("map-fission",
+  val mapFission = NamedRewrite.init("map-fission",
     app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
     lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in"))),
     Seq("f" notFree "x")
   )
 
+  def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",
+    ("in" :: ((`_`: Nat)`.``_`))
+      -->
+    app(join, app(nApp(split, n), "in"))
+  )
   // TODO: other means of picking n, such as tuning parameters
-  def splitJoin(n: Int): Rule = NamedRewrite.init(s"split-join-$n",
+  def splitJoin(n: Int) = NamedRewrite.init(s"split-join-$n",
     /* app(map, "f")
       -->
     lam("x", app(join, app(app(map, app(map, "f")), app(nApp(split, n), "x"))))
@@ -99,38 +137,38 @@ object rules {
       -->
     app(join, app(app(map, app(map, "f")), app(nApp(split, n), "in")))
   )
-  def splitJoin1M(n: Int): Rule = NamedRewrite.init(s"split-join-1m-$n",
+  def splitJoin1M(n: Int) = NamedRewrite.init(s"split-join-1m-$n",
     app(app(map, app(map, "f")), "in")
       -->
     app(app(map, join), app(app(map, app(map, app(map, "f"))), app(app(map, nApp(split, n)), "in")))
   )
-  def splitJoin2M(n: Int): Rule = NamedRewrite.init(s"split-join-2m-$n",
+  def splitJoin2M(n: Int) = NamedRewrite.init(s"split-join-2m-$n",
     app(app(map, app(map, app(map, "f"))), "in")
       -->
     app(app(map, app(map, join)), app(app(map, app(map, app(map, app(map, "f")))), app(app(map, app(map, nApp(split, n))), "in")))
   )
-  def splitJoin3M(n: Int): Rule = NamedRewrite.init(s"split-join-3m-$n",
+  def splitJoin3M(n: Int) = NamedRewrite.init(s"split-join-3m-$n",
     app(app(map, app(map, app(map, app(map, "f")))), "in")
       -->
     app(app(map, app(map, app(map, join))), app(app(map, app(map, app(map, app(map, app(map, "f"))))), app(app(map, app(map, app(map, nApp(split, n)))), "in")))
   )
-  def splitJoin4M(n: Int): Rule = NamedRewrite.init(s"split-join-4m-$n",
+  def splitJoin4M(n: Int) = NamedRewrite.init(s"split-join-4m-$n",
     app(app(map, app(map, app(map, app(map, app(map, "f"))))), "in")
       -->
     app(app(map, app(map, app(map, app(map, join)))), app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), app(app(map, app(map, app(map, app(map, nApp(split, n))))), "in")))
   )
-  def splitJoin5M(n: Int): Rule = NamedRewrite.init(s"split-join-5m-$n",
+  def splitJoin5M(n: Int) = NamedRewrite.init(s"split-join-5m-$n",
     app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), "in")
       -->
     app(app(map, app(map, app(map, app(map, app(map, join))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), app(app(map, app(map, app(map, app(map, app(map, nApp(split, n)))))), "in")))
   )
-  def splitJoin6M(n: Int): Rule = NamedRewrite.init(s"split-join-6m-$n",
+  def splitJoin6M(n: Int) = NamedRewrite.init(s"split-join-6m-$n",
     app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), "in")
       -->
     app(app(map, app(map, app(map, app(map, app(map, app(map, join)))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))), app(app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))), "in")))
   )
 
-  def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-$n",
+  def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-$n",
     app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
       -->
     app(app(app(rcp.reduceSeq.primitive,
@@ -139,7 +177,7 @@ object rules {
       "init"), app(nApp(split, n), "arg"))
   )
 
-  val liftReduceSeq: Rule = NamedRewrite.init("lift-reduce-seq",
+  val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
     app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
       -->
     lam("in",
@@ -151,7 +189,7 @@ object rules {
   )
 
   // FIXME: very specific ..
-  val liftReduceSeq2: Rule = NamedRewrite.init("lift-reduce-seq-2",
+  val liftReduceSeq2 = NamedRewrite.init("lift-reduce-seq-2",
     app(map, lam("x", app(app(add, app(fst, "x")),
       app(app(app(rcp.reduceSeq.primitive, "op"), lf32(0)), app(snd, "x")))))
       -->
@@ -165,28 +203,29 @@ object rules {
   )
 
   // FIXME: very specific ..
-  val liftReduceSeq3: Rule = NamedRewrite.init("lift-reduce-seq-3",
+  val liftReduceSeq3 = NamedRewrite.init("lift-reduce-seq-3",
     (app(map, lam("x",
-      app(app(app(rcp.reduceSeq.primitive, "op"), "i" :: (("m": Nat)`.`("dt1": DataType))),
-        "e" :: (("o": Nat)`.`(("m": Nat)`.`("dt2": DataType))))))
-      :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: t("o")))
+      app(app(app(rcp.reduceSeq.primitive, "op"), app(fst, app(unzip, "x"))),
+        app(transpose, app(snd, app(unzip, "x")))))))
+      // :: ((("n": Nat)`.`(("m": Nat)`.`(("dt1": DataType) x (("o": Nat)`.`("dt2": DataType))))) ->: ("o": Type)))
       -->
-    lam("in", app(lam("uz",
+    lam("in",
       app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
         app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
           app(app(zip, "acc"), "y"))
-      ))), app(fst, "uz")), app(transpose, app(app(map, transpose), app(snd, "uz"))))),
-      app(unzip, app(app(map, unzip), "in"))))
+      ))), app(fst, app(unzip, app(app(map, unzip), "in")))),
+      app(transpose, app(app(map, transpose), app(snd, app(unzip, app(app(map, unzip), "in"))))))),
+    Seq("op" notFree "x")
   )
 
-  val reduceSeqMapFusion: Rule = NamedRewrite.init("reduce-seq-map-fusion",
+  val reduceSeqMapFusion = NamedRewrite.init("reduce-seq-map-fusion",
     app(app(app(rcp.reduceSeq.primitive, "f"), "init"), app(app(map, "g"), "in"))
       -->
     app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("x",
       app(app("f", "acc"), app("g", "x"))))), "init"), "in")
   )
 
-  val reduceSeqMapFission: Rule = NamedRewrite.init("reduce-seq-map-fission",
+  val reduceSeqMapFission = NamedRewrite.init("reduce-seq-map-fission",
     app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
       app(app("op", "acc"), "gy" :: ("dt": DataType))))), "init")
       -->
@@ -195,18 +234,18 @@ object rules {
     Seq("op" notFree "y")
   )
 
-  val undoReduceSeqForAdd: Rule = NamedRewrite.init("undo-reduce-seq-for-add",
+  val undoReduceSeqForAdd = NamedRewrite.init("undo-reduce-seq-for-add",
     app(rcp.reduceSeq.primitive, add) --> app(reduce, add)
   )
 
   // FIXME: how can we generalize to N?
-  val mapOutsideMakeArray2: Rule = NamedRewrite.init("map-outside-make-array-2",
+  val mapOutsideMakeArray2 = NamedRewrite.init("map-outside-make-array-2",
     app(app(rcp.makeArray(2).primitive, app(app(map, "f1"), "e")), app(app(map, "f2"), "e"))
       -->
     app(transpose, app(app(map, lam("x", app(app(rcp.makeArray(2).primitive, app("f1", "x")), app("f2", "x")))), "e"))
   )
 
-  val mapOutsideZip: Rule = NamedRewrite.init("map-outside-zip",
+  val mapOutsideZip = NamedRewrite.init("map-outside-zip",
     app(app(zip, app(app(map, "fa"), "a")), app(app(map, "fb"), "b"))
       -->
     app(app(map, lam("p", app(app(makePair,
@@ -214,8 +253,24 @@ object rules {
         app("fb", app(snd, "p"))))),
       app(app(zip, "a"), "b"))
   )
+  val mapOutsideZip1 = NamedRewrite.init("map-outside-zip-1",
+    app(app(zip, app(app(map, "fa"), "a")), "b")
+      -->
+    app(app(map, lam("p", app(app(makePair,
+        app("fa", app(fst, "p"))),
+        app(snd, "p")))),
+      app(app(zip, "a"), "b"))
+  )
+ val mapOutsideZip2 = NamedRewrite.init("map-outside-zip-2",
+    app(app(zip, "a"), app(app(map, "fb"), "b"))
+      -->
+    app(app(map, lam("p", app(app(makePair,
+        app(fst, "p")),
+        app("fb", app(snd, "p"))))),
+      app(app(zip, "a"), "b"))
+  )
 
-  val mapOutsidePair: Rule = NamedRewrite.init("map-outside-pair",
+  val mapOutsidePair = NamedRewrite.init("map-outside-pair",
     app(app(makePair,
       app(app(map, "fa"), "a" :: (("n": Nat)`.``_`))),
       app(app(map, "fb"), "b" :: (("n": Nat)`.``_`)))
@@ -228,13 +283,13 @@ object rules {
       app(app(zip, "a"), "b")))
   )
 
-  val zipSame: Rule = NamedRewrite.init("zip-same",
+  val zipSame = NamedRewrite.init("zip-same",
     app(app(zip, "a"), "a")
       -->
     app(app(map, lam("x", app(app(makePair, "x"), "x"))), "a")
   )
 
-  val zipSwap: Rule = NamedRewrite.init("zip-swap",
+  val zipSwap = NamedRewrite.init("zip-swap",
     app(app(zip, "a"), "b")
       -->
     app(app(map,
@@ -242,7 +297,7 @@ object rules {
       app(app(zip, "b"), "a"))
   )
 
-  val zipRotateLeft: Rule = NamedRewrite.init("zip-rotate-left",
+  val zipRotateLeft = NamedRewrite.init("zip-rotate-left",
     app(app(zip, "a"), app(app(zip, "b"), "c"))
       -->
     app(app(map,
@@ -251,7 +306,7 @@ object rules {
       app(app(zip, app(app(zip, "a"), "b")), "c"))
   )
 
-  val zipRotateRight: Rule = NamedRewrite.init("zip-rotate-right",
+  val zipRotateRight = NamedRewrite.init("zip-rotate-right",
     app(app(zip, app(app(zip, "a"), "b")), "c")
       -->
     app(app(map,
@@ -263,41 +318,65 @@ object rules {
   val idAfter = NamedRewrite.init("id-after",
     ("x": Pattern) --> app(lam("y", "y"), "x")
   )
-  val transposePairAfter: Rule = NamedRewrite.init("transpose-pair-after",
+  val transposePairAfter = NamedRewrite.init("transpose-pair-after",
     ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) --> app(transpose, app(transpose, "x"))
   )
-  val transposePairAfter2: Rule = NamedRewrite.init("transpose-pair-after-2",
+  val transposePairAfter2 = NamedRewrite.init("transpose-pair-after-2",
     ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`))) -->
       app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
-  val transposePairAfter3: Rule = NamedRewrite.init("transpose-pair-after-3",
+  val transposePairAfter3 = NamedRewrite.init("transpose-pair-after-3",
     ("f" :: ("in" ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
       lam("x", app(lam("y", app(transpose, app(transpose, "y"))), app("f", "x")))
   )
-  val transposePairAfter4: Rule = NamedRewrite.init("transpose-pair-after-4",
+  val transposePairAfter4 = NamedRewrite.init("transpose-pair-after-4",
     ("f" :: ("in" ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
     lam("x", app(transpose, app(lam("y", app(transpose, app("f", "y"))), "x")))
   )
-  val createTransposePair: Rule = NamedRewrite.init("create-transpose-pair",
+  val createTransposePair = NamedRewrite.init("create-transpose-pair",
     app(lam("y", "y"), "x" :: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))
       -->
     app(lam("y", app(transpose, app(transpose, "y"))), "x")
   )
 
-  val mapIdentityAfter: Rule = NamedRewrite.init("map-identity-after",
+  val eliminateMapIdentity = NamedRewrite.init("eliminate-map-identity",
+    app(map, lam("x", "x"))
+      -->
+    lam("y", "y")
+  )
+  val mapIdentityAfter = NamedRewrite.init("map-identity-after",
     ("e" :: ((`_`: Nat)`.``_`))
       -->
     app(app(map, lam("x", "x")), "e")
   )
 
+  val fstUnzipAsMapFst = NamedRewrite.init("fst-unzip-as-map-fst",
+    app(fst, app(unzip, "e")) --> app(app(map, fst), "e")
+  )
+  val sndUnzipAsMapSnd = NamedRewrite.init("snd-unzip-as-map-snd",
+    app(snd, app(unzip, "e")) --> app(app(map, snd), "e")
+  )
+
+  val slideAfter = NamedRewrite.init("slide-after",
+    ("e" :: ((`_`: Nat)`.``_`))
+      -->
+    app(join, app(nApp(nApp(slide, 1), 1), "e"))
+  )
+  val slideAfter2 = NamedRewrite.init("slide-after-2",
+    ("e" :: ((`_`: Nat)`.``_`))
+      -->
+    app(app(map, lam("x", app(app(rcp.idx.primitive, lidx(0, 1)), "x"))),
+      app(nApp(nApp(slide, 1), 1), "e"))
+  )
+
   // - slide widening -
 
-  val dropInSlide: Rule = NamedRewrite.init("drop-in-slide",
+  val dropInSlide = NamedRewrite.init("drop-in-slide",
     app(nApp(drop, "l"), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
     app(app(map, nApp(drop, "l")), app(nApp(nApp(slide, ("n": Nat) + ("l": Nat)), 1), "in"))
   )
-  val takeInSlide: Rule = NamedRewrite.init("take-in-slide",
+  val takeInSlide = NamedRewrite.init("take-in-slide",
     app(nApp(take, "r") :: ((("s": Nat)`.``_`) ->: `_`), app(nApp(nApp(slide, "n"), 1), "in"))
       -->
     app(app(map, nApp(take, "n")), app(nApp(nApp(slide, ("n": Nat) + ("s": Nat) - ("r": Nat)), 1), "in"))
@@ -305,92 +384,107 @@ object rules {
 
   // -- movement --
 
-  val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose",
+  val mapSlideBeforeTranspose = NamedRewrite.init("map-slide-before-transpose",
     app(transpose, app(app(map, nApp(nApp(slide, "sz"), "sp")), "in"))
       -->
     app(app(map, transpose), app(nApp(nApp(slide, "sz"), "sp"), app(transpose, "in")))
   )
-  val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f",
+  val slideBeforeMapMapF = NamedRewrite.init("slide-before-map-map-f",
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
       -->
     app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
   )
-  val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map",
+  val slideBeforeMap = NamedRewrite.init("slide-before-map",
     app(nApp(nApp(slide, "sz"), "sp"), app(app(map, "f"), "in"))
       -->
     app(app(map, app(map, "f")), app(nApp(nApp(slide, "sz"), "sp"), "in"))
+  )
+  // TODO: what if step != 1?
+  def slideBeforeSplit = NamedRewrite.init("slide-before-split",
+    app(nApp(split, "k"), app(nApp(nApp(slide, "n"), 1), "y"))
+     -->
+    app(app(map, nApp(nApp(slide, "n"), 1)),
+      app(nApp(nApp(slide, ("k": Nat) + ("n": Nat) - (1: Nat)), "k"), "y"))
+  )
+  // TODO: what if step != 1?
+  val slideBeforeSlide = NamedRewrite.init("slide-before-slide",
+    app(nApp(nApp(slide, "m"), "k"), app(nApp(nApp(slide, "n"), 1), "y"))
+     -->
+    app(app(map, nApp(nApp(slide, "n"), 1)),
+      app(nApp(nApp(slide, ("m": Nat) + ("n": Nat) - ("s": Nat)), "k"), "y"))
   )
 
-  val splitBeforeMap: Rule = NamedRewrite.init("split-before-map",
+  val splitBeforeMap = NamedRewrite.init("split-before-map",
     app(nApp(split, "n"), app(app(map, "f"), "in"))
       -->
     app(app(map, app(map, "f")), app(nApp(split, "n"), "in"))
   )
 
-  val mapMapFBeforeTranspose: Rule = NamedRewrite.init("map-map-f-before-transpose",
+  val mapMapFBeforeTranspose = NamedRewrite.init("map-map-f-before-transpose",
     app(transpose, app(app(map, app(map, "f")), "y"))
       -->
     app(app(map, app(map, "f")), app(transpose, "y"))
   )
-  val transposeBeforeMapMapF: Rule = NamedRewrite.init("transpose-before-map-map-f",
+  val transposeBeforeMapMapF = NamedRewrite.init("transpose-before-map-map-f",
     app(app(map, app(map, "f")), app(transpose, "y"))
       -->
     app(transpose, app(app(map, app(map, "f")), "y"))
   )
 
-  val transposeAroundMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-f",
+  val transposeAroundMapMapF = NamedRewrite.init("transpose-around-map-map-f",
     app(app(map, app(map, "f")), "in")
       -->
     app(transpose, app(app(map, app(map, "f")), app(transpose, "in")))
   )
-  /*
-  val transposeAroundMapMapFLift: Rule = NamedRewrite.init("transpose-around-map-map-f-lift",
-    app(map, app(transpose))
-  ) */
-  val transposeAroundMapMapF1M: Rule = NamedRewrite.init("transpose-around-map-map-f-1m",
+  val transposeAroundMapMapF1M = NamedRewrite.init("transpose-around-map-map-f-1m",
     app(app(map, app(map, app(map, "f"))), "in")
       -->
     app(app(map, transpose), app(app(map, app(map, app(map, "f"))), app(app(map, transpose), "in")))
   )
-  val transposeAroundMapMapF2M: Rule = NamedRewrite.init("transpose-around-map-map-f-2m",
+  val transposeAroundMapMapF2M = NamedRewrite.init("transpose-around-map-map-f-2m",
     app(app(map, app(map, app(map, app(map, "f")))), "in")
       -->
     app(app(map, app(map, transpose)), app(app(map, app(map, app(map, app(map, "f")))), app(app(map, app(map, transpose)), "in")))
   )
-  val transposeAroundMapMapF3M: Rule = NamedRewrite.init("transpose-around-map-map-f-3m",
+  val transposeAroundMapMapF3M = NamedRewrite.init("transpose-around-map-map-f-3m",
     app(app(map, app(map, app(map, app(map, app(map, "f"))))), "in")
       -->
     app(app(map, app(map, app(map, transpose))), app(app(map, app(map, app(map, app(map, app(map, "f"))))), app(app(map, app(map, app(map, transpose))), "in")))
   )
-  val transposeAroundMapMapF4M: Rule = NamedRewrite.init("transpose-around-map-map-f-4m",
+  val transposeAroundMapMapF4M = NamedRewrite.init("transpose-around-map-map-f-4m",
     app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), "in")
       -->
     app(app(map, app(map, app(map, app(map, transpose)))), app(app(map, app(map, app(map, app(map, app(map, app(map, "f")))))), app(app(map, app(map, app(map, app(map, transpose)))), "in")))
   )
-  val transposeAroundMapMapF5M: Rule = NamedRewrite.init("transpose-around-map-map-f-5m",
+  val transposeAroundMapMapF5M = NamedRewrite.init("transpose-around-map-map-f-5m",
     app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), "in")
       -->
     app(app(map, app(map, app(map, app(map, app(map, transpose))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))), app(app(map, app(map, app(map, app(map, app(map, transpose))))), "in")))
   )
 
-  val dropBeforeMap: Rule = NamedRewrite.init("drop-before-map",
+  val dropBeforeMap = NamedRewrite.init("drop-before-map",
     app(nApp(drop, "n"), app(app(map, "f"), "in"))
       -->
     app(app(map, "f"), app(nApp(drop, "n"), "in"))
   )
-  val takeBeforeMap: Rule = NamedRewrite.init("take-before-map",
+  val takeBeforeMap = NamedRewrite.init("take-before-map",
     app(nApp(take, "n"), app(app(map, "f"), "in"))
       -->
     app(app(map, "f"), app(nApp(take, "n"), "in"))
   )
 
-  val dropBeforeTake: Rule = NamedRewrite.init("drop-before-take",
+  val dropBeforeTake = NamedRewrite.init("drop-before-take",
     app(nApp(drop, "m"), app(nApp(take, "n+m"), "in"))
       -->
     app(nApp(take, ("n+m": Nat) - ("m": Nat)), app(nApp(drop, "m"), "in"))
   )
+  val takeBeforeDrop = NamedRewrite.init("take-before-drop",
+    app(nApp(take, "n"), app(nApp(drop, "m"), "in"))
+      -->
+    app(nApp(drop, "m"), app(nApp(take, "n" + "m"), "in"))
+  )
 
-  val slideInsideZip: Rule = NamedRewrite.init("slide-inside-zip",
+  val slideInsideZip = NamedRewrite.init("slide-inside-zip",
     app(nApp(nApp(slide, "n"), "m"), app(app(zip, "a"), "b"))
       -->
     app(app(map, lam("p", app(app(zip, app(fst, "p")), app(snd, "p")))),
@@ -399,7 +493,7 @@ object rules {
         app(nApp(nApp(slide, "n"), "m"), "b")))
   )
 
-  val slideOutsideZip: Rule = NamedRewrite.init("slide-outside-zip",
+  val slideOutsideZip = NamedRewrite.init("slide-outside-zip",
     app(app(zip,
       app(nApp(nApp(slide, "n"), "m"), "a")),
       app(nApp(nApp(slide, "n"), "m"), "b"))
@@ -408,7 +502,7 @@ object rules {
       app(nApp(nApp(slide, "n"), "m"), app(app(zip, "a"), "b")))
   )
 
-  val takeOutsidePair: Rule = NamedRewrite.init("take-outside-pair",
+  val takeOutsidePair = NamedRewrite.init("take-outside-pair",
     app(app(makePair, app(nApp(take, "n"), "a")), app(nApp(take, "m"), "b"))
       -->
     app(app(mapSnd, nApp(take, "m")),
@@ -418,52 +512,197 @@ object rules {
 
   // -- lowering --
 
-  val reduceSeq: Rule = NamedRewrite.init("reduce-seq",
+  val reduceSeq = NamedRewrite.init("reduce-seq",
     reduce --> rcp.reduceSeq.primitive
   )
-  val reduceSeqUnroll: Rule = NamedRewrite.init("reduce-seq-unroll",
-    reduce --> rcp.reduceSeqUnroll.primitive
+  val reduceSeqUnroll = NamedRewrite.init("reduce-seq-unroll",
+    rcp.reduceSeq.primitive --> rcp.reduceSeqUnroll.primitive
   )
-  val mapSeq: Rule = NamedRewrite.init("map-seq",
+  val mapSeq = NamedRewrite.init("map-seq",
     map --> rcp.mapSeq.primitive
   )
-  val iterateStream: Rule = NamedRewrite.init("iterate-stream",
+  val iterateStream = NamedRewrite.init("iterate-stream",
     map --> rcp.iterateStream.primitive
   )
-  val toMemAfterMapSeq: Rule = NamedRewrite.init("to-mem-after-map-seq",
+  val toMemAfterMapSeq = NamedRewrite.init("to-mem-after-map-seq",
     app(app(rcp.mapSeq.primitive, "f"), "in")
       -->
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
 
+  val storeToMem = NamedRewrite.init("store-to-mem",
+    ("in" :: ("dt": DataType))
+      -->
+    app(app(rcp.let.primitive, app(rcp.toMem.primitive, "in")), lam("x", "x"))
+  )
+  val hoistLetApp1 = NamedRewrite.init("hoist-let-app-1",
+    (app("y", app(app(rcp.let.primitive, "v"), lam("x", "b"))) :: (`_`: DataType))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app("y", "b")))
+  )
+  val hoistLetApp2 = NamedRewrite.init("hoist-let-app-2",
+    app(app("f" :: (("dt1": DataType) ->: t("t") ->: ("dt2": DataType)),
+      app(app(rcp.let.primitive, "v"), lam("x", "b"))), "y")
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "b"), "y")))
+  )
+  val hoistLetApp3 = NamedRewrite.init("hoist-let-app-3",
+    app(app("f" :: (t("t") ->: ("dt1": DataType) ->: ("dt2": DataType)), "y"),
+      app(app(rcp.let.primitive, "v"), lam("x", "b")))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(app("f", "y"), "b")))
+  )
+  val letSwap = NamedRewrite.init("let-swap",
+    app(app(rcp.let.primitive, "v"), lam("x",
+      app(app(rcp.let.primitive, "v2"), lam("x2", "b"))))
+      -->
+    app(app(rcp.let.primitive, "v2"), lam("x2",
+      app(app(rcp.let.primitive, "v"), lam("x", "b")))),
+    Seq("v2" notFree "x")
+  )
+  val letSame = NamedRewrite.init("let-same",
+    app(app(rcp.let.primitive, "v"), lam("x",
+      app(app(rcp.let.primitive, "v"), lam("x2", "b"))))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", app(lam("x2", "b"), "x")))
+  )
+  /*
+  val hoistLetLam = NamedRewrite.init("hoist-let-lam",
+    lam("y", app(app(rcp.let.primitive, "v"), lam("x", "b")))
+      -->
+    app(app(rcp.let.primitive, "v"), lam("x", lam("y", "b"))),
+    Seq("b" notFree "y")
+  )
+   */
+
+  val mapArray = NamedRewrite.init("map-array",
+    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+      -->
+    app(app(map, lam("y", "y")), "x")
+  )
+  val mapSeqArray = NamedRewrite.init("map-seq-array",
+    ("x" :: ((`_`: Nat)`.`(`_`: DataType)))
+      -->
+    app(app(rcp.mapSeq.primitive, lam("y", "y")), "x")
+  )
+
   // TODO: condition typeHasTrivialCopy(t) / or synthesise trivial write function
-  val mapSeqUnrollWrite: Rule = NamedRewrite.init("map-seq-unroll-write",
+  val mapSeqUnrollWrite = NamedRewrite.init("map-seq-unroll-write",
     ("x" :: ((`_`: Nat)`.`"dt"))
       -->
     app(app(rcp.mapSeqUnroll.primitive, lam("y", "y")), "x")
   )
-  val mapSeqUnrollMapSeqWrite: Rule = NamedRewrite.init("map-seq-unroll-map-seq-write",
+  val mapSeqUnrollMapSeqWrite = NamedRewrite.init("map-seq-unroll-map-seq-write",
     ("x" :: ((`_`: Nat)`.`((`_`: Nat)`.`"dt")))
       -->
       app(app(rcp.mapSeqUnroll.primitive, app(rcp.mapSeq.primitive, lam("y", "y"))), "x")
   )
 
-  val circularBuffer: Rule = NamedRewrite.init("circular-buffer",
+  val circularBuffer = NamedRewrite.init("circular-buffer",
     nApp(nApp(slide, "sz"), 1) --> app(nApp(nApp(rcp.circularBuffer.primitive, "sz"), "sz"), lam("x", "x"))
   )
-  val circularBufferLoadFusion: Rule = NamedRewrite.init("circular-buffer-load-fusion",
+  val circularBufferLoadFusion = NamedRewrite.init("circular-buffer-load-fusion",
     app(app(nApp(nApp(rcp.circularBuffer.primitive, "n1"), "n2"), "load"), app(app(map, "f"), "in"))
       -->
       app(app(nApp(nApp(rcp.circularBuffer.primitive, "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
   )
 
   // TODO: generalize to rotateValues(write: Expr)
-  val rotateValuesScalar: Rule = NamedRewrite.init("rotate-values-scalar",
+  val rotateValuesScalar = NamedRewrite.init("rotate-values-scalar",
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
   )
 
+  object omp {
+    val mapPar = NamedRewrite.init("map-par",
+      map --> rise.openMP.primitives.mapPar.primitive
+    )
+  }
+
+  object ocl {
+    import rise.openCL.{primitives => roclp}
+    def mapGlobal(dim: Int) = NamedRewrite.init(s"ocl-map-global-$dim",
+      map --> roclp.mapGlobal(dim).primitive
+    )
+    def circularBuffer(a: AddressSpace) = NamedRewrite.init(s"ocl-circular-buffer-$a",
+      nApp(nApp(slide, "sz"), 1)
+        -->
+      app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, a), "sz"), "sz"), lam("x", "x"))
+    )
+    val circularBufferLoadFusion = NamedRewrite.init("ocl-circular-buffer-load-fusion",
+      app(app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, "a"), "n1"), "n2"), "load"), app(app(map, "f"), "in"))
+        -->
+      app(app(nApp(nApp(aApp(roclp.oclCircularBuffer.primitive, "a"), "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
+    )
+    // TODO: should this introduce the let or not? maybe let and toMem should be a single primitive anyway
+    def toMem(a: AddressSpace) = NamedRewrite.init(s"ocl-to-mem-$a",
+      ("in" :: ("dt": DataType))
+        -->
+      app(app(rcp.let.primitive, app(aApp(roclp.oclToMem.primitive, a), "in")), lam("x", "x"))
+    )
+
+    // TODO: may also have a non-ocl reduceSeq on lhs
+    def reduceSeq(a: AddressSpace) = NamedRewrite.init(s"ocl-reduce-seq-$a",
+      reduce --> aApp(roclp.oclReduceSeq.primitive, a)
+    )
+    val reduceSeqUnroll = NamedRewrite.init("ocl-reduce-seq-unroll",
+      roclp.oclReduceSeq.primitive --> roclp.oclReduceSeqUnroll.primitive
+    )
+  }
+
   object vectorize {
-    val asScalarOutsidePair: Rule = NamedRewrite.init("as-scalar-outside-pair",
+    // TODO: generalize over data type
+    def after(n: Int, dt: DataType) = NamedRewrite.init(s"vec-$n-after-$dt",
+      // TODO: if m % n == 0 ?
+      ("e" :: (("m": Nat)`.`dt))
+        -->
+      app(asScalar, app(nApp(asVector, n), "e"))
+    )
+    // TODO: remove the need for asVectorAligned primitive
+    val promoteAligned = NamedRewrite.init(s"vec-promote-aligned",
+      asVector --> asVectorAligned
+    )
+
+    val asScalarAsVectorId = NamedRewrite.init("as-scalar-as-vector-id",
+      (app(nApp(asVector, `_`), app(asScalar, "e" :: t("t"))) :: t("t"))
+        --> "e"
+    )
+
+    // TODO: generalize over data type
+    // should we allow <N>(f32 x (f32 x f32)) types for simplicity?
+    val beforeMapF32 = NamedRewrite.init("vec-before-map-f32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: f32 ->: f32), ("in": Pattern)))
+        -->
+      app(app(map, "fV"), app(nApp(asVector, "n"), "in")),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+    val beforeMap_F32xF32 = NamedRewrite.init("vec-before-map-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x f32) ->: f32), ("in": Pattern)))
+        -->
+      app(app(map, "fV"),
+        app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+                     app(nApp(asVector, "n"), app(snd, app(unzip, "in"))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+    val beforeMap_F32x_F32xF32 = NamedRewrite.init("vec-before-map-f32x-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x (f32 x f32)) ->: f32), ("in": Pattern)))
+        -->
+        app(app(map, "fV"),
+          app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+            app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, app(snd, app(unzip, "in")))))),
+                         app(nApp(asVector, "n"), app(snd, app(unzip, app(snd, app(unzip, "in")))))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    )
+
+    // TODO: generalize over data type (this rule will actually not work for e.g. tuples)
+    val beforeMapReduce = NamedRewrite.init("vec-before-map-reduce",
+      app(nApp(asVector, "n"), app(app(map, app(app(reduce, "f"), "init")), "in"))
+        -->
+      app(app(map, app(app(reduce, "fv"), app(vectorFromScalar, "init"))),
+        app(transpose, app(app(map, nApp(asVector, "n")), app(transpose, "in")))),
+      Seq(vectorizeScalarFun("f", "n", "fv"))
+    )
+
+    val asScalarOutsidePair = NamedRewrite.init("as-scalar-outside-pair",
       app(app(makePair, app(asScalar, "a")), app(asScalar, "b"))
         -->
       app(app(mapSnd, asScalar), app(app(mapFst, asScalar),
@@ -471,61 +710,46 @@ object rules {
     )
   }
 
-  object ocl {
-    import rise.openCL.{primitives => p}
-
-    /* TODO: aApp
-    val circularBuffer: Rule = NamedRewrite.init("ocl-circular-buffer",
-      nApp(nApp(slide, "sz"), 1) --> app(nApp(nApp(p.oclCircularBuffer.primitive, "sz"), "sz"), lam("x", "x"))
-    )
-    val circularBufferLoadFusion: Rule = NamedRewrite.init("ocl-circular-buffer-load-fusion",
-      app(app(nApp(nApp(p.oclCircularBuffer.primitive, "n1"), "n2"), "load"), app(app(map, "f"), "in"))
-        -->
-      app(app(nApp(nApp(p.oclCircularBuffer.primitive, "n1"), "n2"), lam("x", app("load", app("f", "x")))), "in")
-    )
-    val reduceSeq: Rule = NamedRewrite.init("ocl-reduce-seq",
-      reduce --> p.oclReduceSeq.primitive
-    )
-    val reduceSeqUnroll: Rule = NamedRewrite.init("ocl-reduce-seq-unroll",
-      rcp.reduceSeq.primitive --> p.oclReduceSeqUnroll.primitive
-    )
-
-     */
-  }
-
+  // TODO: check that RHS are locally CNF (or automate that?)
   object combinatory {
-    val compositionIntro: Rule = NamedRewrite.init("composition-intro",
+    val compositionIntro = NamedRewrite.init("composition-intro",
       // only do this for functions over datatypes
       app("f" :: (("dt2": DataType) ->: ("dt3" : DataType)),
         app("g" :: (("dt1": DataType) ->: ("dt2" : DataType)), "x")) --> app("g" >> "f", "x")
     )
-    val compositionElim: Rule = NamedRewrite.init("composition-elim",
+    val compositionElim = NamedRewrite.init("composition-elim",
       app("g" >> "f", "x") --> app("f", app("g", "x"))
     )
-    val compositionAssoc1: Rule = NamedRewrite.init("composition-assoc-1",
+    val compositionAssoc1 = NamedRewrite.init("composition-assoc-1",
       (("f" >> "g") >> "h") --> ("f" >> ("g" >> "h"))
     )
-    val compositionAssoc2: Rule = NamedRewrite.init("composition-assoc-2",
+    val compositionAssoc2 = NamedRewrite.init("composition-assoc-2",
       ("f" >> ("g" >> "h")) --> (("f" >> "g") >> "h")
     )
 
-    val mapFusion: Rule = NamedRewrite.init("map-fusion-cnf",
+    val mapFusion = NamedRewrite.init("map-fusion-cnf",
       (app(map, "f") >> app(map, "g"))
         -->
       app(map, "f" >> "g")
     )
-    val mapFusion2: Rule = NamedRewrite.init("map-fusion-cnf-2",
+    val mapFusion2 = NamedRewrite.init("map-fusion-cnf-2",
       (("h" >> app(map, "f")) >> app(map, "g"))
         -->
       ("h" >> app(map, "f" >> "g"))
     )
-    val mapFission: Rule = NamedRewrite.init("map-fission-cnf",
+    val mapFission = NamedRewrite.init("map-fission-cnf",
       app(map, ("f" :: (("a": DataType) ->: ("b": DataType))) >> "g")
         -->
       (app(map, "f") >> app(map, "g"))
     )
+    val mapFission2 = NamedRewrite.init("map-fission-cnf-2",
+      app(map, lam("x", app(("f" :: (("a": DataType) ->: ("b": DataType))) >> "g", "x")))
+        -->
+      (app(map, lam("x", app("f", "x"))) >> app(map, "g")),
+      Seq("g" notFree "x")
+    )
 
-    val reduceSeqMapFusion: Rule = NamedRewrite.init("reduce-seq-map-fusion-cnf",
+    val reduceSeqMapFusion = NamedRewrite.init("reduce-seq-map-fusion-cnf",
       (app(map, "g") >> app(app(rcp.reduceSeq.primitive, "f"), "init"))
         -->
       app(app(rcp.reduceSeq.primitive,
@@ -535,7 +759,7 @@ object rules {
         "init")
     )
 
-    val reduceSeqMapFusion2: Rule = NamedRewrite.init("reduce-seq-map-fusion-cnf-2",
+    val reduceSeqMapFusion2 = NamedRewrite.init("reduce-seq-map-fusion-cnf-2",
       (("h" >> app(map, "g")) >> app(app(rcp.reduceSeq.primitive, "f"), "init"))
         -->
         ("h" >> app(app(rcp.reduceSeq.primitive,
@@ -545,41 +769,52 @@ object rules {
           "init"))
     )
 
-    val reduceSeqMapFission: Rule = NamedRewrite.init("reduce-seq-map-fission-cnf",
+    // TODO: double-check this ..
+    val reduceSeqMapFission = NamedRewrite.init("reduce-seq-map-fission-cnf",
       app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
-        app(app("op", "acc"), "gy" :: ("dt": DataType))))), "init")
+        app(("g" :: (("a": DataType) ->: ("b": DataType))) >> app("op", "acc"), "y")))), "init")
         -->
-        lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
-          app(app(map, lam("y", "gy")), "in"))),
-      Seq("op" notFree "y")
+      (app(map, lam("y", app("g", "y"))) >>
+       app(app(rcp.reduceSeq.primitive, lam("acc", app("op", "acc"))), "init")),
+      Seq("g" notFree "acc", "op" notFree "y", "op" notFree "acc")
     )
 
-    def splitJoin(n: Int): Rule = NamedRewrite.init(s"split-join-cnf-$n",
+    def splitJoin(n: Int) = NamedRewrite.init(s"split-join-cnf-$n",
       app(map, "f")
         -->
       (nApp(split, n) >> app(map, app(map, "f")) >> join)
     )
-    def splitJoin1M(n: Int): Rule = NamedRewrite.init(s"split-join-1m-cnf-$n",
+    def splitJoin1M(n: Int) = NamedRewrite.init(s"split-join-1m-cnf-$n",
       app(map, app(map, "f"))
         -->
       (app(map, nApp(split, n)) >> app(map, app(map, app(map, "f"))) >> app(map, join))
     )
-    def splitJoin2M(n: Int): Rule = NamedRewrite.init(s"split-join-2m-cnf-$n",
+    def splitJoin2M(n: Int) = NamedRewrite.init(s"split-join-2m-cnf-$n",
       app(map, app(map, app(map, "f")))
         -->
       (app(map, app(map, nApp(split, n))) >> app(map, app(map, app(map, app(map, "f")))) >> app(map, app(map, join)))
     )
-    def splitJoin3M(n: Int): Rule = NamedRewrite.init(s"split-join-3m-cnf-$n",
+    def splitJoin3M(n: Int) = NamedRewrite.init(s"split-join-3m-cnf-$n",
       app(map, app(map, app(map, app(map, "f"))))
         -->
       (app(map, app(map, app(map, nApp(split, n)))) >> app(map, app(map, app(map, app(map, app(map, "f"))))) >> app(map, app(map, app(map, join))))
     )
-    def splitJoin4M(n: Int): Rule = NamedRewrite.init(s"split-join-4m-cnf-$n",
+    def splitJoin4M(n: Int) = NamedRewrite.init(s"split-join-4m-cnf-$n",
       app(map, app(map, app(map, app(map, app(map, "f")))))
         -->
       (app(map, app(map, app(map, app(map, nApp(split, n))))) >> app(map, app(map, app(map, app(map, app(map, app(map, "f")))))) >> app(map, app(map, app(map, app(map, join)))))
     )
-    def blockedReduce(n: Int): Rule = NamedRewrite.init(s"blocked-reduce-cnf-$n",
+    def splitJoin5M(n: Int) = NamedRewrite.init(s"split-join-5m-cnf-$n",
+      app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, nApp(split, n)))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))) >> app(map, app(map, app(map, app(map, app(map, join))))))
+    )
+    def splitJoin6M(n: Int) = NamedRewrite.init(s"split-join-6m-cnf-$n",
+      app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
+    )
+    def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
       app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init")
         -->
       (nApp(split, n) >> app(app(rcp.reduceSeq.primitive,
@@ -588,7 +823,7 @@ object rules {
         "init"))
     )
 
-    val liftReduceSeq: Rule = NamedRewrite.init("lift-reduce-seq-cnf",
+    val liftReduceSeq = NamedRewrite.init("lift-reduce-seq-cnf",
       app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
         -->
       (transpose >>
@@ -599,129 +834,157 @@ object rules {
     )
 
     // FIXME: very specific ..
-    val liftReduceSeq2: Rule = NamedRewrite.init("lift-reduce-seq-cnf-2",
-      app(map, lam("x", app(app(add, app(fst, "x")),
-        app(app(app(rcp.reduceSeq.primitive, "op"), lf32(0)), app(snd, "x")))))
+    val liftReduceSeq2 = NamedRewrite.init("lift-reduce-seq-cnf-2",
+      app(map, lam("x", app(
+        (snd >> app(app(rcp.reduceSeq.primitive, "op"), lf32(0))) >>
+        app(add, app(fst, "x")), "x")))
         -->
-      (unzip >> lam("uz",
+      lam("uz",
         app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
           app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
             app(app(zip, "acc"), "y"))
           // generalized init: app(transpose, app(snd, "uz")) + app(rcp.generate.primitive, lam("i", "init"))
-        ))), app(fst, "uz")), app(transpose, app(snd, "uz")))))
+        ))), app(fst, app(unzip, "uz"))), app(transpose, app(snd, app(unzip, "uz")))))
     )
 
-    val removeTransposePair: Rule = NamedRewrite.init("remove-transpose-pair-cnf",
+    // FIXME: very specific ..
+    val liftReduceSeq3 = NamedRewrite.init("lift-reduce-seq-cnf-3",
+      app(map, lam("x",
+        app(((unzip >> snd) >> transpose) >>
+            app(app(rcp.reduceSeq.primitive, "op"), app(unzip >> fst, "x")),
+          "x")))
+        -->
+      lam("in",
+        app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+          app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+            app(app(zip, "acc"), "y"))
+        ))), app(fst, app(unzip, app(app(map, unzip), "in")))),
+        app(transpose, app(app(map, transpose), app(snd, app(unzip, app(app(map, unzip), "in")))))))
+    )
+
+    val removeTransposePair = NamedRewrite.init("remove-transpose-pair-cnf",
       (transpose >> transpose) --> lam("x", "x")
     )
-    val removeTransposePair2: Rule = NamedRewrite.init("remove-transpose-pair-cnf-2",
+    val removeTransposePair2 = NamedRewrite.init("remove-transpose-pair-cnf-2",
       (("g" >> transpose) >> transpose) --> "g"
     )
-    val removeTransposePair1M: Rule = NamedRewrite.init("remove-transpose-pair-cnf-1m",
+    val removeTransposePair1M = NamedRewrite.init("remove-transpose-pair-cnf-1m",
       (app(map, transpose) >> app(map, transpose)) --> lam("x", "x")
     )
-    val removeTransposePair1M2: Rule = NamedRewrite.init("remove-transpose-pair-cnf-1m-2",
+    val removeTransposePair1M2 = NamedRewrite.init("remove-transpose-pair-cnf-1m-2",
       (("g" >> app(map, transpose)) >> app(map, transpose)) --> "g"
     )
-    val removeTransposePair2M: Rule = NamedRewrite.init("remove-transpose-pair-cnf-2m",
+    val removeTransposePair2M = NamedRewrite.init("remove-transpose-pair-cnf-2m",
       (app(map, app(map, transpose)) >> app(map, app(map, transpose))) --> lam("x", "x")
     )
-    val removeTransposePair2M2: Rule = NamedRewrite.init("remove-transpose-pair-cnf-2m-2",
+    val removeTransposePair2M2 = NamedRewrite.init("remove-transpose-pair-cnf-2m-2",
       (("g" >> app(map, app(map, transpose))) >> app(map, app(map, transpose))) --> "g"
     )
-    val compositionRightId: Rule = NamedRewrite.init("composition-right-id",
+    val compositionRightId = NamedRewrite.init("composition-right-id",
       ("f" >> lam("x", "x")) --> "f"
     )
-    val compositionLeftId: Rule = NamedRewrite.init("composition-left-id",
+    val compositionLeftId = NamedRewrite.init("composition-left-id",
       (lam("x", "x") >> "f") --> "f"
     )
 
-    val mapSlideBeforeTranspose: Rule = NamedRewrite.init("map-slide-before-transpose-cnf",
+    val mapSlideBeforeTranspose = NamedRewrite.init("map-slide-before-transpose-cnf",
       (app(map, nApp(nApp(slide, "sz"), "sp")) >> transpose)
         -->
       (transpose >> nApp(nApp(slide, "sz"), "sp") >> app(map, transpose))
     )
-    val slideBeforeMapMapF: Rule = NamedRewrite.init("slide-before-map-map-f-cnf",
+    val slideBeforeMapMapF = NamedRewrite.init("slide-before-map-map-f-cnf",
       (nApp(nApp(slide, "sz"), "sp") >> app(map, app(map, "f")))
         -->
       (app(map, "f") >> nApp(nApp(slide, "sz"), "sp"))
     )
-    val slideBeforeMap: Rule = NamedRewrite.init("slide-before-map-cnf",
+    val slideBeforeMap = NamedRewrite.init("slide-before-map-cnf",
       (app(map, "f") >> nApp(nApp(slide, "sz"), "sp"))
         -->
       (nApp(nApp(slide, "sz"), "sp") >> app(map, app(map, "f")))
     )
 
-    val splitBeforeMap: Rule = NamedRewrite.init("split-before-map-cnf",
+    val splitBeforeMap = NamedRewrite.init("split-before-map-cnf",
       (app(map, "f") >> nApp(split, "n"))
         -->
       (nApp(split, "n") >> app(map, app(map, "f")))
     )
-    val splitBeforeMap2: Rule = NamedRewrite.init("split-before-map-cnf-2",
+    val splitBeforeMap2 = NamedRewrite.init("split-before-map-cnf-2",
       (("g" >> app(map, "f")) >> nApp(split, "n"))
         -->
       ("g" >> nApp(split, "n") >> app(map, app(map, "f")))
     )
 
-    val transposePairAfter: Rule = NamedRewrite.init("transpose-pair-after-cnf",
+    val transposePairAfter = NamedRewrite.init("transpose-pair-after-cnf",
       ("f" :: (t("in") ->: ((`_`: Nat)`.`((`_`: Nat)`.``_`)))) -->
       ("f" >> transpose >> transpose)
     )
 
-    val mapMapFBeforeTranspose: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf",
+    val mapMapFBeforeTranspose = NamedRewrite.init("map-map-f-before-transpose-cnf",
       (app(map, app(map, "f")) >> transpose)
         -->
       (transpose >> app(map, app(map, "f")))
     )
-    val mapMapFBeforeTranspose1: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf-1",
+    val mapMapFBeforeTranspose1 = NamedRewrite.init("map-map-f-before-transpose-cnf-1",
       ("g" >> app(map, app(map, "f")) >> transpose)
         -->
       ("g" >> transpose >> app(map, app(map, "f")))
     )
-    val mapMapFBeforeTranspose2: Rule = NamedRewrite.init("map-map-f-before-transpose-cnf-2",
+    val mapMapFBeforeTranspose2 = NamedRewrite.init("map-map-f-before-transpose-cnf-2",
       (app(map, app(map, "f")) >> (transpose >> "g"))
         -->
       (transpose >> (app(map, app(map, "f")) >> "g"))
     )
 
-    val transposeAroundMapMapF: Rule = NamedRewrite.init("transpose-around-map-map-f-cnf",
+    val transposeAroundMapMapF = NamedRewrite.init("transpose-around-map-map-f-cnf",
       app(map, app(map, "f"))
         -->
       (transpose >> app(map, app(map, "f")) >> transpose)
     )
 
-    val transposeAroundMapMapF1M: Rule = NamedRewrite.init("transpose-around-map-map-f-1m-cnf",
+    val transposeAroundMapMapF1M = NamedRewrite.init("transpose-around-map-map-f-1m-cnf",
       app(map, app(map, app(map, "f")))
         -->
       (app(map, transpose) >> app(map, app(map, app(map, "f"))) >> app(map, transpose))
     )
 
-    val transposeAroundMapMapF2M: Rule = NamedRewrite.init("transpose-around-map-map-f-2m-cnf",
+    val transposeAroundMapMapF2M = NamedRewrite.init("transpose-around-map-map-f-2m-cnf",
       app(map, app(map, app(map, app(map, "f"))))
         -->
       (app(map, app(map, transpose)) >> app(map, app(map, app(map, app(map, "f")))) >> app(map, app(map, transpose)))
     )
 
-    val transposeAroundMapMapF3M: Rule = NamedRewrite.init("transpose-around-map-map-f-3m-cnf",
+    val transposeAroundMapMapF3M = NamedRewrite.init("transpose-around-map-map-f-3m-cnf",
       app(map, app(map, app(map, app(map, app(map, "f")))))
         -->
       (app(map, app(map, app(map, transpose))) >> app(map, app(map, app(map, app(map, app(map, "f"))))) >> app(map, app(map, app(map, transpose))))
     )
 
+    val transposeAroundMapMapF4M = NamedRewrite.init("transpose-around-map-map-f-4m-cnf",
+      app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))
+        -->
+      (app(map, app(map, app(map, app(map, transpose)))) >> app(map, app(map, app(map, app(map, app(map, app(map, "f")))))) >> app(map, app(map, app(map, app(map, transpose)))))
+    )
+
+    val transposeAroundMapMapF5M = NamedRewrite.init("transpose-around-map-map-f-5m-cnf",
+      app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))
+        -->
+      (app(map, app(map, app(map, app(map, app(map, transpose))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f"))))))) >> app(map, app(map, app(map, app(map, app(map, transpose))))))
+    )
+
     object vectorize {
       // TODO: `s` should be a scalar type and `m % n == 0`
-      def after(n: Nat): Rule = NamedRewrite.init(s"vec-after-$n-cnf",
+      def after(n: Nat) = NamedRewrite.init(s"vec-after-$n-cnf",
         ("e" :: (("m": Nat)`.`("s": DataType)))
           -->
         ("e" >> nApp(asVector, n) >> asScalar)
       )
 
-      val asScalarAsVectorId: Rule = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf",
+      val asScalarAsVectorId = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf",
         ((asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         lam("in", "in")
       )
-      val asScalarAsVectorId2: Rule = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf-2",
+      val asScalarAsVectorId2 = NamedRewrite.init("vec-as-scalar-as-vector-id-cnf-2",
         ("h" >> (asScalar >> nApp(asVector, "n")) :: (t("t") ->: t("t")))
           -->
         "h"
@@ -729,7 +992,7 @@ object rules {
 
       // TODO: check that "f" is vectorizable / synthesize vectorized "f" ?
       /*
-      val beforeMap: Rule = NamedRewrite.init("vec-before-map",
+      val beforeMap = NamedRewrite.init("vec-before-map",
         (app(map, "f") >> nApp(asVector, "n"))
           -->
         (nApp(asVector, "n") >> app(map, "f"))

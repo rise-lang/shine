@@ -4,7 +4,7 @@ import ExprDSL._
 
 class ExtractorCheck extends test_util.Tests {
   test("simple extraction") {
-    val egraph = EGraph.emptyWithAnalysis(NoAnalysis)
+    val egraph = EGraph.empty()
     val expr = egraph.addExpr({
       import rise.core.DSL._
       Expr.fromNamed(fun(x => (x * l(2)) / l(2)))
@@ -14,8 +14,7 @@ class ExtractorCheck extends test_util.Tests {
     egraph.union(expr, simpler)
     egraph.rebuild(Seq(expr))
 
-    val extractor = Extractor.init(egraph, AstSize)
-    val (bestSize, bestExpr) = extractor.findBestOf(expr)
+    val (bestExpr, bestSize) = Extractor.findBestOf(egraph, AstSize, expr)
     assert((bestSize, ExprWithHashCons.expr(egraph)(bestExpr)) == (2, simplerExpr))
   }
 }

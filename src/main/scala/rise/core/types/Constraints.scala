@@ -2,10 +2,10 @@ package rise.core.types
 
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.core.DSL.Type.n2dtFun
-import rise.core.lifting.liftDependentFunctionType
-import rise.core.types.DataType._
-import rise.core.types.InferenceException.error
 import rise.core.{freshName, substitute}
+import rise.core.lifting.liftDependentFunctionType
+import rise.core.types.InferenceException.error
+import rise.core.types.DataType._
 
 import scala.collection.mutable
 
@@ -18,6 +18,10 @@ case class NatConstraint(a: Nat, b: Nat) extends Constraint {
 }
 case class BoolConstraint(a: arithexpr.arithmetic.BoolExpr,
                           b: arithexpr.arithmetic.BoolExpr) extends Constraint {
+  override def toString: String = s"$a  ~  $b"
+}
+case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace)
+  extends Constraint {
   override def toString: String = s"$a  ~  $b"
 }
 case class MatrixLayoutConstraint(a: MatrixLayout, b: MatrixLayout)
@@ -104,21 +108,30 @@ object Constraint {
             decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
           case (FunType(ina, outa), FunType(inb, outb)) =>
             decomposed(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
-          case (DepFunType(NatKind, na: NatIdentifier, ta), DepFunType(NatKind, nb: NatIdentifier, tb)) =>
+          case (
+            DepFunType(NatKind, na: NatIdentifier, ta),
+            DepFunType(NatKind, nb: NatIdentifier, tb)
+            ) =>
               val n = NatIdentifier(freshName("n"))
               decomposedPreserve(Seq(
                 NatConstraint(n, na),
                 NatConstraint(n, nb),
-                TypeConstraint(ta, tb),
+                TypeConstraint(ta, tb)
               ), preserve + NatKind.IDWrapper(n) - NatKind.IDWrapper(na) - NatKind.IDWrapper(nb))
-          case (DepFunType(DataKind, dta: DataTypeIdentifier, ta), DepFunType(DataKind, dtb: DataTypeIdentifier, tb)) =>
+          case (
+            DepFunType(DataKind, dta: DataTypeIdentifier, ta),
+            DepFunType(DataKind, dtb: DataTypeIdentifier, tb)
+            ) =>
             val dt = DataTypeIdentifier(freshName("t"))
             decomposedPreserve(Seq(
               TypeConstraint(dt, dta),
               TypeConstraint(dt, dtb),
               TypeConstraint(ta, tb),
             ), preserve + DataKind.IDWrapper(dt) - DataKind.IDWrapper(dta) - DataKind.IDWrapper(dtb))
-          case (DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _), DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _)) =>
+          case (
+            DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _),
+            DepFunType(AddressSpaceKind, _: AddressSpaceIdentifier, _)
+            ) =>
             ???
 
           case (DepPairType(NatKind, x1: NatIdentifier, t1), DepPairType(NatKind, x2: NatIdentifier, t2)) =>
@@ -202,6 +215,16 @@ object Constraint {
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???
             ???
+        }
+
+      case AddressSpaceConstraint(a, b) =>
+        (a, b) match {
+          case (i: AddressSpaceIdentifier, _) if canBeSubstituted(preserve, AddressSpaceKind.IDWrapper(i)) =>
+            Solution.subs(i, b)
+          case (_, i: AddressSpaceIdentifier) if canBeSubstituted(preserve, AddressSpaceKind.IDWrapper(i)) =>
+            Solution.subs(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
         }
 
       case MatrixLayoutConstraint(a, b) =>

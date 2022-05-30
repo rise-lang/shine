@@ -404,7 +404,6 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-        //TODO Circular Buffer and OCL versions
       case rp.rotateValues() => p.t match {
         case  sz `(Nat)->:`
           (((s: DataType) ->: (_: DataType)) ->:

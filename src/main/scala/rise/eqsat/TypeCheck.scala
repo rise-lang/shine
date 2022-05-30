@@ -5,7 +5,7 @@ object TypeCheck {
     override def toString: String = s"type error: $msg"
   }
 
-  def apply[ED, ND, TD](egraph: EGraph[ED, ND, TD]) = {
+  def apply(egraph: EGraph) = {
     def assertSameType(t1: TypeId, t2: TypeId): Unit =
       if (t1 != t2) {
         // egraph.dot().toSVG("/tmp/typeErrorEgraph.svg")
@@ -19,19 +19,24 @@ object TypeCheck {
         case i: NotDataTypeId => i
       }
     def unwrapFunType(t: TypeId): (TypeId, TypeId) =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case FunType(inT, outT) => (inT, outT)
         case node => throw Error(s"expected function type, found $node")
       }
     def unwrapNatFunType(t: TypeId): TypeId =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case NatFunType(t) => t
         case node => throw Error(s"expected nat function type, found $node")
       }
     def unwrapDataFunType(t: TypeId): TypeId =
-      egraph(unwrapNotDataTypeId(t))._1 match {
+      egraph(unwrapNotDataTypeId(t)) match {
         case DataFunType(t) => t
         case node => throw Error(s"expected data function type, found $node")
+      }
+    def unwrapAddrFunType(t: TypeId): TypeId =
+      egraph(unwrapNotDataTypeId(t)) match {
+        case AddrFunType(t) => t
+        case node => throw Error(s"expected address function type, found $node")
       }
 
     for (eclass <- egraph.classes.values) {
@@ -40,7 +45,7 @@ object TypeCheck {
         node match {
           case Var(index) =>
             val visited = HashSet[(ENode, EClassId, Int)]()
-            def checkVarTy[D](eclass: EClass[D], index: Int, ty: TypeId): Unit = {
+            def checkVarTy[D](eclass: EClass, index: Int, ty: TypeId): Unit = {
               for ((node, pid) <- eclass.parents) {
                 if (!visited.contains((node, pid, index))) {
                   visited += ((node, pid, index))
@@ -77,11 +82,17 @@ object TypeCheck {
           case DataApp(f, x) =>
             val ft = unwrapDataFunType(egraph.get(f).t)
             assertSameType(t, NodeSubs.Type.withDataArgument(egraph, ft, x))
+          case AddrApp(f, x) =>
+            val ft = unwrapAddrFunType(egraph.get(f).t)
+            assertSameType(t, ft) // identity: NodeSubs.Address.withAddrArgument(egraph, ft, x)
           case NatLambda(e) =>
             val ft = unwrapNatFunType(t)
             assertSameType(ft, egraph.get(e).t)
           case DataLambda(e) =>
             val ft = unwrapDataFunType(t)
+            assertSameType(ft, egraph.get(e).t)
+          case AddrLambda(e) =>
+            val ft = unwrapAddrFunType(t)
             assertSameType(ft, egraph.get(e).t)
           case Literal(d) =>
             // TODO: more efficient egraph.addTypeFromNamed?

@@ -1,7 +1,7 @@
 package apps.autotuning
 
 import apps.nbody._
-import arithexpr.arithmetic.{RangeAdd, RangeMul}
+import arithexpr.arithmetic.{RangeAdd, RangeMul, RangeUnknown}
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core._
@@ -16,12 +16,14 @@ class nBodyTuning extends test_util.Tests {
 
   val nbodyNoTuning = nbodyNVIDIAWithParams(256, 1)
 
-  val nbodyTuning =
-    tuningParam("tileX", RangeMul(1, 1024, 2), (tileX: Nat) =>
-      tuningParam("tileY", RangeMul(1, 1024, 2), (tileY: Nat) =>
-//        tuningParam("vec", RangeMul(1, 1024, 2), (vec: Nat) =>
-          nbodyNVIDIAWithParams(tileX, tileY)
-        ))
+  val nbodyTuning: ToBeTyped[Expr] =
+  //    tuningParam("tileX", RangeMul(1, 1024, 2), (tileX: Nat) =>
+    tuningParam("tileX", RangeUnknown, (tileX: Nat) =>
+      //      tuningParam("tileY", RangeMul(1, 1024, 2), (tileY: Nat) =>
+      tuningParam("tileY", RangeUnknown, (tileY: Nat) =>
+        //        tuningParam("vec", RangeMul(1, 1024, 2), (vec: Nat) =>
+        nbodyNVIDIAWithParams(tileX, tileY)
+      ))
 
   // scalastyle:off
   val init: (Int) => String = (N) => {
@@ -68,16 +70,25 @@ class nBodyTuning extends test_util.Tests {
   // java.lang.Exception: Don't know how to assign value of type <4>f32
   test("execute nbodyNoTuning") {
 
-    println("nbody: \n" + nbodyNoTuning)
+    // could not solve constraints
+    val nbody: Expr = wrapOclRun(LocalSize(256, 1), GlobalSize(512, 1))(
+      nbodyNVIDIAWithParams(256, 1))
 
-    val code = gen.opencl.kernel.fromExpr(nbodyNoTuning)
+    println("nbody: \n" + nbody)
+
+    //    val code = gen.opencl.hosted.fromExpr(nbody)
+    val code = gen.opencl.kernel.fromExpr(nbody)
+
     println("code: \n" + code)
 
-    val codeHosted = gen.opencl.hosted("fun").fromExpr(nbodyNoTuning)
+    //    val code2 = gen.opencl.kernel.fromExpr(nbodyNVIDIAWithParams(256, 1))
+    //    println("code2: \n" + code2)
+
+    val codeHosted = gen.opencl.hosted("fun").fromExpr(nbody)
     println("codeHosted: \n" + codeHosted)
   }
 
-  test("execute nbody"){
+  test("execute nbody") {
 
     val result = autotune.execution.execute(
       expression = nbodyNoTuning,
@@ -91,20 +102,31 @@ class nBodyTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("execute nbody tuning"){
+  test("execute nbody tuning") {
 
     // could not solve constraints
-    val nbody =
+    val nbody: Expr =
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
           tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
             tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyTuning)
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyNVIDIAWithParams(256, 1))
             ))))
+
+    //    println("nbody2: " + nbody2)
+
+    // could not solve constraints
+    //    val nbody: Expr =
+    //      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+    //        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+    //          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+    //            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+    //              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyTuning)
+    //            ))))
 
     println("nbody: \n" + nbody)
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tileX") -> (256: Nat),
       TuningParameter("tileY") -> (1: Nat),
@@ -128,7 +150,7 @@ class nBodyTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("search nbody"){
+  test("search nbody") {
 
     println("initalisze")
 

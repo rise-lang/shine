@@ -11,9 +11,11 @@
     "mode" : "client-server"
   },
   "log_file" : "atf_emb_1024.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 1000,
+  "optimization_iterations": 500,
   "input_parameters" : {
     "tuned_v3": {
       "parameter_type" : "ordinal",

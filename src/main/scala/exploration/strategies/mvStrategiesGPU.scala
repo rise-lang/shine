@@ -14,7 +14,7 @@ import rise.elevate.rules.traversal.default.RiseTraversable
 import rise.elevate.{Rise, tunable}
 import rise.eqsat.NamedRewriteDSL.{app, lam, map}
 import rise.eqsat.{NamedRewrite, rules}
-import rise.eqsat.rules.{Rule, liftReduceSeq, liftReduceSeq2, liftReduceSeq3, mapFission, reduceSeq, reduceSeqMapFission, reduceSeqMapFusion, splitBeforeMap, splitJoin2M, transposeAroundMapMapF1M}
+//import rise.eqsat.rules.{Rule, liftReduceSeq, liftReduceSeq2, liftReduceSeq3, mapFission, reduceSeq, reduceSeqMapFission, reduceSeqMapFusion, splitBeforeMap, splitJoin2M, transposeAroundMapMapF1M}
 
 //import rise.eqsat.rules._
 
@@ -64,7 +64,6 @@ Thomas Koehler: some of these rules are also shortcuts (e.g. splitJoin2M could b
 
 
  */
-
 
 
 /*
@@ -122,74 +121,72 @@ object mvStrategiesGPU {
   // what about traversals? Where to apply these rules?
 
   // extracted
-  val test = Success(mapFission)
+  //  val test = Success(mapFission)
 
-//  def mapFission2: Strategy[Rise] = `*g >> *f -> *(g >> f)`
-//  @rule def `*g >> *f -> *(g >> f)`: Strategy[Rise] = {
-//    case e @ App(App(map(), f), App(App(map(), g), arg)) =>
-//      Success(map(preserveType(g) >> f)(arg) !: e.t)
-//  }
-//
-//
-//  val strategies3 = Set[Strategy[Rise]](
-//    mapFusion,
-//    mapFission,
-//    reduceSeq,
-//    reduceSeqMapFusion,
-//    tunable(splitJoin),
-//    tunable(splitStrategy),
-//    splitBeforeMap,
-//    reduceSeqMapFission,
-//    liftReduceSeq,
-//    liftReduceSeq2,
-//    liftReduceSeq3,
-//    transposeAroundMapMapF1M,
-//
-//    //     partial lowerings
-//    lowerGs0,
-//    lowerGs1,
-//    lowerWrg0,
-//    lowerWrg1,
-//    lowerLcl0,
-//    lowerLcl1,
-//    lowerGsGs,
-//    lowerWrgLcl,
-//    lowerWrgWrgLclLcl,
-//    //     split join
-//    allSplitJoin,
-//    oneSplitJoin,
-//    someSplitJoin,
-//    oneUsingStateSplitJoin,
-//    topDownSplitJoin,
-//    allTopdownSplitJoin,
-//    bottomUpSplitJoin
-//
-//  )
-
-
+  //  def mapFission2: Strategy[Rise] = `*g >> *f -> *(g >> f)`
+  //  @rule def `*g >> *f -> *(g >> f)`: Strategy[Rise] = {
+  //    case e @ App(App(map(), f), App(App(map(), g), arg)) =>
+  //      Success(map(preserveType(g) >> f)(arg) !: e.t)
+  //  }
+  //
+  //
+  //  val strategies3 = Set[Strategy[Rise]](
+  //    mapFusion,
+  //    mapFission,
+  //    reduceSeq,
+  //    reduceSeqMapFusion,
+  //    tunable(splitJoin),
+  //    tunable(splitStrategy),
+  //    splitBeforeMap,
+  //    reduceSeqMapFission,
+  //    liftReduceSeq,
+  //    liftReduceSeq2,
+  //    liftReduceSeq3,
+  //    transposeAroundMapMapF1M,
+  //
+  //    //     partial lowerings
+  //    lowerGs0,
+  //    lowerGs1,
+  //    lowerWrg0,
+  //    lowerWrg1,
+  //    lowerLcl0,
+  //    lowerLcl1,
+  //    lowerGsGs,
+  //    lowerWrgLcl,
+  //    lowerWrgWrgLclLcl,
+  //    //     split join
+  //    allSplitJoin,
+  //    oneSplitJoin,
+  //    someSplitJoin,
+  //    oneUsingStateSplitJoin,
+  //    topDownSplitJoin,
+  //    allTopdownSplitJoin,
+  //    bottomUpSplitJoin
+  //
+  //  )
 
 
-//  // list
-//  mapFission,
-//  reduceSeq,
-//  eliminateMapIdentity,
-//  reduceSeqMapFusion,
-//  splitJoin,
-//  splitJoin2M,
-//  blockedReduce,
-//  splitBeforeMap,
-//  reduceSeqMapFission,
-//  liftReduceSeq,
-//  liftReduceSeq2,
-//  liftReduceSeq3,
-//  transposeAroundMapMapF1M
-//
-//  ocl.toMem(rct.AddressSpace.Local),
-//  ocl.mapArray,
-//  mapFusion,
-//  ocl.reduceSeq(rct.AddressSpace.Local),
-//  ocl.reduceSeq2(rct.AddressSpace.Local),
-//  ocl.mapWorkGroup(0),
-//  ocl.mapLocal(0)
+  //  // list
+  //  mapFission,
+  //  reduceSeq,
+  //  eliminateMapIdentity,
+  //  reduceSeqMapFusion,
+  //  splitJoin,
+  //  splitJoin2M,
+  //  blockedReduce,
+  //  splitBeforeMap,
+  //  reduceSeqMapFission,
+  //  liftReduceSeq,
+  //  liftReduceSeq2,
+  //  liftReduceSeq3,
+  //  transposeAroundMapMapF1M
+  //
+  //  ocl.toMem(rct.AddressSpace.Local),
+  //  ocl.mapArray,
+  //  mapFusion,
+  //  ocl.reduceSeq(rct.AddressSpace.Local),
+  //  ocl.reduceSeq2(rct.AddressSpace.Local),
+  //  ocl.mapWorkGroup(0),
+  //  ocl.mapLocal(0)
 
 }

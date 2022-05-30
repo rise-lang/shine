@@ -4,8 +4,11 @@ import arithexpr.arithmetic.RangeAdd
 import rise.core._
 import rise.core.equality._
 
-sealed trait ExprType {
+
+@SerialVersionUID(1234L)
+sealed trait ExprType extends Serializable {
   def =~=(b: ExprType): Boolean = typeAlphaEq[ExprType](this)(b)
+
   def =~~=(b: ExprType): Boolean = typePartialAlphaEq[ExprType](this)(b)
 }
 
@@ -36,25 +39,61 @@ object DataType {
 
   sealed trait ScalarType extends DataType
 
-  object bool extends ScalarType { override def toString: String = "bool" }
+  object bool extends ScalarType {
+    override def toString: String = "bool"
+  }
 
-  object int extends ScalarType { override def toString: String = "int" }
+  object int extends ScalarType {
+    override def toString: String = "int"
+  }
 
-  object i8  extends ScalarType { override def toString: String = "i8"  }
-  object i16 extends ScalarType { override def toString: String = "i16" }
-  object i32 extends ScalarType { override def toString: String = "i32" }
-  object i64 extends ScalarType { override def toString: String = "i64" }
+  object i8 extends ScalarType {
+    override def toString: String = "i8"
+  }
 
-  object u8  extends ScalarType { override def toString: String = "u8"  }
-  object u16 extends ScalarType { override def toString: String = "u16" }
-  object u32 extends ScalarType { override def toString: String = "u32" }
-  object u64 extends ScalarType { override def toString: String = "u64" }
+  object i16 extends ScalarType {
+    override def toString: String = "i16"
+  }
 
-  object f16 extends ScalarType { override def toString: String = "f16" }
-  object f32 extends ScalarType { override def toString: String = "f32" }
-  object f64 extends ScalarType { override def toString: String = "f64" }
+  object i32 extends ScalarType {
+    override def toString: String = "i32"
+  }
 
-  object NatType extends DataType { override def toString: String = "nat" }
+  object i64 extends ScalarType {
+    override def toString: String = "i64"
+  }
+
+  object u8 extends ScalarType {
+    override def toString: String = "u8"
+  }
+
+  object u16 extends ScalarType {
+    override def toString: String = "u16"
+  }
+
+  object u32 extends ScalarType {
+    override def toString: String = "u32"
+  }
+
+  object u64 extends ScalarType {
+    override def toString: String = "u64"
+  }
+
+  object f16 extends ScalarType {
+    override def toString: String = "f16"
+  }
+
+  object f32 extends ScalarType {
+    override def toString: String = "f32"
+  }
+
+  object f64 extends ScalarType {
+    override def toString: String = "f64"
+  }
+
+  object NatType extends DataType {
+    override def toString: String = "nat"
+  }
 
   final case class OpaqueType(name: String) extends DataType {
     override def toString: String = name
@@ -110,7 +149,7 @@ object DataType {
   final case class DepPairType[T, I](kind: Kind[T, I], x: I, t: DataType) extends DataType {
     override def toString: String = s"(${Kind.idName(kind, x)}: ${kind.name} ** $t)"
 
-    override def equals(other: Any): Boolean =other match {
+    override def equals(other: Any): Boolean = other match {
       case DepPairType(k2, x2, elemT2) =>
         kind == k2 && (kind match {
           case _: NatKind.type =>
@@ -127,7 +166,7 @@ object DataType {
 
   object NatToDataApply {
     def apply(f: NatToData, n: Nat): DataType = f match {
-      case l: NatToDataLambda     => l.apply(n)
+      case l: NatToDataLambda => l.apply(n)
       case i: NatToDataIdentifier => new NatToDataApply(i, n)
     }
 
