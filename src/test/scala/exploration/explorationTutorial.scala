@@ -134,14 +134,14 @@ object explorationTutorial {
 
     // todo add default case, if no tuning parameter was injected? Just tune fake parameter?
 
-    riseExploration(
-      mm,
-      blockingExploration.lowering,
-      blockingExploration.strategies,
-      "exploration/configuration/mm/mm_example_exhaustive.json",
-      rewriteFunction = Some(rewriteFunction),
-      afterRewrite = Some(DFNF())
-    )
+    //    riseExploration(
+    //      mm,
+    //      blockingExploration.lowering,
+    //      blockingExploration.strategies,
+    //      "exploration/configuration/mm/mm_example_exhaustive.json",
+    //      rewriteFunction = Some(rewriteFunction),
+    //      afterRewrite = Some(DFNF())
+    //    )
 
     //    riseExploration(
     //      mm,
@@ -162,14 +162,14 @@ object explorationTutorial {
     //      afterRewrite = Some(DFNF())
     //    )
 
-    //    riseExploration(
-    //      mm,
-    //      blockingExploration.lowering,
-    //      blockingExploration.strategies,
-    //      "exploration/configuration/mm/mm_example_autotuner.json",
-    //      rewriteFunction = Some(rewriteFunction),
-    //      afterRewrite = Some(DFNF())
-    //    )
+    riseExploration(
+      mm,
+      blockingExploration.lowering,
+      blockingExploration.strategies,
+      "exploration/configuration/mm/mm_example_autotuner.json",
+      rewriteFunction = Some(rewriteFunction),
+      afterRewrite = Some(DFNF())
+    )
 
 
     //    riseExploration(mm, blockingExploration.lowering, blockingExploration.strategies, "exploration/configuration/mm/mm_example_iterative_improvement.json")

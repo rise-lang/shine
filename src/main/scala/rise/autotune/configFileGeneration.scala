@@ -19,14 +19,19 @@ object configFileGeneration {
     val parametersWDCImmutable = distributeConstraints(p, c)
 
     // number of samples for design of experiment phase
-//    val doe = p.size * 10
-//    val optimization_iterations = tuner.samples
+    //    val doe = p.size * 10
+    //    val optimization_iterations = tuner.samples
 
-    val doe = 25
-    val optimization_iterations = 50
+    val doe = p.size + 1
+    //    val optimization_iterations = tuner.samples
+
+    val optimization_iterations = p.size match {
+      case 0 => 0
+      case _ => tuner.samples
+    }
 
     // create header for hypermapper configuration file
-    val header_old =
+    val header =
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
@@ -48,7 +53,7 @@ object configFileGeneration {
          | "input_parameters" : {
          |""".stripMargin
 
-    val header =
+    val header_opentuner =
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
@@ -72,7 +77,7 @@ object configFileGeneration {
     // create entry foreach parameter
     var parameter = ""
 
-    parametersWDCImmutable.foreach{ case (param, wdc) => {
+    parametersWDCImmutable.foreach { case (param, wdc) => {
 
       val (values, constraintsFiltered) = param.range match {
         case RangeAdd(start, stop, step) => {
@@ -105,14 +110,14 @@ object configFileGeneration {
           // if step is not evaluable use 1 instead
           val values = mul.isEvaluable match {
             case true => {
-              val maxVal = scala.math.log(stop.evalInt)/scala.math.log(mul.evalDouble)
+              val maxVal = scala.math.log(stop.evalInt) / scala.math.log(mul.evalDouble)
 
-              start.evalInt match{
+              start.evalInt match {
                 case 1 =>
-                  List.range(0, maxVal.toInt+1)
+                  List.range(0, maxVal.toInt + 1)
                     .map(power => scala.math.pow(mul.evalInt, power).toInt)
                 case _ =>
-                  List.range(start.evalInt, maxVal.toInt+1)
+                  List.range(start.evalInt, maxVal.toInt + 1)
                     .map(power => scala.math.pow(mul.evalInt, power).toInt)
               }
             }
@@ -132,18 +137,18 @@ object configFileGeneration {
           println("range: " + param.range)
 
           val values = List.range(1, 1024)
-//          filterList(p, param._2._1, values, param._1)
+          //          filterList(p, param._2._1, values, param._1)
 
-//          (List.empty[Int], parametersWDC.apply(param._1)._1)
+          //          (List.empty[Int], parametersWDC.apply(param._1)._1)
           filterList(p, wdc._1, values, param)
 
-//          (List.empty[Int], wdc._1)
+        //          (List.empty[Int], wdc._1)
       }
 
       // check if value are empty
-//      println("values: " + values)
-      if(values.size == 0){
-//        println("all values were filtered out - check your constraints")
+      //      println("values: " + values)
+      if (values.size == 0) {
+        //        println("all values were filtered out - check your constraints")
         throw new Exception("all values were filtered out - check your constraints")
       }
 
@@ -190,7 +195,45 @@ object configFileGeneration {
       }
       parameter += parameterEntry
 
-    }}
+    }
+    }
+
+    // todo make this generic
+    // warning: this is a workaround introducing a dummy parameter
+    parametersWDCImmutable.size match {
+      case 0 => // add dummy parameter entry
+
+        val parameterEntry = tuner.hmConstraints match {
+          case true => {
+
+            val parameterEntry =
+              s"""   "None" : {
+                 |       "parameter_type" : "integer",
+                 |       "values" : [0, 10],
+                 |       "constraints" : [],
+                 |       "dependencies" : []
+                 |   },
+                 |""".stripMargin
+
+            parameterEntry
+          }
+          case false => {
+            // don't use constraints
+            val parameterEntry =
+              s"""   "None" : {
+                 |       "parameter_type" : "ordinal",
+                 |       "values" : [0],
+                 |   },
+                 |""".stripMargin
+
+            parameterEntry
+          }
+        }
+        parameter += parameterEntry
+
+
+      case _ => //ignore
+    }
 
     // remove last comma
     val parameterSection = parameter.dropRight(2) + "\n"
@@ -202,7 +245,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-//    println("file: " + file)
+    //    println("file: " + file)
 
     file
   }
@@ -216,7 +259,7 @@ object configFileGeneration {
     val constraintsList = new ListBuffer[String]
     constraints.foreach(constraint => {
       // check type of constraint
-      val constraintsAsString:ListBuffer[String] = constraint match {
+      val constraintsAsString: ListBuffer[String] = constraint match {
         case RangeConstraint(n, r) => {
           r match {
             case RangeAdd(start, stop, step) => {
@@ -224,7 +267,7 @@ object configFileGeneration {
               // if stop is PosInf, remove constraint
               // (already catched by the range of parameter)
               stop match {
-                case PosInf =>{
+                case PosInf => {
                   val startConstraint = n.toString + " >= " + start
                   val stepConstraint = n.toString + " % " + step + " == 0"
 
@@ -245,7 +288,7 @@ object configFileGeneration {
               // if stop is PosInf, remove constraint
               // (already catched by the range of parameter)
               stop match {
-                case PosInf =>{
+                case PosInf => {
                   val startConstraint = n.toString + " >= " + start
                   val stepConstraint = n.toString // todo convert range mul constraint into formula
 
@@ -262,13 +305,13 @@ object configFileGeneration {
                 }
               }
             }
-            case _ => (0, 0, 0)  // todo catch other types of ranges
-            ListBuffer[String]()
+            case _ => (0, 0, 0) // todo catch other types of ranges
+              ListBuffer[String]()
           }
         }
         case PredicateConstraint(n) => ListBuffer[String](n.toString.replace("/^", "/"))
       }
-//      constraintsAsString foreach(elem => constraintsList += elem)
+      //      constraintsAsString foreach(elem => constraintsList += elem)
       constraintsList ++= constraintsAsString
     })
     elementListToString(constraintsList.filter(elem => elem.size != 0).toList)
@@ -283,7 +326,7 @@ object configFileGeneration {
 
   def distributeConstraints(parameters: Parameters,
                             constraints: Set[Constraint]
-                           ): Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])] =  {
+                           ): Map[NatIdentifier, (Set[Constraint], Set[NatIdentifier])] = {
 
     // initialize output map and add parameters
     val parametersWDC = scala.collection.mutable.
@@ -375,7 +418,7 @@ object configFileGeneration {
     output.toSeq.sortBy(_.name)
   }
 
-  def filterList(p: Parameters, constraints: Set[Constraint], values:List[Int], param: NatIdentifier): (List[Int], Set[Constraint]) = {
+  def filterList(p: Parameters, constraints: Set[Constraint], values: List[Int], param: NatIdentifier): (List[Int], Set[Constraint]) = {
     val constraintsFiltered:
       scala.collection.mutable.Set[Constraint] = constraints.to(collection.mutable.Set)
 

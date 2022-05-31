@@ -4,7 +4,7 @@ import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
-import rise.elevate.{NormalizedThen, Rise}
+import rise.elevate.{NormalizedThen, Rise, tunable}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
@@ -145,8 +145,10 @@ object blockingExploration {
 
   @rule def splitStrategos: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
 
+  @rule def splitStrategos2: Strategy[Rise] = (tunable(splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
 
-  val rules: Set[Strategy[Rise]] = Set(
+
+  val rules3: Set[Strategy[Rise]] = Set(
     fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
@@ -163,6 +165,18 @@ object blockingExploration {
     reduceMapFission(),
     splitStrategy(4),
     reorder(List(1, 2, 5, 6, 3, 4)),
+  )
+
+
+  val rules: Set[Strategy[Rise]] = Set(
+    fuseReduceMap,
+    tile(),
+    reduceMapFission(),
+    //    splitStrategy(4),
+    splitStrategos2
+    //    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
+    //    reorder(List(1, 2, 5, 6, 3, 4)),
+    //    vectorize(32)
   )
 
 

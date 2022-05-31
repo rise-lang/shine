@@ -55,7 +55,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   override def checkSolution(solution: Solution[Rise]): Boolean = {
     //    val checkStart = System.currentTimeMillis()
-    val result = exploration.runner.checkSolution(lowering, solution)
+    //    val result = exploration.runner.checkSolution(lowering, solution)
+    val result = exploration.runner.checkSolutionC(lowering, solution)
     //    duration += System.currentTimeMillis() - checkStart
     //    println("checking duration total: " + duration.toDouble/1000 + " s")
     //    println("checking duration total: " + duration.toDouble/1000/60 + " m")
@@ -107,7 +108,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   val executor = CExecutor(
     lowering = lowering,
     goldExpression = goldExpression,
-    iterations = 10,
+    iterations = 3,
     inputSize = 512,
     threshold = 100,
     output = "autotuning",
@@ -219,8 +220,20 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         //            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         //              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
         //                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-        //                  wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
+        //                          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
         //                ))))
+
+        //        val eTuning: Expr =
+        //          tuningParam("i", RangeMul(0, 1, 1), (i: Nat) =>
+        //            lowered.get
+        //          )
+
+        //        println("eTuning: \n" + eTuning)
+
+        //        val params = rise.autotune.constraints.collectParameters(eTuning)
+        //        println("params: ")
+        //        params.foreach(println)
+
 
         // run tuning
         val tuningDurationStart = System.currentTimeMillis()
