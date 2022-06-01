@@ -1,4 +1,4 @@
-package exploration
+package explorations
 
 import apps.separableConvolution2D.mulT
 import elevate.core.strategies.traversal.{topDown}
@@ -30,6 +30,7 @@ object ruleAnnotationBug {
 
 
   @rule def topDownSplitJoinAsRule: Strategy[Rise] = topDown(tunable(splitJoin))
+
   def topDownSplitJoin: Strategy[Rise] = topDown(tunable(splitJoin))
 
   def main(args: Array[String]): Unit = {

@@ -7,7 +7,6 @@ import rise.core.DSL._
 import rise.core._
 import elevate.core._
 import elevate.core.strategies.traversal._
-import exploration.runner.CExecutor
 import rise.core.primitives._
 import rise.core.types.DataType._
 import rise.elevate._
@@ -21,6 +20,8 @@ import rise.elevate.strategies.predicate._
 import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal._
 import elevate.heuristic_search.util.{Solution}
+
+import exploration.runner.CExecutor
 
 import scala.collection.immutable
 import scala.language.postfixOps

@@ -3,7 +3,6 @@ package exploration.runner
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{Solution, hashProgram}
-import exploration.runner
 
 import rise.elevate.Rise
 import shine.C.AST._
@@ -12,6 +11,8 @@ import util.{Time, TimeSpan, gen}
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
+
+import exploration.runner
 
 import scala.language.postfixOps
 import scala.sys.process._

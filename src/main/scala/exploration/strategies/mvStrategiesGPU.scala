@@ -3,7 +3,6 @@ package exploration.strategies
 import elevate.core.{Strategy, Success}
 import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
-import exploration.strategies.simpleStrategiesGPU.{allSplitJoin, allTopdownSplitJoin, bottomUpSplitJoin, lowerGs0, lowerGs1, lowerGsGs, lowerLcl0, lowerLcl1, lowerWrg0, lowerWrg1, lowerWrgLcl, lowerWrgWrgLclLcl, oneSplitJoin, oneUsingStateSplitJoin, someSplitJoin, topDownSplitJoin}
 import rise.core.App
 import rise.core.DSL.{TypeAssertionHelper, preserveType}
 import rise.core.primitives.map

@@ -148,9 +148,11 @@ object blockingExploration {
   @rule def splitStrategos2: Strategy[Rise] = (tunable(splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
 
 
-  val rules3: Set[Strategy[Rise]] = Set(
+  @rule def tiling: Strategy[Rise] = tile(32, 32)
+
+  val rules: Set[Strategy[Rise]] = Set(
     fuseReduceMap,
-    tile(32, 32),
+    tiling,
     reduceMapFission(),
     //    splitStrategy(4),
     splitStrategos
@@ -168,7 +170,7 @@ object blockingExploration {
   )
 
 
-  val rules: Set[Strategy[Rise]] = Set(
+  val rules3: Set[Strategy[Rise]] = Set(
     fuseReduceMap,
     tile(),
     reduceMapFission(),

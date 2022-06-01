@@ -3,13 +3,14 @@ package exploration.runner
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
-import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
-import exploration.runner
 import rise.elevate.Rise
 import shine.C
 import shine.C.AST.ParamDecl
 import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
+
+import exploration.explorationUtil.ExplorationErrorLevel._
+import exploration.runner
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps

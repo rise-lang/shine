@@ -3,7 +3,6 @@ package rise
 import apps.tvmGemm.par
 import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
-import exploration.runner.CExecutor
 import rise.autotune.configFileGeneration._
 import rise.autotune.constraints._
 import rise.autotune.execution._

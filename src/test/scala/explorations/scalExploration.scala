@@ -1,4 +1,4 @@
-package exploration
+package explorations
 
 import rise.core.DSL._
 import rise.core.primitives._
@@ -12,6 +12,7 @@ import rise.elevate.rules.algorithmic.splitJoin
 import rise.elevate.rules.traversal.default.RiseTraversable
 import rise.elevate.tunable
 
+import exploration.riseExploration
 
 object scalExploration {
 
@@ -51,7 +52,7 @@ object scalExploration {
   // scalastyle:on
 
 
-  val scal = depFun((n: Nat) => fun(n`.`f32)(input => fun(f32)(alpha =>
+  val scal = depFun((n: Nat) => fun(n `.` f32)(input => fun(f32)(alpha =>
     input |> map(fun(x => alpha * x)))
   ))
 

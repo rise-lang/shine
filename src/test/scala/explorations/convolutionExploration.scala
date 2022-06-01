@@ -1,4 +1,4 @@
-package exploration
+package explorations
 
 import apps.separableConvolution2D
 import apps.separableConvolution2D.{base, baseVecU, binomialWeights2d}
@@ -25,12 +25,13 @@ import rise.openCL.primitives.oclReduceSeqUnroll
 import shine.OpenCL.Module.translateToString
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
+
 object convolutionExploration {
 
   private val weights2d = binomialWeights2d
   val convolution = base(weights2d)
 
-//  val convolution = baseVecU(binomialWeights2d)
+  //  val convolution = baseVecU(binomialWeights2d)
 
   // can't execute -> prepare problem for thomas?
 
@@ -38,13 +39,12 @@ object convolutionExploration {
     println("convolution: " + convolution)
 
 
-
     val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
-//    val lowering = convolution
+    //    val lowering = convolution
 
     println("start lowering")
     val lowered = lowering.apply(convolution)
-//    val lowered = Success(convolution)
+    //    val lowered = Success(convolution)
 
     println("lowered: " + lowered)
 
@@ -53,7 +53,6 @@ object convolutionExploration {
     println("try to generate code")
     val code = gen.opencl.hosted("fun").fromExpr(lowered.get)
     println("code: " + translateToString(code))
-
 
 
     // now wrap ocl
@@ -70,7 +69,7 @@ object convolutionExploration {
     // now generate code
 
 
-//    riseExploration(convolution, "exploration/configuration/convolution.json")
+    //    riseExploration(convolution, "exploration/configuration/convolution.json")
 
   }
 
