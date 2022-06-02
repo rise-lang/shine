@@ -43,9 +43,15 @@ package object exploration {
                            )
 
 
+  // todo add elements expected in exploration result
   case class ExplorationResult(
 
-                              )
+                              ) {
+    override def toString: String = {
+      // print information here
+      "ExplorationResult: "
+    }
+  }
 
 
   def explore(explorer: Explorer)(expression: Expr)
@@ -64,44 +70,24 @@ package object exploration {
   }
 
 
+  // todo cleanup
   def prepareExploration(
                           expression: Expr,
                           explorer: Explorer
                         )
   : Metaheuristic[Rise] = {
 
-    // -- todo --check elements -> requirements
-
-    // now traverse result and create elements
-    //    val inputSize = result.inputSize
-    //    val name = result.name
-    //    val output = result.output
-
-    // maybe print json information
-
-    // stick exploration together
-
-    // read input expression
-    // -- todo --  read expression from file
-
-    // make this more generic
-    //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-    //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
-    //    val lowering = exploration.strategies.scalStrategies.lowering
-    //    val lowerings = exploration.strategies.scalStrategies.lowerings
-    // add lowering for scal
-
-    // use set
-
-    // initialize gold expression
-    // check, if this will work, if first expression can't be lowered properly
+    // initialize gold expression ( we expect lowering to work)
     val gold = explorer.lowering(expression).get
+
+    // create output parent folder (if not existent)
+    (s"mkdir -p ${explorer.output}" !!)
 
     // create unique output folder
     val uniqueFilename_full = uniqueFilename(explorer.output + "/" + explorer.name)
     (s"mkdir ${uniqueFilename_full}" !!)
 
-    // copy configuration file to output folder
+    // copy configuration file to output folder if provided
     //    (s"cp ${explorer.output} ${uniqueFilename_full}" !!)
 
     // create names
@@ -125,8 +111,6 @@ package object exploration {
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
-    //    (s"mkdir ${executorOutput + "/C"}" !!)
-    //    (s"mkdir ${executorOutput + "/lowered"}" !!)
 
     // begin with executor
     val executor = explorer.executor.name match {
@@ -143,9 +127,6 @@ package object exploration {
 
     // root metaheuristic using executor as executor
     val rootChoice = explorer.metaheuristics.reverse.head
-
-    println("result.executor: " + explorer.executor.name)
-    println("executro?: " + executor)
 
     val rootMetaheuristic = new Metaheuristic[Rise](
       rootChoice.heuristic,
@@ -185,6 +166,7 @@ package object exploration {
     metaheuristic
   }
 
+  // todo this occurs multiple times in code
   def uniqueFilename(path: String): String = {
     // check if output path already exists
     var uniqueFilename_full = path
