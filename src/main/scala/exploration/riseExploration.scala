@@ -22,6 +22,8 @@ import rise.elevate.strategies.traversal._
 import exploration.explorationUtil.jsonParser._
 import exploration.runner._
 
+import elevate.heuristic_search._
+
 import scala.sys.process._
 import scala.language.postfixOps
 
@@ -37,7 +39,7 @@ object riseExploration {
             afterRewrite: Option[Strategy[Rise]] = None,
             importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
            )
-  : (Rise, Option[Double]) = {
+  : ExplorationResult[Rise] = {
 
     // parse config file
     val parsedConfiguration = exploration.explorationUtil.jsonParser.parse(filePath)

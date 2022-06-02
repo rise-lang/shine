@@ -125,7 +125,7 @@ class mmTVMTuningReordering extends test_util.Tests {
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
     val executionStart = System.currentTimeMillis()
-    val result = executor.execute(Solution(e, strategies))._2
+    val result = executor.execute(Solution(e, strategies)).performance
 
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {

@@ -5,9 +5,10 @@ import elevate.core.Strategy
 import rise.autotune.HostCode
 
 
-import elevate.heuristic_search.{Metaheuristic, Runner}
+import elevate.heuristic_search._
 
 import exploration.runner._
+
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
@@ -43,21 +44,8 @@ package object exploration {
                            )
 
 
-  // todo add elements expected in exploration result
-  case class ExplorationResult(
-
-                              ) {
-    override def toString: String = {
-      // print information here
-      "ExplorationResult: "
-    }
-  }
-
-
   def explore(explorer: Explorer)(expression: Expr)
-  //  : ExplorationResult = {
-  : (Rise, Option[Double]) = {
-
+  : ExplorationResult[Rise] = {
 
     // start rise exploration here!
     val entryPoint = prepareExploration(

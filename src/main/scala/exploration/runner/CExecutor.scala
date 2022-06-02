@@ -3,14 +3,15 @@ package exploration.runner
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
+import exploration.explorationUtil.ExplorationErrorLevel
 import rise.elevate.Rise
 import shine.C
 import shine.C.AST.ParamDecl
 import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
-
 import exploration.explorationUtil.ExplorationErrorLevel._
 import exploration.runner
+import elevate.heuristic_search.ExplorationResult
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
@@ -103,7 +104,7 @@ case class CExecutor(
 
   //  override def plot(): Unit = ???
 
-  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
       println("strategy: " + elem)
@@ -295,7 +296,11 @@ case class CExecutor(
       case false => // nothing
     }
 
-    (solution.expression, performanceValue)
+    ExplorationResult[Rise](
+      solution,
+      performanceValue,
+      None
+    )
   }
 
   def prepareInput(tu: C.Module): (String, String, String, String) = {
