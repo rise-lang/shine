@@ -929,21 +929,6 @@ object fromRise {
           ))
       }
 
-      /*case rise.GAP8.primitives.gap8hwConv3x3() => fromType {
-        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
-          expT(ArrayType(fh, ArrayType(fw, _)), `read`) ->:
-          //TODO: fix mismatch (whatever that means)
-          //TODO: Previous comment maybe related to 3.3 -> 10 matrix / array sizes
-          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
-              depFun(NatKind, bias)(
-                fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-                  fun[ExpType](expT(ArrayType(fh, ArrayType(fw, s)), read), filter =>
-                    shine.GAP8.primitives.functional.FunConv3x3(shine.GAP8._3x3)(w, h, bias, s, input, filter)
-                  )
-              )
-        )
-      }*/
-
       case rgap8.gap8hwConv3x3() => fromType {
         case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
