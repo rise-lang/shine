@@ -63,8 +63,6 @@ object execution {
     val codegenStart = System.currentTimeMillis()
 
 
-    println("expression: " + expression)
-
     val codegenResult = try {
 
       // run code-generation with timeout
