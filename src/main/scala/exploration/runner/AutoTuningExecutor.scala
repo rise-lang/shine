@@ -11,6 +11,7 @@ import rise.elevate.Rise
 import rise.eqsat.Rewrite
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{Time, TimeSpan}
+import elevate.heuristic_search._
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
@@ -130,7 +131,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
     val executionStart = System.currentTimeMillis()
-    val result = executor.execute(Solution(e, strategies))._2
+    val result = executor.execute(Solution(e, strategies)).performance
 
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {
@@ -150,7 +151,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   }
 
 
-  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     val totalDurationStart = System.currentTimeMillis()
 
     number = number + 1
@@ -340,6 +341,11 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     }
 
     (result._1, resultingRuntime)
+    ExplorationResult(
+      solution,
+      resultingRuntime,
+      None
+    )
   }
 
   def execute3(solution: Solution[Rise]): (Rise, Option[Double]) = {

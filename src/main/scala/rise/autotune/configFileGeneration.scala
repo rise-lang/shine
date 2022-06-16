@@ -5,8 +5,10 @@ import rise.core.types.{NatIdentifier, TuningParameter}
 
 import scala.collection.mutable.ListBuffer
 import constraints._
-import exploration.explorationUtil.jsonParser.readFile
 import play.api.libs.json.Json
+
+import exploration.explorationUtil.jsonParser.readFile
+
 
 object configFileGeneration {
 
