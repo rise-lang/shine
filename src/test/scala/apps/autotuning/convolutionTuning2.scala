@@ -62,7 +62,7 @@ class convolutionTuning2 extends test_util.Tests {
        |destroyContext(ctx);
        |""".stripMargin
 
-  test("test convolution tuning 2"){
+  ignore("test convolution tuning 2"){
 
 //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
 //    val lowered:ToBeTyped[Expr] = lowering.apply(base(weights2d)).get

@@ -4,7 +4,6 @@ import apps.tvmGemm.{innermost, outermost, par}
 import elevate.core._
 import elevate.core.strategies.traversal._
 import elevate.heuristic_search.util.Solution
-import exploration.runner.CExecutor
 import rise.autotune
 import rise.autotune._
 import rise.core.DSL._
@@ -24,6 +23,7 @@ import rise.elevate.strategies.traversal._
 
 import scala.collection.immutable
 import scala.language.postfixOps
+import exploration.runner.CExecutor
 
 
 class mmTVMTuningReordering extends test_util.Tests {
@@ -125,7 +125,7 @@ class mmTVMTuningReordering extends test_util.Tests {
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
     val executionStart = System.currentTimeMillis()
-    val result = executor.execute(Solution(e, strategies))._2
+    val result = executor.execute(Solution(e, strategies)).performance
 
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {

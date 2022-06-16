@@ -11,16 +11,16 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class mriqTuning extends test_util.Tests {
 
-//  val computePhiMagTuning:Expr =
-//    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-//      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-//        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-//          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-//              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
-//            ))))
-//
+  //  val computePhiMagTuning:Expr =
+  //    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+  //      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+  //        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+  //          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+  //              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl)
+  //            ))))
+  //
 
-  val computePhiMagTuning:Expr =
+  val computePhiMagTuning: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
@@ -29,7 +29,7 @@ class mriqTuning extends test_util.Tests {
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(computePhiMagOcl3(s0))
             )))))
 
-  val computeQTuning:Expr =
+  val computeQTuning: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
@@ -141,11 +141,11 @@ class mriqTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  ignore("execute computePhiMag"){
+  ignore("execute computePhiMag") {
 
     println("nbody: \n" + computePhiMagTuning)
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (256: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (512: Nat),
@@ -162,17 +162,17 @@ class mriqTuning extends test_util.Tests {
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
-        execution = Median
+      execution = Median
     )
 
     println("result: " + result)
   }
 
-  ignore("execute computeQ"){
+  ignore("execute computeQ") {
 
     println("nbody: \n" + computeQTuning)
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (64: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (512: Nat),
@@ -194,7 +194,7 @@ class mriqTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("tune computePhiMag"){
+  ignore("tune computePhiMag") {
     val inputSize = 1024
 
     val tuner = Tuner(
@@ -222,21 +222,21 @@ class mriqTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  ignore("tune computeQ"){
+  ignore("tune computeQ") {
 
     val tuner = Tuner(
-    hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
-    inputSizes = Seq(256, 512),
-    samples = 10,
-    name = "computeQ",
-    output = "autotuning/mriq/computeQ",
-    timeouts = Timeouts(10000, 10000, 10000),
-    executionIterations = 10,
-    speedupFactor = 100,
-    configFile = None,
-    hmConstraints = true,
-    runtimeStatistic = Minimum,
-    saveToFile = true
+      hostCode = HostCode(initQ(256, 512), computeQ, finishQ),
+      inputSizes = Seq(256, 512),
+      samples = 10,
+      name = "computeQ",
+      output = "autotuning/mriq/computeQ",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
     )
 
     val tuningResult = autotune.search(tuner)(computeQTuning)
@@ -251,7 +251,7 @@ class mriqTuning extends test_util.Tests {
 
   def runExperiments(configFiles: Seq[String], iterations: Int, tuning: String => autotune.TuningResult) = {
 
-    for(i <- 1 to iterations) {
+    for (i <- 1 to iterations) {
       configFiles.foreach(tuning)
     }
 
@@ -297,7 +297,7 @@ class mriqTuning extends test_util.Tests {
     autotune.search(tuner)(computeQTuning)
   }
 
-  ignore("run mriq autotuning"){
+  ignore("run mriq autotuning") {
 
     // PhiMag
     val configsPhiMag = Seq(
@@ -315,8 +315,7 @@ class mriqTuning extends test_util.Tests {
     runExperiments(configFiles = configsQ, iterations = 3, runTuningQ)
   }
 
-
-  ignore("tune computePhiMag 1024"){
+  ignore("tune computePhiMag 1024") {
     val inputSize: Int = 1024
 
     val configs = Seq(
@@ -339,7 +338,7 @@ class mriqTuning extends test_util.Tests {
     )
   }
 
-  test("tune computeQ 1024"){
+  test("tune computeQ 1024") {
     val inputSize: Int = 1024
 
     val configs = Seq(

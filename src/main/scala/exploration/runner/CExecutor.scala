@@ -2,42 +2,109 @@ package exploration.runner
 
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{IOHelper, Solution}
-import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
+import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
+import exploration.explorationUtil.ExplorationErrorLevel
 import rise.elevate.Rise
 import shine.C
 import shine.C.AST.ParamDecl
 import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
+import exploration.explorationUtil.ExplorationErrorLevel._
+import exploration.runner
+import elevate.heuristic_search.ExplorationResult
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
-case class CExecutor(lowering: Strategy[Rise],
-                     goldExpression: Rise,
-                     iterations: Int,
-                     inputSize: Int,
-                     threshold: Double,
-                     output: String,
-                     saveToDisk: Boolean = true) extends Runner[Rise] {
+case class CExecutor(
+                      lowering: Strategy[Rise],
+                      goldExpression: Rise,
+                      iterations: Int,
+                      inputSize: Int,
+                      threshold: Double,
+                      output: String,
+                      timeout: Double = 1000,
+                      saveToDisk: Boolean = true
+                    ) extends Runner[Rise] {
+
   var globalBest: Option[Double] = None
   val N: Int = inputSize
   var best: Option[Double] = None
   var gold: C.Module = gen.openmp.function("compute_gold").fromExpr(goldExpression)
   var counter = 0
   var errorLevel: ExplorationErrorLevel = LoweringError
+  var samples = 0
 
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
-  override def checkSolution(solution: Solution[Rise]): Boolean = {
-    true
+  // todo implement this based on debug executor implementation
+  def plot(): Unit = {
+
+    // also write config file
+    val doe = counter
+
+    val configString = {
+      s"""{
+      "application_name": "mm_exploration",
+      "optimization_objectives": ["runtime"],
+      "feasible_output" : {
+        "enable_feasible_predictor" : true,
+        "name" : "Valid",
+        "true_value" : "True",
+        "false_value" : "False"
+      },
+      "hypermapper_mode" : {
+        "mode" : "client-server"
+      },
+      "design_of_experiment": {
+        "doe_type": "random sampling",
+        "number_of_samples": ${doe}
+      },
+      "optimization_iterations": 0,
+      "input_parameters" : {
+        "index": {
+        "parameter_type" : "integer",
+        "values" : [0, ${doe}],
+        "dependencies" : [],
+        "constraints" : []
+      }
+      }
+    }"""
+    }
+
+    // write configstring
+    val configFilePath = output + "/" + "tuningStatistics.json"
+    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), true))
+    fWriter.write(configString)
+    fWriter.close()
+
+    // plot results
+    //    val outputFilePath = output + "/" + "tuningStatistics_hm.csv"
+
+    output + "/" + "executor.csv"
+
+    // mkdir output folder
+    (s"mkdir -p ${output}/hm " !!)
+    (s"mv ${output}/executor_hm.csv ${output}/hm" !!)
+
+
+    try {
+      // call plot
+      (s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration" !!)
+    } catch {
+      case e: Throwable => // ignore
+    }
   }
 
-  override def plot(): Unit = ???
+  def checkSolution(solution: Solution[Rise]): Boolean = {
+    runner.checkSolutionC(lowering, solution)
+  }
 
-  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
+  //  override def plot(): Unit = ???
+
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
       println("strategy: " + elem)
@@ -63,10 +130,12 @@ case class CExecutor(lowering: Strategy[Rise],
       try {
         val bin = compile(code)
 
+        println("compilation nice!")
+
         // execute
         try {
           errorLevel = ExecutionError
-          println("execute: " + Integer.toHexString(solution.expression.hashCode()))
+          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
@@ -86,8 +155,14 @@ case class CExecutor(lowering: Strategy[Rise],
 
         } catch {
           case e: Throwable =>
+            println("error handling")
+            println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
+              case 124 =>
+                println("timeout")
+                errorLevel = ExecutionTimeout
+                performanceValue = None
               case 11 =>
                 println("execution crashed")
                 System.exit(-1)
@@ -98,19 +173,24 @@ case class CExecutor(lowering: Strategy[Rise],
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                throw new Exception("segmentation fault")
+                println("execution failed with segmentation fault")
+                errorLevel = ExecutionFail
+                performanceValue = None
               case _ =>
-                throw new Exception("unknow error code")
+                println("execution failed with unknown error")
+                errorLevel = ExecutionFail
+                performanceValue = None
             }
         }
       } catch {
-        case _: Throwable =>
-          println("compiling error")
+        case e: Throwable =>
+          println("compiling error: " + e)
       }
 
     } catch {
       case e: Throwable =>
-        println("code gen error: " + e)
+        println("code gen error")
+        println("e: " + e)
         code = "code generation error "
     }
 
@@ -122,18 +202,16 @@ case class CExecutor(lowering: Strategy[Rise],
     saveToDisk match {
       case true =>
 
-        // print code to file
         var codeOutput = ""
-
         // add high/low-level hash, performance value and code
-        codeOutput += "// high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + " \n"
-        codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
+        codeOutput += "// high-level hash: " + hashProgram(solution.expression) + " \n"
+        codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
 
         // check if execution was valid
-        var filenameC = Integer.toHexString(solution.expression.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
-        var filenameLowered = Integer.toHexString(lowered.get.hashCode())
-        var filenameHigh = Integer.toHexString(solution.expression.hashCode())
-        var folder = output + "/" + Integer.toHexString(solution.expression.hashCode())
+        var filenameC = hashProgram(solution.expression) + "_" + hashProgram(lowered.get)
+        var filenameLowered = hashProgram(lowered.get)
+        var filenameHigh = hashProgram(solution.expression)
+        var folder = output + "/" + hashProgram(solution.expression)
 
         performanceValue match {
           case None =>
@@ -167,7 +245,7 @@ case class CExecutor(lowering: Strategy[Rise],
         // write lowered expressions
 
         // write runtime to output file
-        writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), "executor")
+        writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), solution.strategies, "executor")
 
         // print lowered expression to file
         val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
@@ -176,7 +254,7 @@ case class CExecutor(lowering: Strategy[Rise],
         val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
         // lowered string
-        var loweredString = "high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + "\n"
+        var loweredString = "high-level hash: " + hashProgram(solution.expression) + "\n"
         loweredString += lowered.get
 
         // write code to file
@@ -218,7 +296,11 @@ case class CExecutor(lowering: Strategy[Rise],
       case false => // nothing
     }
 
-    (solution.expression, performanceValue)
+    ExplorationResult[Rise](
+      solution,
+      performanceValue,
+      None
+    )
   }
 
   def prepareInput(tu: C.Module): (String, String, String, String) = {
@@ -460,12 +542,21 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
+    println("attempt to compile")
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
 
+    println("success")
+
     // todo: make this configable using json file
     // compile
+    //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+
+    //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
+
+    //      s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     s"gcc -O2 $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
@@ -481,8 +572,13 @@ int main(int argc, char** argv) {
     var runtime = 0.0
     //check global execution time. Discard any with factor 10
     var i = 0
+
     while (i < N) {
-      runtimes(i) = (s"$bin" !!).toDouble
+      //      runtimes(i) = (s"$bin" !!).toDouble
+
+      runtimes(i) = (s"timeout " +
+        s"${(timeout * 1).toDouble / 1000.toDouble}s " +
+        s"$bin" !!).toDouble
 
       println("runtime:(" + i + "): " + runtimes(i))
       println("globalBest: " + globalBest)
@@ -514,24 +610,46 @@ int main(int argc, char** argv) {
 
   def writeValues(path: String,
                   result: (Rise, Rise, Option[Double], ExplorationErrorLevel),
+                  rewrite: Seq[Strategy[Rise]],
                   name: String): Unit = {
+
+    //    samples += 1
+
     // open file to append values
     val file = new PrintWriter(
       new FileOutputStream(new File(path), true))
 
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
+
     // create string to write to file
     var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
-      s"${Integer.toHexString(result._1.hashCode())}, " +
-      s"${Integer.toHexString(result._2.hashCode())}, ${result._4.toString}, "
+      hashProgram(result._1) + ", " +
+      hashProgram(result._2) + ", " +
+      rewrite.mkString("\"[", ", ", "]\"") + ", " +
+      result._4.toString + ", "
+
     result._3 match {
       case Some(value) => string += value.toString + "\n"
       case _ => string += "-1 \n"
     }
 
+
+    val stringHmAppendix = result._3 match {
+      case Some(value) => value.toString + "," + "True" + "," + System.currentTimeMillis().toString + "\n"
+      case None => "-1" + "," + "False" + "," + System.currentTimeMillis().toString + "\n"
+    }
+
+    val stringHm = s"${counter}" + "," + stringHmAppendix
+
     // write to file and close
     file.write(string)
+    fileHM.write(stringHm)
+
     counter += 1
+
     file.close()
+    fileHM.close()
   }
 
   def writeHeader(path: String): Unit = {
@@ -539,14 +657,23 @@ int main(int argc, char** argv) {
     val file = new PrintWriter(
       new FileOutputStream(new File(path), false))
 
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
+
+    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+
     // create string to write to file
     val string = "iteration, runner, timestamp, high-level hash, " +
-      "low-level hash, error-level, runtime\n"
+      "low-level hash, rewrite, error-level, runtime\n"
+
+    val stringHM = "index,runtime,Valid,Timestamp" + "\n"
 
     // write to file and close
     file.write(string)
+    fileHM.write(stringHM)
+
+    fileHM.close()
     file.close()
   }
-
 
 }

@@ -5,47 +5,69 @@ import elevate.core.Strategy
 import elevate.core.strategies.traversal.topDown
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import rise.elevate.rules.traversal.default
+
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
-import exploration.runner.CExecutor
-import elevate.heuristic_search.Metaheuristic
+import elevate.heuristic_search.{Metaheuristic, Runner}
 import elevate.heuristic_search.util.Solution
-import exploration.explorationUtil.jsonParser
-import exploration.explorationUtil.jsonParser.ParseExploration
-import strategies.defaultStrategies
+import strategies.{convolutionStrategies, defaultStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
+import rise.autotune.HostCode
 import rise.elevate.Rise
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
+
+import exploration.explorationUtil.jsonParser._
+import exploration.runner._
+
+import elevate.heuristic_search._
 
 import scala.sys.process._
 import scala.language.postfixOps
 
 object riseExploration {
 
-
   // entry point for exploration
-  def apply(solution: Rise, filePath: String): (Rise, Option[Double]) = {
+  def apply(solution: Rise,
+            lowering: Strategy[Rise],
+            strategies: Set[Strategy[Rise]],
+            filePath: String,
+            hostCode: Option[HostCode] = None,
+            rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+            afterRewrite: Option[Strategy[Rise]] = None,
+            importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
+           )
+  : ExplorationResult[Rise] = {
 
     // parse config file
-    val parsedConfiguration = jsonParser.parse(filePath)
+    val parsedConfiguration = exploration.explorationUtil.jsonParser.parse(filePath)
 
     // setup gold
     // code here
 
-    val startingPoint = prepareExploration(parsedConfiguration,
-      solution, filePath)
+    val startingPoint = prepareExploration(
+      parsedConfiguration,
+      solution,
+      lowering,
+      strategies,
+      filePath,
+      hostCode,
+      rewriteFunction = rewriteFunction,
+      afterRewrite = afterRewrite,
+      importExport = importExport
+    )
 
     // start
-    startingPoint.execute(Solution(solution,
+    val result = startingPoint.execute(Solution(solution,
       immutable.Seq.empty[Strategy[Rise]]))
 
     // collect results
     // code here
-    // -- todo -- visualize dot graphs
 
+
+    result
   }
 
   // todo command line parser (replace apply function by main)
@@ -53,7 +75,14 @@ object riseExploration {
 
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
-                         filePath: String): Metaheuristic[Rise] = {
+                         lowering: Strategy[Rise],
+                         strategies: Set[Strategy[Rise]],
+                         filePath: String,
+                         hostCode: Option[HostCode],
+                         rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+                         afterRewrite: Option[Strategy[Rise]],
+                         importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
+                        ): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
 
@@ -70,9 +99,16 @@ object riseExploration {
     // -- todo --  read expression from file
 
     // make this more generic
-    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    //    val lowering = exploration.strategies.convolutionStrategies.loweringStrategy
+    //    val lowering = exploration.strategies.scalStrategies.lowering
+    //    val lowerings = exploration.strategies.scalStrategies.lowerings
+    // add lowering for scal
+
+    // use set
 
     // initialize gold expression
+    // check, if this will work, if first expression can't be lowered properly
     val gold = lowering(solution).get
 
     // create unique output folder
@@ -110,6 +146,8 @@ object riseExploration {
     val executor = result.executor.name match {
       case "C" => new CExecutor(lowering, gold, result.executor.iterations,
         inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")
@@ -119,16 +157,42 @@ object riseExploration {
 
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
-    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth, rootChoice.iteration, executor.asInstanceOf[CExecutor], defaultStrategies.strategies, nameList.reverse.apply(index), None, None)
+
+    println("result.executor: " + result.executor.name)
+    println("executro?: " + executor)
+
+    val rootMetaheuristic = new Metaheuristic[Rise](
+      rootChoice.heuristic,
+      getHeuristic(rootChoice.heuristic),
+      rootChoice.depth,
+      rootChoice.iteration,
+      executor.asInstanceOf[Runner[Rise]],
+      strategies,
+      nameList.reverse.apply(index),
+      rewriteFunction = rewriteFunction,
+      afterRewrite = afterRewrite,
+      importExport = importExport
+    )
+
     index = index + 1
 
     // iterate reverse direction
     var metaheuristic = rootMetaheuristic
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
-      metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
-        elem.depth, elem.iteration, metaheuristic, defaultStrategies.strategies, nameList.reverse.apply(index), None, None)
+      metaheuristic = new Metaheuristic[Rise](
+        elem.heuristic,
+        getHeuristic(elem.heuristic),
+        elem.depth,
+        elem.iteration,
+        metaheuristic,
+        strategies,
+        nameList.reverse.apply(index),
+        rewriteFunction = rewriteFunction,
+        afterRewrite = afterRewrite,
+        importExport = importExport
+      )
+
       index = index + 1
     })
 

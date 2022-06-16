@@ -3,7 +3,6 @@ package rise
 import apps.tvmGemm.par
 import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
-import exploration.runner.CExecutor
 import rise.autotune.configFileGeneration._
 import rise.autotune.constraints._
 import rise.autotune.execution._
@@ -155,10 +154,12 @@ package object autotune {
           }
         }
 
+        val configFileString = generateJSON(parameters, constraints, tuner)
+        println("configFile: \n" + configFileString)
         val file = new PrintWriter(
           new FileOutputStream(
             new File(filePath), false))
-        file.write(generateJSON(parameters, constraints, tuner))
+        file.write(configFileString)
         file.close()
       case _ => println("use given configuration file")
     }

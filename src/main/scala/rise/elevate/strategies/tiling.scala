@@ -3,6 +3,7 @@ package rise.elevate.strategies
 import elevate.core.Strategy
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic._
+import elevate.macros.RuleMacro.rule
 import rise.elevate.{Rise, tunable}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
@@ -17,7 +18,7 @@ object tiling {
 
   // todo add dimensions
   // special syntax for 2D case - for ICFP'20 paper generic
-  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
+  @rule def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
 
   def tileNDList2(implicit ev: Traversable[Rise]): Int => Strategy[Rise] =
 

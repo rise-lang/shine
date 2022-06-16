@@ -102,7 +102,7 @@ class kmeansTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("search kmeans with manual config file") {
+  ignore("search kmeans with manual config file") {
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
@@ -130,7 +130,7 @@ class kmeansTuning extends test_util.Tests {
   }
 
   def runExperiments(configFiles: Seq[String], iterations: Int) = {
-    for(i <- 1 to iterations) {
+    for (i <- 1 to iterations) {
       configFiles.foreach(runTuning)
     }
   }
@@ -154,14 +154,14 @@ class kmeansTuning extends test_util.Tests {
     autotune.search(tuner)(kmeans)
   }
 
-  test("run kmeans autotuning"){
+  ignore("run kmeans autotuning") {
 
     val configs = Seq(
-        "autotuning/config/kmeans/kmeans_rs_cot.json",
-        "autotuning/config/kmeans/kmeans_rs_emb.json",
-        "autotuning/config/kmeans/kmeans_ls_cot.json",
-        "autotuning/config/kmeans/kmeans_atf_emb.json"
-      )
+      "autotuning/config/kmeans/kmeans_rs_cot.json",
+      "autotuning/config/kmeans/kmeans_rs_emb.json",
+      "autotuning/config/kmeans/kmeans_ls_cot.json",
+      "autotuning/config/kmeans/kmeans_atf_emb.json"
+    )
 
     runExperiments(configFiles = configs, iterations = 3)
   }

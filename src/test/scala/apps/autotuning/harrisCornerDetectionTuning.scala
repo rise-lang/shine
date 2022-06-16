@@ -153,7 +153,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
 
-
     val configs = Seq(
       "autotuning/config/harris/rs_cot_harris.json",
       "autotuning/config/harris/rs_emb_harris.json",

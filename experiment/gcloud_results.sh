@@ -13,5 +13,3 @@ user="jo"
 # use rsync
 rsync -au --info=progress2 ${user}@${1}:~/shine/autotuning/${2} results
 
-
-

@@ -32,7 +32,8 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
 
   case class ExprWrapper(e: Expr) {
     override def hashCode(): Int = exprAlphaEq(typeErasure).hash(e)
-    override def equals(o: Any) : Boolean = o match {
+
+    override def equals(o: Any): Boolean = o match {
       case other: ExprWrapper => exprAlphaEq(typeAlphaEq).apply(this.e)(other.e)
       case other: Expr => exprAlphaEq(typeAlphaEq).apply(this.e)(other)
       case _ => false
@@ -46,7 +47,10 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
     }
   }
 
+  // in terms of heuristics
+  // N ?
   type ExpandStrategy = Rise => Seq[Rise]
+
   def everywhere(s: Strategy[Rise]): ExpandStrategy = { p =>
     import rise.core.types._
     mayApply(s, p).toSeq ++ (p match {
@@ -85,6 +89,7 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
 
     val visited = mutable.Set[ExprWrapper]()
     val unvisited = mutable.Set[ExprWrapper](ExprWrapper(closedStart))
+
     @tailrec
     def expand(fuel: Int): Unit = {
       val finished = fuel <= 0 || unvisited.isEmpty || unvisited.contains(ExprWrapper(closedGoal))
@@ -123,18 +128,23 @@ class separableConvolution2DNaiveEqsat extends test_util.Tests {
   // FIXME: does not terminate given 5mn
   // expansion time: 6mn 38s 345ms
   // found 13200 candidates
-  ignore("base to scanline") {
-    find_rewrite_path(base(weights2d), scanline(weightsV)(weightsH), immutable.Seq(
-      everywhere(separateDotT),
-      everywhere(`*f >> S -> S >> **f`),
-      everywhere(mapFusion),
-      everywhere(`*S >> T -> T >> S >> *T`),
-      everywhere(removeTransposePair),
-      everywhere(mapFirstFission),
-      everywhere(`S >> **f -> *f >> S`)
-    ), BENF `;` // FIXME: reduces the search but these bounds are hard to know in advance
-      maxTriggers(10)(isEqualTo(primitives.map.primitive)) `;`
-      maxTriggers(3)(isEqualTo(primitives.transpose.primitive)))
+  test("base to scanline") {
+    find_rewrite_path(
+      base(weights2d),
+      scanline(weightsV)(weightsH),
+      immutable.Seq(
+        everywhere(separateDotT),
+        everywhere(`*f >> S -> S >> **f`),
+        everywhere(mapFusion),
+        everywhere(`*S >> T -> T >> S >> *T`),
+        everywhere(removeTransposePair),
+        everywhere(mapFirstFission),
+        everywhere(`S >> **f -> *f >> S`)
+      ),
+      BENF `;` // FIXME: reduces the search but these bounds are hard to know in advance
+        maxTriggers(10)(isEqualTo(primitives.map.primitive)) `;`
+        maxTriggers(3)(isEqualTo(primitives.transpose.primitive))
+    )
   }
 
   test("scanline to separated") {

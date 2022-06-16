@@ -62,9 +62,25 @@ object lowering {
     case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
+  def `map -> mapLocal`(dim: Int = 0): Strategy[Rise] = mapLocal(dim)
+  @rule def mapLocal(dim: Int = 0): Strategy[Rise] = {
+    case m@map() => Success(rise.openCL.DSL.mapLocal(dim) !: m.t)
+  }
+
+  def `map -> mapWorkGroup`(dim: Int = 0): Strategy[Rise] = mapWorkGroup(dim)
+  @rule def mapWorkGroup(dim: Int = 0): Strategy[Rise] = {
+    case m@map() => Success(rise.openCL.DSL.mapWorkGroup(dim) !: m.t)
+  }
+
   def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
   @rule def reduceSeq: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeq !: e.t)
+  }
+
+  // todo add other address spaces
+  def `reduceSeq -> oclReduceSeq`: Strategy[Rise] = oclReduceSeq
+  @rule def oclReduceSeq: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
   }
 
   def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
@@ -191,8 +207,19 @@ object lowering {
   }
 
   // requires expr to be in LCNF
-  def specializeSeq()(implicit ev: Traversable[Rise]): Strategy[Rise] =
+  def specializeSeq()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     normalize(ev)(lowering.mapSeqCompute() <+ lowering.reduceSeq)
+    // todo avoid map -> mapSeq inside of a reduce
+  }
+
+  // requires expr to be in LCNF
+  def specializeSeqReduce()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
+    normalize(ev)(lowering.reduceSeq)
+  }
+
+  // requires expr to be in LCNF
+  def reduceOCL()(implicit ev: Traversable[Rise]): Strategy[Rise] =
+    normalize(ev)(lowering.oclReduceSeq)
 
   def addRequiredCopies()(implicit ev: Traversable[Rise]): Strategy[Rise] =
     // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce

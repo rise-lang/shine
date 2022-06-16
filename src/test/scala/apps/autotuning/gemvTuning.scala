@@ -1,7 +1,7 @@
 package apps.autotuning
 
 import apps.gemv.ocl._
-import arithexpr.arithmetic.{RangeAdd, RangeMul}
+import arithexpr.arithmetic.{ArithExpr, RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune._
 import rise.core.DSL.Type._
@@ -15,30 +15,33 @@ class gemvTuning extends test_util.Tests {
   // gemvBlastN
   val gemvBlastNTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(gemvBlastNParam(s0))
+      wrapOclGemv(gemvBlastNParam(s0))
     )
   // gemvBlastT
   val gemvBlastTTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(gemvBlastTParam(s0))
+      wrapOclGemv(gemvBlastTParam(s0))
     )
   // gemvFused
   val gemvFusedTuning: ToBeTyped[Expr] =
-    wrapOclMv(gemvFused)
+    wrapOclGemv(gemvFused)
 
   // gemvFusedAMD
   val gemvFusedAMDTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(gemvKeplerBestParam(s0))
+      wrapOclGemv(gemvKeplerBestParam(s0))
     )
 
   // gemvKeplerBest
   val gemvKeplerBestTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      wrapOclMv(gemvKeplerBestParam(s0))
+      wrapOclGemv(gemvKeplerBestParam(s0))
     )
 
-  def wrapOclMv(e: Expr): Expr = {
+  val gemvAMDNoTuning: ToBeTyped[Expr] =
+    wrapOclGemv(gemvFusedAMD)
+
+  def wrapOclGemv(e: Expr): Expr = {
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
@@ -97,7 +100,7 @@ class gemvTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  test("print different gemv tuning versions"){
+  test("print different gemv tuning versions") {
 
     println("gemvBlastNTuning: " + gemvBlastNTuning)
     println("gemvBlastTTuning: " + gemvBlastTTuning)
@@ -107,39 +110,70 @@ class gemvTuning extends test_util.Tests {
 
   }
 
-  def executeGemv(e: Expr, s0: Nat) = {
+  def executeGemv(e: Expr, inputSize: Int, s0: Nat) = {
 
     val params: Nat => Map[Nat, Nat] = s0 => Map(
-      TuningParameter("ls0") -> (64: Nat),
+      TuningParameter("ls0") -> (s0: Nat),
       TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (128: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
-      TuningParameter("s0") -> (s0: Nat),
+      TuningParameter("s0") -> (s0),
     )
 
     val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
     val result = autotune.execution.execute(
       expression = eSub,
-      hostCode = HostCode(init(128, 128), compute, finish),
+      hostCode = HostCode(init(inputSize, inputSize), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
+      executionIterations = 1000,
+      speedupFactor = 1000,
+      execution = Minimum
     )
     println("result: " + result.runtime)
 
   }
 
-  test("exeute gemv version") {
-    executeGemv(gemvBlastNTuning, 64)
-    executeGemv(gemvBlastTTuning, 64)
-    executeGemv(gemvFusedTuning, 64) // ignore s0 in this case
-    executeGemv(gemvFusedAMDTuning, 128)
-    executeGemv(gemvKeplerBestTuning, 128)
+  test("execute gemv version") {
+    val inputSize = 1 << 12
+    println("inputSize: " + inputSize)
+
+    executeGemv(gemvFusedTuning, inputSize, 128) // ignore s0 in this case
+
+    executeGemv(gemvFusedAMDTuning, inputSize, 128) //
+    executeGemv(gemvKeplerBestTuning, inputSize, 128) //
+
+    executeGemv(gemvBlastNTuning, inputSize, 64) //
+    executeGemv(gemvBlastTTuning, inputSize, 64) //
+
   }
 
-  test("tune gemv version"){
+  test("tune gemv 1024") {
+    // change name to run other version
+    val version = gemvKeplerBestTuning
+    val name = "gemvKeplerBestTuning"
+
+    val configs = Seq(
+      "autotuning/config/gemv/1024/rs_cot_1024.json",
+      "autotuning/config/gemv/1024/rs_emb_1024.json",
+      "autotuning/config/gemv/1024/ls_cot_1024.json",
+      "autotuning/config/gemv/1024/atf_emb_1024.json",
+      "autotuning/config/gemv/1024/borf_cot_1024.json",
+      "autotuning/config/gemv/1024/bogp_cot_1024.json"
+    )
+
+    runExperiment(
+      name = name,
+      configFiles = configs,
+      iterations = 2,
+      s"autotuning/${name}",
+      version,
+      HostCode(init(1024, 1024), compute, finish),
+      Seq(1024, 1024, 1024)
+    )
+  }
+
+  test("tune gemv version") {
     runTuning(gemvBlastNTuning)
     runTuning(gemvBlastTTuning)
     runTuning(gemvFusedTuning) // ignore s0 in this case
@@ -149,7 +183,7 @@ class gemvTuning extends test_util.Tests {
 
 
   def runTuning(e: Expr) = {
-//    val version = autotuning.parseName(configFile)
+    //    val version = autotuning.parseName(configFile)
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 1024), compute, finish),

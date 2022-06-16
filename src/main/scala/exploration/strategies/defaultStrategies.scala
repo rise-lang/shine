@@ -5,6 +5,7 @@ import elevate.core.strategies.basic._
 import rise.elevate.Rise
 import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
+import elevate.macros.RuleMacro.rule
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
@@ -29,37 +30,40 @@ object defaultStrategies {
 
   // -- BASELINE ---------------------------------------------------------------
 
-  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+
+  @rule def baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     fuseReduceMap `@` topDown[Rise]
 
 
   // -- BLOCKING ---------------------------------------------------------------
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
-  val blocking: Strategy[Rise] =
+
+  @rule def blocking: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,6,3,4))
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 6, 3, 4))
 
 
   // -- VECTORIZATION ----------------------------------------------------------
 
   val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
-  val vectorization: Strategy[Rise] =
+
+  @rule def vectorization: Strategy[Rise] =
     blocking `;;`
       (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
 
 
   // -- LOOP PERMUTATION -------------------------------------------------------
 
-  val loopPerm: Strategy[Rise] =
+  @rule def loopPerm: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,3,6,4)) `;;`
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 3, 6, 4)) `;;`
       (vectorize(32) `@` innermost(isFullyAppliedMap))
 
 
@@ -76,34 +80,35 @@ object defaultStrategies {
     storeInMemory(isTransposedB,
       permuteB `;;`
         (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
-        (parallel()    `@` outermost(isApplied(isMap)))
+        (parallel() `@` outermost(isApplied(isMap)))
     ) `@` inLambda
 
   def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-    isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
+    isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
 
-  val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
+  @rule def arrayPacking: Strategy[Rise] = packB `;;` loopPerm
 
 
   // -- CACHE BLOCKS -----------------------------------------------------------
 
-  val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;` debug[Rise]("after arrayPacking") `;`
+  //    arrayPacking `;;` debug[Rise]("after arrayPacking") `;`
+  @rule def cacheBlocks: Strategy[Rise] = (
+    arrayPacking `;;`
       (unroll `@` innermost(isReduceSeq))
     )
 
 
   // -- PARALLEL ---------------------------------------------------------------
 
-  val par = (
+  @rule def par: Strategy[Rise] = (
     arrayPacking `;;`
       ((parallel() `@` outermost(isApplied(isMap))) `@`
         outermost(isApplied(isLet))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
 
-
-  val strategies = Set(
+  val strategies: Set[Strategy[Rise]] = Set(
+    baseline,
     blocking,
     vectorization,
     loopPerm,
@@ -112,4 +117,16 @@ object defaultStrategies {
     par
   )
 
+  val lowering = lowerToC
+
+
+  // lowering
+  // maps inside map reduce will stay maps instead of mapSeqs
+  //  val lowering =
+  //  addRequiredCopies() `;`
+  //    fuseReduceMap2 `;` // fuse map and reduce
+  //    rise.elevate.rules.lowering.specializeSeq() `;` // lower: map -> mapSeq, reduce -> reduceSeq
+  //    reduceMapFission2 `;` // fission map and reduce
+  //    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
+  //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 }
