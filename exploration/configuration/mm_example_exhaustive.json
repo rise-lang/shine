@@ -1,0 +1,17 @@
+{
+  "name": "mm_example_exhaustive",
+  "output": "exploration",
+  "inputSize": 512,
+  "metaheuristic": [
+    {
+      "heuristic": "exhaustive",
+      "depth": 20,
+      "iterations": 1
+    }
+  ],
+  "executor": {
+    "name": "C",
+    "iterations": 3,
+    "threshold": 100
+  }
+}

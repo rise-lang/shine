@@ -1,0 +1,17 @@
+{
+  "name": "mm_example_autotuner",
+  "output": "exploration",
+  "inputSize": 512,
+  "metaheuristic": [
+    {
+      "heuristic": "autotuner",
+      "depth": 6,
+      "iterations": 1
+    }
+  ],
+  "executor": {
+    "name": "C",
+    "iterations": 10,
+    "threshold": 1000
+  }
+}
