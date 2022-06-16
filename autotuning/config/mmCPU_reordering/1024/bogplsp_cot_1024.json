@@ -23,6 +23,10 @@
   "models": {
     "model": "gaussian_process"
   },
+  "lengthscale_prior" : {
+    "name": "gamma",
+    "parameters": [1.3, 0.1]
+  },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 144,
   "input_parameters": {

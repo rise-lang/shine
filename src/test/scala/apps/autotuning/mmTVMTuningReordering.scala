@@ -150,11 +150,12 @@ class mmTVMTuningReordering extends test_util.Tests {
 
     val configs = Seq(
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -162,13 +163,14 @@ class mmTVMTuningReordering extends test_util.Tests {
       configFiles = configs,
       iterations = 5,
       //      s"autotuning/mm_${inputSize}",
-      s"experiment/results/mmCPU_reordering_${inputSize}",
+      output = s"experiment/results/mmCPU_reordering_${inputSize}",
       mm,
       HostCode("", "", ""),
       Seq(inputSize, inputSize, inputSize),
       strategyMode = Some(inject),
       executor = Some(execute),
-      false
+//      plotOnly = true
+        plotOnly = false
     )
   }
 

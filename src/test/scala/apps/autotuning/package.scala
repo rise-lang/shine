@@ -26,8 +26,7 @@ package object autotuning {
 
     plotOnly match {
       case true =>
-
-        os.isDir(os.Path(output)) match {
+        os.isDir(os.Path(output, os.pwd)) match {
           case true => plotExperiment(name, configFiles, output)
           case false => println("experiment's output does not exist - ignore plotting")
         }
@@ -115,8 +114,6 @@ package object autotuning {
           "--y_label \"Log Runtime(ms)\" " +
           s"--title ${name} "
 
-      println("plot: \n" + command)
-
       // create unique filepath
       val path = output + "/" + "plot_hm.sh"
       val file = new File(path)
@@ -131,6 +128,8 @@ package object autotuning {
       val header = "#!/bin/bash\n"
       val content = header + command(configScript, foldersScript, outputScript)
       util.writeToPath(uniqueFilepath, content)
+
+      println("command: \n" + command(configPrinting, foldersPrinting, outputPrinting))
 
       command(configPrinting, foldersPrinting, outputPrinting) !!
     } catch {
