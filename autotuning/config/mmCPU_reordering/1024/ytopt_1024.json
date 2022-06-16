@@ -1,5 +1,5 @@
 {
-  "application_name": "ls_cot_1024",
+  "application_name": "ytopt_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,16 +12,12 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "ls_cot_1024.log",
+  "log_file": "ytopt_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
-  "models": {
-    "model": "gaussian_process"
-  },
-  "optimization_method": "local_search",
-  "local_search_random_points": 50,
-  "local_search_evaluation_limit": 500,
+  "optimization_method": "ytopt",
+  "optimization_iterations": 500,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

@@ -34,7 +34,13 @@ package object autotuning {
       case false =>
         // run tuning
         for (i <- 1 to iterations) {
-          configFiles.foreach(configFile => runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor))
+          configFiles.foreach(configFile =>
+            try {
+              runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor)
+            } catch {
+              case e: Throwable => println("tuning failed for configFile: " + configFile)
+            }
+          )
 
           // plot experiments after each iteration of all configs
           plotExperiment(name, configFiles, output)
@@ -75,46 +81,61 @@ package object autotuning {
   }
 
   def plotExperiment(name: String, configs: Seq[String], output: String) = {
+    try {
 
-    // parse names from configuration files
-    var names = ""
-    var folders = ""
-    configs.foreach(config => {
-      val name = rise.autotune.configFileGeneration.parseFromJson(config, "application_name")
-      names += name + " "
-      folders += output + "/" + name + "/" + name + "_hm "
-    })
 
-    // plot
-    val command = "hm-plot-optimization-results " +
-      s"-j ${configs(0)} " +
-      "-i " +
-      folders +
-      "-l " +
-      names +
-      s"-o ${output}/${name}.pdf " +
-      "-log " +
-      "--y_label \"Log Runtime(ms)\" " +
-      s"--title ${name} "
+      // parse names from configuration files
+      var names = ""
+      var foldersPrinting = ""
+      var foldersScript = ""
+      configs.foreach(config => {
+        val name = rise.autotune.configFileGeneration.parseFromJson(config, "application_name")
+        names += name + " "
+        foldersPrinting += output + "/" + name + "/" + name + "_hm "
+        foldersScript += name + "/" + name + "_hm "
+      })
 
-    println("plot: \n" + command)
+      // use first config for printing
+      val name = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
+      val configPrinting = output + "/" + name + "/" + name + ".json"
+      val configScript = name + "/" + name + ".json"
+      val outputPrinting = s"${output}/${name}"
+      val outputScript = s"${name}"
 
-    // create unique filepath
-    val path = output + "/" + "plot_hm.sh"
-    val file = new File(path)
-    val uniqueFilepath = if (file.exists()) {
-      val timeAppendix = System.currentTimeMillis().toString
-      path.substring(0, path.length - 3) + "_" + timeAppendix + ".sh"
-    } else {
-      path
+      // plot
+      val command: (String, String, String) => String = (config, folders, output) =>
+        "hm-plot-optimization-results " +
+          s"-j ${config} " +
+          "-i " +
+          folders +
+          "-l " +
+          names +
+          s"-o ${output}.pdf " +
+          "-log " +
+          "--y_label \"Log Runtime(ms)\" " +
+          s"--title ${name} "
+
+      println("plot: \n" + command)
+
+      // create unique filepath
+      val path = output + "/" + "plot_hm.sh"
+      val file = new File(path)
+      val uniqueFilepath = if (file.exists()) {
+        val timeAppendix = System.currentTimeMillis().toString
+        path.substring(0, path.length - 3) + "_" + timeAppendix + ".sh"
+      } else {
+        path
+      }
+
+      // write plotting script
+      val header = "#!/bin/bash\n"
+      val content = header + command(configScript, foldersScript, outputScript)
+      util.writeToPath(uniqueFilepath, content)
+
+      command(configPrinting, foldersPrinting, outputPrinting) !!
+    } catch {
+      case e: Throwable => println("printing of experiment failed")
     }
-
-    // write plotting script
-    val header = "#!/bin/bash\n"
-    val content = header + command
-    util.writeToPath(uniqueFilepath, content)
-
-    command !!
   }
 
 

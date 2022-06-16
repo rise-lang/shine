@@ -29,7 +29,7 @@ import scala.language.postfixOps
 class mmTVMTuningReordering extends test_util.Tests {
 
   // tvm gemm
-  val N = 512
+  val N = 1024
 
   // todo check input vars, maybe dep fun
   val mm: Expr = //infer(
@@ -108,7 +108,7 @@ class mmTVMTuningReordering extends test_util.Tests {
     lowering = lowerToC,
     goldExpression = gold,
     iterations = 10,
-    inputSize = 512,
+    inputSize = 1024,
     threshold = 10,
     output = "autotuning",
     saveToDisk = false
@@ -152,15 +152,15 @@ class mmTVMTuningReordering extends test_util.Tests {
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
+      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mmCPU_reordering_${inputSize}",
       configFiles = configs,
-      iterations = 2,
+      iterations = 5,
       //      s"autotuning/mm_${inputSize}",
       s"experiment/results/mmCPU_reordering_${inputSize}",
       mm,

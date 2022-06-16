@@ -3,26 +3,26 @@
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
-    "mode": "client-server"
-  },
-  "log_file": "rs_emb_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "rs_emb_1024.log",
+  "log_transform_output": true,
   "design_of_experiment": {
     "doe_type": "embedding random sampling",
-    "number_of_samples": 100
+    "number_of_samples": 500
   },
-  "optimization_iterations": 0,
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 0,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",
