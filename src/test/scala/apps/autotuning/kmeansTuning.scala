@@ -1,10 +1,8 @@
 package apps.autotuning
 
-import apps.autotuning
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
-import rise.core.DSL.Type._
 import rise.core._
 import rise.core.types.{Nat, _}
 import shine.OpenCL.{GlobalSize, LocalSize}
@@ -12,9 +10,12 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 class kmeansTuning extends test_util.Tests {
 
   val kmeans: Expr =
-    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(apps.kmeans.kmeansOcl)))
+    tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+        tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.kmeans.kmeansOcl)
+          ))))
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (p, c, f) => {
@@ -59,7 +60,9 @@ class kmeansTuning extends test_util.Tests {
   test("execute kmeans") {
     val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("gs0") -> (1024: Nat)
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat)
     )
 
     val kmeans_replaced = rise.core.substitute.natsInExpr(params, kmeans)
@@ -154,16 +157,26 @@ class kmeansTuning extends test_util.Tests {
     autotune.search(tuner)(kmeans)
   }
 
-  ignore("run kmeans autotuning") {
+  test("run kmeans autotuning") {
+
+    val inputSize: Int = 1024
 
     val configs = Seq(
-      "autotuning/config/kmeans/kmeans_rs_cot.json",
-      "autotuning/config/kmeans/kmeans_rs_emb.json",
-      "autotuning/config/kmeans/kmeans_ls_cot.json",
-      "autotuning/config/kmeans/kmeans_atf_emb.json"
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
-    runExperiments(configFiles = configs, iterations = 3)
+    runExperiment(
+      name = s"kmeans_${inputSize}",
+      configFiles = configs,
+      iterations = 2,
+      output = s"autotuning/kmeans_${inputSize}",
+      e = kmeans,
+      hostCode = HostCode(init(1024, 5, 34), compute, finish),
+      inputSizes = Seq(inputSize, 5, 34),
+    )
   }
-
 }
