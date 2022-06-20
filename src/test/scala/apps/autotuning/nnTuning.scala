@@ -14,8 +14,11 @@ class nnTuning extends test_util.Tests {
 
   val nn: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(apps.nearestNeighbour.nnOcl)))
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.nearestNeighbour.nnOcl)
+          ))))
 
   // scalastyle:off
   val init: (Int) => String = (N) => {
@@ -55,7 +58,9 @@ class nnTuning extends test_util.Tests {
 
     val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("gs0") -> (1: Nat)
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat)
     )
 
     val nn_replaced = rise.core.substitute.natsInExpr(params, nn)
@@ -126,13 +131,24 @@ class nnTuning extends test_util.Tests {
 
   test("run nn autotuning") {
 
+    val inputSize: Int = 1024
+
     val configs = Seq(
-      "autotuning/config/nn/nn_rs_cot.json",
-      "autotuning/config/nn/nn_rs_emb.json",
-      "autotuning/config/nn/nn_ls_cot.json",
-      "autotuning/config/nn/nn_atf_emb.json"
+      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
-    runExperiments(configFiles = configs, iterations = 3)
+    runExperiment(
+      name = s"convolution_${inputSize}",
+      configFiles = configs,
+      iterations = 2,
+      s"autotuning/nn_${inputSize}",
+      e = nn,
+      hostCode = HostCode(init(inputSize), compute, finish),
+      inputSizes = Seq(inputSize)
+    )
   }
+
 }
