@@ -149,21 +149,19 @@ class mmCPU extends test_util.Tests {
     val inputSize: Int = 1024
 
     val configs = Seq(
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
-      name = s"mmCPU_reordering_${inputSize}",
+      name = s"mmCPU_${inputSize}",
       configFiles = configs,
       iterations = 5,
-      //      s"autotuning/mm_${inputSize}",
-      output = s"experiment/results/mmCPU_reordering_${inputSize}",
+      output = s"experiment/results/mmCPU_${inputSize}",
       mm,
       HostCode("", "", ""),
       Seq(inputSize, inputSize, inputSize),
@@ -172,32 +170,6 @@ class mmCPU extends test_util.Tests {
       //      plotOnly = true
       plotOnly = false
     )
-  }
-
-
-  ignore("tune tvmgemm example reordering") {
-
-    val tuner = Tuner(
-      hostCode = HostCode("", "", ""), // we don't need that
-      samples = 100,
-      name = "rs_emb_1024",
-      output = "autotuning/tvm_gemm_reordering",
-      timeouts = Timeouts(5000, 5000, 1000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      //      configFile = Some("autotuning/config/mmCPU_reordering/1024/rs_cot_1024.json"),
-      configFile = Some("autotuning/config/mmCPU_reordering/1024/rs_emb_1024.json"),
-      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024_reorder.json"),
-      hmConstraints = true,
-      strategyMode = Some(inject),
-      executor = Some(execute),
-      saveToFile = true
-    )
-
-    val result = autotune.search(tuner)(mm)
-
-    println("result: " + result)
-
   }
 
 }
