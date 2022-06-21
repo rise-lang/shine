@@ -26,7 +26,7 @@ import scala.language.postfixOps
 import exploration.runner.CExecutor
 
 
-class mmTVMTuningReordering extends test_util.Tests {
+class mmCPU extends test_util.Tests {
 
   // tvm gemm
   val N = 1024
@@ -145,17 +145,17 @@ class mmTVMTuningReordering extends test_util.Tests {
   }
 
 
-  test("run experiment tvm gemm tuning reordering") {
+  test("run experiment mmCPU") {
     val inputSize: Int = 1024
 
     val configs = Seq(
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU_reordering/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-//      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU_reordering/${inputSize.toString}/ytopt_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -169,8 +169,8 @@ class mmTVMTuningReordering extends test_util.Tests {
       Seq(inputSize, inputSize, inputSize),
       strategyMode = Some(inject),
       executor = Some(execute),
-//      plotOnly = true
-        plotOnly = false
+      //      plotOnly = true
+      plotOnly = false
     )
   }
 
