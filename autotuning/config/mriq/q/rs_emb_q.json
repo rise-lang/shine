@@ -20,9 +20,6 @@
     "number_of_samples": 500
   },
   "scalarization_method": "linear",
-  "models": {
-    "model": "gaussian_process"
-  },
   "optimization_iterations": 0,
   "input_parameters" : {
     "tuned_gs0" : {
@@ -46,7 +43,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1" : {
       "parameter_type": "ordinal",
@@ -69,7 +67,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0" : {
       "parameter_type": "ordinal",
@@ -91,7 +90,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls1" : {
       "parameter_type": "ordinal",
@@ -109,7 +109,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     }
   }
 }

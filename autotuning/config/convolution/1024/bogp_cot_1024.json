@@ -24,7 +24,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 94,
+  "optimization_iterations": 144,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -47,7 +47,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -70,7 +71,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -92,7 +94,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -110,7 +113,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_s0": {
       "parameter_type": "integer",
@@ -121,7 +125,8 @@
       "constraints": [
         "80 % tuned_s0 == 0"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     }
   }
 }

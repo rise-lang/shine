@@ -15,7 +15,7 @@
   },
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 100
+    "number_of_samples": 150
   },
   "optimization_iterations": 0,
   "input_parameters": {
@@ -40,7 +40,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -63,7 +64,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -85,7 +87,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -103,7 +106,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_s0": {
       "parameter_type": "integer",
@@ -114,7 +118,8 @@
       "constraints": [
         "80 % tuned_s0 == 0"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     }
   }
 }

@@ -137,14 +137,15 @@ class nnTuning extends test_util.Tests {
       s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"convolution_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      s"autotuning/nn_${inputSize}",
+      iterations = 10,
+      s"experiment/results/nn_${inputSize}",
       e = nn,
       hostCode = HostCode(init(inputSize), compute, finish),
       inputSizes = Seq(inputSize)

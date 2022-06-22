@@ -24,7 +24,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 45,
+  "optimization_iterations": 145,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",

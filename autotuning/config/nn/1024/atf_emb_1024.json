@@ -17,7 +17,7 @@
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 50,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -40,7 +40,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -63,7 +64,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -81,7 +83,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -103,7 +106,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     }
   }
 }

@@ -120,14 +120,15 @@ class convolutionTuning extends test_util.Tests {
       s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"convolution_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      s"autotuning/convolution_${inputSize}",
+      iterations = 10,
+      s"experiment/results/convolution_${inputSize}",
       convolution,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize)

@@ -16,7 +16,7 @@
   "log_transform_output": true,
   "design_of_experiment": {
     "doe_type": "embedding random sampling",
-    "number_of_samples": 20
+    "number_of_samples": 150
   },
   "scalarization_method": "linear",
   "models": {
@@ -50,7 +50,8 @@
       ],
       "dependencies": [
         "tuned_vec101"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_tile52": {
       "parameter_type": "ordinal",
@@ -73,7 +74,8 @@
         "1024 % tuned_tile52 == 0",
         "(tuned_tile52) >= (1)"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_vec101": {
       "parameter_type": "ordinal",
@@ -95,7 +97,8 @@
         "tuned_vec101 <= 16",
         "tuned_vec101 % 2 == 0"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_split100": {
       "parameter_type": "ordinal",
@@ -118,7 +121,8 @@
         "1024 % tuned_split100 == 0",
         "(tuned_split100) >= (1)"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_reorder": {
       "parameter_type": "permutation",

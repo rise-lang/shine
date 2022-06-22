@@ -17,7 +17,7 @@
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 500
+    "number_of_samples": 150
   },
   "scalarization_method": "linear",
   "models": {
@@ -32,7 +32,8 @@
         4
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -168,7 +169,8 @@
         256
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -310,7 +312,8 @@
       "dependencies": [
         "tuned_tileY",
         "tuned_vec"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -331,7 +334,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -352,7 +356,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -372,7 +377,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -388,7 +394,8 @@
         256
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     }
   }
 }

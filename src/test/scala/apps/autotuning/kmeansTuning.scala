@@ -166,14 +166,15 @@ class kmeansTuning extends test_util.Tests {
       s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"autotuning/kmeans_${inputSize}",
+      iterations = 10,
+      output = s"experiment/results/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
       inputSizes = Seq(inputSize, 5, 34),

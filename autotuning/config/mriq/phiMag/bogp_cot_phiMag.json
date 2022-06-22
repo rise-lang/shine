@@ -13,16 +13,18 @@
     "mode": "client-server"
   },
   "log_file": "bogp_cot_phiMag.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "design_of_experiment" : {
     "doe_type" : "random sampling",
-    "number_of_samples" : 60
+    "number_of_samples" : 6
   },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 440,
+  "optimization_iterations": 144,
   "input_parameters": {
     "tuned_s0": {
       "parameter_type": "ordinal",
@@ -40,7 +42,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -58,7 +61,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -80,7 +84,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -103,7 +108,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -126,7 +132,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     }
   }
 }

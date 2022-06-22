@@ -1,7 +1,7 @@
 package apps
 
 import rise.autotune
-import rise.autotune.{AutoTuningError, HostCode, Minimum, Timeouts, Tuner}
+import rise.autotune.{AutoTuningError, HostCode, Median, Minimum, Timeouts, Tuner}
 import rise.core.Expr
 import rise.core.types.Nat
 
@@ -70,7 +70,7 @@ package object autotuning {
       speedupFactor = 100,
       configFile = Some(configFile),
       hmConstraints = true,
-      runtimeStatistic = Minimum,
+      runtimeStatistic = Median,
       strategyMode = strategyMode,
       executor = executor,
       saveToFile = true

@@ -17,7 +17,7 @@
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 500,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -26,7 +26,8 @@
         4
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -162,7 +163,8 @@
         256
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -304,7 +306,8 @@
       "dependencies": [
         "tuned_tileY",
         "tuned_vec"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -325,7 +328,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -346,7 +350,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -366,7 +371,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform" : "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -382,7 +388,8 @@
         256
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform" : "log"
     }
   }
 }

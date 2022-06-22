@@ -1,5 +1,5 @@
 {
-  "application_name" : "bogp_cot_harris",
+  "application_name" : "bogplsp_cot_harris",
   "optimization_objectives" : ["runtime"],
   "feasible_output" : {
     "enable_feasible_predictor" : true,
@@ -10,7 +10,7 @@
   "hypermapper_mode" : {
     "mode" : "client-server"
   },
-  "log_file" : "bogp_cot_harris.log",
+  "log_file" : "bogplsp_cot_harris.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment" : {
@@ -20,6 +20,10 @@
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
+  },
+  "lengthscale_prior" : {
+    "name": "gamma",
+    "parameters": [1.3, 0.1]
   },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations" : 141,
