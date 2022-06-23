@@ -21,7 +21,8 @@ package object autotuning {
                      inputSizes: Seq[Nat],
                      strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
                      executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
-                     plotOnly: Boolean = false
+                     plotOnly: Boolean = false,
+                     disableChecking: Boolean = false
                    ) = {
 
     plotOnly match {
@@ -35,7 +36,7 @@ package object autotuning {
         for (i <- 1 to iterations) {
           configFiles.foreach(configFile =>
             try {
-              runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor)
+              runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor, disableChecking)
             } catch {
               case e: Throwable => println("tuning failed for configFile: " + configFile)
             }
@@ -54,7 +55,8 @@ package object autotuning {
                  hostCode: HostCode,
                  inputSizes: Seq[Nat],
                  strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]],
-                 executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])]
+                 executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])],
+                 disableCheking: Boolean
                ) = {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
@@ -73,7 +75,8 @@ package object autotuning {
       runtimeStatistic = Median,
       strategyMode = strategyMode,
       executor = executor,
-      saveToFile = true
+      saveToFile = true,
+      disableChecking = disableCheking
     )
 
     autotune.search(tuner)(e)

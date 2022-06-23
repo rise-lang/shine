@@ -39,7 +39,8 @@ package object autotune {
                    saveToFile: Boolean = false,
                    failureMode: FailureMode = IntMax,
                    strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
-                   executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None // todo change this to exeuction result
+                   executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
+                   disableChecking: Boolean = false
                   )
 
   // necessary host-code parts to execute the program
@@ -239,7 +240,14 @@ package object autotune {
           val parametersValuesMap: Map[NatIdentifier, Nat] = header.zip(parametersValues).map { case (h, p) =>
             NatIdentifier(h) -> (p.toFloat.toInt: Nat)
           }.toMap
-          if (checkConstraints(constraints, parametersValuesMap)) {
+
+          // check if we have to check
+          val check = tuner.disableChecking match {
+            case true => true
+            case false => checkConstraints(constraints, parametersValuesMap)
+          }
+
+          if (check) {
 
             tuner.executor match {
               case Some(exec) =>
