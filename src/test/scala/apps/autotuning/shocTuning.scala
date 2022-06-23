@@ -67,7 +67,7 @@ class shocTuning extends test_util.Tests {
   // hostcode-gen does not work with vec(4, f32) types!
   test("generate code shocTuning") {
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("s0") -> (128: Nat),
     )
 
@@ -81,9 +81,9 @@ class shocTuning extends test_util.Tests {
     println("codeHosted: \n" + codeHosted)
   }
 
-  test("execute nbody"){
+  test("execute shoc") {
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("s0") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
@@ -95,7 +95,7 @@ class shocTuning extends test_util.Tests {
 
     val result = autotune.execution.execute(
       expression = shocReplaced,
-      hostCode = HostCode(init(512), compute, finish),
+      hostCode = HostCode(init(1024), compute, finish),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
@@ -105,7 +105,7 @@ class shocTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("tune shoc"){
+  test("tune shoc") {
     val inputSize = 1024
 
     val configs = Seq(
