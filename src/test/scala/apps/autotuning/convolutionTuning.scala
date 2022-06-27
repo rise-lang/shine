@@ -135,11 +135,11 @@ class convolutionTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -150,7 +150,7 @@ class convolutionTuning extends test_util.Tests {
       convolution,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
