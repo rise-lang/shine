@@ -17,12 +17,12 @@
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 500
+    "number_of_samples": 150
   },
   "scalarization_method": "linear",
   "optimization_iterations": 0,
-  "input_parameters" : {
-    "tuned_gs0" : {
+  "input_parameters": {
+    "tuned_gs0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -44,9 +44,9 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_gs1" : {
+    "tuned_gs1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -68,9 +68,9 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_ls0" : {
+    "tuned_ls0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -91,9 +91,9 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_ls1" : {
+    "tuned_ls1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -110,7 +110,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     }
   }
 }

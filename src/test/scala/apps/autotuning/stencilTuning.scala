@@ -143,11 +143,11 @@ class stencilTuning extends test_util.Tests {
 
   }
 
-  test("test stencil execution") {
+  ignore("test stencil execution") {
     executeStencilDefault(stencil)
   }
 
-  test("stencil tuning experiment") {
+  ignore("stencil tuning experiment") {
     val inputSize: Int = 1024
 
     val tuner = Tuner(
@@ -177,7 +177,7 @@ class stencilTuning extends test_util.Tests {
       s"autotuning/config/stencil/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/stencil/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/stencil/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/stencil/${inputSize.toString}/bogpslp_cot_${inputSize.toString}.json",
+      s"autotuning/config/stencil/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/stencil/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
