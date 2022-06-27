@@ -177,12 +177,12 @@ class kmeansTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -193,7 +193,7 @@ class kmeansTuning extends test_util.Tests {
       e = kmeans,
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
       inputSizes = Seq(inputSize, 5, 34),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
