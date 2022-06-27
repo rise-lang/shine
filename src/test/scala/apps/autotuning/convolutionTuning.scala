@@ -1,11 +1,12 @@
 package apps.autotuning
 
 import rise.core.DSL._
-import apps.convolution.hosted.{blurYTiled2DTiledLoadingTransposedTuning}
+import apps.convolution.hosted.blurYTiled2DTiledLoadingTransposedTuning
 import apps.separableConvolution2D._
 import rise.autotune
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, wrapOclRun}
 import rise.core.Expr
+import rise.core.types.{Nat, TuningParameter}
 
 class convolutionTuning extends test_util.Tests {
 
@@ -116,12 +117,29 @@ class convolutionTuning extends test_util.Tests {
   test("tune convolution 1024") {
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (8: Nat),
+      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("s0") -> (8: Nat),
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("s0") -> (1: Nat),
+    )
+
     val configs = Seq(
-      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      //      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -131,7 +149,10 @@ class convolutionTuning extends test_util.Tests {
       s"experiment/results/convolution_${inputSize}",
       convolution,
       HostCode(init(inputSize), compute, finish),
-      Seq(inputSize)
+      Seq(inputSize),
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
