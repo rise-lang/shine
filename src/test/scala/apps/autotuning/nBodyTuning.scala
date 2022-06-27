@@ -104,14 +104,15 @@ class nBodyTuning extends test_util.Tests {
 
   test("execute nbody tuning") {
 
-    // could not solve constraints
+    // todo fix error
+    // <4>f32 types in C are not supported
     val nbody: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyNVIDIAWithParams(256, 1))
-            ))))
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(nbodyNVIDIAWithParams(256, 1))
+          ))))
 
     //    println("nbody2: " + nbody2)
 

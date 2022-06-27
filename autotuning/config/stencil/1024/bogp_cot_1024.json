@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_emb_q",
+  "application_name": "bogp_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,15 +12,19 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_emb_q.log",
+  "log_file": "bogp_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 150
+    "number_of_samples": 5
   },
   "scalarization_method": "linear",
-  "optimization_iterations": 0,
+  "models": {
+    "model": "gaussian_process"
+  },
+  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 145,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -85,12 +89,8 @@
         512,
         1024
       ],
-      "constraints": [
-        "tuned_ls0 * tuned_ls1 <= 1024"
-      ],
-      "dependencies": [
-        "tuned_ls1"
-      ],
+      "constraints": [],
+      "dependencies": [],
       "transform": "log"
     },
     "tuned_ls1": {
@@ -108,10 +108,13 @@
         512,
         1024
       ],
-      "constraints": [],
-      "dependencies": [],
+      "constraints": [
+        "tuned_ls0 * tuned_ls1 <= 1024"
+      ],
+      "dependencies": [
+        "tuned_ls0"
+      ],
       "transform": "log"
     }
   }
 }
-
