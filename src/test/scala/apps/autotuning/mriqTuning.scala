@@ -318,12 +318,29 @@ class mriqTuning extends test_util.Tests {
   test("tune computePhiMag 1024") {
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (256: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (512: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (8: Nat)
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (1: Nat)
+    )
+
     val configs = Seq(
-      s"autotuning/config/mriq/phiMag/rs_cot_phiMag.json",
-      s"autotuning/config/mriq/phiMag/rs_emb_phiMag.json",
-      s"autotuning/config/mriq/phiMag/bogp_cot_phiMag.json",
-      s"autotuning/config/mriq/phiMag/bogplsp_cot_phiMag.json",
-      s"autotuning/config/mriq/phiMag/atf_emb_phiMag.json"
+      //      s"autotuning/config/mriq/phiMag/rs_cot_phiMag.json",
+      //      s"autotuning/config/mriq/phiMag/rs_emb_phiMag.json",
+      //      s"autotuning/config/mriq/phiMag/bogp_cot_phiMag.json",
+      //      s"autotuning/config/mriq/phiMag/bogplsp_cot_phiMag.json",
+      //      s"autotuning/config/mriq/phiMag/atf_emb_phiMag.json"
     )
 
     runExperiment(
@@ -333,29 +350,50 @@ class mriqTuning extends test_util.Tests {
       output = s"experiment/results/mriq/phiMag",
       computePhiMagTuning,
       HostCode(initPhiMag(inputSize), computePhiMag, finishPhiMag),
-      inputSizes = Seq(1024)
+      inputSizes = Seq(1024),
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
   test("tune computeQ 1024") {
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (64: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (512: Nat),
+      TuningParameter("gs1") -> (1: Nat)
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat)
+    )
+
     val configs = Seq(
-      s"autotuning/config/mriq/q/rs_cot_q.json",
-      s"autotuning/config/mriq/q/rs_emb_q.json",
-      s"autotuning/config/mriq/q/bogp_cot_q.json",
-      s"autotuning/config/mriq/q/bogplsp_cot_q.json",
-      s"autotuning/config/mriq/q/atf_emb_q.json"
+      //      s"autotuning/config/mriq/q/rs_cot_q.json",
+      //      s"autotuning/config/mriq/q/rs_emb_q.json",
+      //      s"autotuning/config/mriq/q/bogp_cot_q.json",
+      //      s"autotuning/config/mriq/q/bogplsp_cot_q.json",
+      //      s"autotuning/config/mriq/q/atf_emb_q.json"
     )
 
     runExperiment(
       name = s"q_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      output = s"experiment/results/q",
+      output = s"experiment/results/mriq/q",
       computeQTuning,
       HostCode(initQ(inputSize, inputSize), computeQ, finishQ),
-      inputSizes = Seq(1024, 1024)
+      inputSizes = Seq(1024, 1024),
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 }
