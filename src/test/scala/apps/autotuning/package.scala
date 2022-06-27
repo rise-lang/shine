@@ -98,9 +98,9 @@ package object autotuning {
       })
 
       // use first config for printing
-      val name = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
-      val configPrinting = output + "/" + name + "/" + name + ".json"
-      val configScript = name + "/" + name + ".json"
+      val nameForConfig = rise.autotune.configFileGeneration.parseFromJson(configs(0), "application_name")
+      val configPrinting = output + "/" + nameForConfig + "/" + nameForConfig + ".json"
+      val configScript = nameForConfig + "/" + nameForConfig + ".json"
       val outputPrinting = s"${output}/${name}"
       val outputScript = s"${name}"
 
