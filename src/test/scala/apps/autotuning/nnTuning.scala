@@ -149,11 +149,11 @@ class nnTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -164,7 +164,7 @@ class nnTuning extends test_util.Tests {
       e = nn,
       hostCode = HostCode(init(inputSize), compute, finish),
       inputSizes = Seq(inputSize),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
