@@ -88,11 +88,11 @@ class convolutionTuning extends test_util.Tests {
 
   }
 
-  test("test convolution tuning24") {
+  ignore("test convolution tuning24") {
     executeConvolutionDefault(convolution)
   }
 
-  test("convolution tuning experiment") {
+  ignore("convolution tuning experiment") {
 
     val tuner = Tuner(
       hostCode = HostCode(init(N), compute, finish),
