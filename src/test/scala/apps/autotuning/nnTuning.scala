@@ -54,7 +54,7 @@ class nnTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute nn") {
+  ignore("execute nn") {
 
     val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
@@ -77,7 +77,7 @@ class nnTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("search nn with generated config file") {
+  ignore("search nn with generated config file") {
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
@@ -133,12 +133,27 @@ class nnTuning extends test_util.Tests {
 
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat)
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat)
+    )
+
     val configs = Seq(
-      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      //      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -148,7 +163,10 @@ class nnTuning extends test_util.Tests {
       s"experiment/results/nn_${inputSize}",
       e = nn,
       hostCode = HostCode(init(inputSize), compute, finish),
-      inputSizes = Seq(inputSize)
+      inputSizes = Seq(inputSize),
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
