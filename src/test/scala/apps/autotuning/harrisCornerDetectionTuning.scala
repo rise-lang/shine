@@ -11,7 +11,7 @@ import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune.execution.{getRuntimeFromClap, logger}
 import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
-import rise.core.types.Nat
+import rise.core.types.{Nat, TuningParameter}
 import shine.OpenCL.{GlobalSize, LocalSize}
 import shine.OpenCL.KernelModule.translationToString
 import shine.OpenCL.Module.translateToString
@@ -153,13 +153,36 @@ class harrisCornerDetectionTuning extends test_util.Tests {
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
 
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (16: Nat),
+      TuningParameter("gs1") -> (16: Nat),
+      TuningParameter("tileX") -> (8: Nat),
+      TuningParameter("tileY") -> (8: Nat),
+      TuningParameter("vec") -> (4: Nat)
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("tileX") -> (8: Nat),
+      TuningParameter("tileY") -> (8: Nat),
+      TuningParameter("vec") -> (4: Nat)
+    )
+
+
     val configs = Seq(
-      "autotuning/config/harris/rs_cot_harris.json",
-      "autotuning/config/harris/rs_emb_harris.json",
-//      "autotuning/config/harris/ls_cot_harris.json",
-      "autotuning/config/harris/bogp_cot_harris.json",
-      "autotuning/config/harris/bogplsp_cot_harris.json",
-      "autotuning/config/harris/atf_emb_harris.json"
+      //      "autotuning/config/harris/rs_cot_harris.json",
+      //      "autotuning/config/harris/rs_emb_harris.json",
+      //      "autotuning/config/harris/ls_cot_harris.json",
+      //      "autotuning/config/harris/bogp_cot_harris.json",
+      //      "autotuning/config/harris/bogplsp_cot_harris.json",
+      //      "autotuning/config/harris/atf_emb_harris.json"
     )
 
     runExperiment(
@@ -170,7 +193,9 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
       inputSizes = Seq(128, 256),
-      plotOnly = false
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 }
