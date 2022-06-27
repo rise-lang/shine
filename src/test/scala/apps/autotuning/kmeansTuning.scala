@@ -161,13 +161,28 @@ class kmeansTuning extends test_util.Tests {
 
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (256: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+    )
+
     val configs = Seq(
-      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -178,6 +193,9 @@ class kmeansTuning extends test_util.Tests {
       e = kmeans,
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
       inputSizes = Seq(inputSize, 5, 34),
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 }
