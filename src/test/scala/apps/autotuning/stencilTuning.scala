@@ -173,12 +173,28 @@ class stencilTuning extends test_util.Tests {
   test("tune stencil 1024") {
     val inputSize: Int = 1024
 
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (4: Nat),
+      TuningParameter("ls1") -> (4: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+    )
+
     val configs = Seq(
-      s"autotuning/config/stencil/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/stencil/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/stencil/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/stencil/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/stencil/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      //      s"autotuning/config/stencil/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/stencil/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/stencil/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/stencil/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/stencil/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -189,7 +205,9 @@ class stencilTuning extends test_util.Tests {
       stencil,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
-      plotOnly = false
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
