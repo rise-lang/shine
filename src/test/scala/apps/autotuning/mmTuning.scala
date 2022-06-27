@@ -450,14 +450,41 @@ class mmTuning extends test_util.Tests {
   test("tune mm 1024") {
     val inputSize: Int = 1024
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (8: Nat),
+      TuningParameter("gs0") -> (256: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("v5") -> (64: Nat), // tile-width A
+      TuningParameter("v6") -> (128: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (128: Nat), // tile-width B
+      TuningParameter("v8") -> (16: Nat) // tile-height A,B
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (1: Nat),
+      TuningParameter("v5") -> (4: Nat), // tile-width A
+      TuningParameter("v6") -> (4: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (4: Nat), // tile-width B
+      TuningParameter("v8") -> (1: Nat) // tile-height A,B
+    )
+
     val configs = Seq(
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/expert_${inputSize.toString}.json"
+      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //            s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -469,7 +496,9 @@ class mmTuning extends test_util.Tests {
       mm,
       HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       Seq(inputSize, inputSize, inputSize),
-      plotOnly = false
+      plotOnly = true,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
