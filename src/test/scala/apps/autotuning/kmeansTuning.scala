@@ -172,8 +172,8 @@ class kmeansTuning extends test_util.Tests {
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
       TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat),
     )
 
     val configs = Seq(
