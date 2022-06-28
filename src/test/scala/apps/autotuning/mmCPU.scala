@@ -148,6 +148,10 @@ class mmCPU extends test_util.Tests {
   test("run experiment mmCPU") {
     val inputSize: Int = 1024
 
+
+    // todo add default and expert configuration
+
+
     val configs = Seq(
       s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",

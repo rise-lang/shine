@@ -336,22 +336,22 @@ class mriqTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mriq/phiMag/rs_cot_phiMag.json",
-      //      s"autotuning/config/mriq/phiMag/rs_emb_phiMag.json",
-      //      s"autotuning/config/mriq/phiMag/bogp_cot_phiMag.json",
-      //      s"autotuning/config/mriq/phiMag/bogplsp_cot_phiMag.json",
-      //      s"autotuning/config/mriq/phiMag/atf_emb_phiMag.json"
+      s"autotuning/config/mriq/phiMag/rs_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/rs_emb_phiMag.json",
+      s"autotuning/config/mriq/phiMag/bogp_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/bogplsp_cot_phiMag.json",
+      s"autotuning/config/mriq/phiMag/atf_emb_phiMag.json"
     )
 
     runExperiment(
       name = s"phiMag_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      output = s"experiment/results/mriq/phiMag",
+      s"/home/jo/development/experiments/tuning/results/mriq/phiMag",
       computePhiMagTuning,
       HostCode(initPhiMag(inputSize), computePhiMag, finishPhiMag),
       inputSizes = Seq(1024),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
@@ -376,22 +376,23 @@ class mriqTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mriq/q/rs_cot_q.json",
-      //      s"autotuning/config/mriq/q/rs_emb_q.json",
-      //      s"autotuning/config/mriq/q/bogp_cot_q.json",
-      //      s"autotuning/config/mriq/q/bogplsp_cot_q.json",
-      //      s"autotuning/config/mriq/q/atf_emb_q.json"
+      s"autotuning/config/mriq/q/rs_cot_q.json",
+      s"autotuning/config/mriq/q/rs_emb_q.json",
+      s"autotuning/config/mriq/q/bogp_cot_q.json",
+      s"autotuning/config/mriq/q/bogplsp_cot_q.json",
+      s"autotuning/config/mriq/q/atf_emb_q.json"
     )
 
     runExperiment(
       name = s"q_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      output = s"experiment/results/mriq/q",
+      output = s"/home/jo/development/experiments/tuning/results/mriq/q",
+      //      output = s"experiment/results/mriq/q",
       computeQTuning,
       HostCode(initQ(inputSize, inputSize), computeQ, finishQ),
       inputSizes = Seq(1024, 1024),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )

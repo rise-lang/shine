@@ -146,7 +146,7 @@ class convolutionTuning extends test_util.Tests {
       name = s"convolution_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      s"experiment/results/convolution_${inputSize}",
+      s"/home/jo/development/experiments/tuning/results/convolution_${inputSize}",
       convolution,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),

@@ -157,10 +157,11 @@ class nnTuning extends test_util.Tests {
     )
 
     runExperiment(
-      name = s"convolution_${inputSize}",
+      name = s"nn_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      s"experiment/results/nn_${inputSize}",
+      output = s"/home/jo/development/experiments/tuning/results/nn_${inputSize}",
+      //      s"experiment/results/nn_${inputSize}",
       e = nn,
       hostCode = HostCode(init(inputSize), compute, finish),
       inputSizes = Seq(inputSize),

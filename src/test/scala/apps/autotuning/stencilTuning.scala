@@ -190,22 +190,23 @@ class stencilTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/stencil/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/stencil/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/stencil/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/stencil/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/stencil/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      s"autotuning/config/stencil/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/stencil/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/stencil/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/stencil/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/stencil/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"stencil_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      output = s"experiment/results/stencil_${inputSize}",
+      //      output = s"experiment/results/stencil_${inputSize}",
+      output = s"/home/jo/development/experiments/tuning/results/stencil_${inputSize}",
       stencil,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
-      plotOnly = false,
+      plotOnly = true,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
