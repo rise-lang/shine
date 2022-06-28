@@ -114,9 +114,10 @@ class mmCPU extends test_util.Tests {
   val executor = CExecutor(
     lowering = lowerToC,
     goldExpression = gold,
-    iterations = 10,
+    iterations = 100,
     inputSize = 1024,
     threshold = 10,
+    timeout = 10000,
     output = "autotuning",
     saveToDisk = false
   )
