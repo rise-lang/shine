@@ -114,7 +114,7 @@ class mmCPU extends test_util.Tests {
   val executor = CExecutor(
     lowering = lowerToC,
     goldExpression = gold,
-    iterations = 100,
+    iterations = 50,
     inputSize = 1024,
     threshold = 10,
     timeout = 10000,
@@ -158,10 +158,10 @@ class mmCPU extends test_util.Tests {
 
     val expertConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
       Map(
-        "tuned_tile51" -> 32,
-        "tuned_tile52" -> 32,
-        "tuned_split100" -> 4,
-        "tuned_vec101" -> 32
+        "tuned_tile51" -> 128,
+        "tuned_tile52" -> 128,
+        "tuned_split100" -> 8,
+        "tuned_vec101" -> 128
       ),
       Map(
         "tuned_reorder" -> List(0, 1, 4, 2, 5, 3)
@@ -181,18 +181,18 @@ class mmCPU extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mmCPU_${inputSize}",
       configFiles = configs,
-      iterations = 5,
+      iterations = 10,
       output = s"experiment/results/mmCPU_${inputSize}",
       mm,
       HostCode("", "", ""),
