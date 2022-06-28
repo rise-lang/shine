@@ -24,6 +24,7 @@ import rise.elevate.strategies.traversal._
 import scala.collection.immutable
 import scala.language.postfixOps
 import exploration.runner.CExecutor
+import rise.core.types.{Nat, TuningParameter}
 
 
 class mmCPU extends test_util.Tests {
@@ -76,6 +77,12 @@ class mmCPU extends test_util.Tests {
     val split = tuningParameterMap.get("tuned_split100").get
     val reordering = permutationMap.get("tuned_reorder").get.map(x => x + 1)
     val vec = tuningParameterMap.get("tuned_vec101").get
+
+    println("tileX: " + tileX)
+    println("tileY: " + tileY)
+    println("split: " + split)
+    println("reordering: " + reordering.mkString(", "))
+    println("vec: " + vec)
 
     //    val tileX = 32
     //    val tileY = 32
@@ -148,17 +155,37 @@ class mmCPU extends test_util.Tests {
   test("run experiment mmCPU") {
     val inputSize: Int = 1024
 
+    val expertConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
+      Map(
+        "tuned_tile51" -> 32,
+        "tuned_tile52" -> 32,
+        "tuned_split100" -> 4,
+        "tuned_vec101" -> 32
+      ),
+      Map(
+        "tuned_reorder" -> List(0, 1, 4, 2, 5, 3)
+      )
+    )
 
-    // todo add default and expert configuration
-
+    val defaultConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
+      Map(
+        "tuned_tile51" -> 32,
+        "tuned_tile52" -> 32,
+        "tuned_split100" -> 4,
+        "tuned_vec101" -> 32
+      ),
+      Map(
+        "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
+      )
+    )
 
     val configs = Seq(
-      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
 
     runExperiment(
@@ -172,7 +199,11 @@ class mmCPU extends test_util.Tests {
       strategyMode = Some(inject),
       executor = Some(execute),
       //      plotOnly = true
-      plotOnly = false
+      plotOnly = false,
+      expert = None,
+      default = None,
+      expert2 = Some(expertConfiugration),
+      default2 = Some(defaultConfiugration)
     )
   }
 

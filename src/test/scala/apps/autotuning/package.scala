@@ -3,6 +3,7 @@ package apps
 import exploration.explorationUtil.jsonParser.readFile
 import rise.autotune
 import rise.autotune.{AutoTuningError, HostCode, Median, Minimum, Timeouts, Tuner}
+import rise.core.DSL.Type.Nat
 import rise.core.Expr
 import rise.core.types.Nat
 
@@ -25,7 +26,9 @@ package object autotuning {
                      plotOnly: Boolean = false,
                      disableChecking: Boolean = false,
                      expert: Option[Map[Nat, Nat]] = None,
-                     default: Option[Map[Nat, Nat]] = None
+                     default: Option[Map[Nat, Nat]] = None,
+                     expert2: Option[(Map[String, Int], Map[String, List[Int]])] = None,
+                     default2: Option[(Map[String, Int], Map[String, List[Int]])] = None
                    ) = {
 
     plotOnly match {
@@ -34,13 +37,25 @@ package object autotuning {
           case true => {
 
             // if expert -> read from output
-            val expertConfiguration = expert match {
+            var expertConfiguration = expert match {
               case Some(_) => readConfig(output + "/manual_configs/" + "expert.csv") // read in from output
               case None => None // do nothing
             }
 
             // if default -> read from output
-            val defaultConfiguration = default match {
+            var defaultConfiguration = default match {
+              case Some(_) => readConfig(output + "/manual_configs/" + "default.csv") // read in from output
+              case None => None // do nothing
+            }
+
+            // if expert2 -> read from output
+            expertConfiguration = expert2 match {
+              case Some(_) => readConfig(output + "/manual_configs/" + "expert.csv") // read in from output
+              case None => None // do nothing
+            }
+
+            // if default2 -> read from output
+            defaultConfiguration = default2 match {
               case Some(_) => readConfig(output + "/manual_configs/" + "default.csv") // read in from output
               case None => None // do nothing
             }
@@ -51,15 +66,27 @@ package object autotuning {
         }
       case false =>
 
-        // if expert -> read from output
-        val expertConfiguration = expert match {
+        // if expert -> run
+        var expertConfiguration = expert match {
           case Some(config) => runConfig(config, e, hostCode, output, "expert")
           case None => None // do nothing
         }
 
-        // if default -> read from output
-        val defaultConfiguration = default match {
+        // if default -> run
+        var defaultConfiguration = default match {
           case Some(config) => runConfig(config, e, hostCode, output, "default")
+          case None => None // do nothing
+        }
+
+        // if expert2 -> run config
+        expertConfiguration = expert2 match {
+          case Some(config) => runConfig2(config, e, strategyMode, executor, output, "expert")
+          case None => None // do nothing
+        }
+
+        // if default2 -> run
+        defaultConfiguration = default2 match {
+          case Some(config) => runConfig2(config, e, strategyMode, executor, output, "default")
           case None => None // do nothing
         }
 
@@ -96,6 +123,39 @@ package object autotuning {
     }
 
     output
+  }
+
+
+  def runConfig2(
+                  config: (Map[String, Int], Map[String, List[Int]]),
+                  e: Expr,
+                  strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]], // enable strategy mode
+                  executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])], // todo change this to exeuction result
+                  output: String,
+                  file: String
+                ): Option[Double] = {
+
+
+    println("config: \n" + config)
+
+    val strategy_result = strategyMode.get(e, config._1, config._2)
+
+    val e_replaced = strategy_result match {
+      case Right(expression) => expression
+      case Left(error) => throw new Exception("default or expert configuration should be valid!")
+    }
+
+    val configResult = executor.get(e_replaced)._2
+
+    // create output directory
+    (s"mkdir -p ${output}/manual_configs" !!)
+
+    // write result into file
+    val path = output + "/manual_configs/" + file + ".csv"
+    util.writeToPath(path, configResult.get.toString)
+
+    configResult
+
   }
 
   def runConfig(
