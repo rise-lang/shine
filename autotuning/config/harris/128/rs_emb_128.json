@@ -1,5 +1,5 @@
 {
-  "application_name": "atf_emb_harris",
+  "application_name": "rs_emb_128",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,12 +12,18 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "atf_emb_harris.log",
+  "log_file": "rs_emb_128.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
+  "design_of_experiment": {
+    "doe_type": "embedding random sampling",
+    "number_of_samples": 150
+  },
   "scalarization_method": "linear",
-  "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "models": {
+    "model": "gaussian_process"
+  },
+  "optimization_iterations": 0,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -27,7 +33,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -164,7 +170,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -307,7 +313,7 @@
         "tuned_tileY",
         "tuned_vec"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -329,7 +335,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -351,7 +357,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -372,7 +378,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -389,7 +395,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     }
   }
 }

@@ -51,13 +51,13 @@ package object autotuning {
             // if expert2 -> read from output
             expertConfiguration = expert2 match {
               case Some(_) => readConfig(output + "/manual_configs/" + "expert.csv") // read in from output
-              case None => None // do nothing
+              case None => expertConfiguration // do nothing
             }
 
             // if default2 -> read from output
             defaultConfiguration = default2 match {
               case Some(_) => readConfig(output + "/manual_configs/" + "default.csv") // read in from output
-              case None => None // do nothing
+              case None => defaultConfiguration // do nothing
             }
 
             plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
@@ -306,6 +306,10 @@ package object autotuning {
               s"--title ${name} "
           case None => ""
         }
+
+        println("command: " + command)
+        println("commandExp: " + commandExp)
+        println("commandDefault: " + commandDefault)
 
         Seq(command, commandExp, commandDefault)
       }

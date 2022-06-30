@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_cot_harris",
+  "application_name": "rs_cot_128",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_cot_harris.log",
+  "log_file": "rs_cot_128.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -33,7 +33,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -170,7 +170,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -313,7 +313,7 @@
         "tuned_tileY",
         "tuned_vec"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -335,7 +335,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -357,7 +357,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -378,7 +378,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -395,7 +395,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     }
   }
 }
