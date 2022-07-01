@@ -154,7 +154,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             ))))
 
 
-    // expert configuration
+    //    expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (32: Nat),
@@ -165,23 +165,35 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       TuningParameter("vec") -> (4: Nat)
     )
 
+
+    // Michel
+    //    val expertConfiguration: Map[Nat, Nat] = Map(
+    //      TuningParameter("ls0") -> (16: Nat),
+    //      TuningParameter("ls1") -> (16: Nat),
+    //      TuningParameter("gs0") -> (256: Nat),
+    //      TuningParameter("gs1") -> (256: Nat),
+    //      TuningParameter("tileX") -> (16: Nat),
+    //      TuningParameter("tileY") -> (16: Nat),
+    //      TuningParameter("vec") -> (4: Nat)
+    //    )
+
     val defaultConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1: Nat),
-      TuningParameter("gs1") -> (1: Nat),
-      TuningParameter("tileX") -> (8: Nat),
-      TuningParameter("tileY") -> (8: Nat),
-      TuningParameter("vec") -> (4: Nat)
+      TuningParameter("ls0") -> (16: Nat),
+      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("gs0") -> (256: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("tileX") -> (10: Nat),
+      TuningParameter("tileY") -> (24: Nat),
+      TuningParameter("vec") -> (2: Nat)
     )
 
 
     val configs = Seq(
-      "autotuning/config/harris/128/rs_cot_128.json",
-      "autotuning/config/harris/128/rs_emb_128.json",
-      "autotuning/config/harris/128/bogp_cot_128.json",
-      "autotuning/config/harris/128/bogplsp_cot_128.json",
-      "autotuning/config/harris/128/atf_emb_128.json"
+      //      "autotuning/config/harris/128/rs_cot_128.json",
+      //      "autotuning/config/harris/128/rs_emb_128.json",
+      //      "autotuning/config/harris/128/bogp_cot_128.json",
+      //      "autotuning/config/harris/128/bogplsp_cot_128.json",
+      //      "autotuning/config/harris/128/atf_emb_128.json"
     )
 
     runExperiment(
