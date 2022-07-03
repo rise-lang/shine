@@ -15,12 +15,17 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
-case class CExecutor(lowering: Strategy[Rise],
-                     goldExpression: Rise,
-                     iterations: Int,
-                     inputSize: Int,
-                     threshold: Double,
-                     output: String) extends Runner[Rise] {
+case class CExecutor(
+                      lowering: Strategy[Rise],
+                      goldExpression: Rise,
+                      iterations: Int,
+                      inputSize: Int,
+                      threshold: Double,
+                      output: String,
+                      timeout: Double = 1000,
+                      saveToDisk: Boolean = true
+                    ) extends Runner[Rise] {
+
   var globalBest: Option[Double] = None
   val N: Int = inputSize
   var best: Option[Double] = None
@@ -95,6 +100,8 @@ case class CExecutor(lowering: Strategy[Rise],
     runner.checkSolutionC(lowering, solution)
   }
 
+  //  override def plot(): Unit = ???
+
   def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
@@ -150,6 +157,10 @@ case class CExecutor(lowering: Strategy[Rise],
             println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
+              case 124 =>
+                println("timeout")
+                errorLevel = ExecutionTimeout
+                performanceValue = None
               case 11 =>
                 println("execution crashed")
                 System.exit(-1)
@@ -186,98 +197,102 @@ case class CExecutor(lowering: Strategy[Rise],
     //compile and execute program
     // val performanceValue = compileAndExecute(lowered.get, code, iterations)
 
-    // print code to file
-    var codeOutput = ""
+    saveToDisk match {
+      case true =>
 
-    // add high/low-level hash, performance value and code
-    codeOutput += "// high-level hash: " + hashProgram(solution.expression) + " \n"
-    codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
+        var codeOutput = ""
+        // add high/low-level hash, performance value and code
+        codeOutput += "// high-level hash: " + hashProgram(solution.expression) + " \n"
+        codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
 
-    // check if execution was valid
-    var filenameC = hashProgram(solution.expression) + "_" + hashProgram(lowered.get)
-    var filenameLowered = hashProgram(lowered.get)
-    var filenameHigh = hashProgram(solution.expression)
-    var folder = output + "/" + hashProgram(solution.expression)
+        // check if execution was valid
+        var filenameC = hashProgram(solution.expression) + "_" + hashProgram(lowered.get)
+        var filenameLowered = hashProgram(lowered.get)
+        var filenameHigh = hashProgram(solution.expression)
+        var folder = output + "/" + hashProgram(solution.expression)
 
-    performanceValue match {
-      case None =>
-        codeOutput += "// runtime: " + -1 + "\n \n"
-        //        filenameC += "_error"
-        filenameC += "_" + errorLevel.toString
-        filenameLowered += "_" + errorLevel.toString
-        filenameHigh += "_" + errorLevel.toString
-        folder += "_" + errorLevel.toString
-      case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
+        performanceValue match {
+          case None =>
+            codeOutput += "// runtime: " + -1 + "\n \n"
+            //        filenameC += "_error"
+            filenameC += "_" + errorLevel.toString
+            filenameLowered += "_" + errorLevel.toString
+            filenameHigh += "_" + errorLevel.toString
+            folder += "_" + errorLevel.toString
+          case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
+        }
+
+        // create folder for high-level expression
+        folder = IOHelper.getUniqueFilename(folder, 0)
+        s"mkdir $folder" !!
+
+        codeOutput += code
+
+        // print code to file
+        val uniqueFilenameCode = IOHelper.getUniqueFilename(folder + "/" + filenameC + ".c", 2)
+
+        // create file for code
+        val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
+
+        // write code to file
+        pwCode.write(codeOutput)
+
+        // close files
+        pwCode.close()
+
+        // write lowered expressions
+
+        // write runtime to output file
+        writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), solution.strategies, "executor")
+
+        // print lowered expression to file
+        val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
+
+        // create file for for lowered expression
+        val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
+
+        // lowered string
+        var loweredString = "high-level hash: " + hashProgram(solution.expression) + "\n"
+        loweredString += lowered.get
+
+        // write code to file
+        pwLowered.write(loweredString)
+
+        // close files
+        pwLowered.close()
+
+        // write high-level expressions
+
+        // print lowered expression to file
+        val uniqueFilenameHigh = IOHelper.getUniqueFilename(folder + "/" + filenameHigh, 0)
+
+        // create file for for lowered expression
+        val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
+
+        // write code to file
+        pwHigh.write(solution.expression.toString)
+
+        // close files
+        pwHigh.close()
+
+        // write strategies
+        val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
+
+        // create file for for lowered expression
+        val pwStrategy = new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
+
+        // create strategy string
+        var strategyString = ""
+        solution.strategies.foreach(elem => {
+          strategyString += s"$elem\n"
+        })
+
+        // write and close
+        pwStrategy.write(strategyString)
+        pwStrategy.close()
+
+      case false => // nothing
     }
-
-    // create folder for high-level expression
-    folder = IOHelper.getUniqueFilename(folder, 0)
-    s"mkdir $folder" !!
-
-    codeOutput += code
-
-    // print code to file
-    val uniqueFilenameCode = IOHelper.getUniqueFilename(folder + "/" + filenameC + ".c", 2)
-
-    // create file for code
-    val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
-
-    // write code to file
-    pwCode.write(codeOutput)
-
-    // close files
-    pwCode.close()
-
-    // write lowered expressions
-
-    // write runtime to output file
-    writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), solution.strategies, "executor")
-
-    // print lowered expression to file
-    val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
-
-    // create file for for lowered expression
-    val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
-
-    // lowered string
-    var loweredString = "high-level hash: " + hashProgram(solution.expression) + "\n"
-    loweredString += lowered.get
-
-    // write code to file
-    pwLowered.write(loweredString)
-
-    // close files
-    pwLowered.close()
-
-    // write high-level expressions
-
-    // print lowered expression to file
-    val uniqueFilenameHigh = IOHelper.getUniqueFilename(folder + "/" + filenameHigh, 0)
-
-    // create file for for lowered expression
-    val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
-
-    // write code to file
-    pwHigh.write(solution.expression.toString)
-
-    // close files
-    pwHigh.close()
-
-    // write strategies
-    val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
-
-    // create file for for lowered expression
-    val pwStrategy = new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
-
-    // create strategy string
-    var strategyString = ""
-    solution.strategies.foreach(elem => {
-      strategyString += s"$elem\n"
-    })
-
-    // write and close
-    pwStrategy.write(strategyString)
-    pwStrategy.close()
 
     (solution.expression, performanceValue)
   }
@@ -531,11 +546,14 @@ int main(int argc, char** argv) {
     // todo: make this configable using json file
     // compile
     //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
-    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
 
     //      s"clang $src -o $bin -lm -fopenmp" !!
+    //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
   }
@@ -548,8 +566,13 @@ int main(int argc, char** argv) {
     var runtime = 0.0
     //check global execution time. Discard any with factor 10
     var i = 0
+
     while (i < N) {
-      runtimes(i) = (s"$bin" !!).toDouble
+      //      runtimes(i) = (s"$bin" !!).toDouble
+
+      runtimes(i) = (s"timeout " +
+        s"${(timeout * 1).toDouble / 1000.toDouble}s " +
+        s"$bin" !!).toDouble
 
       println("runtime:(" + i + "): " + runtimes(i))
       println("globalBest: " + globalBest)
@@ -597,7 +620,7 @@ int main(int argc, char** argv) {
     var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
       hashProgram(result._1) + ", " +
       hashProgram(result._2) + ", " +
-      rewrite.mkString(" | ") + ", " +
+      rewrite.mkString("\"[", ", ", "]\"") + ", " +
       result._4.toString + ", "
 
     result._3 match {

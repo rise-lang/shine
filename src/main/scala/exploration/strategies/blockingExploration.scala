@@ -128,28 +128,28 @@ object blockingExploration {
 
 
   val strategies: Set[Strategy[Rise]] = Set(
-    //    baseline,
-    blocking_step0,
-    blocking_step1, // can rewrite but not execute
-    blocking_step2,
-    blocking_step3,
-    //    vectorization_step0,
-    //    loopPerm_step2,
-    //    packB
-    //    loopPerm_step0,
-    //    loopPerm_step1,
-    //    loopPerm_step3,
-    //    loopPerm_step4
+    blocking_step0, // fuseReduceMap
+    blocking_step1, // tile
+    blocking_step2, // reduceMapFission
+    blocking_step3, // reordering
+//    vectorization_step0 // vectorization
   )
 
+  @rule def reorderingStrategy: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
+
+  // rules to try traversals
   val rules: Set[Strategy[Rise]] = Set(
-    fuseReduceMap,
+    fuseReduceMap, // blocking_step0
+//    tile(64,64), // ...
     tile(32, 32),
+//    tile(16,16),
+//    tile(8,8),
+//    tile(4,4),
     reduceMapFission(),
-    splitStrategy(4),
-    //    reorder(List(1, 2, 5, 6, 3, 4)),
-    //    vectorize(32)
+    reorderingStrategy,
+//    vectorize(32)
   )
+
 
   //  val lowering = lowerToC
 
