@@ -14,8 +14,8 @@ object Vec {
 }
 
 case class Mat[T](cols: Seq[T]*) extends Value[T]{
-  require(this.shape._1>0)
-  require(this.shape._2>0)
+  require(cols.nonEmpty)
+  require(cols.head.nonEmpty)
   require(cols.forall(_.length == cols.head.length))
 }
 object Mat {

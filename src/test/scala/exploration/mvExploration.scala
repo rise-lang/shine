@@ -1,10 +1,9 @@
 package exploration
 
 import apps.separableConvolution2D.mulT
-import exploration.MatrixOps.MV
+import exploration.matmath.Operators._
+import exploration.matmath._
 import exploration.strategies.{defaultStrategiesGPU, simpleStrategiesGPU}
-import meta.parser.Nat.AST
-import rise.autotune.HostCode
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
@@ -13,9 +12,6 @@ import rise.core.types.DataType._
 import rise.core.types._
 import rise.openCL.DSL.mapGlobal
 import rise.openCL.primitives.oclReduceSeq
-import util.writeToTempFile
-
-import java.io.File
 
 
 class mvExploration extends test_util.Tests {
@@ -96,27 +92,28 @@ object mvExploration {
       mapGlobal(0)(fun(x => x._1 + x._2))
   ))
 
+  /*
   def writeMat[A] (mat: Mat[A]): File = writeToTempFile("mvInput", "", mat.cols.map(_.values.mkString(" ")).mkString("\n"))
   def writeVec[A] (vec: Vec[A]): File = writeToTempFile("mvInput", "", vec.values.mkString(" "))
 
   case class OCLBufferSpec(i: Int, dimension: (Int, Int), size: Int, dataFile: File)
 
-  /*
-  def oclFloatHostCode(inputs: Seq[Value[Float]], output: Value[Float]): HostCode = {
+  def oclFloatHostCode(inputs: Seq[Value[Float]], args: Seq[Integer], expectedOutput: Value[Float]): HostCode = {
     def declareVars(n:Int, value: Value[Float]) = {
-      case Mat(size,_) => declareInVars(n, size._1 * size._2)
-      case Vec(size, _) => declareInVars(n, size)
+      case mat@Mat(vals)  => declareInVars(n, mat.shape._1 * mat.shape._2)
+      case vec@Vec(_) => declareInVars(n, vec.size)
       case Scalar(value) => s"float in$n = $value;"
     }
     def declareInVars(n:Int, length:Int) =
       s"""
          |  int length$n = $length
-         |  Buffer inBuff$n = createBuffer(ctx, length * sizeof(float), HOST_WRITE | DEVICE_READ);
-         |  float* in$n = hostBufferSync(ctx, inBuff$n, length * sizeof(float), HOST_WRITE);
+         |  Buffer inBuff$n = createBuffer(ctx, length$n * sizeof(float), HOST_WRITE | DEVICE_READ);
+         |  float* in$n = hostBufferSync(ctx, inBuff$n, length$n * sizeof(float), HOST_WRITE);
          |""".stripMargin
+
     def writeValue(value: Value[Float]) = {
-      case Mat(_, vecs*) =>
-      case Vec(_, values*) => writeToTempFile("mvInput", "", vec.values.mkString(" "))
+      case Mat(vecs) =>
+      case Vec(values,v2) => writeToTempFile("mvInput", "", values.mkString(" "))
     }
 
     def fillInVar(n:Int, value: Value[Float]) = {
@@ -134,8 +131,10 @@ object mvExploration {
     val init = "FILE* file;" +
       inputs.zipWithIndex.map(declareVars(_.))
 
-  }*/
+  }
+  */
 
+  /*
   def oclHostCode(inputs: Seq[(Int,Int)], output: (Int,Int), args: Seq[Int]): HostCode = {
 
     val Seq(inputSpecs, Seq(outputSpec)) = Seq(inputs, Seq(output))
@@ -147,8 +146,19 @@ object mvExploration {
           dataFile = writeMat(Mat.generate(dimension._1, dimension._2)(Math.random.toFloat))
         )}
       )
+    */
+/*
+    val inputSpecs = inputs.zipWithIndex.map { case (dimension, i) => OCLBufferSpec(
+      i = i,
+      dimension = dimension,
+      size = dimension._1 * dimension._2,
+      dataFile = writeMat(Mat.generate(dimension._1, dimension._2)(Math.random.toFloat))
+    )}
+ */
 
+    //val outputSpec =
 
+/*
     val init =
       "FILE* file;" +
       inputSpecs.map(spec =>
@@ -191,15 +201,17 @@ object mvExploration {
          |""".stripMargin
 
     HostCode(init , compute, finish)
+    HostCode("","","")
   }
+  */
 
   def main(args: Array[String]): Unit = {
     val m = Mat.generate(1024,1024)(Math.random.toFloat)
     val v = Vec.generate(1024)(Math.random.toFloat)
-    val result = m * v
 
+    val hostCode = OclHostCodeFactory.oclFloatHostCode(Seq(m,v), m*v, Seq(1024, 1024))
 
-    val hostCode = oclHostCode(Seq((1024,1024),(1,1024)),(1,1024), Seq(1024, 1024))
+    //val hostCode = oclHostCode(Seq((1024,1024),(1,1024)),(1,1024), Seq(1024, 1024))
     //val hostCode = mvHostCode(1024, 1024)
     riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(hostCode))
 //    riseExploration(mvHighLevel, defaultStrategiesGPU.lowering, defaultStrategiesGPU.strategies, "exploration/configuration/mv/mv_tuner.json", Some(HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish)))
