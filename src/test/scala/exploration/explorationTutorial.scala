@@ -109,10 +109,9 @@ object explorationTutorial {
       blockingExploration.lowering,
       blockingExploration.strategies,
       "exploration/configuration/mm/mm_example_autotuner.json",
-      rewriteFunction = Some(rewriteFunction),
-      afterRewrite = Some(DFNF())
+      rewriteFunction = None,
+      afterRewrite = None
     )
   }
-
 }
 
