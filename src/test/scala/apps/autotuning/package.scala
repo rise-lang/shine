@@ -145,7 +145,13 @@ package object autotuning {
       case Left(error) => throw new Exception("default or expert configuration should be valid!")
     }
 
-    val configResult = executor.get(e_replaced)._2
+    val result = executor.get(e_replaced)._1
+
+    val configResult = result match {
+      case Left(_) => None
+      case Right(value) => Some(value)
+    }
+
 
     // create output directory
     (s"mkdir -p ${output}/manual_configs" !!)
