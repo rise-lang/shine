@@ -114,6 +114,8 @@ object gen {
 
       /**
         * Accelerator function only - Injects unpacking code
+        *
+        * TODO: Introduce appropriate syntax checking for GAP8 application code (not only for accelerator function)
         * */
       private def functionAsStringFromExpr(name: String = "foo",
                                            gen: CCodeGenerator = CCodeGenerator()
