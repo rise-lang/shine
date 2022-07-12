@@ -203,6 +203,6 @@ class codegen extends test_util.Tests {
     findDeviceBufferSync(3, code)
     checkCoreNumber(8, code)
     findParamsStruct("int16_t*", 3, code)
-    println(code)
+    //println(code)
   }
 }

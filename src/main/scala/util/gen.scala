@@ -120,8 +120,8 @@ object gen {
                                           ): Expr => String =
         functionFromExpr(name, gen) andThen
           GAP8.Module.injectUnpacking andThen
-          C.Module.translateToString// andThen
-          //run(SyntaxChecker(_))
+          C.Module.translateToString andThen
+          run(SyntaxChecker(_))
     }
 
     type HostedModule = GAP8.Module
