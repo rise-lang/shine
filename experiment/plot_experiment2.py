@@ -417,7 +417,9 @@ def plot_performance_evolution_confidence(name, default, expert, data):
     elif y_up > 50:
         step = 10
     elif y_up > 10:
-        step = 5
+        step = 2
+    elif y_up > 5:
+        step = 1
     else:
         step = 1
 
