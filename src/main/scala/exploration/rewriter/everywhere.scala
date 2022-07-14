@@ -6,7 +6,7 @@ import rise.core.types.DataType.{ArrayType, DataTypeIdentifier, f32}
 import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import elevate.core._
-import elevate.heuristic_search.util.{Solution, hashSolution}
+import elevate.heuristic_search.util.{Solution, hashProgram, hashSolution}
 import rise.autotune.HostCode
 import rise.core.equality.{exprAlphaEq, typeAlphaEq, typeErasure}
 import rise.core.{App, DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Opaque, Primitive, TypeAnnotation, TypeAssertion}
@@ -19,8 +19,6 @@ import rise.elevate.strategies.traversal._
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.io.{File, FileInputStream, FileReader}
-
-
 import rise.core.DSL.ToBeTyped
 import rise.core.Expr
 
@@ -51,7 +49,11 @@ object everywhere {
 
   // todo check if we can extract the traversal from this
   // todo check if all possible locations are covered by this function
+  var counter = 0
+
   def everywhere(s: Strategy[Rise]): ExpandStrategy = { p =>
+    counter += 1
+    //    println(s"everywhere: [${counter}]")
     import rise.core.types._
     mayApply(s, p).toSeq ++ (p match {
       case App(f, e) => everywhere(s)(f).map(App(_, e)(p.t)) ++ everywhere(s)(e).map(App(f, _)(p.t))
@@ -74,12 +76,24 @@ object everywhere {
     })
   }
 
+  def rewriteFunction(strategies: Set[Strategy[Rise]])(solution: Solution[Rise]): Set[Solution[Rise]] = {
+    // todo check try catch
+    // todo add checking here?
+    val rewritten: Seq[Solution[Rise]] = strategies.toSeq.flatMap(rule => {
+      //      println("try: " + rule)
+      everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
+    })
+
+    rewritten.toSet
+  }
+
 
   def rewriteFunction(solution: Solution[Rise]): Set[Solution[Rise]] = {
 
     // todo check try catch
     // todo add checking here?
     val rewritten: Seq[Solution[Rise]] = exploration.strategies.blockingExploration.rules.toSeq.flatMap(rule => {
+      //      println("try: " + rule)
       everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
     })
 

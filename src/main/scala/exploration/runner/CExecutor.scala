@@ -17,14 +17,18 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
+// todo some things can cause problems
+// global best -> used for threshold (e.g. change of input size can cause problems)
+// gold is replaced if faster valid version was found
+// -> will fail if another expression is used -> update executor first
 case class CExecutor(
                       lowering: Strategy[Rise],
                       goldExpression: Rise,
-                      iterations: Int,
+                      iterations: Int = 10,
                       inputSize: Int,
-                      threshold: Double,
-                      output: String,
-                      timeout: Double = 1000,
+                      threshold: Double = 1000.0,
+                      output: String = "exploration",
+                      timeout: Double = 10000,
                       saveToDisk: Boolean = true
                     ) extends Runner[Rise] {
 
@@ -105,10 +109,10 @@ case class CExecutor(
   //  override def plot(): Unit = ???
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
-    println("[Executor] : strategy length: " + solution.strategies.size)
-    solution.strategies.foreach(elem => {
-      println("strategy: " + elem)
-    })
+    //    println("[Executor] : strategy length: " + solution.strategies.size)
+    //    solution.strategies.foreach(elem => {
+    //      println("strategy: " + elem)
+    //    })
     // initialize error level
     errorLevel = LoweringError
 
@@ -129,8 +133,6 @@ case class CExecutor(
       // compile
       try {
         val bin = compile(code)
-
-        println("compilation nice!")
 
         // execute
         try {
@@ -542,12 +544,9 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
-    println("attempt to compile")
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
-
-    println("success")
 
     // todo: make this configable using json file
     // compile
@@ -559,6 +558,7 @@ int main(int argc, char** argv) {
     //      s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
@@ -580,8 +580,8 @@ int main(int argc, char** argv) {
         s"${(timeout * 1).toDouble / 1000.toDouble}s " +
         s"$bin" !!).toDouble
 
-      println("runtime:(" + i + "): " + runtimes(i))
-      println("globalBest: " + globalBest)
+      //      println("runtime:(" + i + "): " + runtimes(i))
+      //      println("globalBest: " + globalBest)
       // check if we have to skip this execution round
       globalBest match {
         case Some(value) =>
@@ -660,7 +660,7 @@ int main(int argc, char** argv) {
     val fileHM = new PrintWriter(
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
 
-    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+    //    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
 
     // create string to write to file
     val string = "iteration, runner, timestamp, high-level hash, " +

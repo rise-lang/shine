@@ -48,7 +48,23 @@ object explorationTutorial {
 
   def main(args: Array[String]): Unit = {
 
-    val metaheuristics = Seq(
+    val ii = Seq(
+      MetaheuristicConfig(
+        heuristic = "IterativeImprovement",
+        depth = 4,
+        iteration = 1
+      )
+    )
+
+    val random = Seq(
+      MetaheuristicConfig(
+        heuristic = "Random",
+        depth = 6,
+        iteration = 1
+      )
+    )
+
+    val autotuner = Seq(
       MetaheuristicConfig(
         heuristic = "autotuner",
         depth = 4,
@@ -67,7 +83,7 @@ object explorationTutorial {
       name = "mm_example_autotuner",
       output = "/home/jo/development/experiments/exploration/thinkjo/",
       inputSize = 512,
-      metaheuristics = metaheuristics,
+      metaheuristics = random,
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = exploration.strategies.blockingExploration.strategies,
