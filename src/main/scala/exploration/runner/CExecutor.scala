@@ -96,7 +96,12 @@ case class CExecutor(
 
     try {
       // call plot
-      (s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration" !!)
+      val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
+      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
+      println("plot: " + command)
+      (command !!)
+      println("plotlog: " + command2)
+      (command2 !!)
     } catch {
       case e: Throwable => // ignore
     }

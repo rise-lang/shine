@@ -18,7 +18,7 @@ object tiling {
 
   // todo add dimensions
   // special syntax for 2D case - for ICFP'20 paper generic
-  @rule def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
+  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
 
   def tileNDList2(implicit ev: Traversable[Rise]): Int => Strategy[Rise] =
 
@@ -33,7 +33,7 @@ object tiling {
 
 
   // special syntax for 2D case - for ICFP'20 paper
-  def tile(x: Int, y: Int)(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList(ev)(List(x, y))
+  @rule def tile(x: Int, y: Int)(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList(ev)(List(x, y))
 
   def tileNDList(implicit ev: Traversable[Rise]): List[Int] => Strategy[Rise] =
 
