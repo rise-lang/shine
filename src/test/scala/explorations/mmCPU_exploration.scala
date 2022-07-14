@@ -139,13 +139,25 @@ class mmCPU_exploration extends test_util.Tests {
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 3, 6, 4))
 
+  @rule def reorderTiling: Strategy[Rise] =
+    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 6, 3, 4))
+
+  @rule def reorderLoopPerm: Strategy[Rise] =
+    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 3, 6, 4))
 
   // define strategies here
   val strategies: Set[Strategy[Rise]] = {
     Set(
-      // fuse reducemap?
-      tiling, // split this into smaller steps
-      tilingPerm, // split this into smaller steps/pieces
+      tile(32, 32), // part of tiling
+      reduceMapFission(), // part of tiling
+      reorderTiling,
+      reorderLoopPerm,
+
+      //      tiling, // split this into smaller steps
+      //      tilingPerm, // split this into smaller steps/pieces
+
       vectorize(32),
       rise.elevate.rules.lowering.unroll, // unroll reduce Seq (we can just apply this once)
       rise.elevate.rules.lowering.mapSeq, // we don't need this here (default lowering case -> interesting if we want to fuse in lowering) or unroll
