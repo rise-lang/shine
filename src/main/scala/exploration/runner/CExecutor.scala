@@ -28,8 +28,9 @@ case class CExecutor(
                       inputSize: Int,
                       threshold: Double = 1000.0,
                       output: String = "exploration",
-                      timeout: Double = 10000,
-                      saveToDisk: Boolean = true
+                      timeout: Double = 5000,
+                      saveToDisk: Boolean = true,
+                      printEvery: Int = 50,
                     ) extends Runner[Rise] {
 
   var globalBest: Option[Double] = None
@@ -80,7 +81,7 @@ case class CExecutor(
 
     // write configstring
     val configFilePath = output + "/" + "tuningStatistics.json"
-    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), true))
+    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), false))
     fWriter.write(configString)
     fWriter.close()
 
@@ -91,13 +92,13 @@ case class CExecutor(
 
     // mkdir output folder
     (s"mkdir -p ${output}/hm " !!)
-    (s"mv ${output}/executor_hm.csv ${output}/hm" !!)
+    (s"cp ${output}/executor_hm.csv ${output}/hm" !!)
 
 
     try {
       // call plot
       val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
-      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
+      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration"
       println("plot: " + command)
       (command !!)
       println("plotlog: " + command2)
@@ -129,7 +130,9 @@ case class CExecutor(
 
     //generate executable program (including host code)
     var performanceValue: Option[Double] = None
+    var errorMessage: Option[String] = None
     var code = ""
+    println(s"[${counter}] ${hashProgram(solution.expression)}")
     try {
       code = genExecutableCode(lowered.get)
 
@@ -142,63 +145,72 @@ case class CExecutor(
         // execute
         try {
           errorLevel = ExecutionError
-          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
+          println(s"[${counter}] ${returnValue} ms")
           best match {
             case Some(value) =>
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
                 gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
-                println("use new gold with runtime: " + best.get)
+                println(s"[${counter}] use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.toDouble)
           }
 
-          println("result: " + returnValue)
           performanceValue = Some(returnValue.toDouble)
           errorLevel = ExecutionSuccess
 
         } catch {
           case e: Throwable =>
-            println("error handling")
             println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
-                println("timeout")
+                println(s"[${counter}] timeout")
+                errorMessage = Some("124 - Timeout")
                 errorLevel = ExecutionTimeout
                 performanceValue = None
               case 11 =>
-                println("execution crashed")
-                System.exit(-1)
+                println(s"[${counter}] execution crashed")
+                System.exit(1)
                 errorLevel = ExecutionError
                 performanceValue = None
               case 255 =>
-                println("execution failed")
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("255 - execution failed")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              case 134 =>
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("invalid pointer\ntimeout: the monitored command dumped core")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                println("execution failed with segmentation fault")
+                println(s"[${counter}] execution failed with segmentation fault")
+                errorMessage = Some("Segmentation fault")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case _ =>
-                println("execution failed with unknown error")
+                println(s"[${counter}] execution failed with unknown error")
+                errorMessage = Some("Unknown error")
                 errorLevel = ExecutionFail
                 performanceValue = None
             }
         }
       } catch {
         case e: Throwable =>
-          println("compiling error: " + e)
+          errorMessage = Some("compiling error: \n" + e.toString)
+          println(s"[${counter}] compiling error")
       }
 
     } catch {
       case e: Throwable =>
-        println("code gen error")
-        println("e: " + e)
-        code = "code generation error "
+        println(s"[${counter}] code-generation error")
+
+        errorMessage = Some("code generation error")
+        code = e.toString
     }
 
     // result is performance value
@@ -220,6 +232,11 @@ case class CExecutor(
         var filenameHigh = hashProgram(solution.expression)
         var folder = output + "/" + hashProgram(solution.expression)
 
+        errorMessage match {
+          case Some(message) => codeOutput += s"// ${message}\n"
+          case None =>
+        }
+
         performanceValue match {
           case None =>
             codeOutput += "// runtime: " + -1 + "\n \n"
@@ -230,6 +247,7 @@ case class CExecutor(
             folder += "_" + errorLevel.toString
           case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
         }
+
 
         // create folder for high-level expression
         folder = IOHelper.getUniqueFilename(folder, 0)
@@ -519,29 +537,29 @@ int main(int argc, char** argv) {
  	struct timespec tp_start;
 	struct timespec tp_end;
 	clockid_t clk_id = CLOCK_MONOTONIC;
-  double duration = 0;
+    double duration = 0;
 
-  clock_gettime(clk_id, &tp_start);
-  ${preparation._3}
-  clock_gettime(clk_id, &tp_end);
+    clock_gettime(clk_id, &tp_start);
+    ${preparation._3}
+    clock_gettime(clk_id, &tp_end);
 
-  duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
-  duration = duration / 1000000;
+    duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
+    duration = duration / 1000000;
 
-  ${preparation._4}
-  int check = compare_gold(output, gold);
+    ${preparation._4}
+    int check = compare_gold(output, gold);
 
-  ${preparation._2}
+    ${preparation._2}
 
-  //check result
-  if(!check){
-    return -1;
-  }
+    //check result
+    if(!check){
+      return -1;
+    }
 
-  //print result
-  printf("%f\\n", duration);
+    //print result
+    printf("%f\\n", duration);
 
-  return 0;
+    return 0;
 }
 """
 
@@ -559,6 +577,7 @@ int main(int argc, char** argv) {
     //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
+    //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
 
     //      s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
@@ -652,6 +671,13 @@ int main(int argc, char** argv) {
     fileHM.write(stringHm)
 
     counter += 1
+
+    // plot every 10 executions
+    counter % printEvery match {
+      case 0 => plot()
+      case _ =>
+    }
+
 
     file.close()
     fileHM.close()

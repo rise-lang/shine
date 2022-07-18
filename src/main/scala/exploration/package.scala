@@ -23,10 +23,11 @@ package object exploration {
                        metaheuristics: Seq[MetaheuristicConfig] = null,
                        executor: ExecutorConfig = null,
                        lowering: Strategy[Rise] = null,
-                       strategies: Set[Strategy[Rise]] = null,
+                       strategies: scala.collection.immutable.Seq[Strategy[Rise]] = null,
+                       printEvery: Int = 100,
                        //optional
                        hostCode: Option[HostCode] = None, // hostcode to execute
-                       rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = null,
+                       rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = null,
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
                        importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None // how to import/export a solution
                      )
@@ -34,7 +35,8 @@ package object exploration {
   case class MetaheuristicConfig(
                                   heuristic: String,
                                   depth: Int,
-                                  iteration: Int
+                                  samples: Int = 100, // todo make this an option
+                                  repetitions: Int = 1 // usually 1
                                 )
 
   case class ExecutorConfig(
@@ -102,8 +104,15 @@ package object exploration {
 
     // begin with executor
     val executor = explorer.executor.name match {
-      case "C" => new CExecutor(explorer.lowering, gold, explorer.executor.iterations,
-        explorer.inputSize, explorer.executor.threshold, executorOutput)
+      case "C" => new CExecutor(
+        explorer.lowering,
+        gold,
+        explorer.executor.iterations,
+        explorer.inputSize,
+        explorer.executor.threshold,
+        executorOutput,
+        printEvery = explorer.printEvery
+      )
       case "AutoTuning" => new AutoTuningExecutor(explorer.lowering, gold, explorer.hostCode, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
       case "Debug" => new DebugExecutor(explorer.lowering, gold, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
@@ -120,7 +129,8 @@ package object exploration {
       rootChoice.heuristic,
       exploration.explorationUtil.jsonParser.getHeuristic(rootChoice.heuristic),
       rootChoice.depth,
-      rootChoice.iteration,
+      rootChoice.samples,
+      rootChoice.repetitions,
       executor.asInstanceOf[Runner[Rise]],
       explorer.strategies,
       nameList.reverse.apply(index),
@@ -139,7 +149,8 @@ package object exploration {
         elem.heuristic,
         exploration.explorationUtil.jsonParser.getHeuristic(elem.heuristic),
         elem.depth,
-        elem.iteration,
+        elem.samples,
+        elem.repetitions,
         metaheuristic,
         explorer.strategies,
         nameList.reverse.apply(index),

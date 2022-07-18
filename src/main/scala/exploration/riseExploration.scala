@@ -32,10 +32,10 @@ object riseExploration {
   // entry point for exploration
   def apply(solution: Rise,
             lowering: Strategy[Rise],
-            strategies: Set[Strategy[Rise]],
+            strategies: scala.collection.immutable.Seq[Strategy[Rise]],
             filePath: String,
             hostCode: Option[HostCode] = None,
-            rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+            rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
             afterRewrite: Option[Strategy[Rise]] = None,
             importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
            )
@@ -76,10 +76,10 @@ object riseExploration {
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
                          lowering: Strategy[Rise],
-                         strategies: Set[Strategy[Rise]],
+                         strategies: scala.collection.immutable.Seq[Strategy[Rise]],
                          filePath: String,
                          hostCode: Option[HostCode],
-                         rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
+                         rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
                          afterRewrite: Option[Strategy[Rise]],
                          importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
                         ): Metaheuristic[Rise] = {
@@ -165,7 +165,8 @@ object riseExploration {
       rootChoice.heuristic,
       getHeuristic(rootChoice.heuristic),
       rootChoice.depth,
-      rootChoice.iteration,
+      rootChoice.samples,
+      1,
       executor.asInstanceOf[Runner[Rise]],
       strategies,
       nameList.reverse.apply(index),
@@ -184,7 +185,8 @@ object riseExploration {
         elem.heuristic,
         getHeuristic(elem.heuristic),
         elem.depth,
-        elem.iteration,
+        elem.samples,
+        1,
         metaheuristic,
         strategies,
         nameList.reverse.apply(index),

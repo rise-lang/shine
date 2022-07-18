@@ -107,7 +107,7 @@ object defaultStrategies {
       (unroll `@` innermost(isReduceSeq))
     )
 
-  val strategies: Set[Strategy[Rise]] = Set(
+  val strategies: scala.collection.Seq[Strategy[Rise]] = scala.collection.Seq(
     baseline,
     blocking,
     vectorization,

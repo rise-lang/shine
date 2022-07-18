@@ -17,6 +17,9 @@ import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.tiling.tile
 import rise.elevate.strategies.traversal._
 
+
+import scala.collection.parallel.CollectionConverters._
+
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.io.{File, FileInputStream, FileReader}
 import rise.core.DSL.ToBeTyped
@@ -51,6 +54,7 @@ object everywhere {
   // todo check if all possible locations are covered by this function
   var counter = 0
 
+  // todo improve performance of this
   def everywhere(s: Strategy[Rise]): ExpandStrategy = { p =>
     counter += 1
     //    println(s"everywhere: [${counter}]")
@@ -76,30 +80,32 @@ object everywhere {
     })
   }
 
-  def rewriteFunction(strategies: Set[Strategy[Rise]])(solution: Solution[Rise]): Set[Solution[Rise]] = {
+  // todo check if parallel works here properly
+  def rewriteFunction(strategies: Seq[Strategy[Rise]])(solution: Solution[Rise]): Seq[Solution[Rise]] = {
     // todo check try catch
     // todo add checking here?
-    val rewritten: Seq[Solution[Rise]] = strategies.toSeq.flatMap(rule => {
+    //    val rewritten: Seq[Solution[Rise]] = strategies.toSeq.par.flatMap(rule => {
+    val rewritten: Seq[Solution[Rise]] = strategies.flatMap(rule => {
       //      println("try: " + rule)
       everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
     })
 
-    rewritten.toSet
+    rewritten
   }
 
 
-  def rewriteFunction(solution: Solution[Rise]): Set[Solution[Rise]] = {
+  def rewriteFunction(solution: Solution[Rise]): scala.collection.immutable.Seq[Solution[Rise]] = {
 
     // todo check try catch
     // todo add checking here?
-    val rewritten: Seq[Solution[Rise]] = exploration.strategies.blockingExploration.rules.toSeq.flatMap(rule => {
+    val rewritten: scala.collection.immutable.Seq[Solution[Rise]] = exploration.strategies.blockingExploration.rules.map(rule => {
       //      println("try: " + rule)
       everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
-    })
+    }).flatten
 
     println("rewrite: " + rewritten.size)
 
-    rewritten.toSet
+    rewritten
   }
 
 

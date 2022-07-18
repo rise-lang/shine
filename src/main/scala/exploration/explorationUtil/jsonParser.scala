@@ -13,7 +13,7 @@ object jsonParser {
   // classes to parse
   case class ParseExecutor(name: String, iterations: Int, threshold: Double)
 
-  case class ParseMetaheuristic(heuristic: String, depth: Int, iteration: Int)
+  case class ParseMetaheuristic(heuristic: String, depth: Int, samples: Int)
 
   //  case class ParseExploration(name: String, strategies: String, output:String, inputSize:Int, metaheuristic: Seq[ParseMetaheuristic], executor:ParseExecutor)
   case class ParseExploration(name: String, output: String, inputSize: Int, metaheuristic: Seq[ParseMetaheuristic], executor: ParseExecutor)

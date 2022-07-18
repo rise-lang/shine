@@ -51,24 +51,21 @@ object explorationTutorial {
     val ii = Seq(
       MetaheuristicConfig(
         heuristic = "IterativeImprovement",
-        depth = 4,
-        iteration = 1
+        depth = 4
       )
     )
 
     val random = Seq(
       MetaheuristicConfig(
         heuristic = "Random",
-        depth = 6,
-        iteration = 1
+        depth = 6
       )
     )
 
     val autotuner = Seq(
       MetaheuristicConfig(
         heuristic = "autotuner",
-        depth = 4,
-        iteration = 1
+        depth = 4
       )
     )
 

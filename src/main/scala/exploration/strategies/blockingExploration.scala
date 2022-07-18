@@ -127,7 +127,7 @@ object blockingExploration {
   //  @rule def arrayPacking: Strategy[Rise] = packB `;;` loopPerm
 
 
-  val strategies: Set[Strategy[Rise]] = Set(
+  val strategies: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     //    baseline,
     blocking_step0,
     blocking_step1, // can rewrite but not execute
@@ -150,7 +150,7 @@ object blockingExploration {
 
   @rule def tiling: Strategy[Rise] = tile(32, 32)
 
-  val rules: Set[Strategy[Rise]] = Set(
+  val rules: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tiling,
     reduceMapFission(),
@@ -161,7 +161,7 @@ object blockingExploration {
     //    vectorize(32)
   )
 
-  val rules2: Set[Strategy[Rise]] = Set(
+  val rules2: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
@@ -170,7 +170,7 @@ object blockingExploration {
   )
 
 
-  val rules3: Set[Strategy[Rise]] = Set(
+  val rules3: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tile(),
     reduceMapFission(),
