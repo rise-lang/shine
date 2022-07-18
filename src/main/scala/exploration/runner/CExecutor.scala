@@ -95,6 +95,7 @@ case class CExecutor(
     (s"cp ${output}/executor_hm.csv ${output}/hm" !!)
 
 
+    // performance evolution plot
     try {
       // call plot
       val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
@@ -103,6 +104,21 @@ case class CExecutor(
       (command !!)
       println("plotlog: " + command2)
       (command2 !!)
+    } catch {
+      case e: Throwable => // ignore
+    }
+
+
+    // scatter plot
+    try {
+      val command = s"python experiment/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
+      val command_log = s"python experiment/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
+
+      println("scatter: " + command)
+      (command !!)
+      println("scatter log: " + command_log)
+      (command_log !!)
+
     } catch {
       case e: Throwable => // ignore
     }
