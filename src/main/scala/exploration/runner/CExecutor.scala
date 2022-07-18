@@ -111,8 +111,8 @@ case class CExecutor(
 
     // scatter plot
     try {
-      val command = s"python experiment/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
-      val command_log = s"python experiment/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
+      val command = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
+      val command_log = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
 
       println("scatter: " + command)
       (command !!)
