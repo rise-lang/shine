@@ -2,13 +2,9 @@ import elevate.heuristic_search.util.Solution
 import rise.elevate.Rise
 import rise.core._
 import elevate.core.Strategy
-import rise.autotune.HostCode
-
-
+import rise.autotune.{HostCode, search}
 import elevate.heuristic_search._
-
 import exploration.runner._
-
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
@@ -20,7 +16,7 @@ package object exploration {
                        name: String = "exploration",
                        output: String = "exploration",
                        inputSize: Int = 1024,
-                       metaheuristics: Seq[MetaheuristicConfig] = null,
+                       metaheuristics: Either[Seq[MetaheuristicConfig], Seq[Seq[MetaheuristicConfig]]] = null,
                        executor: ExecutorConfig = null,
                        lowering: Strategy[Rise] = null,
                        strategies: scala.collection.immutable.Seq[Strategy[Rise]] = null,
@@ -29,14 +25,17 @@ package object exploration {
                        hostCode: Option[HostCode] = None, // hostcode to execute
                        rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = null,
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
-                       importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None // how to import/export a solution
+                       importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None, // how to import/export a solution
+                       expert: Option[Double] = None,
+                       //                       repeat: Int = 1
                      )
 
   case class MetaheuristicConfig(
                                   heuristic: String,
                                   depth: Int,
                                   samples: Int = 100, // todo make this an option
-                                  repetitions: Int = 1 // usually 1
+                                  repetitions: Int = 1, // usually 1
+                                  repeat: Int = 1
                                 )
 
   case class ExecutorConfig(
@@ -49,21 +48,181 @@ package object exploration {
   def explore(explorer: Explorer)(expression: Expr)
   : ExplorationResult[Rise] = {
 
-    // start rise exploration here!
-    val entryPoint = prepareExploration(
-      expression,
-      explorer
-    )
+    explorer.metaheuristics match {
+      case Left(config) => {
+
+        // create output parent folder (if not existent)
+        (s"mkdir -p ${explorer.output}" !!)
+
+        val uniqueFilename_full = uniqueFilename(explorer.output + "/" + explorer.name)
+
+        (s"mkdir -p ${uniqueFilename_full}/csv" !!)
+
+        for (iteration <- Range(0, config.reverse.last.repeat)) {
+          println("iteration: " + iteration)
 
 
-    entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+          // start rise exploration here!
+          val entryPoint = prepareExploration(
+            expression,
+            explorer,
+            uniqueFilename_full,
+            config,
+            iteration
+          )
+
+          entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+
+          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
+        }
+
+        // plot total
+        // directory uniqueFilename_full
+        // plot
+        val plot = explorer.expert match {
+          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+        }
+        val plot_log = explorer.expert match {
+          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+        }
+
+        (plot !!)
+        (plot_log !!)
+
+
+        ExplorationResult(
+          solution = Solution(expression, strategies = explorer.strategies),
+          performance = None,
+          searchSpace = None
+        )
+
+
+      }
+      case Right(config) => {
+
+        // run stuff in loop
+
+        // mkdir on top
+
+        // create output parent folder (if not existent)
+        (s"mkdir -p ${explorer.output}" !!)
+        val uniqueFilenameRoot = uniqueFilename(explorer.output + "/" + explorer.name)
+
+        config.foreach(metaheuristic => {
+          val methodName = metaheuristic.reverse.last.heuristic
+
+          val uniqueFilename_full = uniqueFilenameRoot + "/" + methodName
+
+          (s"mkdir -p ${uniqueFilename_full}/csv" !!)
+
+          for (iteration <- Range(0, metaheuristic.reverse.last.repeat)) {
+            println("iteration: " + iteration)
+
+            // start rise exploration here!
+            val entryPoint = prepareExploration(
+              expression,
+              explorer,
+              uniqueFilename_full,
+              metaheuristic,
+              iteration
+            )
+
+            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+
+            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
+          }
+
+          // plot total
+          // directory uniqueFilename_full
+          // plot
+          val plot = explorer.expert match {
+            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+          }
+          val plot_log = explorer.expert match {
+            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+          }
+
+          (plot !!)
+          (plot_log !!)
+
+        })
+
+        plot_experiment(uniqueFilenameRoot, config, explorer)
+
+        ExplorationResult(
+          solution = Solution(expression, strategies = explorer.strategies),
+          performance = None,
+          searchSpace = None
+        )
+
+      }
+    }
+
+  }
+
+  def plot_experiment(uniqueFilenameRoot: String, config: Seq[Seq[MetaheuristicConfig]], explorer: Explorer) = {
+
+    val configFile = uniqueFilenameRoot + "/" + config.last.reverse.last.heuristic + "/" + "tuningStatistics.json"
+    var folders = ""
+    var names = ""
+    config.foreach(elem => {
+      folders += uniqueFilenameRoot + "/" + elem.reverse.last.heuristic + "/" + "csv" + " "
+      names += elem.reverse.last.heuristic + " "
+    })
+
+    val exp: String = explorer.expert match {
+      case Some(value) => s"--exp ${value} "
+      case None => " "
+    }
+
+    val plot_command =
+      "hm-plot-optimization-results " +
+        s"-j ${configFile} " +
+        "-i " +
+        folders +
+        "-l " +
+        names +
+        s"-o ${uniqueFilenameRoot}/${explorer.name}.pdf " +
+        "--y_label \"Log Runtime(ms)\" " +
+        exp +
+        s"--title ${explorer.name} "
+
+    val plot_log_command =
+      "hm-plot-optimization-results " +
+        s"-j ${configFile} " +
+        "-i " +
+        folders +
+        "-l " +
+        names +
+        s"-o ${uniqueFilenameRoot}/${explorer.name}_log.pdf " +
+        "--plot_log " +
+        "--y_label \"Log Runtime(ms)\" " +
+        exp +
+        s"--title ${explorer.name} "
+
+
+    println("command: " + plot_command)
+    plot_command !!
+
+    println("command: " + plot_command)
+    plot_log_command !!
+
   }
 
 
   // todo cleanup
   def prepareExploration(
                           expression: Expr,
-                          explorer: Explorer
+                          explorer: Explorer,
+                          uniqueFilename_full: String,
+                          metaheuristics: Seq[MetaheuristicConfig],
+                          iteration: Int
                         )
   : Metaheuristic[Rise] = {
 
@@ -74,8 +233,7 @@ package object exploration {
     (s"mkdir -p ${explorer.output}" !!)
 
     // create unique output folder
-    val uniqueFilename_full = uniqueFilename(explorer.output + "/" + explorer.name)
-    (s"mkdir ${uniqueFilename_full}" !!)
+    (s"mkdir -p ${uniqueFilename_full}" !!)
 
     // copy configuration file to output folder if provided
     //    (s"cp ${explorer.output} ${uniqueFilename_full}" !!)
@@ -83,19 +241,21 @@ package object exploration {
     // create names
     val nameList = scala.collection.mutable.ListBuffer.empty[String]
     var predecessor = uniqueFilename_full
-    explorer.metaheuristics.foreach(elem => {
+    metaheuristics.foreach(elem => {
       predecessor = predecessor + "/" + elem.heuristic
       nameList += predecessor
     })
 
+
     // create folder for executor
-    val executorOutput = predecessor + "/" + "Executor"
+    val executorOutput = predecessor + "_" + iteration + "/" + "Executor"
+    //    val executorOutput = predecessor + "/" + "Executor"
 
     // create subfolders
     nameList.foreach(elem => {
       println("elem: " + elem)
-      (s"mkdir ${elem}" !!)
-      (s"mkdir ${elem}" + "/Expressions" !!)
+      (s"mkdir ${elem}_${iteration}" !!)
+      (s"mkdir ${elem}_${iteration}" + "/Expressions" !!)
     })
 
     // create subfolder for executor
@@ -111,7 +271,8 @@ package object exploration {
         explorer.inputSize,
         explorer.executor.threshold,
         executorOutput,
-        printEvery = explorer.printEvery
+        printEvery = explorer.printEvery,
+        expert = explorer.expert
       )
       case "AutoTuning" => new AutoTuningExecutor(explorer.lowering, gold, explorer.hostCode, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
       case "Debug" => new DebugExecutor(explorer.lowering, gold, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
@@ -123,7 +284,7 @@ package object exploration {
     var index = 0
 
     // root metaheuristic using executor as executor
-    val rootChoice = explorer.metaheuristics.reverse.head
+    val rootChoice = metaheuristics.reverse.head
 
     val rootMetaheuristic = new Metaheuristic[Rise](
       rootChoice.heuristic,
@@ -136,14 +297,15 @@ package object exploration {
       nameList.reverse.apply(index),
       rewriteFunction = explorer.rewriteFunction,
       afterRewrite = explorer.normalForm,
-      importExport = explorer.importExport
+      importExport = explorer.importExport,
+      iteration = Some(iteration)
     )
 
     index = index + 1
 
     // iterate reverse direction
     var metaheuristic = rootMetaheuristic
-    explorer.metaheuristics.reverse.tail.foreach(elem => {
+    metaheuristics.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](
         elem.heuristic,
@@ -156,7 +318,8 @@ package object exploration {
         nameList.reverse.apply(index),
         rewriteFunction = explorer.rewriteFunction,
         afterRewrite = explorer.normalForm,
-        importExport = explorer.importExport
+        importExport = explorer.importExport,
+        iteration = Some(iteration)
       )
 
       index = index + 1

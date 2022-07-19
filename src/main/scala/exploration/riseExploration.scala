@@ -37,7 +37,8 @@ object riseExploration {
             hostCode: Option[HostCode] = None,
             rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
             afterRewrite: Option[Strategy[Rise]] = None,
-            importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
+            importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,
+            expert: Option[Double] = None
            )
   : ExplorationResult[Rise] = {
 
@@ -56,7 +57,8 @@ object riseExploration {
       hostCode,
       rewriteFunction = rewriteFunction,
       afterRewrite = afterRewrite,
-      importExport = importExport
+      importExport = importExport,
+      expert = expert
     )
 
     // start
@@ -81,7 +83,8 @@ object riseExploration {
                          hostCode: Option[HostCode],
                          rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
                          afterRewrite: Option[Strategy[Rise]],
-                         importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None
+                         importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,
+                         expert: Option[Double]
                         ): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
@@ -144,8 +147,16 @@ object riseExploration {
 
     // begin with executor
     val executor = result.executor.name match {
-      case "C" => new CExecutor(lowering, gold, result.executor.iterations,
-        inputSize, result.executor.threshold, executorOutput)
+      case "C" =>
+        new CExecutor(
+          lowering,
+          gold,
+          result.executor.iterations,
+          inputSize,
+          result.executor.threshold,
+          executorOutput,
+          expert = expert
+        )
       case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")

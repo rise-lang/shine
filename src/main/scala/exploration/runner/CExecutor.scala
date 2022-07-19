@@ -31,6 +31,7 @@ case class CExecutor(
                       timeout: Double = 5000,
                       saveToDisk: Boolean = true,
                       printEvery: Int = 50,
+                      expert: Option[Double] = None
                     ) extends Runner[Rise] {
 
   var globalBest: Option[Double] = None
@@ -94,12 +95,16 @@ case class CExecutor(
     (s"mkdir -p ${output}/hm " !!)
     (s"cp ${output}/executor_hm.csv ${output}/hm" !!)
 
+    val expertConfig = expert match {
+      case Some(value) => s"--exp ${value}"
+      case None => ""
+    }
 
     // performance evolution plot
     try {
       // call plot
-      val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration"
-      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration"
+      val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration ${expertConfig}"
+      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration ${expertConfig}"
       println("plot: " + command)
       (command !!)
       println("plotlog: " + command2)
