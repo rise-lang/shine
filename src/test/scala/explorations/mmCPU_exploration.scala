@@ -2,7 +2,7 @@ package explorations
 
 import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
-import exploration.{ExecutorConfig, MetaheuristicConfig}
+import exploration.{ExecutorConfig, MetaheuristicConfig, runner}
 import explorations.explorationTutorial.mm
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.core._
@@ -123,19 +123,17 @@ class mmCPU_exploration extends test_util.Tests {
   // -- PARALLEL ---------------------------------------------------------------
 
   @rule def par: Strategy[Rise] = (
-    //    arrayPacking `;;`
-    loopPerm `;;`
+    arrayPacking `;;`
+      //    tvmGemm.loopPerm `;;`
       (parallel() `@` outermost(isApplied(isMap))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
-
 
   @rule def tiling: Strategy[Rise] =
     (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 6, 3, 4))
-
 
   @rule def tilingPerm: Strategy[Rise] =
     (tile(32, 32) `@` outermost(mapNest(2))) `;;`
@@ -151,68 +149,157 @@ class mmCPU_exploration extends test_util.Tests {
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 3, 6, 4))
 
-  // define strategies here
-  val map_strategies: scala.collection.immutable.Seq[Strategy[Rise]] = {
+
+  val parallel_lowering: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
-      //      tile(32, 32), // part of tiling
-      //      reduceMapFission(), // part of tiling
-      //      reorderTiling,
-      //      reorderLoopPerm,
-      //      arrayPacking,
-      //      fuseReduceMap,
-      //      packB `;;` id,
-      //      tiling, // split this into smaller steps
-      //      tilingPerm, // split this into smaller steps/pieces
-      //      vectorize(32),
-      //      rise.elevate.rules.lowering.unroll, // unroll reduce Seq (we can just apply this once)
-      //      rise.elevate.rules.lowering.mapSeq, // we don't need this here (default lowering case -> interesting if we want to fuse in lowering) or unroll
-      rise.elevate.rules.lowering.mapParCompute() // in default case we have 7 locations to apply this
+      rise.elevate.rules.lowering.mapParCompute()
     )
   }
 
-  val fine_tiling_and_map_strategies: scala.collection.immutable.Seq[Strategy[Rise]] = {
-    scala.collection.immutable.Seq(
-      fuseReduceMap, // has no effect (is covered in lowering)
-      tile(32, 32), // huge amount of options
-      reduceMapFission(),
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)), // todo split this into separate strategies
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 3, 6, 4)), //  warning, we will have an invalid result
-      vectorize(32),
-      unroll,
-      mapParCompute() // lowering, rest will be mapSeq (or map) implicitly
-    )
-  }
-
-  //
-  //  @rule def reorder_blocking = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4))) // todo split this into separate strategies
-  //
-  //
-  //  @rule def reorder_loopPerm = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 3, 6, 4))) //  warning, we will have an invalid result
-
-
-  // very unlikely that sequence is found by random sampling
-  val fine_tiling_strategies: scala.collection.immutable.Seq[Strategy[Rise]] = {
-    scala.collection.immutable.Seq(
-      fuseReduceMap, // has no effect (is covered in lowering)
-      tile(32, 32), // huge amount of options
-      reduceMapFission(), // one option
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)), // todo split this into separate strategies
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 3, 6, 4)), //  warning, we will have an invalid result
-      vectorize(32),
-      unroll,
-    )
-  }
-
-  val tiling_and_map_strategies: scala.collection.immutable.Seq[Strategy[Rise]] = {
+  // start from baseline
+  val coarse: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
       fuseReduceMap,
-      tiling, // split this into smaller steps
-      tilingPerm, // split this into smaller steps/pieces
-      vectorize(32),
-      rise.elevate.rules.lowering.unroll, // unroll reduce Seq (we can just apply this once)
-      //      rise.elevate.rules.lowering.mapSeq, // we don't need this here (default lowering case -> interesting if we want to fuse in lowering) or unroll
-      rise.elevate.rules.lowering.mapParCompute() // in default case we have 7 locations to apply this
+      tiling,
+      tilingPerm,
+      vectorize(31),
+      rise.elevate.rules.lowering.unroll
     )
+  }
+
+  val parallel_coarse: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      fuseReduceMap,
+      tiling,
+      tilingPerm,
+      vectorize(32),
+      unroll,
+      mapParCompute()
+    )
+  }
+
+  val fine: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      fuseReduceMap,
+      tile(32, 32),
+      reduceMapFission(),
+      reorderTiling,
+      reorderLoopPerm,
+      vectorize(32),
+      unroll,
+    )
+  }
+
+  val parallel_fine: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      fuseReduceMap,
+      tile(32, 32),
+      reduceMapFission(),
+      reorderTiling,
+      reorderLoopPerm,
+      vectorize(32),
+      unroll,
+      mapParCompute()
+    )
+  }
+
+  val parallel_fine_light: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      fuseReduceMap,
+      tile(32, 32),
+      reduceMapFission(),
+      reorderTiling,
+      mapParCompute()
+    )
+  }
+
+  ignore("rewrite blocking step by step") {
+
+    val mm_par = par.apply(mm).get
+    val gold = lowerToC.apply(mm_par).get
+
+    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+
+    val executor = CExecutor(
+      lowering = lowering,
+      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
+      iterations = 1,
+      goldExpression = gold,
+      inputSize = N,
+      saveToDisk = true,
+      timeout = 10000
+    )
+
+    val blockingPartial1: Strategy[Rise] =
+      baseline `;`
+        (tile(32, 32) `@` outermost(mapNest(2)))
+    val blockingPartial2: Strategy[Rise] =
+      baseline `;`
+        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
+        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
+    val blockingPartial3: Strategy[Rise] =
+      baseline `;`
+        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
+        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+        (splitStrategy(4) `@` innermost(isFullyAppliedReduce))
+
+
+    val e0 = mm
+    val e1 = exploration.strategies.blockingExploration.blocking_step0.apply(e0).get
+    val e2 = exploration.strategies.blockingExploration.blocking_step1.apply(e1).get
+    val e3 = exploration.strategies.blockingExploration.blocking_step2.apply(e2).get
+    val e4 = exploration.strategies.blockingExploration.blocking_step3.apply(e3).get
+
+    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq.empty[Strategy[Rise]])))
+    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step0))))
+    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step1))))
+    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step2))))
+    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step3))))
+
+  }
+
+
+  ignore("rewrite step by step") {
+
+    val mm_par = par.apply(mm).get
+    val gold = lowerToC.apply(mm_par).get
+
+    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+
+    val executor = CExecutor(
+      lowering = lowering,
+      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
+      iterations = 10,
+      goldExpression = gold,
+      inputSize = N,
+      saveToDisk = true,
+      timeout = 10000
+    )
+
+    val e0 = (DFNF()(default.RiseTraversable) `;` (fuseReduceMap `@` topDown[Rise])).apply(mm).get
+    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq(fuseReduceMap))))
+
+    val e1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(e0).get
+    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(tile(32, 32)))))
+
+    val e2 = ((reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))).apply(e1).get
+    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(reduceMapFission()))))
+
+    val e3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(e2).get
+    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(splitStrategy(4)))))
+
+    val e4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(e3).get
+    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(reorder(List(1, 2, 5, 6, 3, 4))))))
+
+    val e5 = ((vectorize(32) `@` innermost(isFullyAppliedMap)) `;` DFNF()).apply(e4).get
+    println("e5: " + executor.execute(Solution[Rise](e5, scala.collection.immutable.Seq(vectorize(32)))))
+
+    val e6 = ((parallel() `@` outermost(isApplied(isMap))) `;` DFNF()).apply(e5).get
+    println("e6: " + executor.execute(Solution[Rise](e6, scala.collection.immutable.Seq(parallel()))))
+
+    val e7 = (unroll `@` innermost(isReduceSeq)).apply(e6).get
+    println("e7: " + executor.execute(Solution[Rise](e7, scala.collection.immutable.Seq(unroll))))
+
   }
 
   ignore("mmCPU - execute versions") {
@@ -220,27 +307,27 @@ class mmCPU_exploration extends test_util.Tests {
     val mm_baseline = baseline.apply(mm).get
 
     val mm_blocking = blocking.apply(mm).get
-    val mm_blocking_lowered = lowerToC.apply(mm_blocking).get
 
     val mm_vectorize = vectorization.apply(mm).get
 
     val mm_loopPerm = loopPerm.apply(mm).get
-    val mm_loopPerm_lowered = lowerToC.apply(mm_loopPerm).get
 
     val mm_arrayPacking = arrayPacking.apply(mm).get
-    val mm_arrayPacking_lowered = lowerToC.apply(mm_arrayPacking).get
 
     val mm_cacheBlocks = cacheBlocks.apply(mm).get
 
     val mm_par = par.apply(mm).get
-    val mm_par_lowered = lowerToC.apply(mm_par).get
+
+    // gold
+    val gold = lowerToC.apply(mm_par).get
 
     val executor = CExecutor(
       lowering = lowerToC,
       output = "/home/jo/development/experiments/exploration/dodekarch/plot/baselines",
       iterations = 100,
-      goldExpression = mm_par_lowered,
+      goldExpression = gold,
       inputSize = N,
+
       saveToDisk = true
     )
 
@@ -275,40 +362,30 @@ class mmCPU_exploration extends test_util.Tests {
   }
 
 
-  test("mmCPU - explore maps") {
+  ignore("mmCPU - parallel_array_packing") {
 
-    val e = arrayPacking.apply(mm).get
+    val e = cacheBlocks.apply(mm).get
 
-    val ii = scala.collection.immutable.Seq(
+    val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 4,
-        samples = 1
+        heuristic = "exhaustive",
+        depth = 7,
+        samples = 500,
       )
     )
 
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
-        depth = 10,
-        samples = 1
-      )
-    )
-
-    val autotuner = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "autotuner",
-        depth = 13,
-        samples = 1
-      )
-    )
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
         depth = 7,
-        samples = 10000,
+        samples = 100,
+        repeat = 10
       )
+    )
+
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
     )
 
     val executor = ExecutorConfig(
@@ -319,16 +396,17 @@ class mmCPU_exploration extends test_util.Tests {
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_maps",
-      output = "/home/jo/development/experiments/exploration/dodekarch/maps",
+      name = "mmCPU_parallel_array_packing",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_array_packing",
       inputSize = N,
-      metaheuristics = exhaustive,
+      metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = exploration.strategies.blockingExploration.strategies,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(map_strategies)),
+      strategies = parallel_lowering,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport)
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(29.955511)
     )
 
     val explorationResult = exploration.explore(explorer)(e)
@@ -336,47 +414,30 @@ class mmCPU_exploration extends test_util.Tests {
     println("explorationResult: " + explorationResult)
   }
 
+  ignore("mmCPU - parallel_tiling") {
 
-  test("mmCPU - explore tiling and maps") {
+    val e = blocking.apply(mm).get
 
-    // start with pre-baseline version
-    val e = mm
-
-    val ii = scala.collection.immutable.Seq(
+    val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 4,
-        samples = 1
+        heuristic = "exhaustive",
+        depth = 7,
+        samples = 1000,
       )
     )
 
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
-        depth = 10,
-        samples = 1000 // in total
-      ),
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 5, // is ignored I guess
-        samples = 1
+        depth = 7,
+        samples = 100,
+        repeat = 10
       )
     )
 
-    val autotuner = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "autotuner",
-        depth = 13,
-        samples = 1
-      )
-    )
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 12,
-        samples = 10000,
-      )
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
     )
 
     val executor = ExecutorConfig(
@@ -387,35 +448,34 @@ class mmCPU_exploration extends test_util.Tests {
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_tiling_and_maps",
-      output = "/home/jo/development/experiments/exploration/dodekarch/tiling_and_maps",
+      name = "mmCPU_parallel_tiling",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_tiling",
       inputSize = N,
-      metaheuristics = exhaustive,
+      metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = exploration.strategies.blockingExploration.strategies,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(tiling_and_map_strategies)),
+      strategies = parallel_lowering,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport)
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(2.676716)
     )
 
     val explorationResult = exploration.explore(explorer)(e)
 
     println("explorationResult: " + explorationResult)
-
   }
 
-  test("mmCPU - explore fine tiling") {
-
+  ignore("mmCPU - coarse") {
 
     // start with pre-baseline version
     val e = mm
 
-    val ii = scala.collection.immutable.Seq(
+    val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 10,
-        samples = 1
+        heuristic = "exhaustive",
+        depth = 5,
+        samples = 1000,
       )
     )
 
@@ -423,50 +483,35 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 250
-      )
-      ,
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 3,
-        samples = 1
+        samples = 100, // in total
+        repeat = 10
       )
     )
 
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 7,
-        samples = 10000,
-      )
-    )
-
-    val autotuner = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "autotuner",
-        depth = 4,
-        samples = 1
-      )
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
     )
 
     val executor = ExecutorConfig(
       name = "C",
-      iterations = 5,
+      iterations = 10,
       threshold = 2
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_fine_tiling",
-      output = "/home/jo/development/experiments/exploration/dodekarch/fine_tiling",
+      name = "mmCPU_coarse",
+      output = "/home/jo/development/experiments/exploration/dodekarch/coarse",
       inputSize = N,
-      metaheuristics = exhaustive,
+      metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = exploration.strategies.blockingExploration.strategies,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(fine_tiling_strategies)),
+      strategies = coarse,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(coarse)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport)
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(2.676716)
     )
 
     val explorationResult = exploration.explore(explorer)(e)
@@ -475,48 +520,150 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-
-  ignore("mmCPU - explore fine tiling and maps") {
+  ignore("mmCPU - parallel_coarse") {
 
     // start with pre-baseline version
     val e = mm
 
-    val ii = scala.collection.immutable.Seq(
+    val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 4,
-        samples = 1
+        heuristic = "exhaustive",
+        depth = 6,
+        samples = 1000,
       )
     )
 
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
-        depth = 5,
+        depth = 6,
+        samples = 100, // in total
+        repeat = 10
+      )
+    )
+
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
+    )
+
+    val executor = ExecutorConfig(
+      name = "C",
+      iterations = 10,
+      threshold = 2
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "mmCPU_parallel_coarse",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_coarse",
+      inputSize = N,
+      metaheuristics = Right(experiment),
+      executor = executor,
+      lowering = exploration.strategies.blockingExploration.lowering,
+      strategies = parallel_coarse,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_coarse)),
+      normalForm = Some(DFNF()),
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(2.676716)
+    )
+
+    val explorationResult = exploration.explore(explorer)(e)
+
+    println("explorationResult: " + explorationResult)
+
+  }
+
+  ignore("mmCPU - fine") {
+
+
+    // start with pre-baseline version
+    val e = mm
+
+    val exhaustive = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "exhaustive",
+        depth = 7,
+        samples = 1000,
+      )
+    )
+
+    val random = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Random",
+        depth = 7,
+        samples = 100, // in total
+        repeat = 10
+      )
+    )
+
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
+    )
+
+    val executor = ExecutorConfig(
+      name = "C",
+      iterations = 10,
+      threshold = 2
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "mmCPU_fine",
+      output = "/home/jo/development/experiments/exploration/dodekarch/fine",
+      inputSize = N,
+      metaheuristics = Right(experiment),
+      executor = executor,
+      lowering = exploration.strategies.blockingExploration.lowering,
+      strategies = fine,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(fine)),
+      normalForm = Some(DFNF()),
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(15.947497)
+    )
+
+    val explorationResult = exploration.explore(explorer)(e)
+
+    println("explorationResult: " + explorationResult)
+
+  }
+
+  ignore("mmCPU - parallel_fine") {
+
+    // start with pre-baseline version
+    //    val e = blockingPartial2.apply(mm).get
+    val e = mm
+
+    val ii = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "IterativeImprovement",
+        depth = 8,
         samples = 1000
       )
-      //      ,
-      //      MetaheuristicConfig(
-      //        heuristic = "IterativeImprovement",
-      //        depth = 5,
-      //        iteration = 1
-      //      )
+    )
+
+
+    val random = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Random",
+        depth = 8,
+        samples = 100,
+        repeat = 10
+      )
     )
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 500,
-        samples = 1,
+        depth = 8,
+        samples = 1000,
       )
     )
 
-    val autotuner = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "autotuner",
-        depth = 4,
-        samples = 1
-      )
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
     )
 
     val executor = ExecutorConfig(
@@ -527,23 +674,86 @@ class mmCPU_exploration extends test_util.Tests {
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_fine_tiling_and_maps",
-      output = "/home/jo/development/experiments/exploration/dodekarch/fine_tiling_and_maps",
+      name = "mmCPU_parallel_fine",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine",
       inputSize = N,
-      metaheuristics = random,
+      metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = exploration.strategies.blockingExploration.strategies,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(fine_tiling_and_map_strategies)),
+      strategies = parallel_fine,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport)
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(2.676716),
     )
 
+    // repeat this
     val explorationResult = exploration.explore(explorer)(e)
 
     println("explorationResult: " + explorationResult)
 
   }
 
+  test("mmCPU - parallel_fine_light") {
 
+    val e = mm
+
+    val ii = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "IterativeImprovement",
+        depth = 8,
+        samples = 1000
+      )
+    )
+
+    val random = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Random",
+        depth = 5,
+        samples = 2500,
+        repeat = 5
+      )
+    )
+
+    val exhaustive = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "exhaustive",
+        depth = 5,
+        samples = 10000,
+      )
+    )
+
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random
+    )
+
+    val executor = ExecutorConfig(
+      name = "C",
+      iterations = 11,
+      threshold = 2
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "mmCPU_parallel_fine_light",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine_light",
+      inputSize = N,
+      metaheuristics = Right(experiment),
+      executor = executor,
+      lowering = exploration.strategies.blockingExploration.lowering,
+      strategies = parallel_fine_light,
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)),
+      normalForm = Some(DFNF()),
+      importExport = Some(exploration.explorationUtil.IO.importExport),
+      expert = Some(2.676716),
+      //      expert = Some(0.992146)
+    )
+
+    // repeat this
+    val explorationResult = exploration.explore(explorer)(e)
+
+    println("explorationResult: " + explorationResult)
+
+  }
 }

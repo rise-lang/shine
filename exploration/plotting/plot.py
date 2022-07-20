@@ -124,7 +124,7 @@ args = parser.parse_args()
 
 if "scatter" in args.plot.lower():
     # print(str(args))
-    scatter(args.src, -100, args.title, args.log, args.output)
+    scatter(args.src, -1, args.title, args.log, args.output)
 
 
 

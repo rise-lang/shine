@@ -80,7 +80,7 @@ object explorationTutorial {
       name = "mm_example_autotuner",
       output = "/home/jo/development/experiments/exploration/thinkjo/",
       inputSize = 512,
-      metaheuristics = random,
+      metaheuristics = Left(random),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = exploration.strategies.blockingExploration.strategies,

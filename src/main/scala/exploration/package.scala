@@ -48,6 +48,9 @@ package object exploration {
   def explore(explorer: Explorer)(expression: Expr)
   : ExplorationResult[Rise] = {
 
+    // make output
+    (s"mkdir -p ${explorer.output}" !!)
+
     explorer.metaheuristics match {
       case Left(config) => {
 
