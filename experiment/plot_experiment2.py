@@ -1,26 +1,28 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
-from scipy.stats import sem
+#!/bin/python3.8
 
 import csv
 import os
 import sys
-
 import copy
+
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy.stats import sem
+
+# seaborn
+plt.style.use('seaborn')
 
 path = sys.argv[1]
 
-output = path
-global_name = path.split('/')[-1]
+output = "test"
+# global_name = path.split('/')[-1]
 
 # set global colors
 
 # colors = ("red", "green", "yellow", "blue", "cornflowerblue", "tomato", "palegreen", "aquamarine")
 colors = (
-    "tab:gray",
-    "tab:green",
     "tab:red",
+    "tab:green",
     "tab:cyan",
     "tab:olive",
     "tab:purple",
@@ -28,6 +30,7 @@ colors = (
     "tab:pink",
     "tab:blue",
     "tab:orange",
+    "tab:gray",
 )
 
 
@@ -44,22 +47,25 @@ def get_runtime_index(reader):
     runtime_index = 0
     counter = 0
     for elem in header:
-        if (elem == 'runtime'):
+#         print("index: " + str(counter) + " elem: " + str(elem))
+        if ('runtime' in elem):
             runtime_index = counter
         counter += 1
+
+#     print("runtime_index is: " + str(runtime_index))
 
     return runtime_index
 
 
 def process_subfolder(sub_folder):
-    files = os.listdir(sub_folder)
+    files = os.listdir(sub_folder + "/" + "csv")
     # print('sub_folder: ' + str(sub_folder))
     # print(' files: ' + str(files))
     # mins = np.array(np.empty_like)
     fileData = {}
     for f in files:
         if (f[-3:] == 'csv'):
-            fileData[f] = process_file(sub_folder, f)
+            fileData[f] = process_file(sub_folder + "/" + "csv", f)
 
     return fileData
 
@@ -83,10 +89,19 @@ def process_file(sub_folder, file):
         else:
             line_count += 1
 
-            if (str(row[runtime_index + 1]) == 'True'):
-                data.append((True, float(row[runtime_index])))
-            else:
+#             print("row: " + str(line_count) + " value: " + str(row[runtime_index]))
+
+            if(str(row[runtime_index]) == '-1'):
                 data.append((False, float(2147483647)))
+            elif(str(row[runtime_index + 1]) == 'False'):
+                data.append((False, float(2147483647)))
+            else:
+                data.append((True, float(row[runtime_index])))
+
+#             if (str(row[runtime_index + 1]) == 'True'):
+#                 data.append((True, float(row[runtime_index])))
+#             else:
+#                 data.append((False, float(2147483647)))
 
     return data
 
@@ -104,193 +119,193 @@ def getDefaults(folder):
     return default, expert
 
 
-def plot_mean_median_min_var(name, default, expert, data):
-    mins = {}
-    medians = {}
-    means = {}
-    variances = {}
-
-    # remove invalid values
-    data_internal = copy.deepcopy(data)
-    for key in data_internal:
-        for file in data_internal[key]:
-            valid = []
-            for elem in data_internal[key][file]:
-                # if elem[0] == True:
-                valid.append(elem[1])
-            data_internal[key][file] = valid
-
-    for key in data_internal:
-        print("key: " + str(key))
-        min = []
-        for file in data_internal[key]:
-            min.append(np.min(np.array(data_internal[key][file])))
-
-        np_array = np.array(min)
-
-        mins[key] = default / np.min(np_array)
-        medians[key] = default / np.median(np_array)
-        means[key] = default / np.mean(np_array)
-        variances[key] = np.var(np_array)
-
-        # print("key: " + str(key))
-        # print("min: " + str(mins[key]))
-        # print("mean: " + str(means[key]))
-        # print("median: " + str(medians[key]))
-
-    # let's process it
-
-    # print("mins: " + str(mins))
-    # print("medians: " + str(medians))
-    # print("means: " + str(means))
-    # print("variances: " + str(variances))
-
-    methods = data_internal.keys()
-
-    barWidth = 0.2
-
-    # fig = plt.figure(figsize=(15, 5))
-
-    # using subplots() function
-
-    fig, ax = plt.subplots(figsize=(15, 8))
-
-    # using the twinx() for creating
-    # another axes
-
-    # Label axes
-
-    br1 = np.arange(len(methods))
-    br2 = [x + barWidth for x in br1]
-    br3 = [x + barWidth for x in br2]
-    br4 = [x + barWidth for x in br3]
-
-    # creating the bar plot
-    bar1 = plt.bar(br1, mins.values(), color='red', width=barWidth, label='Total Best')
-    bar2 = plt.bar(br2, medians.values(), color='blue', width=barWidth, label='Median')
-    bar3 = plt.bar(br3, means.values(), color='green', width=barWidth, label='Mean')
-    plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
-
-    # plt.legend(bbox_to_anchor=(0.2, 1.13))
-    plt.legend()
-
-    ax2 = ax.twinx()
-    bar4 = plt.bar(br4, variances.values(), color='yellow', width=barWidth, label='Variance')
-
-    # plt.xlabel("Methods")
-    # plt.ylabel("Speedup (over default)")
-    plt.title(str(name) + " - Achieved Performance (Speedup)")
-
-    ax.set_xlabel('Methods')
-    ax.set_ylabel('Speedup over default')
-    ax2.set_ylabel('Variance')
-
-    plt.xticks([r + barWidth for r in range(len(methods))], methods)
-
-    # lns = bar1 + bar2 + bar3 + bar4
-    # labels = [l.get_label() for l in lns]
-    # plt.legend(lns, labels, loc=0)
-
-    # plt.legend(bbox_to_anchor=(0.35, 1.065))
-    plt.legend()
-    # plt.show()
-
-    print("output: " + str(output))
-
-    plt.savefig(str(output) + '_mean_median_min_var.pdf', dpi=1000)
-
-    return 0
-
-
-def plot_mean_median_min(name, default, expert, data):
-    mins = {}
-    medians = {}
-    means = {}
-
-    # remove invalid values
-    data_internal = copy.deepcopy(data)
-    for key in data_internal:
-        for file in data_internal[key]:
-            valid = []
-            for elem in data_internal[key][file]:
-                # if elem[0] == True:
-                valid.append(elem[1])
-            data_internal[key][file] = valid
-
-    for key in data_internal:
-        print("key: " + str(key))
-        min = []
-        for file in data_internal[key]:
-            min.append(np.min(np.array(data_internal[key][file])))
-
-        np_array = np.array(min)
-
-        mins[key] = default / np.min(np_array)
-        medians[key] = default / np.median(np_array)
-        means[key] = default / np.mean(np_array)
-
-        # print("key: " + str(key))
-        # print("min: " + str(mins[key]))
-        # print("mean: " + str(means[key]))
-        # print("median: " + str(medians[key]))
-
-    # let's process it
-
-    # print("mins: " + str(mins))
-    # print("medians: " + str(medians))
-    # print("means: " + str(means))
-
-    methods = data_internal.keys()
-
-    barWidth = 0.2
-
-    # fig = plt.figure(figsize=(15, 5))
-
-    # using subplots() function
-
-    fig, ax = plt.subplots(figsize=(15, 8))
-
-    # using the twinx() for creating
-    # another axes
-
-    # Label axes
-
-    br1 = np.arange(len(methods))
-    br2 = [x + barWidth for x in br1]
-    br3 = [x + barWidth for x in br2]
-
-    # creating the bar plot
-    bar1 = plt.bar(br1, mins.values(), color='red', width=barWidth, label='Total Best')
-    bar2 = plt.bar(br2, medians.values(), color='blue', width=barWidth, label='Median')
-    bar3 = plt.bar(br3, means.values(), color='green', width=barWidth, label='Mean')
-    plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
-
-    plt.legend()
-    #    plt.legend(bbox_to_anchor=(0.2, 1.13))
-
-    # plt.xlabel("Methods")
-    # plt.ylabel("Speedup (over default)")
-    plt.title(str(name) + " - Achieved Performance (Speedup)")
-
-    ax.set_xlabel('Methods')
-    ax.set_ylabel('Speedup over default')
-
-    plt.xticks([r + barWidth for r in range(len(methods))], methods)
-
-    # lns = bar1 + bar2 + bar3
-    ##labels = [l.get_label() for l in lns]
-    # plt.legend(lns, labels)
-
-    plt.legend()
-
-    # plt.legend(bbox_to_anchor=(0.35, 1.065))
-    # plt.show()
-
-    # print("output: " + str(output))
-
-    plt.savefig(str(output) + '_mean_median_min.pdf', dpi=1000)
-
-    return 0
+# def plot_mean_median_min_var(name, default, expert, data):
+#     mins = {}
+#     medians = {}
+#     means = {}
+#     variances = {}
+#
+#     # remove invalid values
+#     data_internal = copy.deepcopy(data)
+#     for key in data_internal:
+#         for file in data_internal[key]:
+#             valid = []
+#             for elem in data_internal[key][file]:
+#                 # if elem[0] == True:
+#                 valid.append(elem[1])
+#             data_internal[key][file] = valid
+#
+#     for key in data_internal:
+#         print("key: " + str(key))
+#         min = []
+#         for file in data_internal[key]:
+#             min.append(np.min(np.array(data_internal[key][file])))
+#
+#         np_array = np.array(min)
+#
+#         mins[key] = default / np.min(np_array)
+#         medians[key] = default / np.median(np_array)
+#         means[key] = default / np.mean(np_array)
+#         variances[key] = np.var(np_array)
+#
+#         # print("key: " + str(key))
+#         # print("min: " + str(mins[key]))
+#         # print("mean: " + str(means[key]))
+#         # print("median: " + str(medians[key]))
+#
+#     # let's process it
+#
+#     # print("mins: " + str(mins))
+#     # print("medians: " + str(medians))
+#     # print("means: " + str(means))
+#     # print("variances: " + str(variances))
+#
+#     methods = data_internal.keys()
+#
+#     barWidth = 0.2
+#
+#     # fig = plt.figure(figsize=(15, 5))
+#
+#     # using subplots() function
+#
+#     fig, ax = plt.subplots(figsize=(15, 8))
+#
+#     # using the twinx() for creating
+#     # another axes
+#
+#     # Label axes
+#
+#     br1 = np.arange(len(methods))
+#     br2 = [x + barWidth for x in br1]
+#     br3 = [x + barWidth for x in br2]
+#     br4 = [x + barWidth for x in br3]
+#
+#     # creating the bar plot
+#     bar1 = plt.bar(br1, mins.values(), color='red', width=barWidth, label='Total Best')
+#     bar2 = plt.bar(br2, medians.values(), color='blue', width=barWidth, label='Median')
+#     bar3 = plt.bar(br3, means.values(), color='green', width=barWidth, label='Mean')
+#     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+#
+#     # plt.legend(bbox_to_anchor=(0.2, 1.13))
+#     plt.legend()
+#
+#     ax2 = ax.twinx()
+#     bar4 = plt.bar(br4, variances.values(), color='yellow', width=barWidth, label='Variance')
+#
+#     # plt.xlabel("Methods")
+#     # plt.ylabel("Speedup (over default)")
+#     plt.title(str(name) + " - Achieved Performance (Speedup)")
+#
+#     ax.set_xlabel('Methods')
+#     ax.set_ylabel('Speedup over default')
+#     ax2.set_ylabel('Variance')
+#
+#     plt.xticks([r + barWidth for r in range(len(methods))], methods)
+#
+#     # lns = bar1 + bar2 + bar3 + bar4
+#     # labels = [l.get_label() for l in lns]
+#     # plt.legend(lns, labels, loc=0)
+#
+#     # plt.legend(bbox_to_anchor=(0.35, 1.065))
+#     plt.legend()
+#     # plt.show()
+#
+#     print("output: " + str(output))
+#
+#     plt.savefig(str(output) + '_mean_median_min_var.pdf', dpi=1000)
+#
+#     return 0
+#
+#
+# def plot_mean_median_min(name, default, expert, data):
+#     mins = {}
+#     medians = {}
+#     means = {}
+#
+#     # remove invalid values
+#     data_internal = copy.deepcopy(data)
+#     for key in data_internal:
+#         for file in data_internal[key]:
+#             valid = []
+#             for elem in data_internal[key][file]:
+#                 # if elem[0] == True:
+#                 valid.append(elem[1])
+#             data_internal[key][file] = valid
+#
+#     for key in data_internal:
+#         print("key: " + str(key))
+#         min = []
+#         for file in data_internal[key]:
+#             min.append(np.min(np.array(data_internal[key][file])))
+#
+#         np_array = np.array(min)
+#
+#         mins[key] = default / np.min(np_array)
+#         medians[key] = default / np.median(np_array)
+#         means[key] = default / np.mean(np_array)
+#
+#         # print("key: " + str(key))
+#         # print("min: " + str(mins[key]))
+#         # print("mean: " + str(means[key]))
+#         # print("median: " + str(medians[key]))
+#
+#     # let's process it
+#
+#     # print("mins: " + str(mins))
+#     # print("medians: " + str(medians))
+#     # print("means: " + str(means))
+#
+#     methods = data_internal.keys()
+#
+#     barWidth = 0.2
+#
+#     # fig = plt.figure(figsize=(15, 5))
+#
+#     # using subplots() function
+#
+#     fig, ax = plt.subplots(figsize=(15, 8))
+#
+#     # using the twinx() for creating
+#     # another axes
+#
+#     # Label axes
+#
+#     br1 = np.arange(len(methods))
+#     br2 = [x + barWidth for x in br1]
+#     br3 = [x + barWidth for x in br2]
+#
+#     # creating the bar plot
+#     bar1 = plt.bar(br1, mins.values(), color='red', width=barWidth, label='Total Best')
+#     bar2 = plt.bar(br2, medians.values(), color='blue', width=barWidth, label='Median')
+#     bar3 = plt.bar(br3, means.values(), color='green', width=barWidth, label='Mean')
+#     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+#
+#     plt.legend()
+#     #    plt.legend(bbox_to_anchor=(0.2, 1.13))
+#
+#     # plt.xlabel("Methods")
+#     # plt.ylabel("Speedup (over default)")
+#     plt.title(str(name) + " - Achieved Performance (Speedup)")
+#
+#     ax.set_xlabel('Methods')
+#     ax.set_ylabel('Speedup over default')
+#
+#     plt.xticks([r + barWidth for r in range(len(methods))], methods)
+#
+#     # lns = bar1 + bar2 + bar3
+#     ##labels = [l.get_label() for l in lns]
+#     # plt.legend(lns, labels)
+#
+#     plt.legend()
+#
+#     # plt.legend(bbox_to_anchor=(0.35, 1.065))
+#     # plt.show()
+#
+#     # print("output: " + str(output))
+#
+#     plt.savefig(str(output) + '_mean_median_min.pdf', dpi=1000)
+#
+#     return 0
 
 
 def plot_performance_evolution_confidence_internal(default, name, data_internal2, color):
@@ -312,6 +327,16 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
             pe.append(min)
 
         data_internal[key] = pe
+
+    # convert to log
+    default = np.log(default)
+    for key in data_internal:
+        pe= []
+        for elem in data_internal[key]:
+            pe.append(np.log(elem))
+        
+        data_internal[key] = pe
+
 
     # print("data_internal: " + str(data_internal))
 
@@ -335,13 +360,15 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
         means_internal2 = []
         for file in means_preparation:
             means_internal.append(file[i])
-            means_internal2.append(default / file[i])
+            means_internal2.append(file[i])
+#             means_internal2.append(default / file[i])
 
         # print("get mean from: " + str(i))
         # print(str(means_internal))
         # print("mean is: " + str(np.mean(np.array(means_internal))))
 
-        means.append(default / np.mean(np.array(means_internal)))
+#         means.append(default / np.mean(np.array(means_internal)))
+        means.append(np.mean(np.array(means_internal)))
         confidence.append(sem(means_internal2) * 1.96)
         # confidence.append(1.96 * np.std(means_internal) / np.sqrt(len(means_internal)))
 
@@ -349,13 +376,14 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
     # print("confidence: " + str(confidence))
 
     # means
+    means = means[0:2423]
 
     # df_se = df.groupby('order_hour_of_day').quantity.apply(sem).mul(1.96)
 
     # Plot
     x = range(len(means))
 
-    plt.ylabel("Speedup (over default)", fontsize=16)
+    plt.ylabel("Log Runtime (ms)", fontsize=16)
     # qx = means.index
     plt.plot(x, means, color=color, lw=2, label=name)
 
@@ -374,7 +402,7 @@ def plot_performance_evolution_confidence(name, default, expert, data):
     # plot time series with error band
     # get performance evolution data
 
-    plt.figure(figsize=(16, 10), dpi=1000)
+    plt.figure(figsize=(16, 9), dpi=1000)
 
     counter = 0
 
@@ -404,40 +432,42 @@ def plot_performance_evolution_confidence(name, default, expert, data):
     plt.xlim(s, e)
 
     # draw expert
-    plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+#     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+    expert = np.log(expert)
+    plt.axhline(y=expert, color='black', linestyle='-', label='Expert')
 
     # draw legend
     plt.legend()
 
     # Draw Horizontal Tick lines
-    print("y_up: " + str(y_up))
-    step = int(y_up)
-    if y_up > 200:
-        step = 50
-    elif y_up > 50:
-        step = 10
-    elif y_up > 10:
-        step = 5
-    else:
-        step = 1
+#     print("y_up: " + str(y_up))
+#     step = int(y_up)
+#     if y_up > 200:
+#         step = 50
+#     elif y_up > 50:
+#         step = 10
+#     elif y_up > 10:
+#         step = 5
+#     else:
+#         step = 1
+#
+#     print("step: " + str(step))
+#     for y in range(0, int(y_up) + 1, step):
+#         plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
 
-    print("step: " + str(step))
-    for y in range(0, int(y_up) + 1, step):
-        plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
-
-    plt.savefig(str(output) + '_confidence.pdf', dpi=1000)
+    plt.savefig(str(output) + '.pdf', dpi=1000)
 
     return 0
 
 
 # add support for multiple files at once
-# files = os.listdir(path)
+files = os.listdir(path)
 
 folders = [(f.name, f.path) for f in os.scandir(path) if f.is_dir()]
 
-print('folders: ' + str(folders))
+# print('folders: ' + str(folders))
 
-(default, expert) = getDefaults(path + '/' + 'manual_configs')
+# (default, expert) = getDefaults(path + '/' + 'manual_configs')
 
 # data = {}
 # data['default'] = {'mean': default, 'median': default, 'min': default}
@@ -447,28 +477,34 @@ data = {}
 # {folder: {file: {data}}}
 
 for (name, path) in folders:
-    # print('folder name: ' + name)
-    # print('folder path: ' + path)
-    sub_path = str(path) + '/' + str(name) + '_' + 'hm'
-    # print('folder to process: ' + sub_path)
+#     # print('folder name: ' + name)
+#     # print('folder path: ' + path)
+     #sub_path = str(path) + '/' + str(name) + '_' + 'hm'
+     data[name] = process_subfolder(path)
 
-    # name = folder.
-    if (name != 'manual_configs'):
-        data[name] = process_subfolder(sub_path)
+
+#sub_path = "csv"
+#data['random'] = process_subfolder(sub_path)
 
 # print('data: ' + str(data))
 
 # now we have data dictionary containing all values of output files
 
+#default = 43.937866
+default = 200.0
+expert = 2.64
+
 # data['default'] = {'default': default}
 # data['expert'] = {'expert': expert}
-print("mean_median_min_min")
-plot_mean_median_min(global_name, default, expert, data)
 
-print("mean_median_min_var")
-plot_mean_median_min_var(global_name, default, expert, data)
+# print("mean_median_min_min")
+# plot_mean_median_min(global_name, default, expert, data)
+#
+# print("mean_median_min_var")
+# plot_mean_median_min_var(global_name, default, expert, data)
 
 print("performance_evolution")
+global_name = "test"
 plot_performance_evolution_confidence(global_name, default, expert, data)
 
 print("name: " + str(global_name))
