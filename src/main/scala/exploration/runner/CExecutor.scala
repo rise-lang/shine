@@ -743,10 +743,10 @@ int main(int argc, char** argv) {
     counter += 1
 
     // plot every 10 executions
-    counter % printEvery match {
-      case 0 => plot()
-      case _ =>
-    }
+    //    counter % printEvery match {
+    //      case 0 => plot()
+    //      case _ =>
+    //    }
 
 
     file.close()
