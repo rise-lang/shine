@@ -63,7 +63,7 @@ object jsonParser {
       case "RandomSampling" => new RandomSampling[Rise]
       case "exhaustive" => new Exhaustive[Rise]
       case "annealing" => new Annealing[Rise]
-      case "tabu_search" => new TabuSearch[Rise]
+      case "tabuSearch" => new TabuSearch[Rise]
       case "autotuner" => new AutotunerSearch[Rise]
       case "cot" => new AutotunerSearch2[Rise]
       case "cot2" => new AutotunerSearch3[Rise]

@@ -2,7 +2,7 @@ package explorations
 
 import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
-import exploration.{ExecutorConfig, MetaheuristicConfig, runner}
+import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
 import explorations.explorationTutorial.mm
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.core._
@@ -701,7 +701,23 @@ class mmCPU_exploration extends test_util.Tests {
     val ii = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "IterativeImprovement",
-        depth = 8,
+        depth = 5,
+        samples = 1000
+      )
+    )
+
+    val annealing = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "annealing",
+        depth = 5,
+        samples = 1000
+      )
+    )
+
+    val tabuSearch = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "tabuSearch",
+        depth = 5,
         samples = 1000
       )
     )
@@ -710,8 +726,22 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 2500,
-        repeat = 5
+        samples = 100,
+        repeat = 3
+      )
+    )
+
+    val random_ii = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Random",
+        depth = 5,
+        samples = 500,
+        repeat = 1
+      ),
+      MetaheuristicConfig(
+        heuristic = "IterativeImprovement",
+        depth = 5,
+        samples = 1000
       )
     )
 
@@ -719,13 +749,17 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "exhaustive",
         depth = 5,
-        samples = 10000,
+        samples = 100,
       )
     )
 
     val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
+      //      annealing,
+      //      tabuSearch
+      random_ii
+      //      exhaustive,
+      //      ii,
+      //      random
     )
 
     val executor = ExecutorConfig(
@@ -748,12 +782,28 @@ class mmCPU_exploration extends test_util.Tests {
       importExport = Some(exploration.explorationUtil.IO.importExport),
       expert = Some(2.676716),
       //      expert = Some(0.992146)
+      overwrite = true
     )
 
     // repeat this
     val explorationResult = exploration.explore(explorer)(e)
 
-    println("explorationResult: " + explorationResult)
+
+    // plot
+    // python experiment/plot_experiment2.py /home/jo/development/experiments/exploration/dodekarch/dodekarch/parallel_fine_light/mmCPU_parallel_fine_light
+
+
+  }
+
+  test("regex") {
+
+    println(uniqueFilename("hello"))
+    println(uniqueFilename("hello_"))
+    println(uniqueFilename("hello_1"))
+    println(uniqueFilename("hello_1234"))
+    println(uniqueFilename("hello_1234_uwe"))
+    println(uniqueFilename("test.pdf"))
+    println(uniqueFilename("test_0"))
 
   }
 }

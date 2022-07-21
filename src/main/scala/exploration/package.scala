@@ -8,7 +8,7 @@ import exploration.runner._
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
-import scala.language.postfixOps
+import scala.language.{existentials, postfixOps}
 
 package object exploration {
 
@@ -27,6 +27,7 @@ package object exploration {
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
                        importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None, // how to import/export a solution
                        expert: Option[Double] = None,
+                       overwrite: Boolean = false,
                        //                       repeat: Int = 1
                      )
 
@@ -48,6 +49,7 @@ package object exploration {
   def explore(explorer: Explorer)(expression: Expr)
   : ExplorationResult[Rise] = {
 
+
     // make output
     (s"mkdir -p ${explorer.output}" !!)
 
@@ -57,8 +59,12 @@ package object exploration {
         // create output parent folder (if not existent)
         (s"mkdir -p ${explorer.output}" !!)
 
-        val uniqueFilename_full = uniqueFilename(explorer.output + "/" + explorer.name)
+        val uniqueFilename_full = explorer.overwrite match {
+          case false => uniqueFilename(explorer.output + "/" + explorer.name)
+          case true => explorer.output + "/" + explorer.name
+        }
 
+        (s"mkdir -p ${uniqueFilename_full}/hm" !!)
         (s"mkdir -p ${uniqueFilename_full}/csv" !!)
 
         for (iteration <- Range(0, config.reverse.last.repeat)) {
@@ -76,7 +82,12 @@ package object exploration {
 
           entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
 
-          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
+          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+
+
+          // copy tuningStatistics.json
+
           (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
         }
 
@@ -84,12 +95,12 @@ package object exploration {
         // directory uniqueFilename_full
         // plot
         val plot = explorer.expert match {
-          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
         }
         val plot_log = explorer.expert match {
-          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
         }
 
         (plot !!)
@@ -112,17 +123,32 @@ package object exploration {
 
         // create output parent folder (if not existent)
         (s"mkdir -p ${explorer.output}" !!)
-        val uniqueFilenameRoot = uniqueFilename(explorer.output + "/" + explorer.name)
+
+        val uniqueFilenameRoot = explorer.overwrite match {
+          case false => uniqueFilename(explorer.output + "/" + explorer.name)
+          case true => explorer.output + "/" + explorer.name
+        }
+
+        //        val uniqueFilenameRoot = uniqueFilename(explorer.output + "/" + explorer.name)
 
         config.foreach(metaheuristic => {
+
+
           val methodName = metaheuristic.reverse.last.heuristic
 
-          val uniqueFilename_full = uniqueFilenameRoot + "/" + methodName
+          // don't overwrite methods
+          val uniqueFilename_full = uniqueFilename(uniqueFilenameRoot + "/" + methodName)
 
+          (s"mkdir -p ${uniqueFilename_full}/hm" !!)
           (s"mkdir -p ${uniqueFilename_full}/csv" !!)
 
           for (iteration <- Range(0, metaheuristic.reverse.last.repeat)) {
             println("iteration: " + iteration)
+
+            //            val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
+            //            println("jsonPath: " + jsonPath)
+
+            //            System.exit(0)
 
             // start rise exploration here!
             val entryPoint = prepareExploration(
@@ -135,20 +161,24 @@ package object exploration {
 
             entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
 
+            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
             (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
-            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
+
+            // copy json
+            val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
+            (s"cp ${uniqueFilename_full}/${jsonPath}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
           }
 
           // plot total
           // directory uniqueFilename_full
           // plot
           val plot = explorer.expert match {
-            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
           }
           val plot_log = explorer.expert match {
-            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/csv -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
           }
 
           (plot !!)
@@ -157,6 +187,7 @@ package object exploration {
         })
 
         plot_experiment(uniqueFilenameRoot, config, explorer)
+        plot_experiment2(uniqueFilenameRoot, explorer)
 
         ExplorationResult(
           solution = Solution(expression, strategies = explorer.strategies),
@@ -169,13 +200,23 @@ package object exploration {
 
   }
 
+  def plot_experiment2(uniqueFilenameRoot: String, explorer: Explorer) = {
+    val command = s"python experiment/plot_experiment2.py ${uniqueFilenameRoot}"
+
+    println("command: " + command)
+
+    command !!
+
+  }
+
+
   def plot_experiment(uniqueFilenameRoot: String, config: Seq[Seq[MetaheuristicConfig]], explorer: Explorer) = {
 
     val configFile = uniqueFilenameRoot + "/" + config.last.reverse.last.heuristic + "/" + "tuningStatistics.json"
     var folders = ""
     var names = ""
     config.foreach(elem => {
-      folders += uniqueFilenameRoot + "/" + elem.reverse.last.heuristic + "/" + "csv" + " "
+      folders += uniqueFilenameRoot + "/" + elem.reverse.last.heuristic + "/" + "hm" + " "
       names += elem.reverse.last.heuristic + " "
     })
 
@@ -245,25 +286,35 @@ package object exploration {
     val nameList = scala.collection.mutable.ListBuffer.empty[String]
     var predecessor = uniqueFilename_full
     metaheuristics.foreach(elem => {
-      predecessor = predecessor + "/" + elem.heuristic
+      predecessor = predecessor + "/" + elem.heuristic + "_" + iteration
       nameList += predecessor
     })
 
 
     // create folder for executor
-    val executorOutput = predecessor + "_" + iteration + "/" + "Executor"
+    val executorOutput = predecessor + "/" + "Executor"
+    //    val executorOutput = predecessor + "_" + iteration + "/" + "Executor"
     //    val executorOutput = predecessor + "/" + "Executor"
+
+    println("NameList: \n")
+    nameList.foreach(println)
+    println("\n")
 
     // create subfolders
     nameList.foreach(elem => {
       println("elem: " + elem)
-      (s"mkdir ${elem}_${iteration}" !!)
-      (s"mkdir ${elem}_${iteration}" + "/Expressions" !!)
+      //      (s"mkdir ${elem}_${iteration}" !!)
+      //      (s"mkdir ${elem}_${iteration}" + "/Expressions" !!)
+      (s"mkdir ${elem}" !!)
+      (s"mkdir ${elem}" + "/Expressions" !!)
     })
+
 
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
+
+    //    System.exit(0)
 
     // begin with executor
     val executor = explorer.executor.name match {
@@ -331,18 +382,26 @@ package object exploration {
     metaheuristic
   }
 
-  // todo this occurs multiple times in code
   def uniqueFilename(path: String): String = {
+
     // check if output path already exists
-    var uniqueFilename_full = path
-    if (Files.exists(Paths.get(uniqueFilename_full))) {
-      // wait for next millisecond to create unique filename using timestamp
-      Thread.sleep(1)
-      uniqueFilename_full = uniqueFilename_full + "_" + System.currentTimeMillis()
+    val uniquePath = Files.exists(Paths.get(path)) match {
+      case true =>
+        // check if path already ends with "_number"
+        val isCountedFormat = ".*_[0123456789]+$".r.findFirstIn(path)
+        isCountedFormat match {
+          case Some(_) =>
+            val pathSplit: Seq[String] = path.split("_").toSeq
+            val number: Int = pathSplit.last.toInt + 1
+            val countedPath: String = pathSplit.slice(0, pathSplit.size - 1).mkString("_") + "_" + number.toString
+            uniqueFilename(countedPath)
+          case None =>
+            val uniquePathCandidate = path + "_" + "0"
+            uniqueFilename(uniquePathCandidate)
+        }
+      case false =>
+        path
     }
-
-    uniqueFilename_full
+    uniquePath
   }
-
-
 }
