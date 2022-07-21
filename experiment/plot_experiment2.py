@@ -14,8 +14,9 @@ plt.style.use('seaborn')
 
 path = sys.argv[1]
 
-output = "test"
-# global_name = path.split('/')[-1]
+# todo change this
+output = sys.argv[1]
+global_name = path.split('/')[-1]
 
 # set global colors
 
@@ -385,7 +386,8 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
 
     plt.ylabel("Log Runtime (ms)", fontsize=16)
     # qx = means.index
-    plt.plot(x, means, color=color, lw=2, label=name)
+    plt.plot(x, means, alpha = 0.8, color=color, lw=2, label=name)
+
 
     lower = []
     upper = []
@@ -413,8 +415,21 @@ def plot_performance_evolution_confidence(name, default, expert, data):
     # print("keys: " + str(keys))
     # print("keys: " + str(sorted(keys)))
 
-    for key in sorted(keys):
-        plot_performance_evolution_confidence_internal(default, str(key), data[key], colors[counter % len(colors)])
+    print("keys: ")
+    for key in keys:
+        print(str(key))
+
+    def sorter(key):
+        return data[key][0]
+
+    keys = sorted(keys, key=sorter)
+
+    print("keys: ")
+    for key in keys:
+        print(str(key))
+
+    for key in keys:
+        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)])
         counter += 1
 
     # Decorations
@@ -455,7 +470,10 @@ def plot_performance_evolution_confidence(name, default, expert, data):
 #     for y in range(0, int(y_up) + 1, step):
 #         plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
 
-    plt.savefig(str(output) + '.pdf', dpi=1000)
+    save = str(output) + "/" + str(global_name)  + ".pdf"
+    print("save: " + str(save))
+
+    plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
 
     return 0
 
@@ -475,13 +493,46 @@ folders = [(f.name, f.path) for f in os.scandir(path) if f.is_dir()]
 
 data = {}
 # {folder: {file: {data}}}
+# {folder: order, {file: data}}}
 
+print("folders")
+for elem in folders:
+    print(str(elem[0]))
+
+# print("type: " + str(type(folders)))
+# os.path.getmtime(path)
+
+def pather(folder):
+    return os.path.getmtime(folder[1])
+
+folders = sorted(folders, key=pather, reverse=False)
+
+print("\n\n")
+
+print("folders")
+for elem in folders:
+    print(str(elem[0]))
+
+print("\n\n")
+
+counter = 0
 for (name, path) in folders:
-#     # print('folder name: ' + name)
+     print('folder name: ' + name)
 #     # print('folder path: ' + path)
      #sub_path = str(path) + '/' + str(name) + '_' + 'hm'
-     data[name] = process_subfolder(path)
+     data[name] = (counter, process_subfolder(path))
+     counter += 1
 
+
+print("\n\n")
+
+print("data")
+
+for elem in data:
+    print(elem)
+    print(data[elem][0])
+
+print("\n")
 
 #sub_path = "csv"
 #data['random'] = process_subfolder(sub_path)
@@ -504,7 +555,7 @@ expert = 2.64
 # plot_mean_median_min_var(global_name, default, expert, data)
 
 print("performance_evolution")
-global_name = "test"
+# global_name = "exploration"
 plot_performance_evolution_confidence(global_name, default, expert, data)
 
 print("name: " + str(global_name))
