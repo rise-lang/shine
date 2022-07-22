@@ -309,7 +309,7 @@ def getDefaults(folder):
 #     return 0
 
 
-def plot_performance_evolution_confidence_internal(default, name, data_internal2, color):
+def plot_performance_evolution_confidence_internal(default, name, data_internal2, color, log):
     data_internal = {}
     for key in data_internal2:
         internal = []
@@ -321,21 +321,26 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
     # convert to performance evolution
     for key in data_internal:
         pe = []
-        min = data_internal[key][0]
+        minimum = data_internal[key][0]
         for elem in data_internal[key]:
-            if elem < min:
-                min = elem
-            pe.append(min)
+            if elem < minimum:
+                minimum = elem
+            pe.append(minimum)
 
         data_internal[key] = pe
 
     # convert to log
-    default = np.log(default)
+    if(log):
+        default = np.log10(default)
+
     for key in data_internal:
-        pe= []
+        pe = []
         for elem in data_internal[key]:
-            pe.append(np.log(elem))
-        
+            if(log):
+                pe.append(np.log10(elem))
+            else:
+                pe.append(elem)
+
         data_internal[key] = pe
 
 
@@ -356,7 +361,22 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
             means_preparation[counter].append(elem)
 
     # get means
-    for i in range(len(means_preparation[0])):
+#     map(lambda x: x*x, numbers)
+
+    minElem = min(list(map(lambda x: len(x), means_preparation)))
+    print("type: " + str(type(means_preparation)))
+    print("minElem: " + str(minElem))
+    print("type: " + str(type(minElem)))
+#     help = 0
+#     if(len(minElem) == 1):
+#         help = minElem
+#     else:
+#         help = min(minElem)
+
+#     print("help: " + str(help))
+
+#     for i in range(len(means_preparation[0])):
+    for i in range(minElem):
         means_internal = []
         means_internal2 = []
         for file in means_preparation:
@@ -369,7 +389,8 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
         # print("mean is: " + str(np.mean(np.array(means_internal))))
 
 #         means.append(default / np.mean(np.array(means_internal)))
-        means.append(np.mean(np.array(means_internal)))
+        means.append(np.median(np.array(means_internal)))
+#         means.append(np.mean(np.array(means_internal)))
         confidence.append(sem(means_internal2) * 1.96)
         # confidence.append(1.96 * np.std(means_internal) / np.sqrt(len(means_internal)))
 
@@ -400,7 +421,7 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
     return 0
 
 
-def plot_performance_evolution_confidence(name, default, expert, data):
+def plot_performance_evolution_confidence(name, default, expert, data, log):
     # plot time series with error band
     # get performance evolution data
 
@@ -429,7 +450,7 @@ def plot_performance_evolution_confidence(name, default, expert, data):
         print(str(key))
 
     for key in keys:
-        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)])
+        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)], log)
         counter += 1
 
     # Decorations
@@ -448,7 +469,9 @@ def plot_performance_evolution_confidence(name, default, expert, data):
 
     # draw expert
 #     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
-    expert = np.log(expert)
+    if(log):
+        expert = np.log10(expert)
+
     plt.axhline(y=expert, color='black', linestyle='-', label='Expert')
 
     # draw legend
@@ -473,7 +496,10 @@ def plot_performance_evolution_confidence(name, default, expert, data):
     save = str(output) + "/" + str(global_name)  + ".pdf"
     print("save: " + str(save))
 
-    plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
+    if(log):
+        plt.savefig(str(output) + "/" + str(global_name) + '_log.pdf', dpi=1000)
+    else:
+        plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
 
     return 0
 
@@ -556,7 +582,10 @@ expert = 2.64
 
 print("performance_evolution")
 # global_name = "exploration"
-plot_performance_evolution_confidence(global_name, default, expert, data)
+log = True
+plot_performance_evolution_confidence(global_name, default, expert, data, log)
+log = False
+plot_performance_evolution_confidence(global_name, default, expert, data, log)
 
 print("name: " + str(global_name))
 
