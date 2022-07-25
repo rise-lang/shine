@@ -30,7 +30,7 @@ import rise.elevate.strategies.traversal._
 class mmCPU_exploration extends test_util.Tests {
 
   // define expression
-  val N = 512
+  val N = 256
 
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -123,8 +123,8 @@ class mmCPU_exploration extends test_util.Tests {
   // -- PARALLEL ---------------------------------------------------------------
 
   @rule def par: Strategy[Rise] = (
-    arrayPacking `;;`
-      //    tvmGemm.loopPerm `;;`
+    //    arrayPacking `;;`
+    tvmGemm.loopPerm `;;`
       (parallel() `@` outermost(isApplied(isMap))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
@@ -302,7 +302,7 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-  ignore("mmCPU - execute versions") {
+  test("mmCPU - execute versions") {
     // execute version
     val mm_baseline = baseline.apply(mm).get
 
@@ -323,37 +323,37 @@ class mmCPU_exploration extends test_util.Tests {
 
     val executor = CExecutor(
       lowering = lowerToC,
-      output = "/home/jo/development/experiments/exploration/dodekarch/plot/baselines",
-      iterations = 100,
+      output = "exploration",
+      iterations = 1000,
       goldExpression = gold,
       inputSize = N,
 
       saveToDisk = true
     )
 
-    val baselineResult = executor.execute(Solution[Rise](mm_baseline, scala.collection.immutable.Seq(baseline)))
-    println("baseline: " + baselineResult)
-    assert(baselineResult.performance.isDefined)
-
-    val blockingResult = executor.execute(Solution[Rise](mm_blocking, scala.collection.immutable.Seq(blocking)))
-    println("blocking: " + blockingResult)
-    assert(blockingResult.performance.isDefined)
-
-    val vectorizationResult = executor.execute(Solution[Rise](mm_vectorize, scala.collection.immutable.Seq(vectorization)))
-    println("vectorization: " + vectorizationResult)
-    assert(vectorizationResult.performance.isDefined)
-
-    val loopPermResult = executor.execute(Solution[Rise](mm_loopPerm, scala.collection.immutable.Seq(loopPerm)))
-    println("loopPerm: " + loopPermResult)
-    assert(loopPermResult.performance.isDefined)
-
-    val arrayPackingResult = executor.execute(Solution[Rise](mm_arrayPacking, scala.collection.immutable.Seq(arrayPacking)))
-    println("arrayPacking: " + arrayPackingResult)
-    assert(arrayPackingResult.performance.isDefined)
-
-    val cacheBlocksResult = executor.execute(Solution[Rise](mm_cacheBlocks, scala.collection.immutable.Seq(cacheBlocks)))
-    println("cacheBlocks: " + cacheBlocksResult)
-    assert(cacheBlocksResult.performance.isDefined)
+    //    val baselineResult = executor.execute(Solution[Rise](mm_baseline, scala.collection.immutable.Seq(baseline)))
+    //    println("baseline: " + baselineResult)
+    //    assert(baselineResult.performance.isDefined)
+    //
+    //    val blockingResult = executor.execute(Solution[Rise](mm_blocking, scala.collection.immutable.Seq(blocking)))
+    //    println("blocking: " + blockingResult)
+    //    assert(blockingResult.performance.isDefined)
+    //
+    //    val vectorizationResult = executor.execute(Solution[Rise](mm_vectorize, scala.collection.immutable.Seq(vectorization)))
+    //    println("vectorization: " + vectorizationResult)
+    //    assert(vectorizationResult.performance.isDefined)
+    //
+    //    val loopPermResult = executor.execute(Solution[Rise](mm_loopPerm, scala.collection.immutable.Seq(loopPerm)))
+    //    println("loopPerm: " + loopPermResult)
+    //    assert(loopPermResult.performance.isDefined)
+    //
+    //    val arrayPackingResult = executor.execute(Solution[Rise](mm_arrayPacking, scala.collection.immutable.Seq(arrayPacking)))
+    //    println("arrayPacking: " + arrayPackingResult)
+    //    assert(arrayPackingResult.performance.isDefined)
+    //
+    //    val cacheBlocksResult = executor.execute(Solution[Rise](mm_cacheBlocks, scala.collection.immutable.Seq(cacheBlocks)))
+    //    println("cacheBlocks: " + cacheBlocksResult)
+    //    assert(cacheBlocksResult.performance.isDefined)
 
     val parResult = executor.execute(Solution[Rise](mm_par, scala.collection.immutable.Seq(par)))
     println("par: " + parResult)
@@ -749,14 +749,14 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "exhaustive",
         depth = 5,
-        samples = 100,
+        samples = 10000,
       )
     )
 
     val experiment = scala.collection.immutable.Seq(
       //      annealing,
-      //      tabuSearch
-      random_ii
+      tabuSearch
+      //      random_ii
       //      exhaustive,
       //      ii,
       //      random
@@ -765,13 +765,13 @@ class mmCPU_exploration extends test_util.Tests {
     val executor = ExecutorConfig(
       name = "C",
       iterations = 11,
-      threshold = 2
+      threshold = 10
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmCPU_parallel_fine_light",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine_light",
+      output = "/home/jo/development/experiments/exploration/thinkjo/parallel_fine_light",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
@@ -780,8 +780,9 @@ class mmCPU_exploration extends test_util.Tests {
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)),
       normalForm = Some(DFNF()),
       importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(2.676716),
-      //      expert = Some(0.992146)
+      //      expert = Some(2.676716),
+      //                  expert = Some(0.992146)
+      expert = Some(1.931617),
       overwrite = true
     )
 
