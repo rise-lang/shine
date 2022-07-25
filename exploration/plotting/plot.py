@@ -105,10 +105,11 @@ def scatter(folder, invalid, title, log=False, output="scatter.pdf"):
     for f in files:
         if(f[-3:] == 'csv'):
             (x, y) = collect_points(folder, f, invalid, log)
-            plt.scatter(x, y,  s=5, alpha=1, c=colors[i%8], edgecolor='black', linewidth=0)
+            plt.scatter(x, y,  s=2, alpha=1, c=colors[i%8], edgecolor='black', linewidth=0, label=str(f[:-4]))
             i += 1
 
     plt.title(str(title))
+    plt.legend()
     plt.tight_layout()
 
     plt.savefig(output, dpi=1000)
