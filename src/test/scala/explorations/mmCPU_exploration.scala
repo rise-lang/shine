@@ -710,7 +710,8 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "annealing",
         depth = 5,
-        samples = 1000
+        samples = 3000,
+        repeat = 1
       )
     )
 
@@ -726,8 +727,8 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 100,
-        repeat = 3
+        samples = 2500,
+        repeat = 10
       )
     )
 
@@ -745,6 +746,15 @@ class mmCPU_exploration extends test_util.Tests {
       )
     )
 
+    val autotuner = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "autotuner",
+        depth = 5,
+        samples = 1000,
+        repeat = 10
+      )
+    )
+
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
@@ -755,11 +765,13 @@ class mmCPU_exploration extends test_util.Tests {
 
     val experiment = scala.collection.immutable.Seq(
       //      annealing,
-      tabuSearch
+      tabuSearch,
+      //      autotuner
+      //      tabuSearch
       //      random_ii
       //      exhaustive,
       //      ii,
-      //      random
+      random
     )
 
     val executor = ExecutorConfig(
@@ -782,7 +794,7 @@ class mmCPU_exploration extends test_util.Tests {
       importExport = Some(exploration.explorationUtil.IO.importExport),
       //      expert = Some(2.676716),
       //                  expert = Some(0.992146)
-      expert = Some(1.931617),
+      expert = Some(1.931617), // expert for non-turbo thinkpad for 256
       overwrite = true
     )
 
@@ -796,7 +808,7 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-  test("regex") {
+  ignore("regex") {
 
     println(uniqueFilename("hello"))
     println(uniqueFilename("hello_"))
