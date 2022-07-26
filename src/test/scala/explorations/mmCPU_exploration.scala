@@ -727,8 +727,8 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 2500,
-        repeat = 10
+        samples = 500,
+        repeat = 1
       )
     )
 
@@ -771,7 +771,7 @@ class mmCPU_exploration extends test_util.Tests {
       //      random_ii
       //      exhaustive,
       //      ii,
-      random
+      //      random
     )
 
     val executor = ExecutorConfig(
