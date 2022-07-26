@@ -9,7 +9,7 @@ import rise.elevate.rules.traversal.default
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.{AutoTuningExecutor, CExecutor, DebugExecutor}
-import elevate.heuristic_search.{Metaheuristic, Runner}
+import elevate.heuristic_search.{ExplorationResult, Metaheuristic, Runner}
 import elevate.heuristic_search.util.Solution
 import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.{ParseExploration, executorRead}
@@ -37,7 +37,7 @@ object riseExploration {
             rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
             afterRewrite: Option[Strategy[Rise]] = None
            )
-  : (Rise, Option[Double]) = {
+  : ExplorationResult[Rise] = {
 
     // parse config file
     val parsedConfiguration = jsonParser.parse(filePath)
@@ -166,7 +166,8 @@ object riseExploration {
       strategies,
       nameList.reverse.apply(index),
       rewriteFunction = rewriteFunction,
-      afterRewrite = afterRewrite
+      afterRewrite = afterRewrite,
+      importExport = Option.empty
     )
 
     index = index + 1
@@ -184,7 +185,8 @@ object riseExploration {
         strategies,
         nameList.reverse.apply(index),
         rewriteFunction = rewriteFunction,
-        afterRewrite = afterRewrite
+        afterRewrite = afterRewrite,
+        importExport = Option.empty
       )
       index = index + 1
     })

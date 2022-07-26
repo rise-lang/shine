@@ -102,16 +102,68 @@ object explorationTutorial {
     rewritten.toSet
   }
 
+  def runExpert() = {
+    // expert
+
+      val mmExpert = blockingExploration.expert(mm).get
+
+    val gold = blockingExploration.lowering(blockingExploration.expert(mm).get).get
+
+
+    val executor = exploration.runner.CExecutor(
+      lowering = blockingExploration.lowering,
+      output = "exploration",
+      iterations = 10,
+      goldExpression = gold,
+      inputSize = N,
+      saveToDisk = true,
+      timeout = 10000,
+      threshold = 100
+    )
+
+    val result = executor.execute(Solution[Rise](mmExpert, scala.collection.immutable.Seq(blockingExploration.expert)))
+
+    println("result: " + result)
+
+
+  }
+
   def main(args: Array[String]): Unit = {
 
-    riseExploration(
-      mm,
-      blockingExploration.lowering,
-      blockingExploration.strategies,
-      "exploration/configuration/mm/mm_example_autotuner.json",
-      rewriteFunction = None,
-      afterRewrite = None
-    )
+    runExpert()
+
+    // Strategies
+//    riseExploration(
+//      mm,
+//      blockingExploration.lowering,
+//      blockingExploration.strategies,
+//      "exploration/configuration/mm/mm_example_autotuner.json",
+//      rewriteFunction = None,
+//      afterRewrite = None
+//    )
+
+
+
+    // Rules
+//    riseExploration(
+//      mm,
+//      blockingExploration.lowering,
+//      blockingExploration.strategies, // is ignored here
+//      "exploration/configuration/mm/mm_example_autotuner.json",
+//      rewriteFunction = Some(rewriteFunction),
+//      afterRewrite = Some(DFNF())
+//    )
+
+    // Rules with Parameters
+    // todo change rules here
+//    riseExploration(
+//      mm,
+//      blockingExploration.lowering,
+//      blockingExploration.strategies, // is ignored here
+//      "exploration/configuration/mm/mm_example_autotuner.json",
+//      rewriteFunction = Some(rewriteFunction),
+//      afterRewrite = Some(DFNF())
+//    )
   }
 }
 

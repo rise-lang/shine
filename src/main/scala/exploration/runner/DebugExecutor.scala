@@ -1,10 +1,9 @@
 package exploration.runner
 
 import elevate.core.Strategy
-import elevate.heuristic_search.Runner
+import elevate.heuristic_search.{ExplorationResult, Runner}
 import elevate.heuristic_search.util.{Solution, hashProgram}
 import exploration.runner
-
 import rise.elevate.Rise
 import shine.C.AST._
 import util.{Time, TimeSpan, gen}
@@ -12,7 +11,6 @@ import util.{Time, TimeSpan, gen}
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
-
 import scala.language.postfixOps
 import scala.sys.process._
 
@@ -51,7 +49,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     runner.checkSolutionC(lowering, solution)
   }
 
-  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     number = number + 1
 
     // throw the dices
@@ -99,7 +97,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
     //    core.freshName.reset()
 
-    (solution.expression, result)
+    ExplorationResult(solution, result, Option.empty)
   }
 
   def randomFunction(number: Int): Option[Double] = {

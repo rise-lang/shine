@@ -1,7 +1,7 @@
 package exploration.runner
 
 import elevate.core.Strategy
-import elevate.heuristic_search.Runner
+import elevate.heuristic_search.{ExplorationResult, Runner}
 import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
 import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
 import exploration.runner
@@ -102,7 +102,7 @@ case class CExecutor(
 
   //  override def plot(): Unit = ???
 
-  def execute(solution: Solution[Rise]): (Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     println("[Executor] : strategy length: " + solution.strategies.size)
     solution.strategies.foreach(elem => {
       println("strategy: " + elem)
@@ -294,7 +294,8 @@ case class CExecutor(
       case false => // nothing
     }
 
-    (solution.expression, performanceValue)
+
+    ExplorationResult(solution, performanceValue, Option.empty)
   }
 
   def prepareInput(tu: C.Module): (String, String, String, String) = {

@@ -2,7 +2,7 @@ package exploration.runner
 
 import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.heuristic_search.Runner
+import elevate.heuristic_search.{ExplorationResult, Runner}
 import elevate.heuristic_search.util.{Solution, hashProgram}
 import rise.autotune.{HostCode, Median, Timeouts, Tuner, applyBest, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
 import rise.core.Expr
@@ -99,7 +99,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       (solution.expression, runtime)
   }
 
-  def execute(solution: Solution[Rise]):(Rise, Option[Double]) = {
+  def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     val totalDurationStart = System.currentTimeMillis()
 
 
@@ -257,7 +257,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       case None => None
     }
 
-    (result._1, resultingRuntime)
+    ExplorationResult(solution, resultingRuntime, Option.empty)
   }
 
   def saveTuningResults(tuningResultStatistic: TuningResultStatistic) = {

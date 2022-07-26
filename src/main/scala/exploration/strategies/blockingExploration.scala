@@ -113,6 +113,23 @@ object blockingExploration {
   //
   //  @rule def permuteB5: Strategy[Rise] = topDown(idToCopy)
 
+  val blocking: Strategy[Rise] =
+    baseline `;`
+      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1,2,5,6,3,4))
+
+  @rule def expert: Strategy[Rise] =
+     blocking `;;`
+       (parallel() `@` outermost(isApplied(isMap))) `;;`
+       (unroll `@` innermost(isReduceSeq))
+
+//      ((parallel() `@` outermost(isApplied(isMap))) `@`
+//        outermost(isApplied(isLet))) `;;`
+//      (unroll `@` innermost(isReduceSeq))
+
+
   // todo make this generic steps?
   @rule def packB: Strategy[Rise] =
     storeInMemory(isTransposedB,
@@ -127,6 +144,7 @@ object blockingExploration {
   //  @rule def arrayPacking: Strategy[Rise] = packB `;;` loopPerm
 
 
+  // strategies including traversals
   val strategies: Set[Strategy[Rise]] = Set(
     blocking_step0, // fuseReduceMap
     blocking_step1, // tile
@@ -140,15 +158,49 @@ object blockingExploration {
   // rules to try traversals
   val rules: Set[Strategy[Rise]] = Set(
     fuseReduceMap, // blocking_step0
-//    tile(64,64), // ...
     tile(32, 32),
-//    tile(16,16),
-//    tile(8,8),
-//    tile(4,4),
+    reduceMapFission(),
+    reorderingStrategy
+  )
+
+  val vectorized: Set[Strategy[Rise]] = Set(
+    fuseReduceMap, // blocking_step0
+    tile(32, 32),
     reduceMapFission(),
     reorderingStrategy,
-//    vectorize(32)
+    vectorize(32)
   )
+
+  val vectorozedTilesizes: Set[Strategy[Rise]] = Set(
+    fuseReduceMap, // blocking_step0
+    tile(64,64), // ...
+    tile(32, 32),
+    tile(16,16),
+    reduceMapFission(),
+    reorderingStrategy,
+    vectorize(32)
+  )
+
+  val par: Set[Strategy[Rise]] = Set(
+    fuseReduceMap,
+    tile(32, 32),
+    reduceMapFission(),
+    reorderingStrategy,
+    mapParCompute()
+  )
+
+  val vectorizedPar: Set[Strategy[Rise]] = Set(
+    fuseReduceMap,
+    tile(32, 32),
+    reduceMapFission(),
+    reorderingStrategy,
+//    reorderLoopPerm,
+    vectorize(32),
+    unroll,
+    mapParCompute()
+  )
+
+
 
 
   //  val lowering = lowerToC
