@@ -97,6 +97,7 @@ def scatter(folder, invalid, title, log=False, output="scatter.pdf"):
 
     # add support for multiple files at once
     files = os.listdir(folder)
+    plt.figure(figsize=(16, 9), dpi=1000)
 
     # todo make full coverage with colors
     i = 0
@@ -111,6 +112,7 @@ def scatter(folder, invalid, title, log=False, output="scatter.pdf"):
     plt.title(str(title))
     plt.legend()
     plt.tight_layout()
+
 
     plt.savefig(output, dpi=1000)
 
