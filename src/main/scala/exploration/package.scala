@@ -189,6 +189,10 @@ package object exploration {
         plot_experiment(uniqueFilenameRoot, config, explorer)
         plot_experiment2(uniqueFilenameRoot, explorer)
 
+        // todo it might be necessary to call this during a search
+        // reset counter
+        rise.core.freshName.reset()
+
         ExplorationResult(
           solution = Solution(expression, strategies = explorer.strategies),
           performance = None,
