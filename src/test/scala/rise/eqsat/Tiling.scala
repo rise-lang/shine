@@ -11,7 +11,7 @@ import PredicateDSL._
 class Tiling extends test_util.Tests {
   private val minimalRules = Seq(
     // rules.combinatory.compositionAssoc1,
-    rules.combinatory.compositionAssoc2,
+    // rules.combinatory.compositionAssoc2,
     // rules.combinatory.compositionIntro,
     // rules.combinatory.compositionLeftId,
     // rules.combinatory.compositionRightId,
@@ -20,7 +20,7 @@ class Tiling extends test_util.Tests {
 
   private val reorderRules = Seq(
     rules.combinatory.mapFusion,
-    // rules.combinatory.mapFusion2,
+    rules.combinatory.mapFusion2,
     rules.combinatory.mapFission,
     rules.combinatory.transposePairAfter,
     rules.combinatory.mapMapFBeforeTranspose,

@@ -451,6 +451,11 @@ object algorithmic {
   // FIXME: this is very specific
   // zip (fst/snd unzip e) (fst/snd unzip e)
   // -> map (p => pair (fst/snd p) (fst/snd p)) e
+  //
+  // equivalent sequence to replace this with:
+  // fst unzip e = map fst e (fstUnzipAsMapFst)
+  // snd unzip e = map snd e (sndUnzipAsMapSnd)
+  // mapOutsideZip ; zipSame ; mapFusion ; fstReduction ; sndReduction
   @rule def zipUnzipAccessSimplification: Strategy[Rise] = {
     case e@App(App(zip(),
     App(a1@(fst() | snd()), App(unzip(), e1))),
@@ -545,7 +550,6 @@ object algorithmic {
           split(n)) $ arg
       )
   }
-
 
   private val mulT: ToBeTyped[Rise] = fun(x => fst(x) * snd(x))
   private val sum: ToBeTyped[Rise] = reduce(add)(lf32(0.0f))

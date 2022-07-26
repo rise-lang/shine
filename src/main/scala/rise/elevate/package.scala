@@ -27,17 +27,29 @@ package object elevate {
   }
 
 
-//   scalastyle:off
-     implicit class NormalizedThen(f: Strategy[Rise])(implicit ev: Traversable[Rise]) {
-       def `;;`(s: Strategy[Rise]): Strategy[Rise] = f `;` DFNF() `;` s
-     }
-//   scalastyle:on
+  //   scalastyle:off
+  implicit class NormalizedThen(f: Strategy[Rise])(implicit ev: Traversable[Rise]) {
+    def `;;`(s: Strategy[Rise]): Strategy[Rise] = f `;` DFNF() `;` s
+  }
+  //   scalastyle:on
 
 
   // wrapper to create strategies with tuning parameters
   def tunable[T](f: Nat => T) = {
-//    rise.core.freshName.reset()
-    tuningParam(rise.core.freshName.apply("tp"), RangeMul(1, 1024, 2), f)
+    //    rise.core.freshName.reset()
+    tuningParam(rise.core.freshName.apply("tp"), RangeUnknown, f)
   }
+
+  def tunable[T](name: String, f: Nat => T) = {
+    //    rise.core.freshName.reset()
+    tuningParam(rise.core.freshName.apply(name), RangeUnknown, f)
+  }
+
+
+  // wrapper to create strategies with tuning parameters
+  //  def tunable[T](f: Nat => T) = {
+  //    rise.core.freshName.reset()
+  //    tuningParam(rise.core.freshName.apply("tp"), RangeMul(1, 1024, 2), f)
+  //  }
 
 }

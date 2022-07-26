@@ -4,7 +4,7 @@ import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
-import rise.elevate.{NormalizedThen, Rise}
+import rise.elevate.{NormalizedThen, Rise, tunable}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
@@ -115,19 +115,19 @@ object blockingExploration {
 
   val blocking: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,6,3,4))
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 6, 3, 4))
 
   @rule def expert: Strategy[Rise] =
-     blocking `;;`
-       (parallel() `@` outermost(isApplied(isMap))) `;;`
-       (unroll `@` innermost(isReduceSeq))
+    blocking `;;`
+      (parallel() `@` outermost(isApplied(isMap))) `;;`
+      (unroll `@` innermost(isReduceSeq))
 
-//      ((parallel() `@` outermost(isApplied(isMap))) `@`
-//        outermost(isApplied(isLet))) `;;`
-//      (unroll `@` innermost(isReduceSeq))
+  //      ((parallel() `@` outermost(isApplied(isMap))) `@`
+  //        outermost(isApplied(isLet))) `;;`
+  //      (unroll `@` innermost(isReduceSeq))
 
 
   // todo make this generic steps?
@@ -143,27 +143,26 @@ object blockingExploration {
 
   //  @rule def arrayPacking: Strategy[Rise] = packB `;;` loopPerm
 
-
   // strategies including traversals
-  val strategies: Set[Strategy[Rise]] = Set(
+  val strategies: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     blocking_step0, // fuseReduceMap
     blocking_step1, // tile
     blocking_step2, // reduceMapFission
     blocking_step3, // reordering
-//    vectorization_step0 // vectorization
+    //    vectorization_step0 // vectorization
   )
 
   @rule def reorderingStrategy: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
 
   // rules to try traversals
-  val rules: Set[Strategy[Rise]] = Set(
+  val rules: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap, // blocking_step0
     tile(32, 32),
     reduceMapFission(),
     reorderingStrategy
   )
 
-  val vectorized: Set[Strategy[Rise]] = Set(
+  val vectorized: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap, // blocking_step0
     tile(32, 32),
     reduceMapFission(),
@@ -171,17 +170,17 @@ object blockingExploration {
     vectorize(32)
   )
 
-  val vectorozedTilesizes: Set[Strategy[Rise]] = Set(
+  val Tilesizes: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap, // blocking_step0
-    tile(64,64), // ...
+    tile(64, 64), // ...
     tile(32, 32),
-    tile(16,16),
+    tile(16, 16),
     reduceMapFission(),
     reorderingStrategy,
     vectorize(32)
   )
 
-  val par: Set[Strategy[Rise]] = Set(
+  val par: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
@@ -189,20 +188,24 @@ object blockingExploration {
     mapParCompute()
   )
 
-  val vectorizedPar: Set[Strategy[Rise]] = Set(
+  val vectorizedPar: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tile(32, 32),
     reduceMapFission(),
     reorderingStrategy,
-//    reorderLoopPerm,
+    //    reorderLoopPerm,
     vectorize(32),
     unroll,
     mapParCompute()
   )
 
 
-
-
-  //  val lowering = lowerToC
+  val rules2: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
+    fuseReduceMap,
+    tile(32, 32),
+    reduceMapFission(),
+    splitStrategy(4),
+    reorder(List(1, 2, 5, 6, 3, 4)),
+  )
 
 }

@@ -7,11 +7,11 @@ import scala.language.implicitConversions
 
 package object core {
   object freshName {
-    private var counter = 0
+    private var counter: Long = 0
 
     def apply(prefix: String): String = {
       this.synchronized {
-//        println("counter: " + counter)
+        //        println("counter: " + counter)
         counter += 1
         prefix + counter
       }
@@ -46,11 +46,11 @@ package object core {
           case dt: DataType =>
             s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
         }
-      case Literal(d)           => s"Literal($d)"
+      case Literal(d) => s"Literal($d)"
       case TypeAnnotation(e, t) => s"TypeAnnotation(${toEvaluableString(e)}, $t)"
-      case TypeAssertion(e, t)  => s"TypeAssertion(${toEvaluableString(e)}, $t)"
-      case Opaque(e, t)         => s"Opaque(${toEvaluableString(e)}, $t)"
-      case p: Primitive         => p.toString
+      case TypeAssertion(e, t) => s"TypeAssertion(${toEvaluableString(e)}, $t)"
+      case Opaque(e, t) => s"Opaque(${toEvaluableString(e)}, $t)"
+      case p: Primitive => p.toString
     }
   }
 

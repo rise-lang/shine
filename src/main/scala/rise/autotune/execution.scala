@@ -10,11 +10,15 @@ import scala.language.postfixOps
 import scala.sys.process._
 
 sealed trait RuntimeStatistic
+
 case object Median extends RuntimeStatistic
+
 case object Minimum extends RuntimeStatistic
 
 sealed trait FailureMode
+
 case object `-1` extends FailureMode
+
 case object IntMax extends FailureMode
 
 case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
@@ -24,13 +28,28 @@ case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                           )
 
 object execution {
-  var best:Option[Double] = None
+  var best: Option[Double] = None
 
   // logger to avoid printing of stderr
   val logger = new ProcessLogger {
     def out(s: => String): Unit = s
+
     def err(s: => String): Unit = s
+
     def buffer[T](f: => T): T = f
+  }
+
+  def executeC(expression: Expr,
+               timeouts: Timeouts,
+               executionIterations: Int,
+               speedupFactor: Double,
+               execution: RuntimeStatistic
+              )
+  : ExecutionResult = {
+    // call C Executo here
+
+
+    null
   }
 
   def execute(expression: Expr,
@@ -43,10 +62,11 @@ object execution {
 
     val codegenStart = System.currentTimeMillis()
 
+
     val codegenResult = try {
 
       // run code-generation with timeout
-      val codgenResult = autoTuningUtils.runWithTimeout(
+      val codgenResult: Option[gen.opencl.HostedModule] = autoTuningUtils.runWithTimeout(
         timeouts.codegenerationTimeout)(gen.opencl.hosted("fun").fromExpr(expression))
 
       // check if timeout was triggered
@@ -59,7 +79,7 @@ object execution {
         )
       }
     } catch {
-      case e:Throwable =>
+      case e: Throwable =>
         Left(AutoTuningError(CODE_GENERATION_ERROR, Some(e.getCause.getMessage)))
     }
 
@@ -95,6 +115,7 @@ object execution {
 
         println("Generated hostcode:")
         println(program)
+        //        println("program: \n" + program)
 
         assert(executionIterations > 0)
 
@@ -134,8 +155,8 @@ object execution {
                          execution: RuntimeStatistic)
   : (
     Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
-    Option[TimeSpan[Time.ms]], // compilation time
-    Option[TimeSpan[Time.ms]]  // execution time
+      Option[TimeSpan[Time.ms]], // compilation time
+      Option[TimeSpan[Time.ms]] // execution time
     ) = {
 
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
@@ -144,7 +165,7 @@ object execution {
 
     val compilationStart = System.currentTimeMillis()
     try {
-      (s"timeout ${compilationTimeout.toDouble/1000.toDouble}s " +
+      (s"timeout ${compilationTimeout.toDouble / 1000.toDouble}s " +
         s"clang -O2 $sources $includes -o $bin $libDirs $libs -Wno-parentheses-equality" !!)
     } catch {
       case e: Throwable => {
@@ -165,12 +186,12 @@ object execution {
       System.currentTimeMillis().toDouble - compilationStart
     )
     val executionStart = System.currentTimeMillis()
-    try{
+    try {
 
       // execute once to check speedup factor
       val result = (s"timeout " +
-        s"${(executionTimeout*1).toDouble/1000.toDouble}s " +
-        s"runtime/clap_wrapper.sh $bin 1" !!(logger))
+        s"${(executionTimeout * 1).toDouble / 1000.toDouble}s " +
+        s"runtime/clap_wrapper.sh $bin 1" !! (logger))
       val runtimes = getRuntimeFromClap(result)
 
       // check if speedup condition is met or current best is not initialized
@@ -185,15 +206,15 @@ object execution {
 
           // repeat execution with execution iterations
           val result = (s"timeout " +
-            s"${(executionTimeout*executionIterations).toDouble/1000.toDouble}s " +
-            s"runtime/clap_wrapper.sh $bin $executionIterations" !!(logger))
+            s"${(executionTimeout * executionIterations).toDouble / 1000.toDouble}s " +
+            s"runtime/clap_wrapper.sh $bin $executionIterations" !! (logger))
           val runtimes = getRuntimeFromClap(result)
 
           execution match {
             case Median =>
               executionIterations match {
                 case 1 => runtimes.apply(0)
-                case _ => runtimes.sorted.apply(executionIterations/2)
+                case _ => runtimes.sorted.apply(executionIterations / 2)
               }
             case Minimum => runtimes.min
           }
@@ -202,7 +223,7 @@ object execution {
       }
 
       // update or init global best
-      best = best match{
+      best = best match {
         case Some(value) => runtime.value < value match {
           case true => Some(runtime.value)
           case false => best
@@ -257,7 +278,7 @@ object execution {
     val runtimes = (startSeq zip endSeq).map(timespan => {
       TimeSpan.inMilliseconds(
         (timespan._2.toString().toLong - timespan._1.toString().toLong)
-          .toDouble/1000000)
+          .toDouble / 1000000)
     })
 
     runtimes

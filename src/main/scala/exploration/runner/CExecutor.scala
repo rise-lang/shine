@@ -3,27 +3,35 @@ package exploration.runner
 import elevate.core.Strategy
 import elevate.heuristic_search.{ExplorationResult, Runner}
 import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
-import exploration.explorationUtil.ExplorationErrorLevel.{ExplorationErrorLevel, _}
-import exploration.runner
+import exploration.explorationUtil.ExplorationErrorLevel
 import rise.elevate.Rise
 import shine.C
 import shine.C.AST.ParamDecl
 import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
+import exploration.explorationUtil.ExplorationErrorLevel._
+import exploration.runner
+import elevate.heuristic_search.ExplorationResult
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import scala.language.postfixOps
 import scala.sys.process._
 
+// todo some things can cause problems
+// global best -> used for threshold (e.g. change of input size can cause problems)
+// gold is replaced if faster valid version was found
+// -> will fail if another expression is used -> update executor first
 case class CExecutor(
                       lowering: Strategy[Rise],
                       goldExpression: Rise,
-                      iterations: Int,
+                      iterations: Int = 10,
                       inputSize: Int,
-                      threshold: Double,
-                      output: String,
-                      timeout: Double = 1000,
-                      saveToDisk: Boolean = true
+                      threshold: Double = 1000.0,
+                      output: String = "exploration",
+                      timeout: Double = 5000,
+                      saveToDisk: Boolean = true,
+                      printEvery: Int = 50,
+                      expert: Option[Double] = None
                     ) extends Runner[Rise] {
 
   var globalBest: Option[Double] = None
@@ -33,6 +41,21 @@ case class CExecutor(
   var counter = 0
   var errorLevel: ExplorationErrorLevel = LoweringError
   var samples = 0
+
+  case class ExecutionStatistics(
+                                  performanceValue: Double,
+                                  min: Double,
+                                  max: Double,
+                                  std: Double
+                                )
+
+  def mean(a: Seq[Double]): Double = a.sum.toDouble / a.size
+
+  def variance(a: Seq[Double]): Double = {
+    val avg = mean(a)
+    a.map(x => math.pow((x - avg), 2)).sum / a.size
+  }
+
 
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
@@ -74,7 +97,7 @@ case class CExecutor(
 
     // write configstring
     val configFilePath = output + "/" + "tuningStatistics.json"
-    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), true))
+    val fWriter = new PrintWriter(new FileOutputStream(new File(configFilePath), false))
     fWriter.write(configString)
     fWriter.close()
 
@@ -85,12 +108,37 @@ case class CExecutor(
 
     // mkdir output folder
     (s"mkdir -p ${output}/hm " !!)
-    (s"mv ${output}/executor_hm.csv ${output}/hm" !!)
+    (s"cp ${output}/executor_hm.csv ${output}/hm" !!)
 
+    val expertConfig = expert match {
+      case Some(value) => s"--exp ${value}"
+      case None => ""
+    }
 
+    // performance evolution plot
     try {
       // call plot
-      (s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration" !!)
+      val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration ${expertConfig}"
+      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration ${expertConfig}"
+      println("plot: " + command)
+      (command !!)
+      println("plotlog: " + command2)
+      (command2 !!)
+    } catch {
+      case e: Throwable => // ignore
+    }
+
+
+    // scatter plot
+    try {
+      val command = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
+      val command_log = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
+
+      println("scatter: " + command)
+      (command !!)
+      println("scatter log: " + command_log)
+      (command_log !!)
+
     } catch {
       case e: Throwable => // ignore
     }
@@ -103,10 +151,11 @@ case class CExecutor(
   //  override def plot(): Unit = ???
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
-    println("[Executor] : strategy length: " + solution.strategies.size)
-    solution.strategies.foreach(elem => {
-      println("strategy: " + elem)
-    })
+
+    //    println("[Executor] : strategy length: " + solution.strategies.size)
+    //    solution.strategies.foreach(elem => {
+    //      println("strategy: " + elem)
+    //    })
     // initialize error level
     errorLevel = LoweringError
 
@@ -118,7 +167,10 @@ case class CExecutor(
 
     //generate executable program (including host code)
     var performanceValue: Option[Double] = None
+    var executionStatistics: Option[ExecutionStatistics] = None
+    var errorMessage: Option[String] = None
     var code = ""
+    println(s"[${counter}] ${hashProgram(solution.expression)}")
     try {
       code = genExecutableCode(lowered.get)
 
@@ -128,68 +180,77 @@ case class CExecutor(
       try {
         val bin = compile(code)
 
-        println("compilation nice!")
-
         // execute
         try {
           errorLevel = ExecutionError
-          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
+          executionStatistics = Some(returnValue)
 
           // check for new best to replace gold
+          println(s"[${counter}] ${returnValue} ms")
           best match {
             case Some(value) =>
-              if (returnValue.toDouble < value) {
-                best = Some(returnValue.toDouble)
+              if (returnValue.performanceValue < value) {
+                best = Some(returnValue.performanceValue)
                 gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
-                println("use new gold with runtime: " + best.get)
+                println(s"[${counter}] use new gold with runtime: " + best.get)
               }
-            case _ => best = Some(returnValue.toDouble)
+            case _ => best = Some(returnValue.performanceValue)
           }
 
-          println("result: " + returnValue)
-          performanceValue = Some(returnValue.toDouble)
+          performanceValue = Some(returnValue.performanceValue)
           errorLevel = ExecutionSuccess
 
         } catch {
           case e: Throwable =>
-            println("error handling")
             println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
-                println("timeout")
+
+                println(s"[${counter}] timeout")
+                errorMessage = Some("124 - Timeout")
                 errorLevel = ExecutionTimeout
                 performanceValue = None
               case 11 =>
-                println("execution crashed")
-                System.exit(-1)
+                println(s"[${counter}] execution crashed")
+                System.exit(1)
                 errorLevel = ExecutionError
                 performanceValue = None
               case 255 =>
-                println("execution failed")
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("255 - execution failed")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              case 134 =>
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("invalid pointer\ntimeout: the monitored command dumped core")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                println("execution failed with segmentation fault")
+                println(s"[${counter}] execution failed with segmentation fault")
+                errorMessage = Some("Segmentation fault")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case _ =>
-                println("execution failed with unknown error")
+                println(s"[${counter}] execution failed with unknown error")
+                errorMessage = Some("Unknown error")
                 errorLevel = ExecutionFail
                 performanceValue = None
             }
         }
       } catch {
         case e: Throwable =>
-          println("compiling error: " + e)
+          errorMessage = Some("compiling error: \n" + e.toString)
+          println(s"[${counter}] compiling error")
       }
 
     } catch {
       case e: Throwable =>
-        println("code gen error")
-        println("e: " + e)
-        code = "code generation error "
+        println(s"[${counter}] code-generation error")
+
+        errorMessage = Some("code generation error")
+        code = e.toString
     }
 
     // result is performance value
@@ -211,6 +272,12 @@ case class CExecutor(
         var filenameHigh = hashProgram(solution.expression)
         var folder = output + "/" + hashProgram(solution.expression)
 
+
+        errorMessage match {
+          case Some(message) => codeOutput += s"// ${message}\n"
+          case None =>
+        }
+
         performanceValue match {
           case None =>
             codeOutput += "// runtime: " + -1 + "\n \n"
@@ -221,6 +288,7 @@ case class CExecutor(
             folder += "_" + errorLevel.toString
           case _ => codeOutput += "// runtime: " + performanceValue.get.toString + "\n \n"
         }
+
 
         // create folder for high-level expression
         folder = IOHelper.getUniqueFilename(folder, 0)
@@ -243,7 +311,14 @@ case class CExecutor(
         // write lowered expressions
 
         // write runtime to output file
-        writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), solution.strategies, "executor")
+
+        writeValues(
+          path = output + "/" + "executor.csv",
+          result = (solution.expression, lowered.get, performanceValue, errorLevel),
+          statistics = executionStatistics,
+          solution.strategies,
+          "executor"
+        )
 
         // print lowered expression to file
         val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
@@ -295,7 +370,11 @@ case class CExecutor(
     }
 
 
-    ExplorationResult(solution, performanceValue, Option.empty)
+    ExplorationResult[Rise](
+      solution,
+      performanceValue,
+      None
+    )
   }
 
   def prepareInput(tu: C.Module): (String, String, String, String) = {
@@ -507,29 +586,29 @@ int main(int argc, char** argv) {
  	struct timespec tp_start;
 	struct timespec tp_end;
 	clockid_t clk_id = CLOCK_MONOTONIC;
-  double duration = 0;
+    double duration = 0;
 
-  clock_gettime(clk_id, &tp_start);
-  ${preparation._3}
-  clock_gettime(clk_id, &tp_end);
+    clock_gettime(clk_id, &tp_start);
+    ${preparation._3}
+    clock_gettime(clk_id, &tp_end);
 
-  duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
-  duration = duration / 1000000;
+    duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
+    duration = duration / 1000000;
 
-  ${preparation._4}
-  int check = compare_gold(output, gold);
+    ${preparation._4}
+    int check = compare_gold(output, gold);
 
-  ${preparation._2}
+    ${preparation._2}
 
-  //check result
-  if(!check){
-    return -1;
-  }
+    //check result
+    if(!check){
+      return -1;
+    }
 
-  //print result
-  printf("%f\\n", duration);
+    //print result
+    printf("%f\\n", duration);
 
-  return 0;
+    return 0;
 }
 """
 
@@ -537,12 +616,9 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
-    println("attempt to compile")
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
-
-    println("success")
 
     // todo: make this configable using json file
     // compile
@@ -550,16 +626,24 @@ int main(int argc, char** argv) {
     //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
+    //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
 
     //      s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
   }
 
-  def execute(bin: String, iterations: Int, threshold: Double): String = {
+
+  def execute(
+               bin: String,
+               iterations: Int,
+               threshold: Double
+             ): ExecutionStatistics = {
+
     //repeat execution
     //take median as runtime
     val N = iterations
@@ -575,8 +659,8 @@ int main(int argc, char** argv) {
         s"${(timeout * 1).toDouble / 1000.toDouble}s " +
         s"$bin" !!).toDouble
 
-      println("runtime:(" + i + "): " + runtimes(i))
-      println("globalBest: " + globalBest)
+      //      println("runtime:(" + i + "): " + runtimes(i))
+      //      println("globalBest: " + globalBest)
       // check if we have to skip this execution round
       globalBest match {
         case Some(value) =>
@@ -594,17 +678,31 @@ int main(int argc, char** argv) {
     // get runtime (median of iterations)
     runtime = runtimes.sorted.apply(N / 2)
 
+    val min = runtimes.min
+    val max = runtimes.max
+    val std = math.sqrt(variance(runtimes.toSeq))
+
+
     // check if new global best was found
     if (runtime < globalBest.get) {
       globalBest = Some(runtime)
     }
 
-    runtime.toString
+    //    runtime.toString
+
+    ExecutionStatistics(
+      //      performanceValue = runtime,
+      performanceValue = min,
+      min = min,
+      max = max,
+      std = std
+    )
   }
 
 
   def writeValues(path: String,
                   result: (Rise, Rise, Option[Double], ExplorationErrorLevel),
+                  statistics: Option[ExecutionStatistics],
                   rewrite: Seq[Strategy[Rise]],
                   name: String): Unit = {
 
@@ -618,15 +716,22 @@ int main(int argc, char** argv) {
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
 
     // create string to write to file
-    var string = s"$counter, $name, ${System.currentTimeMillis().toString}, " +
-      hashProgram(result._1) + ", " +
-      hashProgram(result._2) + ", " +
-      rewrite.mkString("\"[", ", ", "]\"") + ", " +
-      result._4.toString + ", "
+    var string = s"$counter,$name,${System.currentTimeMillis().toString}," +
+      hashProgram(result._1) + "," +
+      hashProgram(result._2) + "," +
+      rewrite.mkString("\"[", ",", "]\"") + "," +
+      result._4.toString + ","
 
     result._3 match {
-      case Some(value) => string += value.toString + "\n"
-      case _ => string += "-1 \n"
+      case Some(value) => string += value.toString + ","
+      case _ => string += "-1,"
+    }
+
+    statistics match {
+      case Some(stats) => // print statistics
+        string += s"${stats.min},${stats.max},${stats.std},${iterations}\n"
+      case None =>
+        string += s"None,None,None,${iterations}\n"
     }
 
 
@@ -643,6 +748,13 @@ int main(int argc, char** argv) {
 
     counter += 1
 
+    // plot every 10 executions
+    //    counter % printEvery match {
+    //      case 0 => plot()
+    //      case _ =>
+    //    }
+
+
     file.close()
     fileHM.close()
   }
@@ -655,11 +767,11 @@ int main(int argc, char** argv) {
     val fileHM = new PrintWriter(
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
 
-    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+    //    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
 
     // create string to write to file
-    val string = "iteration, runner, timestamp, high-level hash, " +
-      "low-level hash, rewrite, error-level, runtime\n"
+    val string = "iteration,runner,timestamp,high-level hash," +
+      "low-level hash,rewrite,error-level,runtime,min,max,std,executions \n"
 
     val stringHM = "index,runtime,Valid,Timestamp" + "\n"
 

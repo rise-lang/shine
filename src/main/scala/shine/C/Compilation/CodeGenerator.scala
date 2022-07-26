@@ -90,7 +90,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         cond |> exp(env, Nil, cond =>
-          C.AST.IfThenElse(cond, cmd(env)(thenP), Some(cmd(env)(elseP))))
+          C.AST.IfThenElse(cond, C.AST.Block(scala.Seq(cmd(env)(thenP))),
+            Some(C.AST.Block(scala.Seq(cmd(env)(elseP))))))
 
       case i: Identifier[CommType] => env.commEnv(i)
 

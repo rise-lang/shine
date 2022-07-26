@@ -39,6 +39,11 @@ object monads {
     def append : Boolean => Boolean => Boolean = x => y => x || y
   }
 
+  implicit val AddMonoid : Monoid[Int] = new Monoid[Int] {
+    def empty : Int = 0
+    def append : Int => Int => Int = x => y => x + y
+  }
+
   implicit def SeqMonoid[T] : Monoid[Seq[T]] = new Monoid[Seq[T]] {
     def empty : Seq[T] = Seq()
     def append : Seq[T] => Seq[T] => Seq[T] = x => y => x ++ y

@@ -33,57 +33,68 @@ object lowering {
   }
 
   def `map -> mapSeq`: Strategy[Rise] = mapSeq
+
   @rule def mapSeq: Strategy[Rise] = {
     case m@map() => Success(p.mapSeq !: m.t)
   }
 
   def `map -> mapPar`: Strategy[Rise] = mapPar
+
   @rule def mapPar: Strategy[Rise] = {
     case m@map() => Success(omp.mapPar !: m.t)
   }
 
   def `map -> mapStream`: Strategy[Rise] = mapStream
+
   @rule def mapStream: Strategy[Rise] = {
     case m@map() => Success(p.mapStream !: m.t)
   }
 
   def `map -> iterateStream`: Strategy[Rise] = iterateStream
+
   @rule def iterateStream: Strategy[Rise] = {
     case m@map() => Success(p.iterateStream !: m.t)
   }
 
   def `map -> mapSeqUnroll`: Strategy[Rise] = mapSeqUnroll
+
   @rule def mapSeqUnroll: Strategy[Rise] = {
     case m@map() => Success(p.mapSeqUnroll !: m.t)
   }
 
   def `map -> mapGlobal`(dim: Int = 0): Strategy[Rise] = mapGlobal(dim)
+
   @rule def mapGlobal(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
   def `map -> mapLocal`(dim: Int = 0): Strategy[Rise] = mapLocal(dim)
+
   @rule def mapLocal(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapLocal(dim) !: m.t)
   }
 
   def `map -> mapWorkGroup`(dim: Int = 0): Strategy[Rise] = mapWorkGroup(dim)
+
   @rule def mapWorkGroup(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapWorkGroup(dim) !: m.t)
   }
 
   def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq
+
   @rule def reduceSeq: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeq !: e.t)
   }
 
   // todo add other address spaces
   def `reduceSeq -> oclReduceSeq`: Strategy[Rise] = oclReduceSeq
+
   @rule def oclReduceSeq: Strategy[Rise] = {
     case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
   }
 
   def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
+
   @rule def reduceSeqUnroll: Strategy[Rise] = {
     case e@reduce() => Success(p.reduceSeqUnroll !: e.t)
   }
@@ -129,11 +140,11 @@ object lowering {
         l.t match {
           // unary function
           case FunType(in, out) if
-          isPairOrBasicType(in) && isPairOrBasicType(out) => Success(l)
+            isPairOrBasicType(in) && isPairOrBasicType(out) => Success(l)
           // binary function
           case FunType(in, FunType(in2, out)) if
-          isPairOrBasicType(in) && isPairOrBasicType(in2) &&
-            isPairOrBasicType(out) => Success(l)
+            isPairOrBasicType(in) && isPairOrBasicType(in2) &&
+              isPairOrBasicType(out) => Success(l)
           case _ => Failure(containsComputation())
         }
       case f@foreignFunction(_, _) => Success(f)
@@ -142,15 +153,15 @@ object lowering {
   }
 
 
-//  case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Rise] {
-//    def apply(e: Rise): RewriteResult[Rise] = e match {
-//      case slide() => Success(nFun(sz => nFun(sp =>
-//        TypedDSL.slideSeq(rot)(sz)(sp)(untyped(write_dt))
-//      )) :: e.t)
-//      case _ => Failure(slideSeq(rot, write_dt))
-//    }
-//    override def toString = s"slideSeq($rot, $write_dt)"
-//  }
+  //  case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Rise] {
+  //    def apply(e: Rise): RewriteResult[Rise] = e match {
+  //      case slide() => Success(nFun(sz => nFun(sp =>
+  //        TypedDSL.slideSeq(rot)(sz)(sp)(untyped(write_dt))
+  //      )) :: e.t)
+  //      case _ => Failure(slideSeq(rot, write_dt))
+  //    }
+  //    override def toString = s"slideSeq($rot, $write_dt)"
+  //  }
 
   // writing to memory
 
@@ -222,7 +233,7 @@ object lowering {
     normalize(ev)(lowering.oclReduceSeq)
 
   def addRequiredCopies()(implicit ev: Traversable[Rise]): Strategy[Rise] =
-    // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce
+  // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce
     tryAll(copyAfterReduce) `;` DFNF() `;` materializeInitOfReduce()
 
   // todo gotta use a normalform for introducing copies! e.g., if we have two reduce primitives
@@ -241,7 +252,7 @@ object lowering {
 
     e match {
       case reduceResult@App(App(App(ReduceX(), _), _), _) =>
-        Success((preserveType(e) |> constructCopy(reduceResult.t) ) !: e.t)
+        Success((preserveType(e) |> constructCopy(reduceResult.t)) !: e.t)
       case _ => Failure(copyAfterReduce)
     }
   }
@@ -251,7 +262,7 @@ object lowering {
       case _ if typeHasTrivialCopy(t) => letf(fun(x => x))
       case ArrayType(_, b) if typeHasTrivialCopy(b) => p.mapSeq(fun(x => x))
       case ArrayType(_, a: ArrayType) => p.mapSeq(fun(x => constructCopy(a) $ x))
-      case x => println(x) ; ??? // shouldn't happen?
+      case x => println(x); ??? // shouldn't happen?
     }
 
     e match {
@@ -308,7 +319,7 @@ object lowering {
             case _ if typeHasTrivialCopy(dt) => asVectorAligned(n)
             case PairType(aT, bT) => fun(x =>
               zip(generateUnZips(aT) $ x._1)(generateUnZips(bT) $ x._2)) o unzip
-            case x => println(x) ; ???
+            case x => println(x); ???
           }
         }
 
@@ -328,15 +339,18 @@ object lowering {
   @rule def untype: Strategy[Rise] = p => Success(p.setType(TypePlaceholder))
 
   def parallel()(implicit ev: Traversable[Rise]): Strategy[Rise] = mapParCompute()
+
   @rule def mapParCompute()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e@App(map(), f) if containsComputation()(ev)(f) => Success(omp.mapPar(f) !: e.t)
   }
 
   @rule def unroll: Strategy[Rise] = {
     case e@p.reduceSeq() => Success(p.reduceSeqUnroll !: e.t)
+    //    case e@p.mapSeq() => Success(p.mapSeqUnroll !: e.t) // Warning: can cause blown up code size
   }
 
   object ocl {
+
     import rise.core.types.AddressSpace
     import rise.openCL.primitives._
 
@@ -355,8 +369,8 @@ object lowering {
 
     @rule def circularBufferLoadFusion: Strategy[Rise] = {
       case e@App(App(
-        cb @ DepApp(NatKind, DepApp(NatKind, DepApp(AddressSpaceKind, oclCircularBuffer(), _), _), _),
-        load), App(App(map(), f), in)
+      cb@DepApp(NatKind, DepApp(NatKind, DepApp(AddressSpaceKind, oclCircularBuffer(), _), _), _),
+      load), App(App(map(), f), in)
       ) =>
         Success(eraseType(cb)(preserveType(f) >> load, in) !: e.t)
     }

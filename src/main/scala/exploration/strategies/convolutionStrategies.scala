@@ -45,26 +45,26 @@ object convolutionStrategies {
   val scanlineSeq = (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;` repeatNTimes(2)(topDown(lowering.mapSeq)) `;` skip(1)(lowering.mapSeq))
   val regRotSeq = (repeatNTimes(2)(topDown(lowering.reduceSeqUnroll)) `;` topDown(lowering.mapSeq) `;` topDown(lowering.rotateValues(idE)) `;` topDown(lowering.iterateStream))
 
-    val loweringStrategy:Strategy[Rise] = baseSeq `<+` factorisedSeq `<+` separatedSeq `<+` scanlineSeq `<+` regRotSeq
+  val loweringStrategy: Strategy[Rise] = baseSeq `<+` factorisedSeq `<+` separatedSeq `<+` scanlineSeq `<+` regRotSeq
 
   // strategies
   val baseToFactorise = topDown(separateDot)
 
   val baseToScanline =
     idS `;` BENF `;`
-        topDown(separateDotT) `;` BENF `;`
-        topDown(`*f >> S -> S >> **f`) `;` BENF `;`
-        topDown(mapFusion) `;` BENF `;`
-        topDown(mapFusion) `;` BENF `;`
-        topDown(`*S >> T -> T >> S >> *T`) `;` BENF `;`
-        topDown(mapFusion) `;` BENF `;`
-        topDown(removeTransposePair) `;` BENF `;`
-        skip(1)(mapFirstFission) `;` BENF `;`
-        topDown(`S >> **f -> *f >> S`) `;` BENF `;`
-        idS
+      topDown(separateDotT) `;` BENF `;`
+      topDown(`*f >> S -> S >> **f`) `;` BENF `;`
+      topDown(mapFusion) `;` BENF `;`
+      topDown(mapFusion) `;` BENF `;`
+      topDown(`*S >> T -> T >> S >> *T`) `;` BENF `;`
+      topDown(mapFusion) `;` BENF `;`
+      topDown(removeTransposePair) `;` BENF `;`
+      skip(1)(mapFirstFission) `;` BENF `;`
+      topDown(`S >> **f -> *f >> S`) `;` BENF `;`
+      idS
 
   val scanlineToSeparaeted =
-    idS  `;` BENF `;`
+    idS `;` BENF `;`
       repeatNTimes(2)(topDown(mapFirstFission)) `;` BENF `;`
       skip(1)(mapFusion) `;` BENF `;`
       idS
@@ -92,7 +92,7 @@ object convolutionStrategies {
       skip(1)(mapFusion) `;` BENF `;`
       idS
 
-  val strategies = Set[Strategy[Rise]](
+  val strategies = scala.collection.immutable.Seq[Strategy[Rise]](
     baseToFactorise,
     baseToScanline,
     scanlineToSeparaeted,

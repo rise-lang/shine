@@ -11,7 +11,7 @@
   ],
   "executor": {
     "name": "C",
-    "iterations": 10,
-    "threshold": 10
+    "iterations": 1,
+    "threshold": 1000
   }
 }

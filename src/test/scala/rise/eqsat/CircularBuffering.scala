@@ -63,7 +63,7 @@ class CircularBuffering extends test_util.Tests {
 
   def proveEquiv(start: rise.core.Expr,
                  goal: rise.core.Expr,
-                 rules: Seq[DefaultAnalysis.Rewrite]): Unit = {
+                 rules: Seq[Rewrite]): Unit = {
     import rise.elevate.rules._
     import rise.elevate.rules.traversal.alternative._
     import elevate.core.strategies.basic.normalize
@@ -71,6 +71,6 @@ class CircularBuffering extends test_util.Tests {
     val normGoal = normalize.apply(gentleBetaReduction() <+ etaReduction())(goal).get
     println(s"normalized goal: $normGoal")
 
-    ProveEquiv.init().run(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules)
+    ProveEquiv.init().run(Expr.fromNamed(start), Expr.simplifyNats(Expr.fromNamed(normGoal)), rules, Seq())
   }
 }

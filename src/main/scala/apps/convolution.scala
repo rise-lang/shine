@@ -3,6 +3,8 @@ package apps
 import rise.core.DSL._
 import rise.core.DSL.Type._
 import HighLevelConstructs._
+import arithexpr.arithmetic.RangeMul
+import rise.autotune.{tuningParam, wrapOclRun}
 import rise.core._
 import rise.core.primitives._
 import rise.core.types._
@@ -17,8 +19,8 @@ object convolution {
 
   private val dotElemWeights = fun((weights, elem) =>
     zip(join(elem))(weights) |>
-    map(separableConvolution2D.mulT) |>
-    reduce(add)(lf32(0.0f))
+      map(separableConvolution2D.mulT) |>
+      reduce(add)(lf32(0.0f))
   )
 
   private val dotElemWeightsSeq = fun((weights, elem) =>
@@ -33,7 +35,7 @@ object convolution {
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
   )((matrix, weights) =>
     matrix |> padClamp2D(0, 0, 8, 8) |> slide2D(1, 1, 17, 1) |>
-    map(map(dotElemWeights(weights)))
+      map(map(dotElemWeights(weights)))
   ))
 
   // FIXME: could not find original Lift expression, this is made up
@@ -41,7 +43,7 @@ object convolution {
     (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
   )((matrix, weights) =>
     matrix |> padClamp2D(8, 8, 0, 0) |> slide2D(17, 1, 1, 1) |>
-    map(map(transpose >> dotElemWeights(weights)))
+      map(map(transpose >> dotElemWeights(weights)))
   ))
 
   val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
@@ -52,41 +54,75 @@ object convolution {
         o slide2D(1, 1, 17, 1)
         $ toLocal(mapLocal(1)(mapLocal(0)(id))(tile)))
     )) o slide2D(4, 4, 144, 128)
-    o padClamp2D(0, 0, 8, 8) $ matrix
+      o padClamp2D(0, 0, 8, 8) $ matrix
   ))
 
-  val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] =
+  val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] = {
     depFun((n: Nat) => fun(
       (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
-    unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
-      mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
-        o slide2D(17, 1, 1, 1)
-        o transpose o map(dropLast(1)) $ toLocal(
+      unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
+        mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
+          o slide2D(17, 1, 1, 1)
+          o transpose o map(dropLast(1)) $ toLocal(
           transpose(tile)
-          |> map(split(8))
-          |> mapLocal(0)(mapSeqUnroll(mapLocal(1)(id)))
-          |> map(join >> padEmpty(1))
+            |> map(split(8))
+            |> mapLocal(0)(mapSeqUnroll(mapLocal(1)(id)))
+            |> map(join >> padEmpty(1))
         )
-    ))) o slide2D(80, 64, 16, 16)
-      o padClamp2D(8, 8, 0, 0) $ matrix
-  ))
+      ))) o slide2D(80, 64, 16, 16)
+        o padClamp2D(8, 8, 0, 0) $ matrix
+    ))
+  }
 
   import shine.OpenCL._
 
   object hosted {
     val blurXTiled2D: ToBeTyped[Expr] = depFun((n: Nat) => fun(
-      (n`.`n`.`f32) ->: (17`.`f32) ->: (n`.`n`.`f32)
+      (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
       oclRun(LocalSize(16, 4), GlobalSize(n / 8, n))(convolution.blurXTiled2D(n)(matrix)(weights))
     ))
 
     val blurYTiled2DTiledLoadingTransposed: ToBeTyped[Expr] = depFun((n: Nat) => fun(
-      (n`.`n`.`f32) ->: (17`.`f32) ->: (n`.`n`.`f32)
+      (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
       oclRun(LocalSize(16, 8), GlobalSize(n, n / 8))(
         convolution.blurYTiled2DTiledLoadingTransposed(n)(matrix)(weights))
     ))
+
+
+    val blurYTiled2DTiledLoadingTransposedTuningInternal: ToBeTyped[Expr] = {
+      tuningParam("s0", RangeMul(1, 1024, 1), (s0: Nat) =>
+        depFun((n: Nat) => fun(
+          (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+        )((matrix, weights) =>
+          unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
+            mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
+              o slide2D(17, 1, 1, 1)
+              o transpose o map(dropLast(1)) $ toLocal(
+              transpose(tile)
+                |> map(split(s0))
+                |> mapLocal(0)(mapSeqUnroll(mapLocal(1)(id)))
+                |> map(join >> padEmpty(1))
+            )
+          ))) o slide2D(80, 64, 16, 16)
+            o padClamp2D(8, 8, 0, 0) $ matrix
+        )))
+    }
+
+    val blurYTiled2DTiledLoadingTransposedTuning: ToBeTyped[Expr] =
+      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+        tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+              depFun((n: Nat) => fun(
+                (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+              )((matrix, weights) =>
+                oclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(
+                  convolution.hosted.blurYTiled2DTiledLoadingTransposedTuningInternal(n)(matrix)(weights))
+              ))))))
+
   }
 
   def blurXTiled2DSizes(n: Int): (LocalSize, GlobalSize) = {
@@ -101,13 +137,13 @@ object convolution {
   }
 
   def runOriginalKernel(
-    name: String,
-    n: Int,
-    localSize: LocalSize,
-    globalSize: GlobalSize,
-    matrix: Array[Array[Float]],
-    weights: Array[Float]
-  ): (Array[Float], TimeSpan[Time.ms]) = {
+                         name: String,
+                         n: Int,
+                         localSize: LocalSize,
+                         globalSize: GlobalSize,
+                         matrix: Array[Array[Float]],
+                         weights: Array[Float]
+                       ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -137,12 +173,12 @@ object convolution {
   }
 
   def runKernel(
-    k: KernelNoSizes,
-    localSize: LocalSize,
-    globalSize: GlobalSize,
-    matrix: Array[Array[Float]],
-    weights: Array[Float]
-  ): (Array[Float], TimeSpan[Time.ms]) = {
+                 k: KernelNoSizes,
+                 localSize: LocalSize,
+                 globalSize: GlobalSize,
+                 matrix: Array[Array[Float]],
+                 weights: Array[Float]
+               ): (Array[Float], TimeSpan[Time.ms]) = {
     val f = k.as[ScalaFunction `(`
       Array[Array[Float]] `,` Array[Float]
       `)=>` Array[Float]]

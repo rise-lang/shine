@@ -9,6 +9,7 @@ import rise.core.DSL.Type._
 import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
+import apps.autotuning._
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -25,6 +26,17 @@ class mmTuning extends test_util.Tests {
                 mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
               ))))))
 
+  val mmTuning_4096: ToBeTyped[Expr] =
+    tuningParam("v3", RangeAdd(1, 4096, 1), (v3: Nat) =>
+      tuningParam("v4", RangeAdd(1, 4096, 1), (v4: Nat) =>
+        tuningParam("v5", RangeAdd(1, 4096, 1), (v5: Nat) =>
+          tuningParam("v6", RangeAdd(1, 4096, 1), (v6: Nat) =>
+            tuningParam("v7", RangeAdd(1, 4096, 1), (v7: Nat) =>
+              tuningParam("v8", RangeAdd(1, 4096, 1), (v8: Nat) =>
+                mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
+              ))))))
+
+
   val mm: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -32,6 +44,15 @@ class mmTuning extends test_util.Tests {
           tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
           ))))
+
+  val mm_4096: Expr =
+    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning_4096)
+          ))))
+
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (N, M, O) => {
@@ -80,7 +101,7 @@ class mmTuning extends test_util.Tests {
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
-    val params0:Map[Nat, Nat] = Map(
+    val params0: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -105,7 +126,7 @@ class mmTuning extends test_util.Tests {
     println("result0: " + result0.runtime)
     assert(result0.runtime.isRight)
 
-    val params1:Map[Nat, Nat] = Map(
+    val params1: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (4: Nat),
       TuningParameter("ls1") -> (32: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -130,7 +151,7 @@ class mmTuning extends test_util.Tests {
     println("result1: " + result1.runtime)
     assert(result1.runtime.isRight)
 
-    val params2:Map[Nat, Nat] = Map(
+    val params2: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (8: Nat),
       TuningParameter("ls1") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -284,7 +305,42 @@ class mmTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  ignore("execute expert configuration"){
+  // we do not support hierarchical hypermapper
+  ignore("mm tuning 4096 with generated config file hierarchical") {
+    val mm: Expr =
+      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning_4096)
+            ))))
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(4096, 4096, 4096), compute, finish),
+      inputSizes = Seq(4096, 4096, 4096),
+      samples = 10,
+      name = "rs_cot_4096",
+      output = "autotuning/mm_4096",
+      timeouts = Timeouts(codegenerationTimeout = 10000, compilationTimeout = 10000, executionTimeout = 20000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None, // we don't inject usage of local memory as constraints - many configs fail
+      hmConstraints = true,
+      runtimeStatistic = Minimum
+    )
+
+    val tuningResult = autotune.search(tuner)(mm)
+
+    println("tuningResult: \n")
+    tuningResult.samples.foreach(elem => println(elem))
+
+    val bestSample = autotune.getBest(tuningResult.samples)
+    println("bestSample: \n" + bestSample)
+    println("runtime: \n" + bestSample.get.runtime)
+  }
+
+
+  ignore("execute expert configuration") {
     // execute config with "expert parameter configuration"
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
@@ -292,7 +348,7 @@ class mmTuning extends test_util.Tests {
           wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
 
     // expert config for 128x64 * 128x128
-    val params0:Map[Nat, Nat] = Map(
+    val params0: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
       TuningParameter("ls1") -> (8: Nat),
       TuningParameter("gs0") -> (256: Nat),
@@ -318,7 +374,7 @@ class mmTuning extends test_util.Tests {
     //    assert(result0.runtime.isRight)
 
     // expert config for 128x64 * 128x128
-    val params1:Map[Nat, Nat] = Map(
+    val params1: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
@@ -346,48 +402,129 @@ class mmTuning extends test_util.Tests {
   }
 
 
-  ignore("tune mm 128"){
+  //  ignore("tune mm 128"){
+  //
+  //    val configs = Seq(
+  //      "autotuning/config/mm/128/rs_cot_128.json",
+  //      "autotuning/config/mm/128/rs_emb_128.json",
+  //      "autotuning/config/mm/128/ls_cot_128.json",
+  //      "autotuning/config/mm/128/atf_emb_128.json",
+  //      "autotuning/config/mm/128/borf_cot_128.json",
+  //      "autotuning/config/mm/128/bogp_cot_128.json"
+  //    )
+  //
+  //    runExperiment(
+  //      name = "mm_128",
+  //      configFiles = configs,
+  //      iterations = 2,
+  //      "autotuning/mm_128",
+  //      mm,
+  //      HostCode(init(128, 128, 128), compute, finish),
+  //      Seq(128, 128, 128)
+  //    )
+  //  }
+
+  ignore("tune mm 128") {
+    val inputSize: Int = 128
 
     val configs = Seq(
-      "autotuning/config/mm/128/rs_cot_128.json",
-      "autotuning/config/mm/128/rs_emb_128.json",
-      "autotuning/config/mm/128/ls_cot_128.json",
-      "autotuning/config/mm/128/atf_emb_128.json",
-      "autotuning/config/mm/128/borf_cot_128.json",
-      "autotuning/config/mm/128/bogp_cot_128.json"
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
     )
 
     runExperiment(
-      name = "mm_128",
+      name = s"mm_${inputSize}",
+      configFiles = configs,
+      iterations = 5,
+      s"autotuning/mm_${inputSize}",
+      mm,
+      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
+      Seq(inputSize, inputSize, inputSize)
+    )
+  }
+
+  test("tune mm 1024") {
+    val inputSize: Int = 1024
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (8: Nat),
+      TuningParameter("gs0") -> (256: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("v5") -> (64: Nat), // tile-width A
+      TuningParameter("v6") -> (128: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (128: Nat), // tile-width B
+      TuningParameter("v8") -> (16: Nat) // tile-height A,B
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (1: Nat),
+      TuningParameter("v5") -> (4: Nat), // tile-width A
+      TuningParameter("v6") -> (4: Nat), // divides v8 x v5
+      TuningParameter("v7") -> (4: Nat), // tile-width B
+      TuningParameter("v8") -> (1: Nat) // tile-height A,B
+    )
+
+    val configs = Seq(
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //            s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+    )
+
+    runExperiment(
+      name = s"mm_${inputSize}",
+      configFiles = configs,
+      iterations = 10,
+      //      s"autotuning/mm_${inputSize}",
+      output = s"/home/jo/development/experiments/tuning/results/mm_${inputSize}",
+      //      s"experiment/results/mm_${inputSize}",
+      mm,
+      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
+      Seq(inputSize, inputSize, inputSize),
+      plotOnly = true,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
+    )
+  }
+
+  ignore("tune mm 4096") {
+    val inputSize: Int = 4096
+
+    val configs = Seq(
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
+    )
+
+    runExperiment(
+      name = s"mm_${inputSize}",
       configFiles = configs,
       iterations = 2,
-      "autotuning/mm_128",
-      mm,
-      HostCode(init(128, 128, 128), compute, finish),
-      Seq(128, 128, 128)
+      s"autotuning/mm_${inputSize}",
+      mm_4096,
+      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
+      Seq(inputSize, inputSize, inputSize)
     )
   }
 
 
-  ignore("tune mm 1024"){
-
-    val configs = Seq(
-      "autotuning/config/mm/1024/rs_cot_1024.json",
-      "autotuning/config/mm/1024/rs_emb_1024.json",
-      "autotuning/config/mm/1024/ls_cot_1024.json",
-      "autotuning/config/mm/1024/atf_emb_1024.json",
-      "autotuning/config/mm/1024/borf_cot_1024.json",
-      "autotuning/config/mm/1024/bogp_cot_1024.json"
-    )
-
-    runExperiment(
-      name = "mm_1024",
-      configFiles = configs,
-      iterations = 2,
-      "autotuning/mm_1024",
-      mm,
-      HostCode(init(1024, 1024, 1024), compute, finish),
-      Seq(1024, 1024, 1024)
-    )
-  }
 }

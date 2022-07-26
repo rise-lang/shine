@@ -61,7 +61,7 @@ class gemvTuning extends test_util.Tests {
        |Buffer inputM = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
        |Buffer inputX = createBuffer(ctx, N * sizeof(float), HOST_READ | DEVICE_WRITE);
        |Buffer inputY = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |Buffer outputZ = createBuffer(ctx, M * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |Buffer outputZ = createBuffer(ctx, N * sizeof(float), HOST_READ | DEVICE_WRITE);
        |
        |float* inM = hostBufferSync(ctx, inputM, N * M * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N * M; i++) {
@@ -100,7 +100,7 @@ class gemvTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  test("print different gemv tuning versions"){
+  test("print different gemv tuning versions") {
 
     println("gemvBlastNTuning: " + gemvBlastNTuning)
     println("gemvBlastTTuning: " + gemvBlastTTuning)
@@ -119,7 +119,6 @@ class gemvTuning extends test_util.Tests {
       TuningParameter("gs1") -> (1: Nat),
       TuningParameter("s0") -> (s0),
     )
-
 
     val eSub = rise.core.substitute.natsInExpr(params(s0), e)
 
@@ -149,7 +148,7 @@ class gemvTuning extends test_util.Tests {
 
   }
 
-  test("tune gemv 1024"){
+  test("tune gemv 1024") {
     // change name to run other version
     val version = gemvKeplerBestTuning
     val name = "gemvKeplerBestTuning"
@@ -172,5 +171,35 @@ class gemvTuning extends test_util.Tests {
       HostCode(init(1024, 1024), compute, finish),
       Seq(1024, 1024, 1024)
     )
+  }
+
+  test("tune gemv version") {
+    runTuning(gemvBlastNTuning)
+    runTuning(gemvBlastTTuning)
+    runTuning(gemvFusedTuning) // ignore s0 in this case
+    runTuning(gemvFusedAMDTuning)
+    runTuning(gemvKeplerBestTuning)
+  }
+
+
+  def runTuning(e: Expr) = {
+    //    val version = autotuning.parseName(configFile)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      samples = 20,
+      name = "gemv",
+      output = s"autotuning/gemv",
+      timeouts = Timeouts(10000, 10000, 10000),
+      executionIterations = 10,
+      speedupFactor = 100,
+      configFile = None,
+      hmConstraints = true,
+      runtimeStatistic = Minimum,
+      saveToFile = true
+    )
+
+    autotune.search(tuner)(e)
   }
 }

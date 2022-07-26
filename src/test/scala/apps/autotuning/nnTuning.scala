@@ -12,10 +12,13 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class nnTuning extends test_util.Tests {
 
-  val nn:Expr =
+  val nn: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(apps.nearestNeighbour.nnOcl)))
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.nearestNeighbour.nnOcl)
+          ))))
 
   // scalastyle:off
   val init: (Int) => String = (N) => {
@@ -51,11 +54,13 @@ class nnTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute nn"){
+  ignore("execute nn") {
 
-    val params:Map[Nat, Nat] = Map(
+    val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("gs0") -> (1: Nat)
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat)
     )
 
     val nn_replaced = rise.core.substitute.natsInExpr(params, nn)
@@ -72,7 +77,7 @@ class nnTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  ignore("search nn with generated config file"){
+  ignore("search nn with generated config file") {
     val tuner = Tuner(
       hostCode = HostCode(init(1024), compute, finish),
       inputSizes = Seq(1024),
@@ -99,9 +104,8 @@ class nnTuning extends test_util.Tests {
   }
 
 
-
   def runExperiments(configFiles: Seq[String], iterations: Int) = {
-    for(i <- 1 to iterations) {
+    for (i <- 1 to iterations) {
       configFiles.foreach(runTuning)
     }
   }
@@ -125,15 +129,46 @@ class nnTuning extends test_util.Tests {
     autotune.search(tuner)(nn)
   }
 
-  ignore("run nn autotuning"){
+  test("run nn autotuning") {
 
-    val configs = Seq(
-      "autotuning/config/nn/nn_rs_cot.json",
-      "autotuning/config/nn/nn_rs_emb.json",
-      "autotuning/config/nn/nn_ls_cot.json",
-      "autotuning/config/nn/nn_atf_emb.json"
+    val inputSize: Int = 1024
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat)
     )
 
-    runExperiments(configFiles = configs, iterations = 3)
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("gs1") -> (1: Nat)
+    )
+
+    val configs = Seq(
+      s"autotuning/config/nn/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/nn/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+    )
+
+    runExperiment(
+      name = s"nn_${inputSize}",
+      configFiles = configs,
+      iterations = 10,
+      output = s"/home/jo/development/experiments/tuning/results/nn_${inputSize}",
+      //      s"experiment/results/nn_${inputSize}",
+      e = nn,
+      hostCode = HostCode(init(inputSize), compute, finish),
+      inputSizes = Seq(inputSize),
+      plotOnly = true,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
+    )
   }
+
 }

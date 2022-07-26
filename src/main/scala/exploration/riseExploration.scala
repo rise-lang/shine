@@ -10,9 +10,8 @@ import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
 import exploration.runner.{AutoTuningExecutor, CExecutor, DebugExecutor}
 import elevate.heuristic_search.{ExplorationResult, Metaheuristic, Runner}
+import elevate.heuristic_search.{Metaheuristic, Runner}
 import elevate.heuristic_search.util.Solution
-import exploration.explorationUtil.jsonParser
-import exploration.explorationUtil.jsonParser.{ParseExploration, executorRead}
 import strategies.{convolutionStrategies, defaultStrategies}
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -22,25 +21,31 @@ import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
 
+import exploration.explorationUtil.jsonParser._
+import exploration.runner._
+
+import elevate.heuristic_search._
+
 import scala.sys.process._
 import scala.language.postfixOps
 
 object riseExploration {
 
-
   // entry point for exploration
   def apply(solution: Rise,
             lowering: Strategy[Rise],
-            strategies: Set[Strategy[Rise]],
+            strategies: scala.collection.immutable.Seq[Strategy[Rise]],
             filePath: String,
             hostCode: Option[HostCode] = None,
-            rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
-            afterRewrite: Option[Strategy[Rise]] = None
+            rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
+            afterRewrite: Option[Strategy[Rise]] = None,
+            importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,
+            expert: Option[Double] = None
            )
   : ExplorationResult[Rise] = {
 
     // parse config file
-    val parsedConfiguration = jsonParser.parse(filePath)
+    val parsedConfiguration = exploration.explorationUtil.jsonParser.parse(filePath)
 
     // setup gold
     // code here
@@ -53,7 +58,9 @@ object riseExploration {
       filePath,
       hostCode,
       rewriteFunction = rewriteFunction,
-      afterRewrite = afterRewrite
+      afterRewrite = afterRewrite,
+      importExport = importExport,
+      expert = expert
     )
 
     // start
@@ -73,11 +80,13 @@ object riseExploration {
   def prepareExploration(result: ParseExploration,
                          solution: Rise,
                          lowering: Strategy[Rise],
-                         strategies: Set[Strategy[Rise]],
+                         strategies: scala.collection.immutable.Seq[Strategy[Rise]],
                          filePath: String,
                          hostCode: Option[HostCode],
-                         rewriteFunction: Option[Solution[Rise] => Set[Solution[Rise]]] = None,
-                         afterRewrite: Option[Strategy[Rise]]
+                         rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
+                         afterRewrite: Option[Strategy[Rise]],
+                         importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,
+                         expert: Option[Double]
                         ): Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
@@ -140,9 +149,17 @@ object riseExploration {
 
     // begin with executor
     val executor = result.executor.name match {
-      case "C" => new CExecutor(lowering, gold, result.executor.iterations,
-        inputSize, result.executor.threshold, executorOutput)
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode.get, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "C" =>
+        new CExecutor(
+          lowering,
+          gold,
+          result.executor.iterations,
+          inputSize,
+          result.executor.threshold,
+          executorOutput,
+          expert = expert
+        )
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
@@ -159,15 +176,16 @@ object riseExploration {
 
     val rootMetaheuristic = new Metaheuristic[Rise](
       rootChoice.heuristic,
-      jsonParser.getHeuristic(rootChoice.heuristic),
+      getHeuristic(rootChoice.heuristic),
       rootChoice.depth,
-      rootChoice.iteration,
+      rootChoice.samples,
+      1,
       executor.asInstanceOf[Runner[Rise]],
       strategies,
       nameList.reverse.apply(index),
       rewriteFunction = rewriteFunction,
       afterRewrite = afterRewrite,
-      importExport = Option.empty
+      importExport = importExport
     )
 
     index = index + 1
@@ -178,16 +196,18 @@ object riseExploration {
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](
         elem.heuristic,
-        jsonParser.getHeuristic(elem.heuristic),
+        getHeuristic(elem.heuristic),
         elem.depth,
-        elem.iteration,
+        elem.samples,
+        1,
         metaheuristic,
         strategies,
         nameList.reverse.apply(index),
         rewriteFunction = rewriteFunction,
         afterRewrite = afterRewrite,
-        importExport = Option.empty
+        importExport = importExport
       )
+
       index = index + 1
     })
 

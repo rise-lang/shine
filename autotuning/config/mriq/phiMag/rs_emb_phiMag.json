@@ -1,0 +1,136 @@
+{
+  "application_name": "rs_emb_phiMag",
+  "optimization_objectives": [
+    "runtime"
+  ],
+  "feasible_output": {
+    "enable_feasible_predictor": true,
+    "name": "Valid",
+    "true_value": "True",
+    "false_value": "False"
+  },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "rs_emb_phiMag.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
+  "scalarization_method": "linear",
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 150
+  },
+  "optimization_iterations": 0,
+  "input_parameters": {
+    "tuned_s0": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [],
+      "dependencies": [],
+      "transform" : "log"
+    },
+    "tuned_ls0": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [],
+      "dependencies": [],
+      "transform" : "log"
+    },
+    "tuned_ls1": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_ls0 * tuned_ls1 <= 1024"
+      ],
+      "dependencies": [
+        "tuned_ls0"
+      ],
+      "transform" : "log"
+    },
+    "tuned_gs0": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_gs0 >= 0",
+        "tuned_gs0 % tuned_ls0 == 0"
+      ],
+      "dependencies": [
+        "tuned_ls0"
+      ],
+      "transform" : "log"
+    },
+    "tuned_gs1": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_gs1 >= 0",
+        "tuned_gs1 % tuned_ls1 == 0"
+      ],
+      "dependencies": [
+        "tuned_ls1"
+      ],
+      "transform" : "log"
+    }
+  }
+}
+

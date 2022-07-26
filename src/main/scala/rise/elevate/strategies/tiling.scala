@@ -4,7 +4,7 @@ import elevate.core.Strategy
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic._
 import elevate.macros.RuleMacro.rule
-import rise.elevate.Rise
+import rise.elevate.{Rise, tunable}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.{argument, function}
@@ -14,6 +14,23 @@ import rise.elevate.strategies.traversal._
 object tiling {
 
   def tileND(implicit ev: Traversable[Rise]): Int => Int => Strategy[Rise] = d => n => tileNDList(ev)(List.tabulate(d)(_ => n))
+
+
+  // todo add dimensions
+  // special syntax for 2D case - for ICFP'20 paper generic
+  def tile()(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList2(ev)(2)
+
+  def tileNDList2(implicit ev: Traversable[Rise]): Int => Strategy[Rise] =
+
+    n => n match {
+      case x if x <= 0 => id
+      // ((map f) arg)
+      case 1 => function(tunable("tile", splitJoin)) // loop-blocking
+      case i => fmap(tileNDList2(ev)(n - 1)) `;` // recurse
+        function(tunable("tile", splitJoin)) `;` // loop-blocking
+        interchange(ev)(i) // loop-interchange
+    }
+
 
   // special syntax for 2D case - for ICFP'20 paper
   @rule def tile(x: Int, y: Int)(implicit ev: Traversable[Rise]): Strategy[Rise] = tileNDList(ev)(List(x, y))
