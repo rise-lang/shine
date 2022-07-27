@@ -1,5 +1,7 @@
 package exploration.strategies
 
+import apps.tvmGemm
+import apps.tvmGemm.{innermost, outermost}
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -27,7 +29,7 @@ object blockingExploration {
     traversal.innermost(default.RiseTraversable)
 
 
-  // lowering
+  // lowering for mv
   // maps inside map reduce will stay maps instead of mapSeqs
   //  val lowering =
   //  addRequiredCopies() `;`
@@ -37,8 +39,8 @@ object blockingExploration {
   //    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
   //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 
+  // lowering for mm cpu
   val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-  //  val lowering = lowerToC
 
 
   // -- BASELINE ---------------------------------------------------------------
@@ -120,15 +122,11 @@ object blockingExploration {
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 6, 3, 4))
 
-  @rule def expert: Strategy[Rise] =
-    blocking `;;`
+  @rule def expert: Strategy[Rise] = (
+    tvmGemm.loopPerm `;;`
       (parallel() `@` outermost(isApplied(isMap))) `;;`
       (unroll `@` innermost(isReduceSeq))
-
-  //      ((parallel() `@` outermost(isApplied(isMap))) `@`
-  //        outermost(isApplied(isLet))) `;;`
-  //      (unroll `@` innermost(isReduceSeq))
-
+    )
 
   // todo make this generic steps?
   @rule def packB: Strategy[Rise] =
@@ -198,7 +196,6 @@ object blockingExploration {
     unroll,
     mapParCompute()
   )
-
 
   val rules2: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,

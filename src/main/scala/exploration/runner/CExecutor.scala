@@ -691,8 +691,7 @@ int main(int argc, char** argv) {
     //    runtime.toString
 
     ExecutionStatistics(
-      //      performanceValue = runtime,
-      performanceValue = min,
+      performanceValue = runtime,
       min = min,
       max = max,
       std = std
