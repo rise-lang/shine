@@ -27,6 +27,7 @@ package object exploration {
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
                        importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None, // how to import/export a solution
                        expert: Option[Double] = None,
+                       default: Option[Double] = None,
                        overwrite: Boolean = false,
                        //                       repeat: Int = 1
                      )
@@ -105,7 +106,6 @@ package object exploration {
 
         (plot !!)
         (plot_log !!)
-
 
         ExplorationResult(
           solution = Solution(expression, strategies = explorer.strategies),
@@ -186,8 +186,9 @@ package object exploration {
 
         })
 
-        plot_experiment(uniqueFilenameRoot, config, explorer)
-        plot_experiment2(uniqueFilenameRoot, explorer)
+        //        plot_experiment(uniqueFilenameRoot, config, explorer)
+        //        plot_experiment2(uniqueFilenameRoot, explorer)
+        plot_experiment3("exploration/results", explorer)
 
         // todo it might be necessary to call this during a search
         // reset counter
@@ -201,6 +202,13 @@ package object exploration {
 
       }
     }
+
+  }
+
+  def plot_experiment3(uniqueFilenameRoot: String, explorer: Explorer) = {
+
+    // plot results
+    s"python experiment/plot_experiment2.py ${uniqueFilenameRoot} ${explorer.default.get} ${explorer.expert.get}" !!
 
   }
 

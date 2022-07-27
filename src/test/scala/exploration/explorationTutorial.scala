@@ -78,18 +78,21 @@ class explorationTutorial extends test_util.Tests {
 
   test("run exploration") {
 
+    // create your metaheuristic
     val autotuner = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "autotuner",
-        depth = 3,
-        samples = 200, // ignored ?
+        depth = 5, // set depth
+        samples = 250, // set number of samples here (either random samples or opentuner optimization iterations)
       )
     )
 
+    // create your experiment
     val experiment = scala.collection.immutable.Seq(
-      autotuner
+      autotuner // just one entry is enough for us
     )
 
+    // create your executor
     val executor = ExecutorConfig(
       name = "C",
       iterations = 11,
@@ -98,22 +101,24 @@ class explorationTutorial extends test_util.Tests {
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_fine_light",
-      output = "/home/jo/development/experiments/exploration/thinkjo/autotuner", // adjust this
+      name = "mmCPU_par",
+      output = "exploration", // adjust this
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = blockingExploration.par,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(blockingExploration.par)),
+      strategies = blockingExploration.par, // change this
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(blockingExploration.par)), // change this
       normalForm = Some(DFNF()),
       importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(1.931617), // adjust this
+      expert = Some(2.531617), // adjust this
+      default = Some(208.565242),
       overwrite = false // ignore
     )
 
     // repeat this
     val explorationResult = exploration.explore(explorer)(mm)
+
 
   }
 

@@ -178,13 +178,15 @@ object blockingExploration {
     vectorize(32)
   )
 
-  val par: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
-    fuseReduceMap,
-    tile(32, 32),
-    reduceMapFission(),
-    reorderingStrategy,
-    mapParCompute()
-  )
+  val par: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      fuseReduceMap,
+      tile(32, 32),
+      reduceMapFission(),
+      reorderingStrategy,
+      mapParCompute()
+    )
+  }
 
   val vectorizedPar: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
