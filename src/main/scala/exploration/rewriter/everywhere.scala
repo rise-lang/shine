@@ -6,7 +6,7 @@ import rise.core.types.DataType.{ArrayType, DataTypeIdentifier, f32}
 import rise.elevate.rules.lowering.lowerToC
 import rise.elevate.rules.algorithmic.fuseReduceMap
 import elevate.core._
-import elevate.heuristic_search.util.{Solution, hashProgram, hashSolution}
+import elevate.heuristic_search.util.{Solution, SolutionStep, hashProgram, hashSolution}
 import rise.autotune.HostCode
 import rise.core.equality.{exprAlphaEq, typeAlphaEq, typeErasure}
 import rise.core.{App, DepApp, DepLambda, Expr, Identifier, Lambda, Literal, Opaque, Primitive, TypeAnnotation, TypeAssertion}
@@ -80,33 +80,64 @@ object everywhere {
     })
   }
 
+  // todo magic!
+
   // todo check if parallel works here properly
   def rewriteFunction(strategies: Seq[Strategy[Rise]])(solution: Solution[Rise]): Seq[Solution[Rise]] = {
+
     // todo check try catch
     // todo add checking here?
     //    val rewritten: Seq[Solution[Rise]] = strategies.toSeq.par.flatMap(rule => {
+
+
     val rewritten: Seq[Solution[Rise]] = strategies.flatMap(rule => {
       //      println("try: " + rule)
-      everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
+      val rewrites = everywhere(rule).apply(solution.expression())
+
+      val solutions: Seq[Solution[Rise]] = Range(0, rewrites.size).zip(rewrites).map(elem => {
+
+        // create new step
+        val step = SolutionStep[Rise](
+          expression = elem._2,
+          strategy = rule,
+          location = elem._1
+        )
+
+        Solution[Rise](
+          solutionSteps = solution.solutionSteps :+ step
+        )
+      })
+      solutions
     })
 
-    rewritten
+    // add id rewrite at the end
+    val idSolution = Solution[Rise](
+      solutionSteps = solution.solutionSteps :+ SolutionStep[Rise](
+        expression = solution.expression(),
+        strategy = elevate.core.strategies.basic.id[Rise],
+        location = 0
+      )
+    )
+
+    val output = rewritten :+ idSolution
+
+    output
   }
 
 
-  def rewriteFunction(solution: Solution[Rise]): scala.collection.immutable.Seq[Solution[Rise]] = {
-
-    // todo check try catch
-    // todo add checking here?
-    val rewritten: scala.collection.immutable.Seq[Solution[Rise]] = exploration.strategies.blockingExploration.rules.map(rule => {
-      //      println("try: " + rule)
-      everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
-    }).flatten
-
-    println("rewrite: " + rewritten.size)
-
-    rewritten
-  }
+  //  def rewriteFunction(solution: Solution[Rise]): scala.collection.immutable.Seq[Solution[Rise]] = {
+  //
+  //    // todo check try catch
+  //    // todo add checking here?
+  //    val rewritten: scala.collection.immutable.Seq[Solution[Rise]] = exploration.strategies.blockingExploration.rules.map(rule => {
+  //      //      println("try: " + rule)
+  //      everywhere(rule).apply(solution.expression).map(e => Solution(e, solution.strategies :+ rule))
+  //    }).flatten
+  //
+  //    println("rewrite: " + rewritten.size)
+  //
+  //    rewritten
+  //  }
 
 
 }

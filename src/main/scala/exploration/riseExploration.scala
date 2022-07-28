@@ -9,8 +9,7 @@ import rise.elevate.rules.traversal.default
 import scala.collection.immutable
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.heuristic_search.{Metaheuristic, Runner}
-import elevate.heuristic_search.util.Solution
-import strategies.{convolutionStrategies, defaultStrategies}
+import elevate.heuristic_search.util.{Solution, SolutionStep}
 import elevate.core._
 import elevate.core.strategies.basic._
 import rise.autotune.HostCode
@@ -30,7 +29,7 @@ import scala.language.postfixOps
 object riseExploration {
 
   // entry point for exploration
-  def apply(solution: Rise,
+  def apply(expression: Rise,
             lowering: Strategy[Rise],
             strategies: scala.collection.immutable.Seq[Strategy[Rise]],
             filePath: String,
@@ -50,7 +49,7 @@ object riseExploration {
 
     val startingPoint = prepareExploration(
       parsedConfiguration,
-      solution,
+      expression,
       lowering,
       strategies,
       filePath,
@@ -61,13 +60,22 @@ object riseExploration {
       expert = expert
     )
 
+
+    val solution = Solution[Rise](
+      solutionSteps = scala.collection.immutable.Seq(
+        SolutionStep[Rise](
+          expression = expression,
+          strategy = elevate.core.strategies.basic.id[Rise], //
+          location = 0
+        )
+      )
+    )
+
     // start
-    val result = startingPoint.execute(Solution(solution,
-      immutable.Seq.empty[Strategy[Rise]]))
+    val result = startingPoint.execute(solution)
 
     // collect results
     // code here
-
 
     result
   }

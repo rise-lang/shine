@@ -30,7 +30,7 @@ import rise.elevate.strategies.traversal._
 class mmCPU_exploration extends test_util.Tests {
 
   // define expression
-  val N = 256
+  val N = 512
 
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -250,55 +250,55 @@ class mmCPU_exploration extends test_util.Tests {
     val e3 = exploration.strategies.blockingExploration.blocking_step2.apply(e2).get
     val e4 = exploration.strategies.blockingExploration.blocking_step3.apply(e3).get
 
-    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq.empty[Strategy[Rise]])))
-    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step0))))
-    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step1))))
-    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step2))))
-    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step3))))
+    //    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq.empty[Strategy[Rise]])))
+    //    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step0))))
+    //    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step1))))
+    //    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step2))))
+    //    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step3))))
 
   }
 
 
   ignore("rewrite step by step") {
-
-    val mm_par = par.apply(mm).get
-    val gold = lowerToC.apply(mm_par).get
-
-    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-
-    val executor = CExecutor(
-      lowering = lowering,
-      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
-      iterations = 10,
-      goldExpression = gold,
-      inputSize = N,
-      saveToDisk = true,
-      timeout = 10000
-    )
-
-    val e0 = (DFNF()(default.RiseTraversable) `;` (fuseReduceMap `@` topDown[Rise])).apply(mm).get
-    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq(fuseReduceMap))))
-
-    val e1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(e0).get
-    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(tile(32, 32)))))
-
-    val e2 = ((reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))).apply(e1).get
-    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(reduceMapFission()))))
-
-    val e3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(e2).get
-    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(splitStrategy(4)))))
-
-    val e4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(e3).get
-    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(reorder(List(1, 2, 5, 6, 3, 4))))))
-
-    val e5 = ((vectorize(32) `@` innermost(isFullyAppliedMap)) `;` DFNF()).apply(e4).get
-    println("e5: " + executor.execute(Solution[Rise](e5, scala.collection.immutable.Seq(vectorize(32)))))
-
-    val e6 = ((parallel() `@` outermost(isApplied(isMap))) `;` DFNF()).apply(e5).get
-    println("e6: " + executor.execute(Solution[Rise](e6, scala.collection.immutable.Seq(parallel()))))
-
-    val e7 = (unroll `@` innermost(isReduceSeq)).apply(e6).get
-    println("e7: " + executor.execute(Solution[Rise](e7, scala.collection.immutable.Seq(unroll))))
+    //
+    //    val mm_par = par.apply(mm).get
+    //    val gold = lowerToC.apply(mm_par).get
+    //
+    //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    //
+    //    val executor = CExecutor(
+    //      lowering = lowering,
+    //      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
+    //      iterations = 10,
+    //      goldExpression = gold,
+    //      inputSize = N,
+    //      saveToDisk = true,
+    //      timeout = 10000
+    //    )
+    //
+    //    val e0 = (DFNF()(default.RiseTraversable) `;` (fuseReduceMap `@` topDown[Rise])).apply(mm).get
+    //    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq(fuseReduceMap))))
+    //
+    //    val e1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(e0).get
+    //    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(tile(32, 32)))))
+    //
+    //    val e2 = ((reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))).apply(e1).get
+    //    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(reduceMapFission()))))
+    //
+    //    val e3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(e2).get
+    //    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(splitStrategy(4)))))
+    //
+    //    val e4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(e3).get
+    //    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(reorder(List(1, 2, 5, 6, 3, 4))))))
+    //
+    //    val e5 = ((vectorize(32) `@` innermost(isFullyAppliedMap)) `;` DFNF()).apply(e4).get
+    //    println("e5: " + executor.execute(Solution[Rise](e5, scala.collection.immutable.Seq(vectorize(32)))))
+    //
+    //    val e6 = ((parallel() `@` outermost(isApplied(isMap))) `;` DFNF()).apply(e5).get
+    //    println("e6: " + executor.execute(Solution[Rise](e6, scala.collection.immutable.Seq(parallel()))))
+    //
+    //    val e7 = (unroll `@` innermost(isReduceSeq)).apply(e6).get
+    //    println("e7: " + executor.execute(Solution[Rise](e7, scala.collection.immutable.Seq(unroll))))
 
   }
 
@@ -355,9 +355,9 @@ class mmCPU_exploration extends test_util.Tests {
     //    println("cacheBlocks: " + cacheBlocksResult)
     //    assert(cacheBlocksResult.performance.isDefined)
 
-    val parResult = executor.execute(Solution[Rise](mm_par, scala.collection.immutable.Seq(par)))
-    println("par: " + parResult)
-    assert(parResult.performance.isDefined)
+    //    val parResult = executor.execute(Solution[Rise](mm_par, scala.collection.immutable.Seq(par)))
+    //    println("par: " + parResult)
+    //    assert(parResult.performance.isDefined)
 
   }
 
@@ -405,7 +405,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = parallel_lowering,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
       expert = Some(29.955511)
     )
 
@@ -457,7 +458,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = parallel_lowering,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
       expert = Some(2.676716)
     )
 
@@ -510,7 +512,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = coarse,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(coarse)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
       expert = Some(2.676716)
     )
 
@@ -564,7 +567,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = parallel_coarse,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_coarse)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
       expert = Some(2.676716)
     )
 
@@ -619,7 +623,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = fine,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(fine)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
       expert = Some(15.947497)
     )
 
@@ -683,7 +688,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = parallel_fine,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
       expert = Some(2.676716),
     )
 
@@ -719,7 +725,7 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "tabuSearch",
         depth = 5,
-        samples = 1000
+        samples = 10000
       )
     )
 
@@ -783,7 +789,7 @@ class mmCPU_exploration extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmCPU_parallel_fine_light",
-      output = "/home/jo/development/experiments/exploration/thinkjo/parallel_fine_light",
+      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine_light",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
@@ -791,7 +797,8 @@ class mmCPU_exploration extends test_util.Tests {
       strategies = parallel_fine_light,
       rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport),
+      importExport = None,
+      //      importExport = Some(exploration.explorationUtil.IO.importExport),
       //      expert = Some(2.676716),
       //                  expert = Some(0.992146)
       expert = Some(1.931617), // expert for non-turbo thinkpad for 256

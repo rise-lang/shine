@@ -159,7 +159,7 @@ case class CExecutor(
     errorLevel = LoweringError
 
     // lower solution
-    val lowered = lowering.apply(solution.expression)
+    val lowered = lowering.apply(solution.expression())
 
     // update error level
     errorLevel = CodeGenerationError
@@ -169,7 +169,7 @@ case class CExecutor(
     var executionStatistics: Option[ExecutionStatistics] = None
     var errorMessage: Option[String] = None
     var code = ""
-    println(s"[${counter}] ${hashProgram(solution.expression)}")
+    println(s"[${counter}] ${hashProgram(solution.expression())}")
     try {
       code = genExecutableCode(lowered.get)
 
@@ -261,14 +261,14 @@ case class CExecutor(
 
         var codeOutput = ""
         // add high/low-level hash, performance value and code
-        codeOutput += "// high-level hash: " + hashProgram(solution.expression) + " \n"
+        codeOutput += "// high-level hash: " + hashProgram(solution.expression()) + " \n"
         codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
 
         // check if execution was valid
-        var filenameC = hashProgram(solution.expression) + "_" + hashProgram(lowered.get)
+        var filenameC = hashProgram(solution.expression()) + "_" + hashProgram(lowered.get)
         var filenameLowered = hashProgram(lowered.get)
-        var filenameHigh = hashProgram(solution.expression)
-        var folder = output + "/" + hashProgram(solution.expression)
+        var filenameHigh = hashProgram(solution.expression())
+        var folder = output + "/" + hashProgram(solution.expression())
 
         errorMessage match {
           case Some(message) => codeOutput += s"// ${message}\n"
@@ -310,9 +310,9 @@ case class CExecutor(
         // write runtime to output file
         writeValues(
           path = output + "/" + "executor.csv",
-          result = (solution.expression, lowered.get, performanceValue, errorLevel),
+          result = (solution.expression(), lowered.get, performanceValue, errorLevel),
           statistics = executionStatistics,
-          solution.strategies,
+          solution.strategies(),
           "executor"
         )
 
@@ -323,7 +323,7 @@ case class CExecutor(
         val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
         // lowered string
-        var loweredString = "high-level hash: " + hashProgram(solution.expression) + "\n"
+        var loweredString = "high-level hash: " + hashProgram(solution.expression()) + "\n"
         loweredString += lowered.get
 
         // write code to file
@@ -341,7 +341,7 @@ case class CExecutor(
         val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
 
         // write code to file
-        pwHigh.write(solution.expression.toString)
+        pwHigh.write(solution.expression().toString)
 
         // close files
         pwHigh.close()
@@ -354,7 +354,7 @@ case class CExecutor(
 
         // create strategy string
         var strategyString = ""
-        solution.strategies.foreach(elem => {
+        solution.strategies().foreach(elem => {
           strategyString += s"$elem\n"
         })
 

@@ -3,7 +3,7 @@ package exploration.runner
 import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{Solution, hashProgram}
+import elevate.heuristic_search.util.{Solution, SolutionStep, hashProgram}
 import rise.autotune.{AutoTuningError, EXECUTION_ERROR, HostCode, Median, Timeouts, Tuner, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.Nat
@@ -99,7 +99,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       )
     )
 
-    (solution.expression, runtime)
+    (solution.expression(), runtime)
   }
 
 
@@ -131,7 +131,19 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
     val executionStart = System.currentTimeMillis()
-    val result = executor.execute(Solution(e, strategies)).performance
+
+    val sol = Solution[Rise](
+      solutionSteps = scala.collection.immutable.Seq(
+        SolutionStep[Rise](
+          expression = e,
+          strategy = null,
+          location = -1
+        )
+      )
+    )
+
+    val result = executor.execute(sol).performance
+
 
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {
@@ -165,7 +177,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // todo work with gold expression
 
     println("solution: " + solution)
-    println(hashProgram(solution.expression))
+    println(hashProgram(solution.expression()))
 
 
     //    // todo adjust this for autotuning benchmarks
@@ -209,7 +221,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // lower expression
     val loweringDurationStart = System.currentTimeMillis()
-    val lowered = lowering.apply(solution.expression)
+    val lowered = lowering.apply(solution.expression())
     val loweringDuration = System.currentTimeMillis() - loweringDurationStart
 
     val (result, statistic) = lowered match {
@@ -304,7 +316,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         }
 
         (
-          (solution.expression, runtime),
+          (solution.expression(), runtime),
           tuningStatistic
         )
       }
@@ -317,7 +329,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         val totalDuration = System.currentTimeMillis() - totalDurationStart
 
         (
-          (solution.expression, None),
+          (solution.expression(), None),
           TuningResultStatistic(
             number = number,
             solution = solution,
@@ -363,7 +375,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // todo work with gold expression
 
     println("solution: " + solution)
-    println(hashProgram(solution.expression))
+    println(hashProgram(solution.expression()))
 
     // create tuner
     val tuner = Tuner(
@@ -386,7 +398,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // lower expression
     val loweringDurationStart = System.currentTimeMillis()
-    val lowered = lowering.apply(solution.expression)
+    val lowered = lowering.apply(solution.expression())
     val loweringDuration = System.currentTimeMillis() - loweringDurationStart
 
     val (result, statistic) = lowered match {
@@ -469,7 +481,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         }
 
         (
-          (solution.expression, runtime),
+          (solution.expression(), runtime),
           tuningStatistic
         )
       }
@@ -482,7 +494,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         val totalDuration = System.currentTimeMillis() - totalDurationStart
 
         (
-          (solution.expression, None),
+          (solution.expression(), None),
           TuningResultStatistic(
             number = number,
             solution = solution,
@@ -533,8 +545,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // write line
     val line =
       tuningResultStatistic.number.toString + ", " +
-        hashProgram(tuningResultStatistic.solution.expression) + ", " +
-        tuningResultStatistic.solution.strategies.mkString(" : ") + ", " +
+        hashProgram(tuningResultStatistic.solution.expression()) + ", " +
+        tuningResultStatistic.solution.strategies().mkString(" : ") + ", " +
         tuningResultStatistic.timestamp.toString + ", " +
         tuningResultStatistic.duration.toString + ", " +
         tuningResultStatistic.durationTuning.toString + ", " +

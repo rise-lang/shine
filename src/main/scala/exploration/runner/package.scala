@@ -26,7 +26,7 @@ package object runner {
       this.synchronized {
 
         // lower expression
-        val lowered = lowering.apply(solution.expression)
+        val lowered = lowering.apply(solution.expression())
 
         // generate code
         val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
@@ -52,7 +52,7 @@ package object runner {
 
 
       // lower expression
-      val e: Expr = solution.expression
+      val e: Expr = solution.expression()
       val lowered = lowering.apply(e)
       val loweredOcl: Expr = wrapOclRun(LocalSize(1, 1), GlobalSize(1, 1))(lowered.get)
 

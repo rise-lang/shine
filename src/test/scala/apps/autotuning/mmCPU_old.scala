@@ -19,7 +19,7 @@ import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.predicate._
 import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal._
-import elevate.heuristic_search.util.{Solution}
+import elevate.heuristic_search.util.{Solution, SolutionStep}
 
 import exploration.runner.CExecutor
 
@@ -94,7 +94,18 @@ class mmTVMTuning extends test_util.Tests {
     val strategies = immutable.Seq.empty[Strategy[Rise]]
 
     val executionStart = System.currentTimeMillis()
-    val result = executor.execute(Solution(e, strategies)).performance
+
+    val sol = Solution[Rise](
+      solutionSteps = scala.collection.immutable.Seq(
+        SolutionStep[Rise](
+          expression = e,
+          strategy = null,
+          location = -1
+        )
+      )
+    )
+
+    val result = executor.execute(sol).performance
 
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {

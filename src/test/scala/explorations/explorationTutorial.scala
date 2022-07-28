@@ -84,9 +84,10 @@ object explorationTutorial {
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = exploration.strategies.blockingExploration.strategies,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction),
+      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(exploration.strategies.blockingExploration.strategies)),
       normalForm = Some(DFNF()),
-      importExport = Some(exploration.explorationUtil.IO.importExport)
+      importExport = None
+      //      importExport = Some(exploration.explorationUtil.IO.importExport)
     )
 
     val explorationResult = exploration.explore(explorer)(mm)

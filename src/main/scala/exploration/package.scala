@@ -1,4 +1,4 @@
-import elevate.heuristic_search.util.Solution
+import elevate.heuristic_search.util.{Solution, SolutionStep}
 import rise.elevate.Rise
 import rise.core._
 import elevate.core.Strategy
@@ -80,11 +80,20 @@ package object exploration {
             iteration
           )
 
-          entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+          val solution = Solution[Rise](
+            solutionSteps = scala.collection.immutable.Seq(
+              SolutionStep[Rise](
+                expression = expression,
+                strategy = elevate.core.strategies.basic.id[Rise], //
+                location = 0
+              )
+            )
+          )
+
+          entryPoint.execute(solution)
 
           (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
           (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/csv" !!)
-
 
           // copy tuningStatistics.json
 
@@ -107,8 +116,20 @@ package object exploration {
         (plot_log !!)
 
 
+        // dummy output therefore id strategy
+        val solutionResult = Solution[Rise](
+          solutionSteps = scala.collection.immutable.Seq(
+            SolutionStep[Rise](
+              expression = expression,
+              strategy = elevate.core.strategies.basic.id[Rise],
+              location = 0
+            )
+          )
+        )
+
+
         ExplorationResult(
-          solution = Solution(expression, strategies = explorer.strategies),
+          solution = solutionResult,
           performance = None,
           searchSpace = None
         )
@@ -159,7 +180,19 @@ package object exploration {
               iteration
             )
 
-            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+
+            val solution = Solution[Rise](
+              solutionSteps = scala.collection.immutable.Seq(
+                SolutionStep[Rise](
+                  expression = expression,
+                  strategy = elevate.core.strategies.basic.id[Rise], //
+                  location = 0
+                )
+              )
+            )
+
+            //            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+            entryPoint.execute(solution)
 
             (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
             (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
@@ -193,8 +226,18 @@ package object exploration {
         // reset counter
         rise.core.freshName.reset()
 
+        val solution = Solution[Rise](
+          solutionSteps = scala.collection.immutable.Seq(
+            SolutionStep[Rise](
+              expression = expression,
+              strategy = elevate.core.strategies.basic.id[Rise], //
+              location = 0
+            )
+          )
+        )
+
         ExplorationResult(
-          solution = Solution(expression, strategies = explorer.strategies),
+          solution = solution,
           performance = None,
           searchSpace = None
         )

@@ -84,7 +84,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
     val tresult =
       TuningResultStatistic(
         number = number,
-        solution = hashProgram(solution.expression),
+        solution = hashProgram(solution.expression()),
         timestamp = System.currentTimeMillis(),
         duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
         durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
@@ -146,7 +146,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
     //    if(counter <= 10){
     // try to maximize programs size
-    val value = 100000 / solution.expression.toString.size.toDouble
+    val value = 100000 / solution.expression().toString.size.toDouble
 
     //          val value = solution.expression.toString.size
 
@@ -161,14 +161,14 @@ case class DebugExecutor(lowering: Strategy[Rise],
   def performanceModel2(solution: Solution[Rise]): Option[Double] = {
     // WARNING: Only for C, not opencl, implementation is not generic
 
-    println("solution: " + hashProgram(solution.expression))
-    println("strategies: " + solution.strategies.mkString(", "))
+    println("solution: " + hashProgram(solution.expression()))
+    println("strategies: " + solution.strategies().mkString(", "))
 
     //    val code = gen.openmp.function("riseFun").asStringFromExpr(lowered.get)
     //    println("code: \n" + code)
 
     // generate code
-    val lowered = lowering.apply(solution.expression)
+    val lowered = lowering.apply(solution.expression())
     val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
 
     // todo check case of multiple functions
