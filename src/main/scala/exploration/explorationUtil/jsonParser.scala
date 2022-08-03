@@ -1,7 +1,7 @@
 package exploration.explorationUtil
 
 import elevate.heuristic_search.Heuristic
-import elevate.heuristic_search.heuristics.{Annealing, Exhaustive, IterativeImprovement, Random, TabuSearch}
+import elevate.heuristic_search.heuristics._
 import rise.elevate.Rise
 
 import scala.io._
@@ -64,6 +64,9 @@ object jsonParser {
       case "exhaustive" => new Exhaustive[Rise]
       case "annealing" => new Annealing[Rise]
       case "tabuSearch" => new TabuSearch[Rise]
+      case "tabuSearchPlain" => new TabuSearchPlain[Rise]
+      case "localSearch" => new LocalSearch[Rise]
+      case "simulatedAnnealingPlain" => new SimulatedAnnealingPlain[Rise]
       //      case "autotuner" => new AutotunerSearch[Rise]
       //      case "cot" => new AutotunerSearch2[Rise]
       //      case "cot2" => new AutotunerSearch3[Rise]

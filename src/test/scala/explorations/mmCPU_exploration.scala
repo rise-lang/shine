@@ -2,7 +2,8 @@ package explorations
 
 import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
-import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
+//import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
+import exploration._
 import explorations.explorationTutorial.mm
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.core._
@@ -10,7 +11,8 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.heuristic_search.util.Solution
 import elevate.macros.RuleMacro.rule
-import exploration.runner.CExecutor
+import exploration.neighborhoods._
+import exploration.runner.{CExecutor, checkExpressionC}
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives.{add, fst, map, reduce, snd, transpose, zip}
 import rise.core.types.DataType.{ArrayType, f32}
@@ -45,8 +47,6 @@ class mmCPU_exploration extends test_util.Tests {
       ))
 
   // define search space
-
-
   @rule def baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     (fuseReduceMap `@` topDown[Rise])
 
@@ -204,12 +204,13 @@ class mmCPU_exploration extends test_util.Tests {
   }
 
   val parallel_fine_light: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    // cannot at id, everywhere would crash it
     scala.collection.immutable.Seq(
-      fuseReduceMap,
+      fuseReduceMap, // tiling block
       tile(32, 32),
       reduceMapFission(),
       reorderTiling,
-      mapParCompute()
+      mapParCompute() // map par block
     )
   }
 
@@ -302,404 +303,6 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-  test("mmCPU - execute versions") {
-    // execute version
-    val mm_baseline = baseline.apply(mm).get
-
-    val mm_blocking = blocking.apply(mm).get
-
-    val mm_vectorize = vectorization.apply(mm).get
-
-    val mm_loopPerm = loopPerm.apply(mm).get
-
-    val mm_arrayPacking = arrayPacking.apply(mm).get
-
-    val mm_cacheBlocks = cacheBlocks.apply(mm).get
-
-    val mm_par = par.apply(mm).get
-
-    // gold
-    val gold = lowerToC.apply(mm_par).get
-
-    val executor = CExecutor(
-      lowering = lowerToC,
-      output = "exploration",
-      iterations = 1000,
-      goldExpression = gold,
-      inputSize = N,
-
-      saveToDisk = true
-    )
-
-    //    val baselineResult = executor.execute(Solution[Rise](mm_baseline, scala.collection.immutable.Seq(baseline)))
-    //    println("baseline: " + baselineResult)
-    //    assert(baselineResult.performance.isDefined)
-    //
-    //    val blockingResult = executor.execute(Solution[Rise](mm_blocking, scala.collection.immutable.Seq(blocking)))
-    //    println("blocking: " + blockingResult)
-    //    assert(blockingResult.performance.isDefined)
-    //
-    //    val vectorizationResult = executor.execute(Solution[Rise](mm_vectorize, scala.collection.immutable.Seq(vectorization)))
-    //    println("vectorization: " + vectorizationResult)
-    //    assert(vectorizationResult.performance.isDefined)
-    //
-    //    val loopPermResult = executor.execute(Solution[Rise](mm_loopPerm, scala.collection.immutable.Seq(loopPerm)))
-    //    println("loopPerm: " + loopPermResult)
-    //    assert(loopPermResult.performance.isDefined)
-    //
-    //    val arrayPackingResult = executor.execute(Solution[Rise](mm_arrayPacking, scala.collection.immutable.Seq(arrayPacking)))
-    //    println("arrayPacking: " + arrayPackingResult)
-    //    assert(arrayPackingResult.performance.isDefined)
-    //
-    //    val cacheBlocksResult = executor.execute(Solution[Rise](mm_cacheBlocks, scala.collection.immutable.Seq(cacheBlocks)))
-    //    println("cacheBlocks: " + cacheBlocksResult)
-    //    assert(cacheBlocksResult.performance.isDefined)
-
-    //    val parResult = executor.execute(Solution[Rise](mm_par, scala.collection.immutable.Seq(par)))
-    //    println("par: " + parResult)
-    //    assert(parResult.performance.isDefined)
-
-  }
-
-
-  ignore("mmCPU - parallel_array_packing") {
-
-    val e = cacheBlocks.apply(mm).get
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 7,
-        samples = 500,
-      )
-    )
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 7,
-        samples = 100,
-        repeat = 10
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_array_packing",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_array_packing",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = parallel_lowering,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
-      normalForm = Some(DFNF()),
-      importExport = None,
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(29.955511)
-    )
-
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-  }
-
-  ignore("mmCPU - parallel_tiling") {
-
-    val e = blocking.apply(mm).get
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 7,
-        samples = 1000,
-      )
-    )
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 7,
-        samples = 100,
-        repeat = 10
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_tiling",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_tiling",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = parallel_lowering,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_lowering)),
-      normalForm = Some(DFNF()),
-      importExport = None,
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(2.676716)
-    )
-
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-  }
-
-  ignore("mmCPU - coarse") {
-
-    // start with pre-baseline version
-    val e = mm
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 5,
-        samples = 1000,
-      )
-    )
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 5,
-        samples = 100, // in total
-        repeat = 10
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_coarse",
-      output = "/home/jo/development/experiments/exploration/dodekarch/coarse",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = coarse,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(coarse)),
-      normalForm = Some(DFNF()),
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      importExport = None,
-      expert = Some(2.676716)
-    )
-
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-
-  }
-
-  ignore("mmCPU - parallel_coarse") {
-
-    // start with pre-baseline version
-    val e = mm
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 6,
-        samples = 1000,
-      )
-    )
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 6,
-        samples = 100, // in total
-        repeat = 10
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_coarse",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_coarse",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = parallel_coarse,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_coarse)),
-      normalForm = Some(DFNF()),
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      importExport = None,
-      expert = Some(2.676716)
-    )
-
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-
-  }
-
-  ignore("mmCPU - fine") {
-
-
-    // start with pre-baseline version
-    val e = mm
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 7,
-        samples = 1000,
-      )
-    )
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 7,
-        samples = 100, // in total
-        repeat = 10
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_fine",
-      output = "/home/jo/development/experiments/exploration/dodekarch/fine",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = fine,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(fine)),
-      normalForm = Some(DFNF()),
-      importExport = None,
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(15.947497)
-    )
-
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-
-  }
-
-  ignore("mmCPU - parallel_fine") {
-
-    // start with pre-baseline version
-    //    val e = blockingPartial2.apply(mm).get
-    val e = mm
-
-    val ii = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 8,
-        samples = 1000
-      )
-    )
-
-
-    val random = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 8,
-        samples = 100,
-        repeat = 10
-      )
-    )
-
-    val exhaustive = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 8,
-        samples = 1000,
-      )
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      exhaustive,
-      random
-    )
-
-    val executor = ExecutorConfig(
-      name = "C",
-      iterations = 10,
-      threshold = 2
-    )
-
-    // setup explorer config
-    val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_fine",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine",
-      inputSize = N,
-      metaheuristics = Right(experiment),
-      executor = executor,
-      lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = parallel_fine,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine)),
-      normalForm = Some(DFNF()),
-      importExport = None,
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      expert = Some(2.676716),
-    )
-
-    // repeat this
-    val explorationResult = exploration.explore(explorer)(e)
-
-    println("explorationResult: " + explorationResult)
-
-  }
-
   test("mmCPU - parallel_fine_light") {
 
     val e = mm
@@ -707,6 +310,14 @@ class mmCPU_exploration extends test_util.Tests {
     val ii = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "IterativeImprovement",
+        depth = 5,
+        samples = 1000
+      )
+    )
+
+    val localSearch = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "localSearch",
         depth = 5,
         samples = 1000
       )
@@ -729,12 +340,20 @@ class mmCPU_exploration extends test_util.Tests {
       )
     )
 
+    val tabuSearchPlain = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "tabuSearchPlain",
+        depth = 5,
+        samples = 100
+      )
+    )
+
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 500,
-        repeat = 1
+        samples = 100,
+        repeat = 5
       )
     )
 
@@ -755,35 +374,50 @@ class mmCPU_exploration extends test_util.Tests {
     val autotuner = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "autotuner",
-        depth = 5,
-        samples = 1000,
-        repeat = 10
+        depth = 3,
+        samples = 10,
+        repeat = 1
       )
     )
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 5,
+        depth = 3,
         samples = 10000,
+      )
+    )
+
+    val simulatedAnnealingPlain = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "simulatedAnnealingPlain",
+        depth = 5, // ignored?
+        samples = 500, // ignored?
       )
     )
 
     val experiment = scala.collection.immutable.Seq(
       //      annealing,
-      tabuSearch,
+      //      tabuSearch,
       //      autotuner
       //      tabuSearch
       //      random_ii
-      //      exhaustive,
+      exhaustive,
       //      ii,
       //      random
+      //      localSearch,
+      //      tabuSearchPlain
+      //      simulatedAnnealingPlain
     )
 
     val executor = ExecutorConfig(
       name = "C",
       iterations = 11,
       threshold = 10
+    )
+
+    val neighborhood = NeighborhoodConfig(
+      neighborhood = NTreeChildrenChoice
     )
 
     // setup explorer config
@@ -795,35 +429,32 @@ class mmCPU_exploration extends test_util.Tests {
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = parallel_fine_light,
-      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)),
-      normalForm = Some(DFNF()),
+      //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)), // maybe call neighborhood deep
+      neighborhoodConfig = neighborhood, // what about window (mabye add a config here as well)
+      rewriteFunction = Some(
+        exploration.rewriter.everywhere.neighbourhoodWide(
+          strategies = parallel_fine_light,
+          slideWindow = 20
+        )
+      ),
+      checkExpression = Some(
+        checkExpressionC(
+          exploration.strategies.blockingExploration.lowering
+        )
+      ),
+      normalForm = Some(DFNF()), // after rewrite
       importExport = None,
-      //      importExport = Some(exploration.explorationUtil.IO.importExport),
-      //      expert = Some(2.676716),
+      expert = Some(2.676716),
       //                  expert = Some(0.992146)
-      expert = Some(1.931617), // expert for non-turbo thinkpad for 256
-      overwrite = true
+      //      expert = Some(1.931617), // expert for non-turbo thinkpad for 256
+      overwrite = false
     )
 
     // repeat this
     val explorationResult = exploration.explore(explorer)(e)
 
-
     // plot
     // python experiment/plot_experiment2.py /home/jo/development/experiments/exploration/dodekarch/dodekarch/parallel_fine_light/mmCPU_parallel_fine_light
-
-
-  }
-
-  ignore("regex") {
-
-    println(uniqueFilename("hello"))
-    println(uniqueFilename("hello_"))
-    println(uniqueFilename("hello_1"))
-    println(uniqueFilename("hello_1234"))
-    println(uniqueFilename("hello_1234_uwe"))
-    println(uniqueFilename("test.pdf"))
-    println(uniqueFilename("test_0"))
 
   }
 }

@@ -5,6 +5,7 @@ import elevate.core.Strategy
 import rise.autotune.{HostCode, search}
 import elevate.heuristic_search._
 import exploration.runner._
+import exploration.neighborhoods._
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
@@ -22,8 +23,10 @@ package object exploration {
                        strategies: scala.collection.immutable.Seq[Strategy[Rise]] = null,
                        printEvery: Int = 100,
                        //optional
+                       neighborhoodConfig: NeighborhoodConfig = null,
+                       checkExpression: Option[Rise => Boolean] = None,
                        hostCode: Option[HostCode] = None, // hostcode to execute
-                       rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = null,
+                       rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
                        importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None, // how to import/export a solution
                        expert: Option[Double] = None,
@@ -45,6 +48,10 @@ package object exploration {
                              threshold: Double
                            )
 
+  case class NeighborhoodConfig(
+                                 neighborhood: NeighborhoodChoice = NTreeChildrenChoice,
+                                 slideWindow: Int = 10 // size? // distance?
+                               )
 
   def explore(explorer: Explorer)(expression: Expr)
   : ExplorationResult[Rise] = {
@@ -180,16 +187,32 @@ package object exploration {
               iteration
             )
 
+            // todo make this generic
+            // add solution on leaf layer
+
+            // make space for id strategy
+            var steps = scala.collection.mutable.Seq.empty[SolutionStep[Rise]]
+            Range(0, entryPoint.depth + 1).foreach(elem => {
+              steps = steps :+ SolutionStep[Rise](
+                expression = expression,
+                strategy = elevate.core.strategies.basic.id[Rise], //
+                location = 0
+              )
+            })
 
             val solution = Solution[Rise](
-              solutionSteps = scala.collection.immutable.Seq(
-                SolutionStep[Rise](
-                  expression = expression,
-                  strategy = elevate.core.strategies.basic.id[Rise], //
-                  location = 0
-                )
-              )
+              solutionSteps = steps.toSeq
             )
+
+            //            val solution = Solution[Rise](
+            //              solutionSteps = scala.collection.immutable.Seq(
+            //                SolutionStep[Rise](
+            //                  expression = expression,
+            //                  strategy = elevate.core.strategies.basic.id[Rise], //
+            //                  location = 0
+            //                )
+            //              )
+            //            )
 
             //            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
             entryPoint.execute(solution)
@@ -337,7 +360,6 @@ package object exploration {
       nameList += predecessor
     })
 
-
     // create folder for executor
     val executorOutput = predecessor + "/" + "Executor"
     //    val executorOutput = predecessor + "_" + iteration + "/" + "Executor"
@@ -384,21 +406,49 @@ package object exploration {
 
     var index = 0
 
+    val neighborhood: HeuristicPanel[Rise] = explorer.neighborhoodConfig.neighborhood match {
+      case neighborhoods.NTreeChildrenChoice =>
+        NTreeChildren(
+          runner = executor.asInstanceOf[Runner[Rise]],
+          strategies = explorer.strategies,
+          afterRewrite = None,
+          checkExpression = explorer.checkExpression
+        )
+      case neighborhoods.NTreeChildrenParentChoice =>
+        NTreeChildrenParent(
+          runner = executor.asInstanceOf[Runner[Rise]],
+          strategies = explorer.strategies,
+          afterRewrite = None,
+          checkExpression = explorer.checkExpression
+        )
+      case neighborhoods.NTreeLeafsWindowChoice =>
+        NTreeLeafsWindow(
+          runner = executor.asInstanceOf[Runner[Rise]],
+          strategies = explorer.strategies,
+          afterRewrite = None,
+          checkExpression = explorer.checkExpression
+        )
+      case neighborhoods.NTreeLeafsDistanceChoice => throw new Exception("not yet implemented")
+      case neighborhoods.NPathDistanceChoice => throw new Exception("not yet implemented")
+      case neighborhoods.NGraphChoice => throw new Exception("not yet implemented")
+    }
+
     // root metaheuristic using executor as executor
     val rootChoice = metaheuristics.reverse.head
 
     val rootMetaheuristic = new Metaheuristic[Rise](
-      rootChoice.heuristic,
-      exploration.explorationUtil.jsonParser.getHeuristic(rootChoice.heuristic),
-      rootChoice.depth,
-      rootChoice.samples,
-      rootChoice.repetitions,
-      executor.asInstanceOf[Runner[Rise]],
-      explorer.strategies,
-      nameList.reverse.apply(index),
+      name = rootChoice.heuristic,
+      heuristic = exploration.explorationUtil.jsonParser.getHeuristic(rootChoice.heuristic),
+      depth = rootChoice.depth,
+      samples = rootChoice.samples,
+      repetitions = rootChoice.repetitions,
+      runner = executor.asInstanceOf[Runner[Rise]],
+      strategies = explorer.strategies,
+      output = nameList.reverse.apply(index),
       rewriteFunction = explorer.rewriteFunction,
       afterRewrite = explorer.normalForm,
       importExport = explorer.importExport,
+      heuristicPanel = Some(neighborhood),
       iteration = Some(iteration)
     )
 
@@ -407,19 +457,50 @@ package object exploration {
     // iterate reverse direction
     var metaheuristic = rootMetaheuristic
     metaheuristics.reverse.tail.foreach(elem => {
+
+
+      val neighborhood: HeuristicPanel[Rise] = explorer.neighborhoodConfig.neighborhood match {
+        case neighborhoods.NTreeChildrenChoice =>
+          NTreeChildren(
+            runner = metaheuristic,
+            strategies = explorer.strategies,
+            afterRewrite = None,
+            checkExpression = explorer.checkExpression
+          )
+        case neighborhoods.NTreeChildrenParentChoice =>
+          NTreeChildrenParent(
+            runner = metaheuristic,
+            strategies = explorer.strategies,
+            afterRewrite = None,
+            checkExpression = explorer.checkExpression
+          )
+        case neighborhoods.NTreeLeafsWindowChoice =>
+          NTreeLeafsWindow(
+            runner = metaheuristic,
+            strategies = explorer.strategies,
+            slideWindow = explorer.neighborhoodConfig.slideWindow, // e.g. distance
+            afterRewrite = None,
+            checkExpression = explorer.checkExpression
+          )
+        case neighborhoods.NTreeLeafsDistanceChoice => throw new Exception("not yet implemented")
+        case neighborhoods.NPathDistanceChoice => throw new Exception("not yet implemented")
+        case neighborhoods.NGraphChoice => throw new Exception("not yet implemented")
+      }
+
       // new metaheuristic with last one as Runner
       metaheuristic = new Metaheuristic[Rise](
-        elem.heuristic,
-        exploration.explorationUtil.jsonParser.getHeuristic(elem.heuristic),
-        elem.depth,
-        elem.samples,
-        elem.repetitions,
-        metaheuristic,
-        explorer.strategies,
-        nameList.reverse.apply(index),
+        name = elem.heuristic,
+        heuristic = exploration.explorationUtil.jsonParser.getHeuristic(elem.heuristic),
+        depth = elem.depth,
+        samples = elem.samples,
+        repetitions = elem.repetitions,
+        runner = metaheuristic,
+        strategies = explorer.strategies,
+        output = nameList.reverse.apply(index),
         rewriteFunction = explorer.rewriteFunction,
         afterRewrite = explorer.normalForm,
         importExport = explorer.importExport,
+        heuristicPanel = Some(neighborhood),
         iteration = Some(iteration)
       )
 

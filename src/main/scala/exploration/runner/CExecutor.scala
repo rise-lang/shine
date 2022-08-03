@@ -2,7 +2,7 @@ package exploration.runner
 
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{IOHelper, Solution, hashProgram}
+import elevate.heuristic_search.util.{IOHelper, RewriteIdentifier, Solution, hashProgram, hashSolution}
 import exploration.explorationUtil.ExplorationErrorLevel
 import rise.elevate.Rise
 import shine.C
@@ -169,7 +169,8 @@ case class CExecutor(
     var executionStatistics: Option[ExecutionStatistics] = None
     var errorMessage: Option[String] = None
     var code = ""
-    println(s"[${counter}] ${hashProgram(solution.expression())}")
+    //    println(s"[${counter}] ${hashProgram(solution.expression())}")
+    println(s"[${counter}] ${hashSolution(solution)}")
     try {
       code = genExecutableCode(lowered.get)
 
@@ -261,14 +262,14 @@ case class CExecutor(
 
         var codeOutput = ""
         // add high/low-level hash, performance value and code
-        codeOutput += "// high-level hash: " + hashProgram(solution.expression()) + " \n"
+        codeOutput += "// high-level hash: " + hashSolution(solution) + " \n"
         codeOutput += "// low-level hash: " + hashProgram(lowered.get) + " \n"
 
         // check if execution was valid
-        var filenameC = hashProgram(solution.expression()) + "_" + hashProgram(lowered.get)
+        var filenameC = hashSolution(solution) + "_" + hashProgram(lowered.get)
         var filenameLowered = hashProgram(lowered.get)
-        var filenameHigh = hashProgram(solution.expression())
-        var folder = output + "/" + hashProgram(solution.expression())
+        var filenameHigh = hashSolution(solution)
+        var folder = output + "/" + hashSolution(solution)
 
         errorMessage match {
           case Some(message) => codeOutput += s"// ${message}\n"
@@ -310,9 +311,9 @@ case class CExecutor(
         // write runtime to output file
         writeValues(
           path = output + "/" + "executor.csv",
-          result = (solution.expression(), lowered.get, performanceValue, errorLevel),
+          result = (solution, lowered.get, performanceValue, errorLevel),
           statistics = executionStatistics,
-          solution.strategies(),
+          solution.rewrites(),
           "executor"
         )
 
@@ -323,7 +324,7 @@ case class CExecutor(
         val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
         // lowered string
-        var loweredString = "high-level hash: " + hashProgram(solution.expression()) + "\n"
+        var loweredString = "high-level hash: " + hashSolution(solution) + "\n"
         loweredString += lowered.get
 
         // write code to file
@@ -696,9 +697,9 @@ int main(int argc, char** argv) {
 
 
   def writeValues(path: String,
-                  result: (Rise, Rise, Option[Double], ExplorationErrorLevel),
+                  result: (Solution[Rise], Rise, Option[Double], ExplorationErrorLevel),
                   statistics: Option[ExecutionStatistics],
-                  rewrite: Seq[Strategy[Rise]],
+                  rewrite: Seq[RewriteIdentifier[Rise]],
                   name: String): Unit = {
 
     //    samples += 1
@@ -712,7 +713,7 @@ int main(int argc, char** argv) {
 
     // create string to write to file
     var string = s"$counter,$name,${System.currentTimeMillis().toString}," +
-      hashProgram(result._1) + "," +
+      hashSolution(result._1) + "," +
       hashProgram(result._2) + "," +
       rewrite.mkString("\"[", ",", "]\"") + "," +
       result._4.toString + ","

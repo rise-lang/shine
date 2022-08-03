@@ -15,7 +15,32 @@ import util.gen
 
 package object runner {
 
-  def checkSolutionC(lowering: Strategy[Rise], solution: Solution[Rise]): Boolean = {
+  def checkExpressionC(
+                        lowering: Strategy[Rise]
+                      )(expression: Rise): Boolean = {
+
+    // generate code here
+
+    // ignore numerical parameters for now
+
+    // lower solution
+    try {
+      this.synchronized {
+
+        // lower expression
+        val lowered = lowering.apply(expression)
+
+        // generate code
+        val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
+      }
+
+      true
+    } catch {
+      case e: Throwable => false
+    }
+  }
+
+  def checkSolutionC(lowering: Strategy[Rise])(solution: Solution[Rise]): Boolean = {
 
     // generate code here
 
