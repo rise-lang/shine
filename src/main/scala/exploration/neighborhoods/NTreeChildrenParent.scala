@@ -10,8 +10,8 @@ import rise.elevate.Rise
 import exploration.rewriter.everywhere._
 
 /**
- * Neighborhood is defined by children and parent of current solution
- */
+  * Neighborhood is defined by children and parent of current solution
+  */
 case class NTreeChildrenParent(
                                 runner: Runner[Rise],
                                 strategies: Seq[Strategy[Rise]],
@@ -52,7 +52,7 @@ case class NTreeChildrenParent(
 
         // add step to solution
         Solution[Rise](
-          solutionSteps = solution.solutionSteps :+ step
+          solutionSteps = (solution.solutionSteps :+ step).drop(1)
         )
       })
       solutions
