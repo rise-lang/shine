@@ -13,10 +13,10 @@ import exploration.rewriter.everywhere._
 import exploration.runner.checkSolutionC
 
 /**
- * Neighborhood is defined by slide-window around leafs (fill with id)
- * defines order on search space
- * All solutions are on leaf layer
- */
+  * Neighborhood is defined by slide-window around leafs (fill with id)
+  * defines order on search space
+  * All solutions are on leaf layer
+  */
 case class NTreeLeafsWindow(
                              runner: Runner[Rise],
                              strategies: Seq[Strategy[Rise]],
@@ -27,7 +27,6 @@ case class NTreeLeafsWindow(
 
   val solutions = new scala.collection.mutable.HashMap[String, Option[Double]]()
 
-  // todo implement this
   override def N(solution: Solution[Rise]): Seq[Solution[Rise]] = {
 
     val depth = 6 // 5 rewrites, ergo (eppo) 6 layers

@@ -383,7 +383,7 @@ class mmCPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 3,
+        depth = 5,
         samples = 10000,
       )
     )
@@ -412,12 +412,17 @@ class mmCPU_exploration extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "C",
-      iterations = 11,
+      iterations = 1,
       threshold = 10
     )
 
-    val neighborhood = NeighborhoodConfig(
+    // define neighborhood style
+    val nTreeChildren = NeighborhoodConfig(
       neighborhood = NTreeChildrenChoice
+    )
+
+    val nTreeLeafsDistance = NeighborhoodConfig(
+      neighborhood = NTreeLeafsDistanceChoice
     )
 
     // setup explorer config
@@ -430,7 +435,8 @@ class mmCPU_exploration extends test_util.Tests {
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = parallel_fine_light,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)), // maybe call neighborhood deep
-      neighborhoodConfig = neighborhood, // what about window (mabye add a config here as well)
+      neighborhoodConfig = nTreeLeafsDistance, // what about window (mabye add a config here as well)
+      // todo check whether this can be removed
       rewriteFunction = Some(
         exploration.rewriter.everywhere.neighbourhoodWide(
           strategies = parallel_fine_light,

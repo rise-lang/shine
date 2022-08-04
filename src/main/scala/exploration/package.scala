@@ -428,7 +428,14 @@ package object exploration {
           afterRewrite = None,
           checkExpression = explorer.checkExpression
         )
-      case neighborhoods.NTreeLeafsDistanceChoice => throw new Exception("not yet implemented")
+      case neighborhoods.NTreeLeafsDistanceChoice =>
+        NTreeLeafsDistance(
+          runner = executor.asInstanceOf[Runner[Rise]],
+          strategies = explorer.strategies,
+          afterRewrite = None,
+          checkExpression = explorer.checkExpression,
+          depth = metaheuristics.reverse.head.depth // todo check if this is fully generic
+        )
       case neighborhoods.NPathDistanceChoice => throw new Exception("not yet implemented")
       case neighborhoods.NGraphChoice => throw new Exception("not yet implemented")
     }
