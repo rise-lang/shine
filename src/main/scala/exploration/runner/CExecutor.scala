@@ -47,7 +47,16 @@ case class CExecutor(
                                   min: Double,
                                   max: Double,
                                   std: Double
-                                )
+                                ) {
+    override def toString() = {
+      s"""
+         |PerformanceValue: ${performanceValue}
+         |Min: ${min}
+         |Max: ${max}
+         |std: ${std}
+         |""".stripMargin
+    }
+  }
 
   def mean(a: Seq[Double]): Double = a.sum.toDouble / a.size
 
@@ -145,7 +154,7 @@ case class CExecutor(
   }
 
   def checkSolution(solution: Solution[Rise]): Boolean = {
-    runner.checkSolutionC(lowering, solution)
+    runner.checkSolutionC(lowering)(solution)
   }
 
   //  override def plot(): Unit = ???
@@ -413,8 +422,8 @@ case class CExecutor(
           s"""
         float* ${decl.name} = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${decl.name}[i] = (rand() % 100) - 50;
-          //${decl.name}[i] = i;
+//          ${decl.name}[i] = (rand() % 100) - 50;
+          ${decl.name}[i] = i+1;
         }
         """
         codeEnd +=
@@ -427,8 +436,8 @@ case class CExecutor(
           s"""
         float* ${decl.name} = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${decl.name}[i] = (rand() % 100) - 50;
-          //${decl.name}[i] = i;
+//          ${decl.name}[i] = (rand() % 100) - 50;
+          ${decl.name}[i] = i+1;
         }
         """
         codeEnd +=
@@ -593,6 +602,7 @@ int main(int argc, char** argv) {
 
     ${preparation._4}
     int check = compare_gold(output, gold);
+//    int check = 1;
 
     ${preparation._2}
 
@@ -684,15 +694,22 @@ int main(int argc, char** argv) {
       globalBest = Some(runtime)
     }
 
-    //    runtime.toString
+    //    println("runtimes: ")
+    //    runtimes.foreach(println)
 
-    ExecutionStatistics(
+    //    println("\n")
+
+    val output = ExecutionStatistics(
       //      performanceValue = runtime,
       performanceValue = min,
       min = min,
       max = max,
       std = std
     )
+
+    //    println(output)
+
+    output
   }
 
 

@@ -3,13 +3,14 @@ package explorations
 import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
 //import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
+import elevate.heuristic_search.ExplorationResult
 import exploration._
 import explorations.explorationTutorial.mm
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.heuristic_search.util.Solution
+import elevate.heuristic_search.util._
 import elevate.macros.RuleMacro.rule
 import exploration.neighborhoods._
 import exploration.runner.{CExecutor, checkExpressionC}
@@ -162,7 +163,7 @@ class mmCPU_exploration extends test_util.Tests {
       fuseReduceMap,
       tiling,
       tilingPerm,
-      vectorize(31),
+      vectorize(32),
       rise.elevate.rules.lowering.unroll
     )
   }
@@ -190,6 +191,16 @@ class mmCPU_exploration extends test_util.Tests {
     )
   }
 
+  val fine_light: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    // cannot at id, everywhere would crash it
+    scala.collection.immutable.Seq(
+      fuseReduceMap, // tiling block
+      tile(32, 32),
+      reduceMapFission(),
+      reorderTiling,
+    )
+  }
+
   val parallel_fine: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
       fuseReduceMap,
@@ -214,54 +225,85 @@ class mmCPU_exploration extends test_util.Tests {
     )
   }
 
-  ignore("rewrite blocking step by step") {
+  //  ignore("rewrite blocking step by step") {
+  test("execute blocking") {
 
-    val mm_par = par.apply(mm).get
-    val gold = lowerToC.apply(mm_par).get
-
+    // create gold expression
+    //    val mm_par = par.apply(mm).get
+    //    val gold = lowerToC.apply(mm_par).get
     val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+
+    val mm_par = blocking.apply(mm).get
+
+    val gold = lowering.apply(mm_par).get
+
 
     val executor = CExecutor(
       lowering = lowering,
       output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
-      iterations = 1,
+      iterations = 101,
       goldExpression = gold,
       inputSize = N,
-      saveToDisk = true,
+      saveToDisk = false,
       timeout = 10000
     )
+    //
+    //    val blockingPartial1: Strategy[Rise] =
+    //      baseline `;`
+    //        (tile(32, 32) `@` outermost(mapNest(2)))
+    //    val blockingPartial2: Strategy[Rise] =
+    //      baseline `;`
+    //        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
+    //        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
+    //    val blockingPartial3: Strategy[Rise] =
+    //      baseline `;`
+    //        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
+    //        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+    //        (splitStrategy(4) `@` innermost(isFullyAppliedReduce))
+    //
+    //
+    //    val e0 = mm
+    //    val e1 = exploration.strategies.blockingExploration.blocking_step0.apply(e0).get
+    //    val e2 = exploration.strategies.blockingExploration.blocking_step1.apply(e1).get
+    //    val e3 = exploration.strategies.blockingExploration.blocking_step2.apply(e2).get
+    //    val e4 = exploration.strategies.blockingExploration.blocking_step3.apply(e3).get
 
-    val blockingPartial1: Strategy[Rise] =
-      baseline `;`
-        (tile(32, 32) `@` outermost(mapNest(2)))
-    val blockingPartial2: Strategy[Rise] =
-      baseline `;`
-        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
-        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
-    val blockingPartial3: Strategy[Rise] =
-      baseline `;`
-        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
-        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-        (splitStrategy(4) `@` innermost(isFullyAppliedReduce))
+    val blocked = blocking.apply(mm).get
 
+    var output = scala.collection.immutable.Seq.empty[ExplorationResult[Rise]]
 
-    val e0 = mm
-    val e1 = exploration.strategies.blockingExploration.blocking_step0.apply(e0).get
-    val e2 = exploration.strategies.blockingExploration.blocking_step1.apply(e1).get
-    val e3 = exploration.strategies.blockingExploration.blocking_step2.apply(e2).get
-    val e4 = exploration.strategies.blockingExploration.blocking_step3.apply(e3).get
+    Range(0, 10).foreach(elem => {
 
-    //    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq.empty[Strategy[Rise]])))
-    //    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step0))))
-    //    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step1))))
-    //    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step2))))
-    //    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(exploration.strategies.blockingExploration.blocking_step3))))
+      output = output :+ executor.execute(
+        Solution[Rise](
+          solutionSteps = scala.collection.immutable.Seq(
+            SolutionStep[Rise](
+              expression = blocked,
+              strategy = blocking,
+              location = 0
+            )
+          )
+        )
+      )
+    })
+
+    val min = output.map(elem => elem.performance.get).sorted.head
+    val max = output.map(elem => elem.performance.get).sorted.last
+    val variance = executor.variance(output.toSeq.map(elem => elem.performance.get))
+
+    println("\n")
+
+    println("Min: " + min)
+    println("Max: " + max)
+    println("Range: " + (max - min).toString)
+    println("Percent min/max: " + min / max)
+    println("Percent max/min: " + max / min)
+    println("Variance: " + variance)
 
   }
 
-
   ignore("rewrite step by step") {
-    //
+
     //    val mm_par = par.apply(mm).get
     //    val gold = lowerToC.apply(mm_par).get
     //
@@ -412,7 +454,7 @@ class mmCPU_exploration extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "C",
-      iterations = 1,
+      iterations = 11,
       threshold = 10
     )
 
@@ -425,21 +467,23 @@ class mmCPU_exploration extends test_util.Tests {
       neighborhood = NTreeLeafsDistanceChoice
     )
 
+    val neighborhood = nTreeChildren
+
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_parallel_fine_light",
+      name = "mmCPU_fine_light",
       output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine_light",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = parallel_fine_light,
+      strategies = fine_light,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)), // maybe call neighborhood deep
-      neighborhoodConfig = nTreeLeafsDistance, // what about window (mabye add a config here as well)
+      neighborhoodConfig = neighborhood, // what about window (mabye add a config here as well)
       // todo check whether this can be removed
       rewriteFunction = Some(
         exploration.rewriter.everywhere.neighbourhoodWide(
-          strategies = parallel_fine_light,
+          strategies = fine_light,
           slideWindow = 20
         )
       ),
