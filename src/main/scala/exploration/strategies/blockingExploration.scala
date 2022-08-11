@@ -37,7 +37,8 @@ object blockingExploration {
   //    rise.elevate.rules.lowering.specializeSeqReduce() // lower: reduce -> reduceSeq
   //    reduceOCL() // lower: reduceSeq -> oclReduceSeq(AddressSpace.Private)
 
-  val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+  //  val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+  val lowering = addCopiesForUnfusedReduce `@` everywhere `;` lowerToC
   //  val lowering = lowerToC
 
 
