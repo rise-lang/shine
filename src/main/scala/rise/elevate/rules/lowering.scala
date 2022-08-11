@@ -233,13 +233,20 @@ object lowering {
     normalize(ev)(lowering.oclReduceSeq)
 
   def addRequiredCopies()(implicit ev: Traversable[Rise]): Strategy[Rise] =
-  // `try`(oncetd(copyAfterReduce)) `;` LCNF `;` materializeInitOfReduce
     tryAll(copyAfterReduce) `;` DFNF() `;` materializeInitOfReduce()
 
   // todo gotta use a normalform for introducing copies! e.g., if we have two reduce primitives
   def lowerToC(implicit ev: Traversable[Rise]): Strategy[Rise] =
     addRequiredCopies() `;` specializeSeq()
 
+  // add copy to memory after map inside a reduce (we don't want to fuse)
+  @rule def addCopiesForUnfusedReduce(): Strategy[Rise] = {
+    case e@App(App(App(r@ReduceX(), f), init), App(App(map(), g), in)) =>
+      // inject toMem between map and reduce
+      Success(
+        (map(g)(in) |> toMem |> reduce(f)(init)) !: e.t
+      )
+  }
 
   // todo currently only works for mapSeq
   @rule def copyAfterReduce: Strategy[Rise] = e => {

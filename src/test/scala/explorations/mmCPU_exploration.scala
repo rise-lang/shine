@@ -2,6 +2,9 @@ package explorations
 
 import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
+import exploration.runner.DebugExecutor
+import exploration.strategies.blockingExploration
+import util.{assertSame, gen}
 //import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
 import elevate.heuristic_search.ExplorationResult
 import exploration._
@@ -23,6 +26,7 @@ import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.algorithmic.reorder
+import rise.elevate.strategies.algorithmic.reorder2
 import rise.elevate.strategies.lowering._
 import rise.elevate.strategies.normalForm._
 import rise.elevate.strategies.predicate._
@@ -33,7 +37,7 @@ import rise.elevate.strategies.traversal._
 class mmCPU_exploration extends test_util.Tests {
 
   // define expression
-  val N = 512
+  val N = 1024
 
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -46,6 +50,22 @@ class mmCPU_exploration extends test_util.Tests {
           ))
         ))
       ))
+
+  // unfused
+  val mm_lowered: Rise =
+    fun(ArrayType(N, ArrayType(N, f32)))(a =>
+      fun(ArrayType(N, ArrayType(N, f32)))(b =>
+        a |> rise.core.primitives.mapSeq(fun(ak =>
+          transpose(b) |> rise.core.primitives.mapSeq(fun(bk =>
+            zip(ak)(bk) |>
+              rise.core.primitives.mapSeq(fun(x => fst(x) * snd(x))) |> rise.core.primitives.toMem |> // required copy ?
+              rise.core.primitives.reduceSeq(add)(lf32(0.0f))
+          ))
+        ))
+      ))
+
+  // todo
+  // define lowering mm->mm_lowered
 
   // define search space
   @rule def baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
@@ -142,9 +162,12 @@ class mmCPU_exploration extends test_util.Tests {
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 3, 6, 4))
 
+  // warning: introduces fusion of reduce and map
+  // therefore fission in the and at everywhere
+  // but not if we applied the map fusion rule?
   @rule def reorderTiling: Strategy[Rise] =
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1, 2, 5, 6, 3, 4))
+      reorder(List(1, 2, 5, 6, 3, 4)) `;;` reduceMapFission() `@` everywhere
 
   @rule def reorderLoopPerm: Strategy[Rise] =
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
@@ -225,60 +248,109 @@ class mmCPU_exploration extends test_util.Tests {
     )
   }
 
-  //  ignore("rewrite blocking step by step") {
-  test("execute blocking") {
+  test("test unfused lowering") {
 
-    // create gold expression
-    //    val mm_par = par.apply(mm).get
-    //    val gold = lowerToC.apply(mm_par).get
+    // define different versions
+    val handwritten = mm_lowered
+    val rewritten = exploration.strategies.blockingExploration.lowering.apply(mm).get
+    val fused = lowerToC.apply(baseline(mm).get).get
+
+    // generate code from different version
+    val handwritten_codegen = gen.c.function("riseFun").asStringFromExpr(handwritten)
+    val rewritten_codegen = gen.c.function("riseFun").asStringFromExpr(rewritten)
+    val fused_codegen = gen.c.function("riseFun").asStringFromExpr(fused)
+
+    // count
+    val priceHandwritten = exploration.runner.performanceModel(handwritten)
+    val priceRewritten = exploration.runner.performanceModel(rewritten)
+    val priceFused = exploration.runner.performanceModel(fused)
+
+    // print
+    println("handwritten_codegen: \n" + handwritten_codegen)
+    println("rewritten_codegen: \n" + rewritten_codegen)
+    println("fused_codegen: \n" + fused_codegen)
+
+    println("Handwritten: " + priceHandwritten)
+    println("Rewritten: " + priceRewritten)
+    println("Fused: " + priceFused)
+
+    assert(priceRewritten == priceHandwritten)
+    assert(priceFused != priceHandwritten)
+  }
+
+  test("execute baseline") {
     val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-
-    val mm_par = blocking.apply(mm).get
-
-    val gold = lowering.apply(mm_par).get
-
+    val gold = lowering.apply(blocking.apply(mm).get).get
 
     val executor = CExecutor(
       lowering = lowering,
-      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
-      iterations = 101,
+      output = "/home/jo/development/experiments/exploration/thinkjo",
+      iterations = 11,
       goldExpression = gold,
       inputSize = N,
       saveToDisk = false,
       timeout = 10000
     )
-    //
-    //    val blockingPartial1: Strategy[Rise] =
-    //      baseline `;`
-    //        (tile(32, 32) `@` outermost(mapNest(2)))
-    //    val blockingPartial2: Strategy[Rise] =
-    //      baseline `;`
-    //        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
-    //        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
-    //    val blockingPartial3: Strategy[Rise] =
-    //      baseline `;`
-    //        (tile(32, 32) `@` outermost(mapNest(2))) `;;`
-    //        (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    //        (splitStrategy(4) `@` innermost(isFullyAppliedReduce))
-    //
-    //
-    //    val e0 = mm
-    //    val e1 = exploration.strategies.blockingExploration.blocking_step0.apply(e0).get
-    //    val e2 = exploration.strategies.blockingExploration.blocking_step1.apply(e1).get
-    //    val e3 = exploration.strategies.blockingExploration.blocking_step2.apply(e2).get
-    //    val e4 = exploration.strategies.blockingExploration.blocking_step3.apply(e3).get
-
-    val blocked = blocking.apply(mm).get
 
     var output = scala.collection.immutable.Seq.empty[ExplorationResult[Rise]]
 
-    Range(0, 10).foreach(elem => {
+    Range(0, 10).foreach(_ => {
 
       output = output :+ executor.execute(
         Solution[Rise](
           solutionSteps = scala.collection.immutable.Seq(
             SolutionStep[Rise](
-              expression = blocked,
+              expression = mm,
+              strategy = blocking,
+              location = 0
+            )
+          )
+        )
+      )
+    })
+
+    val min = output.map(elem => elem.performance.get).sorted.head
+    val max = output.map(elem => elem.performance.get).sorted.last
+    val variance = executor.variance(output.toSeq.map(elem => elem.performance.get))
+
+    println("\n")
+
+    println("Min: " + min)
+    println("Max: " + max)
+    println("Range: " + (max - min).toString)
+    println("Percent min/max: " + min / max)
+    println("Percent max/min: " + max / min)
+    println("Variance: " + variance)
+  }
+
+
+  test("execute baseline unfused") {
+
+    // ignore lowering
+    //    val lowering = elevate.core.strategies.basic.id[Rise]
+    val lowering = exploration.strategies.blockingExploration.lowering
+
+    val gold = mm_lowered
+
+    val executor = CExecutor(
+      lowering = lowering,
+      output = "/home/jo/development/experiments/exploration/thinkjo",
+      iterations = 11,
+      goldExpression = gold,
+      inputSize = N,
+      saveToDisk = false,
+      timeout = 10000
+    )
+
+    var output = scala.collection.immutable.Seq.empty[ExplorationResult[Rise]]
+
+    Range(0, 10).foreach(_ => {
+
+      output = output :+ executor.execute(
+        Solution[Rise](
+          solutionSteps = scala.collection.immutable.Seq(
+            SolutionStep[Rise](
+              expression = mm,
               strategy = blocking,
               location = 0
             )
@@ -302,48 +374,92 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-  ignore("rewrite step by step") {
+  test("rewrite step by step") {
 
     //    val mm_par = par.apply(mm).get
-    //    val gold = lowerToC.apply(mm_par).get
-    //
-    //    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
-    //
-    //    val executor = CExecutor(
-    //      lowering = lowering,
-    //      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
-    //      iterations = 10,
-    //      goldExpression = gold,
-    //      inputSize = N,
-    //      saveToDisk = true,
-    //      timeout = 10000
+    ////    val gold = lowerToC.apply(mm_par).get
+    ////
+    //////    val lowering = fuseReduceMap `@` everywhere `;` lowerToC
+    //////
+    ////////    val executor = CExecutor(
+    ////////      lowering = lowering,
+    ////////      output = "/home/jo/development/experiments/exploration/dodekarch/plot/rewrite_steps",
+    ////////      iterations = 10,
+    ////////      goldExpression = gold,
+    ////////      inputSize = N,
+    ////////      saveToDisk = true,
+    ////////      timeout = 10000
     //    )
+
+    // intermediate fission
+
+    println("mm: \n" + mm)
+
+    // fuse reduce map
+    val a0 = (DFNF()(default.RiseTraversable) `;` (fuseReduceMap `@` topDown[Rise])).apply(mm).get // fuse
+    val a1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(a0).get // tile
+    //    println("a1: \n" + a1)
+    val a2 = ((reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))).apply(a1).get // fission
+    println("a2: \n" + a2)
+    //    val a3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(a2).get // split
+    //    println("a3: \n" + a3)
+
+    //    val a4 = (reorder2(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(a3).get // reorder and don't fuse
+    //    println("a4: \n" + a4)
+
+    //    val a4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(a3).get // reorder and don't fuse
+    //    println("a4: \n" + a4)
+
+    //    val a5 = (reduceMapFission() `@` everywhere).apply(a4).get // normalize?
+    //    val a5 = normalize(fuseReduceMap `@).apply(a4).get
+    //    println("a5: \n" + a5)
     //
-    //    val e0 = (DFNF()(default.RiseTraversable) `;` (fuseReduceMap `@` topDown[Rise])).apply(mm).get
-    //    println("e0: " + executor.execute(Solution[Rise](e0, scala.collection.immutable.Seq(fuseReduceMap))))
+    //    val a6 = (fuseReduceMap `@` everywhere).apply(a5).get
+    //    println("a6: \n" + a6)
     //
-    //    val e1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(e0).get
-    //    println("e1: " + executor.execute(Solution[Rise](e1, scala.collection.immutable.Seq(tile(32, 32)))))
-    //
-    //    val e2 = ((reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))).apply(e1).get
-    //    println("e2: " + executor.execute(Solution[Rise](e2, scala.collection.immutable.Seq(reduceMapFission()))))
-    //
-    //    val e3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(e2).get
-    //    println("e3: " + executor.execute(Solution[Rise](e3, scala.collection.immutable.Seq(splitStrategy(4)))))
-    //
-    //    val e4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(e3).get
-    //    println("e4: " + executor.execute(Solution[Rise](e4, scala.collection.immutable.Seq(reorder(List(1, 2, 5, 6, 3, 4))))))
-    //
-    //    val e5 = ((vectorize(32) `@` innermost(isFullyAppliedMap)) `;` DFNF()).apply(e4).get
-    //    println("e5: " + executor.execute(Solution[Rise](e5, scala.collection.immutable.Seq(vectorize(32)))))
-    //
-    //    val e6 = ((parallel() `@` outermost(isApplied(isMap))) `;` DFNF()).apply(e5).get
-    //    println("e6: " + executor.execute(Solution[Rise](e6, scala.collection.immutable.Seq(parallel()))))
-    //
-    //    val e7 = (unroll `@` innermost(isReduceSeq)).apply(e6).get
-    //    println("e7: " + executor.execute(Solution[Rise](e7, scala.collection.immutable.Seq(unroll))))
+    //    // no intermediate fission
+    val b0 = mm // no fuse
+    val b1 = ((tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF()).apply(b0).get // tile
+    println("b1: \n" + b1)
+
+    val lowered = blockingExploration.lowering.apply(b1).get
+
+    val code = gen.c.function("riseFun").asStringFromExpr(lowered)
+    println("code: \n" + code)
+
+    //    val b2 = b1 // no fission necessary
+    //    val b3 = ((splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;` DFNF()).apply(b2).get // split
+    //    println("b3: \n" + b3)
+    //    val b4 = (reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF()).apply(b3).get // reorder
+    //    println("b4: \n" + b4)
+
+    // new search space
+    // fuse reduce map // fuse
+    // tile // tile somewhere
+    // fission because of blocked reduce
+    // split strategy + reordering // requires to be fissions introduces fusion
+    // optional parallel
 
   }
+
+  val fine_light_updated: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    // cannot at id, everywhere would crash it
+    scala.collection.immutable.Seq(
+      fuseReduceMap, // fuse (stand alone optimization)
+      tile(32, 32), // add fuse before and fission after // fuse should not be a requirement for (tile)
+      reduceMapFission(), // steps required to get reordering to work as we split the reduce into a blocked reduce (makes sense)
+      reorderTiling, // split + reordering (one step, split is not very generic)
+    )
+  }
+
+  // high level rules
+  // fuse
+  // tiling
+  // loop permutation // generic (tiled and untiled)
+  // parallel
+  // vectorize (on CPU does not make much difference (seems to, maybe check with -O0)
+  // unroll (might cause problems as OpenMP seems to handle parallel loops better
+
 
   test("mmCPU - parallel_fine_light") {
 
@@ -472,7 +588,7 @@ class mmCPU_exploration extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmCPU_fine_light",
-      output = "/home/jo/development/experiments/exploration/dodekarch/parallel_fine_light",
+      output = "/home/jo/development/experiments/exploration/thinkjo/parallel_fine_light",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,

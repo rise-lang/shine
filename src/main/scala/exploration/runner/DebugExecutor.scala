@@ -49,7 +49,7 @@ case class DebugExecutor(lowering: Strategy[Rise],
   // todo make this generic
   def checkSolution(solution: Solution[Rise]): Boolean = {
     //    runner.checkSolution(lowering, solution)
-    runner.checkSolutionC(lowering, solution)
+    runner.checkSolutionC(lowering)(solution)
   }
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
@@ -180,6 +180,20 @@ case class DebugExecutor(lowering: Strategy[Rise],
 
     Some(result)
   }
+
+  def performanceModel2(expression: Rise): Option[Double] = {
+    val p = gen.openmp.function("riseFun").fromExpr(expression)
+
+    // todo check case of multiple functions
+    val function = p.functions(0)
+
+    val result = price(function.code.body)
+
+    //    println("result: " + result)
+
+    Some(result)
+  }
+
 
   def priceExpr(expr: shine.C.AST.Expr): Double = {
     // todo implement this

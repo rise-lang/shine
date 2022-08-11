@@ -7,7 +7,7 @@ import rise.elevate.strategies.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.macros.StrategyMacro.strategy
 import rise.elevate.Rise
-import rise.elevate.rules.algorithmic.fuseReduceMap
+import rise.elevate.rules.algorithmic.{fuseReduceMap, reduceMapFission}
 import rise.elevate.rules.movement._
 import rise.elevate.rules.traversal.{argument, argumentOf, body, function}
 import rise.elevate.strategies.normalForm.{DFNF, RNF}
@@ -41,7 +41,7 @@ object algorithmic {
 
     e match {
       case App(primitives.map(), Lambda(x, gx)) => mapFirstFissionRec(x, fun(e => e), gx)
-      case _                                    => Failure(mapFirstFission)
+      case _ => Failure(mapFirstFission)
     }
   }
 
@@ -73,17 +73,27 @@ object algorithmic {
   //scalastyle:off
   def normForReorder(implicit ev: Traversable[Rise]): Strategy[Rise] =
     (splitBeforeMap `@` topDown[Rise]) `;;`
-    (fuseReduceMap `@` topDown[Rise]) `;;`
-    (fuseReduceMap `@` topDown[Rise]) `;;` RNF()
+      (fuseReduceMap `@` topDown[Rise]) `;;`
+      (fuseReduceMap `@` topDown[Rise]) `;;` RNF()
 
   @strategy def reorder(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = normForReorder `;` (reorderRec(l) `@` topDown[Rise])
+
+  def normForReorder2(implicit ev: Traversable[Rise]): Strategy[Rise] =
+    ((splitBeforeMap `@` topDown[Rise]) `;;`
+      (fuseReduceMap `@` topDown[Rise]) `;;`
+      (fuseReduceMap `@` topDown[Rise]) `;;`
+      RNF())
+
+  @strategy def reorder2(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = normForReorder2 `;` (reorderRec(l) `@` topDown[Rise]) `;` reduceMapFission() `@` everywhere
 
   @strategy def reorderRec(l: List[Int])(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
 
     def freduce(s: Strategy[Rise]): Strategy[Rise] =
       function(function(argumentOf(reduceSeq.primitive, body(body(s)))))
+
     def freduceX(s: Strategy[Rise]): Strategy[Rise] =
       argument(function(function(argumentOf(reduceSeq.primitive, body(body(s))))))
+
     def stepDown(s: Strategy[Rise]): Strategy[Rise] = freduceX(s) <+ freduce(s) <+ fmap(s)
 
     val isFullyAppliedReduceSeq: Strategy[Rise] = isApplied(isApplied(isApplied(isReduceSeq))) <+
@@ -94,23 +104,23 @@ object algorithmic {
     def moveReductionUp(pos: Int): Strategy[Rise] = {
       if (pos <= 1) id
       else
-        applyNTimes(pos-2)(stepDown)(function(liftReduce)) `;` DFNF() `;` RNF() `;`  moveReductionUp(pos-1)
+        applyNTimes(pos - 2)(stepDown)(function(liftReduce)) `;` DFNF() `;` RNF() `;` moveReductionUp(pos - 1)
     }
 
     l match {
       // nothing to reorder, go further down
-      case x :: xs if x == 1 => (stepDown(reorderRec(xs.map(y => if (y>x) y-1 else y ))))(e)
+      case x :: xs if x == 1 => (stepDown(reorderRec(xs.map(y => if (y > x) y - 1 else y)))) (e)
       // work to do
       case pos :: xs => (
-        (applyNTimes(pos-1)(stepDown)(isFullyAppliedReduceSeq) `;`
+        (applyNTimes(pos - 1)(stepDown)(isFullyAppliedReduceSeq) `;`
           // move reduction and normalize the AST
           moveReductionUp(pos) `;`
           // recurse and continue reordering
-          stepDown(reorderRec(xs.map(y => if (y>pos) y-1 else y )))) <+
+          stepDown(reorderRec(xs.map(y => if (y > pos) y - 1 else y)))) <+
           // other case: is it a map?
-          applyNTimes(pos-1)(stepDown)(isFullyAppliedMap) `;`
+          applyNTimes(pos - 1)(stepDown)(isFullyAppliedMap) `;`
           basic.fail
-        )(e)
+        ) (e)
       case Nil => id(e)
       case _ => Failure(reorderRec(l))
     }

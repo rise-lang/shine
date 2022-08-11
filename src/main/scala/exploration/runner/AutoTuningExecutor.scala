@@ -57,7 +57,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   override def checkSolution(solution: Solution[Rise]): Boolean = {
     //    val checkStart = System.currentTimeMillis()
     //    val result = exploration.runner.checkSolution(lowering, solution)
-    val result = exploration.runner.checkSolutionC(lowering, solution)
+    val result = exploration.runner.checkSolutionC(lowering)(solution)
     //    duration += System.currentTimeMillis() - checkStart
     //    println("checking duration total: " + duration.toDouble/1000 + " s")
     //    println("checking duration total: " + duration.toDouble/1000/60 + " m")
