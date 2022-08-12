@@ -11,7 +11,7 @@ class TestConfigFileGeneration extends test_util.Tests {
   // todo add test for other case
   test("distribute constraints") {
 
-    val e: Expr = util.expressions.convolution.convolutionOclGsLs(1024)
+    val e: Expr = autotune_util.expressions.convolution.convolutionOclGsLs(1024)
     val params = autotune.constraints.collectParameters(e)
     val constraints = autotune.constraints.collectConstraints(e, params)
 
@@ -106,7 +106,7 @@ class TestConfigFileGeneration extends test_util.Tests {
   }
 
   test("generateJSON conv") {
-    val e: Expr = util.expressions.convolution.convolution
+    val e: Expr = autotune_util.expressions.convolution.convolution
 
     val nIdent = e match {
       case DepLambda(NatKind, n: NatIdentifier, _) => n
@@ -121,7 +121,7 @@ class TestConfigFileGeneration extends test_util.Tests {
     val constraintsSubstituted = constraints.map(constraint => constraint.substitute(map.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     val tuner = Tuner(
-      hostCode = util.hostcode.convolution(32),
+      hostCode = autotune_util.hostcode.convolution(32),
       inputSizes = Seq(32),
       samples = 100,
       name = "RISE",
@@ -173,7 +173,7 @@ class TestConfigFileGeneration extends test_util.Tests {
 
     println("gold : \n" + gold)
 
-    assert(util.compareConfigFiles(json, gold))
+    assert(autotune_util.compareConfigFiles(json, gold))
   }
 
   test("generateJSON mm"){
@@ -244,7 +244,7 @@ class TestConfigFileGeneration extends test_util.Tests {
         |""".stripMargin
     // scalastyle:on
 
-    val e: Expr = util.expressions.mm.mmOclGsLsWrapRanges
+    val e: Expr = autotune_util.expressions.mm.mmOclGsLsWrapRanges
 
     // todo find a generic solution?
     val (nIdent, mIdent, oIdent) = e match {
@@ -270,7 +270,7 @@ class TestConfigFileGeneration extends test_util.Tests {
     })
 
     val tuner = Tuner(
-      hostCode = util.hostcode.convolution(32),
+      hostCode = autotune_util.hostcode.convolution(32),
       samples = 100,
       name = "RISE",
       output = "autotuning",
@@ -286,7 +286,7 @@ class TestConfigFileGeneration extends test_util.Tests {
 
     println("gold : \n" + gold)
 
-    assert(util.compareConfigFiles(json, gold))
+    assert(autotune_util.compareConfigFiles(json, gold))
 
   }
 }

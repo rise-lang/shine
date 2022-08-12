@@ -14,7 +14,7 @@ import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize}
 import play.api.libs.json.Json
 
-package object util {
+package object autotune_util {
 
   def compareConfigFiles(file: String, gold: String): Boolean = {
     Json.parse(file).equals(Json.parse(gold))

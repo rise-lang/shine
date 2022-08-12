@@ -8,7 +8,7 @@ import rise.core.types.{Nat, NatIdentifier, NatKind, TuningParameter}
 class TestConstraints extends test_util.Tests {
 
   test("collect constraints") {
-    val e: Expr = util.expressions.convolution.convolutionOclGsLsWrap
+    val e: Expr = autotune_util.expressions.convolution.convolutionOclGsLsWrap
     autotune.constraints.collectConstraints(e,
       autotune.constraints.collectParameters(e))
       .foreach(println)
@@ -16,7 +16,7 @@ class TestConstraints extends test_util.Tests {
 
   test("mm kernel constraints") {
 
-    val e: Expr = util.expressions.mm.mmOclGsLsWrap
+    val e: Expr = autotune_util.expressions.mm.mmOclGsLsWrap
 
     val (nIdent, mIdent, oIdent) = e match {
       case DepLambda(NatKind, n: NatIdentifier, DepLambda(NatKind, m: NatIdentifier, DepLambda(NatKind, o: NatIdentifier, _))) =>

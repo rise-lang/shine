@@ -11,7 +11,7 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 class TestAutotuning extends test_util.Tests {
 
   test("collect parameters") {
-    val params = autotune.constraints.collectParameters(util.expressions.convolution.convolutionOclGsLsWrap)
+    val params = autotune.constraints.collectParameters(autotune_util.expressions.convolution.convolutionOclGsLsWrap)
     assert(params.find(IsTuningParameter("vec")).get.range == RangeAdd(1, 32, 1))
     assert(params.find(IsTuningParameter("tile")).get.range == RangeAdd(4, 32, 1))
     assert(params.find(IsTuningParameter("ls0")).get.range == RangeUnknown)
@@ -22,7 +22,7 @@ class TestAutotuning extends test_util.Tests {
   }
 
   test("substitute parameters") {
-    val e: Expr = util.expressions.convolution.convolution(32)
+    val e: Expr = autotune_util.expressions.convolution.convolution(32)
     val constraints = autotune.constraints.collectConstraints(e,
       autotune.constraints.collectParameters(e))
     println("constraints: \n" + constraints)
@@ -56,20 +56,20 @@ class TestAutotuning extends test_util.Tests {
   }
 
   test("wrapOclRun") {
-    val wrapped = wrapOclRun(LocalSize(1), GlobalSize(32))(util.expressions.convolution.convolution)
-    assert(util.expressions.convolution.convolutionOcl.toExpr =~= wrapped)
+    val wrapped = wrapOclRun(LocalSize(1), GlobalSize(32))(autotune_util.expressions.convolution.convolution)
+    assert(autotune_util.expressions.convolution.convolutionOcl.toExpr =~= wrapped)
 
     val e = (wrapped: ToBeTyped[Expr]) (32)
-    assert(util.expressions.convolution.convolutionOcl(32).toExpr =~= e.toExpr)
+    assert(autotune_util.expressions.convolution.convolutionOcl(32).toExpr =~= e.toExpr)
   }
 
   test("search") {
     // test full tuning run
-    val e: Expr = util.expressions.convolution.convolutionOcl
+    val e: Expr = autotune_util.expressions.convolution.convolutionOcl
 
     val tuner = Tuner(
       name = "convolution",
-      hostCode = util.hostcode.convolution(32),
+      hostCode = autotune_util.hostcode.convolution(32),
       inputSizes = Seq(32),
       output = "autotuning/convolution", // folder to store output files in
       saveToFile = true
@@ -87,10 +87,10 @@ class TestAutotuning extends test_util.Tests {
   // test Hypermapper constraints support
   // needs access to hypermapper_dev repository
   ignore("search experimental") {
-    val e: Expr = util.expressions.convolution.convolutionOclGsLs(1024)
+    val e: Expr = autotune_util.expressions.convolution.convolutionOclGsLs(1024)
 
     val tuner = Tuner(
-      hostCode = util.hostcode.convolution(1024),
+      hostCode = autotune_util.hostcode.convolution(1024),
       samples = 100,
       name = "RISE",
       output = "autotuning",
