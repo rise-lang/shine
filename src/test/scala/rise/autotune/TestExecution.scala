@@ -28,12 +28,12 @@ class TestExecution extends test_util.Tests {
       TuningParameter("tile") -> (16: Nat)
     )
 
-    val e: Expr = util.expressions.convolution.convolutionOcl
+    val e: Expr = autotune_util.expressions.convolution.convolutionOcl
     val e2 = rise.core.substitute.natsInExpr(goodParameters, e)
 
     val result = autotune.execution.execute(
       expression = e2,
-      hostCode = util.hostcode.convolution(32),
+      hostCode = autotune_util.hostcode.convolution(32),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
@@ -47,7 +47,7 @@ class TestExecution extends test_util.Tests {
     assertThrows[java.lang.AssertionError] {
       autotune.execution.execute(
         expression = e2,
-        hostCode = util.hostcode.convolution(32),
+        hostCode = autotune_util.hostcode.convolution(32),
         timeouts = Timeouts(5000, 5000, 5000),
         executionIterations = 0,
         speedupFactor = 100,
@@ -56,11 +56,11 @@ class TestExecution extends test_util.Tests {
   }
 
   test("execute scal") {
-    val e: Expr = util.expressions.scal.scalOcl(1024)
+    val e: Expr = autotune_util.expressions.scal.scalOcl(1024)
 
     val result = autotune.execution.execute(
       expression = e,
-      hostCode = util.hostcode.scal(1024),
+      hostCode = autotune_util.hostcode.scal(1024),
       timeouts = Timeouts(5000, 5000, 5000),
       executionIterations = 10,
       speedupFactor = 100,
@@ -72,7 +72,7 @@ class TestExecution extends test_util.Tests {
   }
 
   test("execute mm"){
-    val mm: Expr = util.expressions.mm.mmOclGsLsWrap
+    val mm: Expr = autotune_util.expressions.mm.mmOclGsLsWrap
 
     val params0:Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
@@ -104,7 +104,7 @@ class TestExecution extends test_util.Tests {
 
     paramSet.foreach(params => {
 
-      val result = executeConfig(mm, params, util.hostcode.mm(1024, 1024, 1024))
+      val result = executeConfig(mm, params, autotune_util.hostcode.mm(1024, 1024, 1024))
 
       println("result: " + result.runtime)
 
@@ -118,7 +118,7 @@ class TestExecution extends test_util.Tests {
 
   test("generate huge amount of code") {
     // expression
-    val e: Expr = util.expressions.convolution.convolutionOclGsLs(1024)
+    val e: Expr = autotune_util.expressions.convolution.convolutionOclGsLs(1024)
 
     // define parameters to break the code-gen
     val parameters: Map[Nat, Nat] = Map(
@@ -137,7 +137,7 @@ class TestExecution extends test_util.Tests {
     // WARNING: timeout does not stop the thread, it only returns to the host thread
     val result = autotune.execution.execute(
       eWithParams,
-      util.hostcode.convolution(1024),
+      autotune_util.hostcode.convolution(1024),
       Timeouts(5000, 5000, 5000),
       10,
       100,

@@ -16,6 +16,7 @@ import util.gen.c.function
 class dot extends test_util.Tests {
 
   private def xsT(N: Nat) = ArrayType(N, f32)
+
   private def ysT(N: Nat) = ArrayType(N, f32)
 
   private val mulT = fun(x => fst(x) * snd(x))
@@ -42,7 +43,7 @@ class dot extends test_util.Tests {
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
     assert(phrase.t `<=`
-      N ->: (expT(N`.`dt, read) ->: expT(N`.`dt, read) ->: expT(dt, write)))
+      N ->: (expT(N `.` dt, read) ->: expT(N `.` dt, read) ->: expT(dt, write)))
   }
 
   // C
@@ -56,12 +57,12 @@ class dot extends test_util.Tests {
 
     val dotCPUVector1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
-      |> split(2048 * 64)
-      |> mapPar(
+        |> split(2048 * 64)
+        |> mapPar(
         split(2048) >>
-        mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
-        )
+          mapSeq(
+            reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
+          )
       ) |> join |> asScalar
     )))
 
@@ -74,12 +75,12 @@ class dot extends test_util.Tests {
 
     val intelDerivedNoWarpDot1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
-      |> split(8192)
-      |> mapPar(
+        |> split(8192)
+        |> mapPar(
         split(8192) >>
-        mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
-        )
+          mapSeq(
+            reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(lf32(0.0f)))
+          )
       ) |> join |> asScalar
     )))
 
@@ -91,13 +92,13 @@ class dot extends test_util.Tests {
 
     val dotCPU1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs)(ys) |>
-      split(2048 * 128) |>
-      mapPar(
-        split(2048) >>
-        mapSeq(
-          reduceSeq(fun(a => fun(x => a + mulT(x))))(lf32(0.0f))
-        )
-      ) |> join
+        split(2048 * 128) |>
+        mapPar(
+          split(2048) >>
+            mapSeq(
+              reduceSeq(fun(a => fun(x => a + mulT(x))))(lf32(0.0f))
+            )
+        ) |> join
     )))
 
     gen.openmp.function.asStringFromExpr(dotCPU1)
@@ -108,109 +109,111 @@ class dot extends test_util.Tests {
 
     val dotCPU2 = depFun((n: Nat) => fun(xsT(n))(in =>
       in |>
-      split(128) |>
-      mapPar(
-        split(128) >>
-        mapSeq(
-          reduceSeq(add)(lf32(0.0f))
-        )
-      ) |> join
+        split(128) |>
+        mapPar(
+          split(128) >>
+            mapSeq(
+              reduceSeq(add)(lf32(0.0f))
+            )
+        ) |> join
     ))
 
     gen.openmp.function.asStringFromExpr(dotCPU2)
   }
 
-  { // OpenCL
-    import rise.openCL.DSL._
-    import rise.openCL.primitives.oclReduceSeq
+  //  { // OpenCL
 
-    test("Intel derived no warp dot product 1 compiles to" +
-      "syntactically correct OpenCL") {
-      val intelDerivedNoWarpDot1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
+  import rise.openCL.DSL._
+  import rise.openCL.primitives.oclReduceSeq
+
+  test("Intel derived no warp dot product 1 compiles to" +
+    "syntactically correct OpenCL") {
+    val intelDerivedNoWarpDot1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
         split(8192) |>
         mapWorkGroup(
           split(8192) >>
-          mapLocal(
-            oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))
-            (vectorFromScalar(lf32(0.0f)))
-          )
+            mapLocal(
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))
+              (vectorFromScalar(lf32(0.0f)))
+            )
         ) |> join |> asScalar
-      )))
+    )))
 
-      gen.opencl.kernel.fromExpr(intelDerivedNoWarpDot1)
-    }
+    gen.opencl.kernel.fromExpr(intelDerivedNoWarpDot1)
+  }
 
-    test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
-      val dotCPU1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(xs)(ys) |>
+  test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
+    val dotCPU1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(xs)(ys) |>
         split(2048 * 128) |>
         mapWorkGroup(
           split(2048) >>
-          mapLocal(
-            oclReduceSeq(AddressSpace.Private)(
-              fun(a => fun(x => a + mulT(x)))
-            )(lf32(0.0f))
-          )
+            mapLocal(
+              oclReduceSeq(AddressSpace.Private)(
+                fun(a => fun(x => a + mulT(x)))
+              )(lf32(0.0f))
+            )
         ) |> join
-      )))
+    )))
 
-      gen.opencl.kernel.fromExpr(dotCPU1)
-    }
+    gen.opencl.kernel.fromExpr(dotCPU1)
+  }
 
-    test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
-      val dotCPU2 = depFun((n: Nat) => fun(xsT(n))(in =>
-        in |>
+  test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
+    val dotCPU2 = depFun((n: Nat) => fun(xsT(n))(in =>
+      in |>
         split(128) |>
         mapWorkGroup(
           split(128) >>
-          mapLocal(
-            oclReduceSeq(AddressSpace.Private)(
-              fun(a => fun(x => a + x))
-            )(lf32(0.0f))
-          )
+            mapLocal(
+              oclReduceSeq(AddressSpace.Private)(
+                fun(a => fun(x => a + x))
+              )(lf32(0.0f))
+            )
         ) |> join
-      ))
+    ))
 
-      gen.opencl.kernel.fromExpr(dotCPU2)
-    }
+    gen.opencl.kernel.fromExpr(dotCPU2)
+  }
 
-    test("Dot product 1 compiles to syntactically correct OpenCL") {
-      val dotProduct1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(xs)(ys) |>
+  test("Dot product 1 compiles to syntactically correct OpenCL") {
+    val dotProduct1 = depFun((n: Nat) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(xs)(ys) |>
         split(2048 * 128) |>
         mapWorkGroup(
           reorderWithStride(128) >>
-          split(2048) >>
-          mapLocal(
-            oclReduceSeq(AddressSpace.Private)(
-              fun(a => fun(x => a + mulT(x)))
-            )(lf32(0.0f))
-          )
+            split(2048) >>
+            mapLocal(
+              oclReduceSeq(AddressSpace.Private)(
+                fun(a => fun(x => a + mulT(x)))
+              )(lf32(0.0f))
+            )
         ) |> join
-      )))
+    )))
 
-      gen.opencl.kernel.fromExpr(dotProduct1)
-    }
+    gen.opencl.kernel.fromExpr(dotProduct1)
+  }
 
-    test("Dot product 2 compiles to syntactically correct OpenCL") {
-      val dotProduct2 = depFun((n: Nat) => fun(xsT(n))(in =>
-        in |>
+  test("Dot product 2 compiles to syntactically correct OpenCL") {
+    val dotProduct2 = depFun((n: Nat) => fun(xsT(n))(in =>
+      in |>
         split(128) |>
         mapWorkGroup(
           split(2) >>
-          toLocalFun(
-            mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
-          ) >>
-          toLocalFun(
-            oclIterate(AddressSpace.Local)(6)(depFun((_: Nat) =>
-              split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
-            ))
-          ) >> mapLocal(fun(x => x))
+            toLocalFun(
+              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
+            ) >>
+            toLocalFun(
+              oclIterate(AddressSpace.Local)(6)(depFun((_: Nat) =>
+                split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
+              ))
+            ) >> mapLocal(fun(x => x))
         ) |> join
-      ))
+    ))
 
-      gen.opencl.kernel.fromExpr(dotProduct2)
-    }
+    println("code: \n" + gen.opencl.kernel.fromExpr(dotProduct2))
+    println("code: \n" + gen.opencl.kernel.asStringFromExpr(dotProduct2))
   }
+  //  }
 }

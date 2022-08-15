@@ -343,8 +343,8 @@ case class CExecutor(
           s"""
         float* ${decl.name} = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${decl.name}[i] = (rand() % 100) - 50;
-          //${decl.name}[i] = i;
+//          ${decl.name}[i] = (rand() % 100) - 50;
+          ${decl.name}[i] = i + 1;
         }
         """
         codeEnd +=
@@ -357,8 +357,8 @@ case class CExecutor(
           s"""
         float* ${decl.name} = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${decl.name}[i] = (rand() % 100) - 50;
-          //${decl.name}[i] = i;
+//          ${decl.name}[i] = (rand() % 100) - 50;
+          ${decl.name}[i] = i + 1;
         }
         """
         codeEnd +=
@@ -580,8 +580,8 @@ int main(int argc, char** argv) {
         s"${(timeout * 1).toDouble / 1000.toDouble}s " +
         s"$bin" !!).toDouble
 
-      println("runtime:(" + i + "): " + runtimes(i))
-      println("globalBest: " + globalBest)
+      //      println("runtime:(" + i + "): " + runtimes(i))
+      //      println("globalBest: " + globalBest)
       // check if we have to skip this execution round
       globalBest match {
         case Some(value) =>

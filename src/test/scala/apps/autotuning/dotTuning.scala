@@ -99,6 +99,15 @@ class dotTuning extends test_util.Tests {
   test("execute dot") {
 
 
+    // create kernel from dot expression
+
+
+    val kernel = util.gen.opencl.kernel.asStringFromExpr(dot)
+    println("kernel: \n" + kernel)
+
+
+//      gen.opencl. .fromExpr(expression))
+
     // todo check dependend fun and normal fun (injecting parametrs)
     // todo check kernel args
 
