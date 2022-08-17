@@ -4,7 +4,13 @@ import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
 import exploration.runner.DebugExecutor
 import exploration.strategies.blockingExploration
+import rise.autotune.{AutoTuningError, EXECUTION_ERROR, HostCode, Timeouts}
+import rise.core.Expr
+import rise.core.types.{Nat, TuningParameter}
 import util.{assertSame, gen}
+
+import scala.collection.immutable
+import scala.collection.immutable.Map
 //import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
 import elevate.heuristic_search.ExplorationResult
 import exploration._
@@ -37,7 +43,7 @@ import rise.elevate.strategies.traversal._
 class mmCPU_exploration extends test_util.Tests {
 
   // define expression
-  val N = 1024
+  val N = 128
 
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -167,7 +173,8 @@ class mmCPU_exploration extends test_util.Tests {
   // but not if we applied the map fusion rule?
   @rule def reorderTiling: Strategy[Rise] =
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1, 2, 5, 6, 3, 4)) `;;` reduceMapFission() `@` everywhere
+      reorder(List(1, 2, 5, 6, 3, 4))
+  //  `;;` reduceMapFission() `@` everywhere
 
   @rule def reorderLoopPerm: Strategy[Rise] =
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
@@ -245,6 +252,12 @@ class mmCPU_exploration extends test_util.Tests {
       reduceMapFission(),
       reorderTiling,
       mapParCompute() // map par block
+    )
+  }
+
+  val tile_only: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      blockingExploration.tiling2
     )
   }
 
@@ -374,6 +387,7 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
+
   test("rewrite step by step") {
 
     //    val mm_par = par.apply(mm).get
@@ -461,9 +475,225 @@ class mmCPU_exploration extends test_util.Tests {
   // unroll (might cause problems as OpenMP seems to handle parallel loops better
 
 
+  test("replace parameters and execute") {
+
+    // use tile rule and everywhere thing
+    val tiling = blockingExploration.tiling2
+    val e = (fuseReduceMap `@` everywhere).apply(mm).get
+    println("e: \n" + e)
+
+    println("by hand: ")
+    val byHand = (tiling `@` topDown[Rise]).apply(e).get
+    val loweredByHand = blockingExploration.lowering.apply(byHand).get
+
+    // get tuning parameters
+    val paramsByHand = rise.autotune.constraints.collectParameters(loweredByHand)
+
+    // get constraints
+    val constraintsByHand = rise.autotune.constraints.collectConstraints(loweredByHand, paramsByHand)
+
+    println("paramsByHand: " + paramsByHand.map(elem => elem.toString + " - " + elem.range.toString).mkString("[", ", ", "]"))
+    paramsByHand.foreach(println)
+    println("constraints: ")
+    constraintsByHand.foreach(constraint => {
+      println(constraint)
+    })
+
+    // replace tuning params with values
+    val params: Map[Nat, Nat] = scala.collection.immutable.Map(
+      TuningParameter("tile165") -> (32: Nat),
+      TuningParameter("tile166") -> (32: Nat),
+    )
+
+    val replacedByHand = rise.core.substitute.natsInExpr(params, loweredByHand)
+
+    println("params: ")
+    params.foreach(println)
+    println("replacedByHand: \n" + replacedByHand)
+
+    // now execute
+
+    //    System.exit(0)
+
+    // tune this expression
+    val executor = CExecutor(
+      lowering = blockingExploration.lowering,
+      goldExpression = mm_lowered,
+      iterations = 50,
+      inputSize = 1024,
+      threshold = 10,
+      timeout = 10000,
+      output = "autotuning",
+      saveToDisk = false
+    )
+
+    val result = executor.execute(replacedByHand)
+
+    val tiled = blockingExploration.lowering.apply(
+      (blockingExploration.tiling `@` topDown[Rise]).apply(e).get
+    ).get
+    val result2 = executor.execute(tiled)
+
+    //
+    //    val execute: Expr => (
+    //      Either[AutoTuningError, Double],
+    //        Option[Double],
+    //        Option[Double],
+    //        Option[Double]
+    //      ) = e => {
+    //
+    //      val executionStart = System.currentTimeMillis()
+    //      val result = executor.execute(e)
+    //
+    //      // todo move to other thing
+    //      val runtime: Either[AutoTuningError, Double] = result match {
+    //        case Some(value) => Right(value)
+    //        case None => Left(AutoTuningError(EXECUTION_ERROR, None))
+    //      }
+    //
+    //      // todo measure these properly
+    //      val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
+    //      val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
+    //      val executionTime = (System.currentTimeMillis() - executionStart).toDouble
+    //
+    //      (runtime,
+    //        Some(codegenTime),
+    //        Some(compilationTime),
+    //        Some(executionTime))
+    //    }
+    //
+    //    val tuner = rise.autotune.Tuner(
+    //      hostCode = HostCode("", "", ""),
+    //      inputSizes = scala.collection.immutable.Seq(1024),
+    //      samples = 1,
+    //      name = "mmCPU_tuning",
+    //      hmConstraints = true,
+    //      executor = Some(execute),
+    //    )
+
+    //    val tuning_result = rise.autotune.search(tuner)(loweredByHand)
+    //    println("tuning_result: " + tuning_result)
+
+
+  }
+
+  test("test parameters and everywhere") {
+
+    // use tile rule and everywhere thing
+    val tiling = blockingExploration.tiling2
+    val e = (fuseReduceMap `@` everywhere).apply(mm).get
+    println("e: \n" + e)
+
+    // get tuning parameters
+    val paramsE = rise.autotune.constraints.collectParameters(e)
+    println("paramsE: " + paramsE)
+
+    println("by hand: ")
+    val byHand = (tiling `@` topDown[Rise]).apply(e).get
+    val loweredByHand = blockingExploration.lowering.apply(byHand).get
+    //    val eLowered = blockingExploration.lowering.apply(e).get
+
+    println(hashProgram(byHand))
+    println(byHand)
+    println(loweredByHand)
+
+    // tune this expression
+    val executor = CExecutor(
+      lowering = blockingExploration.lowering,
+      goldExpression = mm_lowered,
+      iterations = 5,
+      inputSize = 128,
+      threshold = 10,
+      timeout = 10000,
+      output = "autotuning",
+      saveToDisk = false
+    )
+
+    val execute: Expr => (
+      Either[AutoTuningError, Double],
+        Option[Double],
+        Option[Double],
+        Option[Double]
+      ) = e => {
+
+      //      val strategies = immutable.Seq.empty[Strategy[Rise]]
+
+      val executionStart = System.currentTimeMillis()
+
+      //      val sol = Solution[Rise](
+      //        solutionSteps = scala.collection.immutable.Seq(
+      //          SolutionStep[Rise](
+      //            expression = e,
+      //            strategy = null,
+      //            location = -1
+      //          )
+      //        )
+      //      )
+
+      val result = executor.execute(e)
+
+      // todo move to other thing
+      val runtime: Either[AutoTuningError, Double] = result match {
+        case Some(value) => Right(value)
+        case None => Left(AutoTuningError(EXECUTION_ERROR, None))
+      }
+
+      // todo measure these properly
+      val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
+      val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
+      val executionTime = (System.currentTimeMillis() - executionStart).toDouble
+
+      (runtime,
+        Some(codegenTime),
+        Some(compilationTime),
+        Some(executionTime))
+    }
+
+
+    val tuner = rise.autotune.Tuner(
+      hostCode = HostCode("", "", ""),
+      inputSizes = scala.collection.immutable.Seq(128),
+      samples = 20,
+      name = "mmCPU_tuning",
+      timeouts = Timeouts(10000, 10000, 10000),
+      hmConstraints = true,
+      executor = Some(execute),
+      saveToFile = true
+    )
+
+    val tuning_result = rise.autotune.search(tuner)(loweredByHand)
+    println("tuning_result: " + tuning_result)
+
+
+    // get tuning parameters
+    val paramsByHand = rise.autotune.constraints.collectParameters(byHand)
+    println("paramsByHand: " + paramsByHand)
+
+    println("everywhere: ")
+
+    val rewritten = exploration.rewriter.everywhere.everywhere(tiling)(e)
+
+    println("rewritten: ")
+    rewritten.foreach(elem => {
+      println(hashProgram(elem))
+      println(elem)
+      // get tuning parameters
+      val paramsElem = rise.autotune.constraints.collectParameters(elem)
+      println(paramsElem)
+      val loweredElem = blockingExploration.lowering.apply(elem).get
+      println(loweredElem)
+    })
+
+    // adding parameters automatically seems to work
+    // tunable(strategy) seems to work for everywhere
+
+  }
+
+
   test("mmCPU - parallel_fine_light") {
 
     val e = mm
+    //    val e = (blockingExploration.tiling2 `@` topDown[Rise]).apply(mm).get
 
     val ii = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -541,7 +771,7 @@ class mmCPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 5,
+        depth = 3,
         samples = 10000,
       )
     )
@@ -574,6 +804,12 @@ class mmCPU_exploration extends test_util.Tests {
       threshold = 10
     )
 
+    val executor2 = ExecutorConfig(
+      name = "AutoTuning",
+      iterations = 10,
+      threshold = 10
+    )
+
     // define neighborhood style
     val nTreeChildren = NeighborhoodConfig(
       neighborhood = NTreeChildrenChoice
@@ -599,7 +835,7 @@ class mmCPU_exploration extends test_util.Tests {
       // todo check whether this can be removed
       rewriteFunction = Some(
         exploration.rewriter.everywhere.neighbourhoodWide(
-          strategies = fine_light,
+          strategies = tile_only,
           slideWindow = 20
         )
       ),

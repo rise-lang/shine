@@ -397,7 +397,15 @@ package object exploration {
         printEvery = explorer.printEvery,
         expert = explorer.expert
       )
-      case "AutoTuning" => new AutoTuningExecutor(explorer.lowering, gold, explorer.hostCode, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(
+        lowering = explorer.lowering,
+        goldExpression = gold,
+        hostCode = explorer.hostCode,
+        iterations = explorer.executor.iterations,
+        inputSize = explorer.inputSize,
+        threshold = explorer.executor.threshold,
+        output = executorOutput
+      )
       case "Debug" => new DebugExecutor(explorer.lowering, gold, explorer.executor.iterations, explorer.inputSize, explorer.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")

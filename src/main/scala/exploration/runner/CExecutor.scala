@@ -159,6 +159,120 @@ case class CExecutor(
 
   //  override def plot(): Unit = ???
 
+  def execute(expression: Rise): Option[Double] = {
+    // execute lowered expression rather than solution
+    // copy code from other execute function
+
+    // do we need all the error levels?
+
+
+    // initialize error level
+    errorLevel = LoweringError
+
+    // lower solution
+    //    val lowered = lowering.apply(solution.expression())
+
+    // update error level
+    errorLevel = CodeGenerationError
+
+    //generate executable program (including host code)
+    var performanceValue: Option[Double] = None
+    var executionStatistics: Option[ExecutionStatistics] = None
+    var errorMessage: Option[String] = None
+
+
+    var code = ""
+
+    try {
+
+      //      println("expression: " + expression)
+
+      code = genExecutableCode(expression)
+
+      errorLevel = CompilationError
+
+      // compile
+      try {
+        val bin = compile(code)
+
+        // execute
+        try {
+          errorLevel = ExecutionError
+          val returnValue = execute(bin, iterations, threshold)
+          executionStatistics = Some(returnValue)
+
+          // check for new best to replace gold
+          println(s"[${counter}] ${returnValue} ms")
+          best match {
+            case Some(value) =>
+              if (returnValue.performanceValue < value) {
+                best = Some(returnValue.performanceValue)
+                gold = gen.openmp.function("compute_gold").fromExpr(expression)
+                println(s"[${counter}] use new gold with runtime: " + best.get)
+              }
+            case _ => best = Some(returnValue.performanceValue)
+          }
+
+          performanceValue = Some(returnValue.performanceValue)
+          errorLevel = ExecutionSuccess
+
+        } catch {
+          case e: Throwable =>
+            println("e: " + e)
+            // handle different execution errors
+            e.getMessage.substring(20).toInt match {
+              case 124 =>
+                println(s"[${counter}] timeout")
+                errorMessage = Some("124 - Timeout")
+                errorLevel = ExecutionTimeout
+                performanceValue = None
+              case 11 =>
+                println(s"[${counter}] execution crashed")
+                System.exit(1)
+                errorLevel = ExecutionError
+                performanceValue = None
+              case 255 =>
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("255 - execution failed")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              case 134 =>
+                println(s"[${counter}] execution failed")
+                errorMessage = Some("invalid pointer\ntimeout: the monitored command dumped core")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              case 139 =>
+                println(s"[${counter}] execution failed with segmentation fault")
+                errorMessage = Some("Segmentation fault")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              case _ =>
+                println(s"[${counter}] execution failed with unknown error")
+                errorMessage = Some("Unknown error")
+                errorLevel = ExecutionFail
+                performanceValue = None
+            }
+        }
+      } catch {
+        case e: Throwable =>
+          errorMessage = Some("compiling error: \n" + e.toString)
+          println(s"[${counter}] compiling error")
+      }
+
+    } catch {
+      case e: Throwable =>
+        println(s"[${counter}] code-generation error")
+        println(e)
+
+        errorMessage = Some("code generation error")
+        code = e.toString
+    }
+
+    // don't save to disk
+
+    performanceValue
+  }
+
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     //    println("[Executor] : strategy length: " + solution.strategies.size)
     //    solution.strategies.foreach(elem => {

@@ -144,7 +144,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     val result = executor.execute(sol).performance
 
-
     // todo move to other thing
     val runtime: Either[AutoTuningError, Double] = result match {
       case Some(value) => Right(value)
@@ -201,6 +200,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // todo make this hostcode option for tuner
 
+    println("create tuner")
+
     // create tuner
     val tuner = Tuner(
       hostCode = HostCode("", "", ""), // we don't need that
@@ -218,6 +219,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       //      hmConstraints = false,
       saveToFile = false
     )
+
+    println("lower expression")
 
     // lower expression
     val loweringDurationStart = System.currentTimeMillis()
@@ -247,6 +250,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         //        println("params: ")
         //        params.foreach(println)
 
+        println("search")
 
         // run tuning
         val tuningDurationStart = System.currentTimeMillis()

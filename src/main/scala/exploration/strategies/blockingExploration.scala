@@ -151,6 +151,8 @@ object blockingExploration {
 
   @rule def tiling: Strategy[Rise] = tile(32, 32)
 
+  @rule def tiling2: Strategy[Rise] = tile()
+
   val rules: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
     tiling,
