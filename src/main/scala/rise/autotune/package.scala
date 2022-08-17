@@ -589,7 +589,7 @@ package object autotune {
     //    })
 
     // write header
-    var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString(", ")
+    var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString(",")
 
     header += "runtime" + ","
     header += "timestamp" + ","
@@ -606,8 +606,8 @@ package object autotune {
       // write parameter
       sample.parameters.foreach(param => {
         param._2 match {
-          case ClassicParameter(value) => content += value.toString + ", "
-          case PermutationParameter(value) => content += value.mkString("\"(", ",", ")\"") + ", "
+          case ClassicParameter(value) => content += value.toString + ","
+          case PermutationParameter(value) => content += value.mkString("\"(", ",", ")\"") + ","
         }
       })
 

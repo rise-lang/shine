@@ -537,7 +537,7 @@ case class CExecutor(
         float* ${decl.name} = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
 //          ${decl.name}[i] = (rand() % 100) - 50;
-          ${decl.name}[i] = i+1;
+          ${decl.name}[i] = i + 1;
         }
         """
         codeEnd +=
@@ -551,7 +551,7 @@ case class CExecutor(
         float* ${decl.name} = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
 //          ${decl.name}[i] = (rand() % 100) - 50;
-          ${decl.name}[i] = i+1;
+          ${decl.name}[i] = i + 1;
         }
         """
         codeEnd +=

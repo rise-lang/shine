@@ -66,6 +66,25 @@ class nBodyTuning extends test_util.Tests {
   // scalastyle:on
 
 
+  test("generate kernel nBody") {
+
+    val code = gen.opencl.kernel(Some(nbodyNVIDIAKnownSizes), "KERNEL").asStringFromExpr(nbodyNVIDIA)
+
+    // combine this with hostCode?
+    // hostCode takes paraemters?
+
+    println("code: \n" + code)
+
+    //    code.foreach(elem => {
+    //      println("kernel: \n" + )
+    //    })
+
+    System.exit(0)
+
+
+  }
+
+
   // warning: test fails
   // java.lang.Exception: Don't know how to assign value of type <4>f32
   test("execute nbodyNoTuning") {
@@ -74,7 +93,10 @@ class nBodyTuning extends test_util.Tests {
     val nbody: Expr = wrapOclRun(LocalSize(256, 1), GlobalSize(512, 1))(
       nbodyNVIDIAWithParams(256, 1))
 
-    println("nbody: \n" + nbody)
+    // could not solve constraints
+    //    val nbody: Expr = nbodyNVIDIAKnownSizes.
+
+    //    println("nbody: \n" + nbody)
 
     //    val code = gen.opencl.hosted.fromExpr(nbody)
     val code = gen.opencl.kernel.fromExpr(nbody)

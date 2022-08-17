@@ -498,6 +498,17 @@ def plot_performance_evolution_confidence(name, default, expert, data, log):
 
     if(log):
         plt.savefig(str(output) + "/" + str(global_name) + '_log.pdf', dpi=1000)
+
+    print("y_up: " + str(y_up))
+    step = int(y_up)
+    if y_up > 200:
+        step = 50
+    elif y_up > 50:
+        step = 10
+    elif y_up > 10:
+        step = 2
+    elif y_up > 5:
+        step = 1
     else:
         plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
 
