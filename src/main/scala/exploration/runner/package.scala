@@ -8,11 +8,13 @@ import rise.autotune.configFileGeneration.generateJSON
 import rise.autotune.constraints.collectConstraints
 import rise.autotune.{HostCode, Median, Timeouts, Tuner, getInputs, tuningParam, wrapOclRun}
 import rise.core.Expr
-import rise.core.types.{Nat, NatIdentifier}
+import rise.core.types.{Nat, NatIdentifier, TuningParameter}
 import rise.elevate.Rise
 import shine.C.AST.{BinaryExpr, Block, DeclStmt, ExprStmt, ForLoop, Literal, Stmt, Stmts}
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.gen
+
+import scala.collection.immutable.Map
 
 package object runner {
 
@@ -101,14 +103,9 @@ package object runner {
     }
   }
 
-  def checkExpressionC(
-                        lowering: Strategy[Rise]
-                      )(expression: Rise): Boolean = {
-
-    // generate code here
-
-    // ignore numerical parameters for now
-
+  def checkExpressionInternal(
+                               lowering: Strategy[Rise]
+                             )(expression: Rise): Boolean = {
     // lower solution
     try {
       this.synchronized {
@@ -122,32 +119,85 @@ package object runner {
 
       true
     } catch {
-      case e: Throwable => false
+      case e: Throwable =>
+
+        println("checking failed due to: \n" + e)
+
+        false
     }
+
+  }
+
+  def checkExpressionC(
+                        lowering: Strategy[Rise]
+                      )(expression: Rise): Boolean = {
+
+    // check if solution contains tuning parameters
+
+    val tuningParameter: autotune.Parameters = autotune.constraints.collectParameters(expression)
+    tuningParameter.size match {
+      case 0 => // default case, not tuning parameters to handle
+        println("[CHECKING] : check conservatively")
+        // generate code here
+
+        // ignore numerical parameters for now
+        checkExpressionInternal(lowering)(expression)
+
+      case _ =>
+        println("we have tuning parameters, let them pass!! ")
+
+        // set all params to 1
+        val tuningParameterDefaults: Map[Nat, Nat] = tuningParameter.map(tp => tp -> (1: Nat)).toMap[Nat, Nat]
+
+        println("replace")
+        tuningParameter.foreach(println)
+        println("with")
+        tuningParameterDefaults.foreach(println)
+
+        val eReplaced = rise.core.substitute.natsInExpr(tuningParameterDefaults, expression)
+
+        // now check e Replaced
+        checkExpressionInternal(lowering)(eReplaced)
+    }
+
+
   }
 
   def checkSolutionC(lowering: Strategy[Rise])(solution: Solution[Rise]): Boolean = {
 
-    // generate code here
+    // check if solution contains tuning parameters
 
-    // ignore numerical parameters for now
+    val tuningParameter: autotune.Parameters = autotune.constraints.collectParameters(solution.expression())
+    tuningParameter.size match {
+      case 0 => // default case, not tuning parameters to handle
+        println("[CHECKING] : check conservatively")
+        // generate code here
 
-    // lower solution
-    try {
-      this.synchronized {
+        // ignore numerical parameters for now
 
-        // lower expression
-        val lowered = lowering.apply(solution.expression())
+        // lower solution
+        try {
+          this.synchronized {
 
-        // generate code
-        val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
-      }
+            // lower expression
+            val lowered = lowering.apply(solution.expression())
 
-      true
-    } catch {
-      case e: Throwable => false
+            // generate code
+            val p = gen.openmp.function("riseFun").fromExpr(lowered.get)
+          }
+
+          true
+        } catch {
+          case e: Throwable =>
+
+            println("checking failed due to: \n" + e)
+
+            false
+        }
+      case _ =>
+        println("we have tuning parameters, let them pass!! ")
+        true // tuning parameters, let them pass for now
     }
-
 
   }
 

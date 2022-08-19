@@ -4,6 +4,7 @@ import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
 import exploration.runner.DebugExecutor
 import exploration.strategies.blockingExploration
+import exploration.strategies.blockingExploration.tiling2
 import rise.autotune.{AutoTuningError, EXECUTION_ERROR, HostCode, Timeouts}
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
@@ -225,7 +226,8 @@ class mmCPU_exploration extends test_util.Tests {
     // cannot at id, everywhere would crash it
     scala.collection.immutable.Seq(
       fuseReduceMap, // tiling block
-      tile(32, 32),
+      //      tile(32, 32),
+      tiling2,
       reduceMapFission(),
       reorderTiling,
     )
@@ -257,6 +259,7 @@ class mmCPU_exploration extends test_util.Tests {
 
   val tile_only: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
+      fuseReduceMap,
       blockingExploration.tiling2
     )
   }
@@ -661,8 +664,8 @@ class mmCPU_exploration extends test_util.Tests {
       saveToFile = true
     )
 
-    val tuning_result = rise.autotune.search(tuner)(loweredByHand)
-    println("tuning_result: " + tuning_result)
+    //    val tuning_result = rise.autotune.search(tuner)(loweredByHand)
+    //    println("tuning_result: " + tuning_result)
 
 
     // get tuning parameters
@@ -682,6 +685,13 @@ class mmCPU_exploration extends test_util.Tests {
       println(paramsElem)
       val loweredElem = blockingExploration.lowering.apply(elem).get
       println(loweredElem)
+
+
+      // tune that
+      val tuning_result = rise.autotune.search(tuner)(loweredElem)
+      println("tuning_result: " + tuning_result)
+
+
     })
 
     // adding parameters automatically seems to work
@@ -689,11 +699,10 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-
   test("mmCPU - parallel_fine_light") {
 
     val e = mm
-    //    val e = (blockingExploration.tiling2 `@` topDown[Rise]).apply(mm).get
+    //    val e = (fuseReduceMap `@` topDown[Rise]).apply(mm).get
 
     val ii = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -771,7 +780,7 @@ class mmCPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 3,
+        depth = 4,
         samples = 10000,
       )
     )
@@ -798,15 +807,15 @@ class mmCPU_exploration extends test_util.Tests {
       //      simulatedAnnealingPlain
     )
 
-    val executor = ExecutorConfig(
+    val executor2 = ExecutorConfig(
       name = "C",
       iterations = 11,
       threshold = 10
     )
 
-    val executor2 = ExecutorConfig(
+    val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 10,
+      iterations = 20,
       threshold = 10
     )
 
@@ -844,6 +853,7 @@ class mmCPU_exploration extends test_util.Tests {
           exploration.strategies.blockingExploration.lowering
         )
       ),
+      //      checkExpression = None,
       normalForm = Some(DFNF()), // after rewrite
       importExport = None,
       expert = Some(2.676716),

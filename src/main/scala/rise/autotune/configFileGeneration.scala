@@ -247,7 +247,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-    //    println("file: " + file)
+    println("file: " + file)
 
     file
   }

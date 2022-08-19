@@ -2,11 +2,9 @@ package exploration.runner
 
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{IOHelper, RewriteIdentifier, Solution, hashProgram, hashSolution}
-import exploration.explorationUtil.ExplorationErrorLevel
+import elevate.heuristic_search.util.{IOHelper, RewriteIdentifier, Solution, SolutionStep, hashProgram, hashSolution}
 import rise.elevate.Rise
 import shine.C
-import shine.C.AST.ParamDecl
 import util.gen.c.function
 import util.{createTempFile, gen, writeToTempFile}
 import exploration.explorationUtil.ExplorationErrorLevel._
@@ -270,6 +268,33 @@ case class CExecutor(
 
     // don't save to disk
 
+
+    saveToDisk match {
+      case true =>
+
+        // fake solution here
+        val solution = Solution[Rise](
+          solutionSteps = scala.collection.immutable.Seq(
+            SolutionStep[Rise](
+              expression = expression,
+              strategy = elevate.core.strategies.basic.id[Rise], // fake id here
+              location = 0
+            )
+          )
+        )
+
+        // write runtime to output file
+        writeValues(
+          path = output + "/" + "executor.csv",
+          result = (solution, expression, performanceValue, errorLevel),
+          statistics = executionStatistics,
+          solution.rewrites(),
+          "executor"
+        )
+
+      case false => // nothing
+
+    }
     performanceValue
   }
 

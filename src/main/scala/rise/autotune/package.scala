@@ -1,6 +1,5 @@
 package rise
 
-import apps.tvmGemm.par
 import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.{ArithExpr, RangeUnknown}
 import rise.autotune.configFileGeneration._
@@ -10,18 +9,14 @@ import rise.core.DSL.Type.NatFunctionWrapper
 import rise.core._
 import rise.core.types._
 import rise.elevate.Rise
-import rise.elevate.rules.lowering.lowerToC
 import rise.openCL.DSL.oclRun
 import shine.OpenCL.{GlobalSize, LocalSize}
-import util.Execute.Exception
 import util.{Time, TimeSpan, writeToPath}
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
-
 
 package object autotune {
 
@@ -156,7 +151,7 @@ package object autotune {
         }
 
         val configFileString = generateJSON(parameters, constraints, tuner)
-        println("configFile: \n" + configFileString)
+        //        println("configFile: \n" + configFileString)
         val file = new PrintWriter(
           new FileOutputStream(
             new File(filePath), false))
