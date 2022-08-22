@@ -33,7 +33,7 @@ class rewritingTuningTradeOff extends test_util.Tests {
     traversal.outermost(alternative2.RiseTraversable)
 
   // define mm baseline
-  val N = 128
+  val N = 512
 
   val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -71,12 +71,12 @@ class rewritingTuningTradeOff extends test_util.Tests {
   val stage4_default: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4))
   // todo adjust this 4 here
   val stage4_worst: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4))
-  val stage4_tuning: Strategy[Rise] = (tunable(splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4))
+  val stage4_tuning: Strategy[Rise] = (tunable("split", arithexpr.arithmetic.RangeMul(1, 1024, 2), splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4))
 
   // stage 5 (vectorized)
   val stage5_default: Strategy[Rise] = (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
   val stage5_worst: Strategy[Rise] = (vectorize(2) `@` innermost(isApplied(isApplied(isMap))))
-  val stage5_tuning: Strategy[Rise] = (tunable(vectorize) `@` innermost(isApplied(isApplied(isMap))))
+  val stage5_tuning: Strategy[Rise] = (tunable("vec", arithexpr.arithmetic.RangeMul(1, 1024, 2), vectorize) `@` innermost(isApplied(isApplied(isMap))))
 
 
   // stage 6 (parallel)
@@ -86,8 +86,8 @@ class rewritingTuningTradeOff extends test_util.Tests {
   val executor = CExecutor(
     lowering = lowering,
     goldExpression = gold,
-    iterations = 5,
-    inputSize = 128,
+    iterations = 11,
+    inputSize = N,
     threshold = 100,
     output = "exploration",
     saveToDisk = false
@@ -223,6 +223,39 @@ class rewritingTuningTradeOff extends test_util.Tests {
 
     println("Tuning: ")
     Range(0, 7).zip(result_tuning).foreach(elem => println(s"[Stage ${elem._1}] : ${elem._2}"))
+
+
+    //
+    //    Results:
+    //      Default:
+    //    [Stage 0] : Some(6063.984985)
+    //      [Stage 1] : Some(5421.350261)
+    //      [Stage 2] : None // check?
+    //      [Stage 3] : None // check?
+    //      [Stage 4] : Some(136.838565)
+    //      [Stage 5] : Some(137.708792)
+    //      [Stage 6] : Some(16.002856)
+    //
+    //    Worst:
+    //    [Stage 0] : Some(6498.066944)
+    //      [Stage 1] : Some(5308.964071)
+    //      [Stage 2] : Some(5976.625759)
+    //      [Stage 3] : Some(5993.59123)
+    //      [Stage 4] : Some(5084.782256)
+    //      [Stage 5] : Some(4051.074593)
+    //      [Stage 6] : Some(282.235232)
+    //
+    //    Tuning:
+    //    [Stage 0] : Some(6265.214141)
+    //      [Stage 1] : Some(5514.849983)
+    //      [Stage 2] : Some(4700.181168)
+    //      [Stage 3] : Some(5578.715886)
+    //      [Stage 4] : Some(96.440207)
+    //      [Stage 5] : Some(91.243232)
+    //      [Stage 6] : Some(9.688302)
+
+    // keep track of noise!
+
 
   }
 

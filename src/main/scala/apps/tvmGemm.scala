@@ -47,28 +47,33 @@ object tvmGemm {
   val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
     (fuseReduceMap `@` topDown[Rise])
 
+  //  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+
+  //  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;` elevate.core.strategies.basic.id[Rise]
+
+
   // -- BLOCKING ---------------------------------------------------------------
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
   val blocking: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1,2,5,6,3,4))
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(List(1, 2, 5, 6, 3, 4))
 
   val blockingPartial1: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2)))
+      (tile(32, 32) `@` outermost(mapNest(2)))
   val blockingPartial2: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq))))
   val blockingPartial3: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce))
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce))
 
   // -- VECTORIZATION ----------------------------------------------------------
 
@@ -80,10 +85,10 @@ object tvmGemm {
   // -- LOOP PERMUTATION -------------------------------------------------------
 
   val loopPerm: Strategy[Rise] = baseline `;`
-    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+    (tile(32, 32) `@` outermost(mapNest(2))) `;;`
     (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder(List(1,2,5,3,6,4)) `;;`
+    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+    reorder(List(1, 2, 5, 3, 6, 4)) `;;`
     (vectorize(32) `@` innermost(isFullyAppliedMap))
 
   // -- ARRAY PACKING ----------------------------------------------------------
@@ -99,11 +104,11 @@ object tvmGemm {
     storeInMemory(isTransposedB,
       permuteB `;;`
         (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
-        (parallel()    `@` outermost(isApplied(isMap)))
+        (parallel() `@` outermost(isApplied(isMap)))
     ) `@` inLambda
 
   def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-    isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
+    isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
 
   val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
 

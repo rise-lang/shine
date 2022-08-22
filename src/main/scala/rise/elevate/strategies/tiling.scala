@@ -27,7 +27,7 @@ object tiling {
       // ((map f) arg)
       case 1 => function(tunable("tile", splitJoin)) // loop-blocking
       case i => fmap(tileNDList2(ev)(n - 1)) `;` // recurse
-        function(tunable("tile", splitJoin)) `;` // loop-blocking
+        function(tunable("tile", arithexpr.arithmetic.RangeMul(1, 1024, 2), splitJoin)) `;` // loop-blocking
         interchange(ev)(i) // loop-interchange
     }
 

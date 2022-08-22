@@ -7,6 +7,7 @@ import _root_.util.{gen, time, prettyTime, memStats, prettyMem}
 
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
+
   import apps.tvmGemm._
 
   test("baseline") {
@@ -51,7 +52,7 @@ class tvmGemm extends test_util.Tests {
 
     def writeToFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
       import java.io._
-      val w =new PrintWriter(new File(s"$path/$name$ending"))
+      val w = new PrintWriter(new File(s"$path/$name$ending"))
       w.write(content)
       w.flush()
       w.close()
@@ -82,7 +83,7 @@ class tvmGemm extends test_util.Tests {
     }
 
     // generate the C code
-    val (genTime, program) = time(if(openMP) {
+    val (genTime, program) = time(if (openMP) {
       gen.openmp.function(version).asStringFromExpr(rewritten.get)
     } else {
       gen.c.function(version).asStringFromExpr(rewritten.get)
@@ -97,3 +98,4 @@ class tvmGemm extends test_util.Tests {
     }
   }
 }
+

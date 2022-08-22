@@ -26,7 +26,7 @@ case class CExecutor(
                       inputSize: Int,
                       threshold: Double = 1000.0,
                       output: String = "exploration",
-                      timeout: Double = 5000,
+                      timeout: Double = 10000,
                       saveToDisk: Boolean = true,
                       printEvery: Int = 50,
                       expert: Option[Double] = None
