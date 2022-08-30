@@ -25,7 +25,7 @@ import scala.sys.process._
 
 package object autotune {
 
-  case class Tuner(hostCode: HostCode, // defines necessary host-code to execute program
+  case class Tuner(hostCode: HostCode = HostCode("", "", ""), // defines necessary host-code to execute program
                    inputSizes: Seq[Nat] = Seq(), // todo think about multi-dimensional inputs
                    samples: Int = 100, // number of parameter configurations (samples) to evaluate
                    name: String = "RISE", // todo this has to match name in config file!
@@ -589,7 +589,7 @@ package object autotune {
     //    })
 
     // write header
-    var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString(",")
+    var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString("", ",", ",")
 
     header += "runtime" + ","
     header += "timestamp" + ","
@@ -615,7 +615,7 @@ package object autotune {
 
       // write runtime
       sample.runtime match {
-        case Right(runtime) => content += runtime.toString + ","
+        case Right(runtime) => content += runtime.value.toString + ","
         case Left(error) =>
 
           val errorMessage = error.message match {
