@@ -45,6 +45,12 @@ class scalTuning extends test_util.Tests {
     )))
 
 
+  val scalDefaultDefault =
+    depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
+      input |> mapGlobal(fun(x => alpha * x))
+    )))
+
+
   val scalVec =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
@@ -101,18 +107,19 @@ class scalTuning extends test_util.Tests {
        |
        |srand(time(NULL));
        |
-       |Buffer input = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-       |Buffer output = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
        |
-       |float* m = hostBufferSync(ctx, input, N * N * sizeof(float), HOST_WRITE);
-       |for (int i = 0; i < N * N; i++) {
-       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N; i++) {
+       |  // m[i] = (float)(rand()) * 10.0f;
+       |  m[i] = 1.0f;
        |}
        |
        |int alpha = 10;
        |
        |// synchronize before entering timed section
-       |deviceBufferSync(ctx, input, N * N * sizeof(float), DEVICE_READ);
+       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
        |waitFinished(ctx);
        |""".stripMargin
   }
@@ -128,17 +135,22 @@ class scalTuning extends test_util.Tests {
        |// TODO: could check output here
        |// use given gold expression?
        |
+       |float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |for(int i = 0; i < N; i++){
+       |  printf("%f \\n", outputScal[i]);
+       |}
+       |
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
 
 
   def executeStencilDefault(e: Expr) = {
-    val inputSize: Int = 1024
+    val inputSize: Int = 12
 
     println("Expression: \n" + e)
 
-    val eOcl = wrapOclRun(LocalSize(2), GlobalSize(1024))(e)
+    val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(e)
     //        val eOcl = e
 
     //    println("Expression: \n" + eOcl)
@@ -157,7 +169,7 @@ class scalTuning extends test_util.Tests {
   }
 
   test("test stencil execution") {
-    executeStencilDefault(scalDefault)
+    executeStencilDefault(scalDefaultDefault)
   }
 
   test("scal tuning experiment") {

@@ -458,6 +458,7 @@ class asumTuning extends test_util.Tests {
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
+      //      expert = None,
       //      default = None
     )
 
