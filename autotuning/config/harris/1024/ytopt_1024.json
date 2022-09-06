@@ -1,5 +1,5 @@
 {
-  "application_name": "bogp_cot_1024",
+  "application_name": "ytopt_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,19 +12,17 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bogp_cot_1024.log",
+  "log_file": "ytopt_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 9
-  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 141,
+  "optimization_method": "ytopt",
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",

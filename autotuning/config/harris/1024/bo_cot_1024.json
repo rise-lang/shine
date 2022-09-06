@@ -1,5 +1,5 @@
 {
-  "application_name": "atf_emb_1024",
+  "application_name": "bo_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,17 +12,28 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "atf_emb_1024.log",
+  "log_file": "bo_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 9
+  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "lengthscale_prior": {
+    "name": "gamma",
+    "parameters": [
+      1.3,
+      0.1
+    ]
+  },
+  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 141,
   "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
+  "multistart_hyperparameter_optimization_iterations": 5,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",

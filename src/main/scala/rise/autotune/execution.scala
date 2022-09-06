@@ -110,7 +110,7 @@ object execution {
              |}
              |""".stripMargin
 
-        println("program: \n" + program)
+        //        println("program: \n" + program)
 
         assert(executionIterations > 0)
 

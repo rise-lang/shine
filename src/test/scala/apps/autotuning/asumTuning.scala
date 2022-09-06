@@ -495,6 +495,7 @@ class asumTuning extends test_util.Tests {
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
+      //      expert = None,
       //      default = None
     )
 
@@ -679,24 +680,24 @@ class asumTuning extends test_util.Tests {
 }
 
 
-import shine.DPIA.Types.ExpType
-import shine.OpenCL.{GlobalSize, LocalSize}
-import rise.core._
-import rise.core.types._
-import rise.core.DSL._
-import rise.core.primitives._
-import Type._
-import HighLevelConstructs.reorderWithStride
-import rise.autotune
-import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
-import util.{SyntaxChecker, gen}
-import rise.elevate.rules.traversal.default._
-import rise.openCL.DSL.{mapLocal, mapWorkGroup, toLocalFun}
-import rise.openCL.primitives.{oclIterate, oclReduceSeq}
-import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
-import util.gen.c.function
-
-import scala.util.Random
+//import shine.DPIA.Types.ExpType
+//import shine.OpenCL.{GlobalSize, LocalSize}
+//import rise.core._
+//import rise.core.types._
+//import rise.core.DSL._
+//import rise.core.primitives._
+//import Type._
+//import HighLevelConstructs.reorderWithStride
+//import rise.autotune
+//import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
+//import util.{SyntaxChecker, gen}
+//import rise.elevate.rules.traversal.default._
+//import rise.openCL.DSL.{mapLocal, mapWorkGroup, toLocalFun}
+//import rise.openCL.primitives.{oclIterate, oclReduceSeq}
+//import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
+//import util.gen.c.function
+//
+//import scala.util.Random
 //
 //
 //class asumTuning extends test_util.Tests {

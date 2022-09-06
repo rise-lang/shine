@@ -30,7 +30,8 @@ import rise.core.types.{Nat, TuningParameter}
 class mmCPU extends test_util.Tests {
 
   // tvm gemm
-  val N = 1024
+  //  val N = 1024
+  val N = 512
 
   // todo check input vars, maybe dep fun
   val mm: Expr = //infer(
@@ -69,6 +70,94 @@ class mmCPU extends test_util.Tests {
 
   val mm_par = par.apply(mm)
   val gold = lowerToC.apply(mm_par.get).get
+
+  val inject2: (Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr] = (e, tuningParameterMap, permutationMap) => {
+
+    val tileX = tuningParameterMap("tuned_tile8575")
+    val tileY = tuningParameterMap("tuned_tile8576")
+    val blockedReduce = tuningParameterMap("tuned_blockedReduce8361")
+    val reordering = permutationMap("tuned_reorder").map(x => x + 1)
+    val vec = tuningParameterMap("tuned_vec8362")
+    val arrayPackingSplit = tuningParameterMap("tuned_arrayPackingSplit8359")
+    val arrayPackingVec = tuningParameterMap("tuned_arrayPackingVec8360")
+    //
+    //    println("tileX: " + tileX)
+    //    println("tileY: " + tileY)
+    //    println("blockedReduce: " + blockedReduce)
+    //    println("reordering: " + reordering.mkString(", "))
+    //    println("vec: " + vec)
+    //    println("arrayPackingSplit: " + arrayPackingSplit)
+    //    println("arrayPackingVec: " + arrayPackingVec)
+
+    //    val tileX = 32
+    //    val tileY = 32
+    //    val split = 4
+    //    val vec = 32
+
+    val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
+    val permuteB: Strategy[Rise] =
+      splitJoin2(arrayPackingSplit) `;` DFNF() `;` argument(idAfter) `;`
+        topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
+        argument(argument(idAfter)) `;` elevate.core.strategies.basic.normalize.apply(liftId()) `;`
+        topDown(idToCopy)
+
+    def inLambda(s: Strategy[Rise]): Strategy[Rise] =
+      isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
+
+    val packB: Strategy[Rise] = arrayPackingVec match {
+      case 1 =>
+        rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
+          permuteB
+          //            `;;` (parallel() `@` outermost(isApplied(isMap)))
+        ) `@` inLambda
+      case _ =>
+        rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
+          permuteB `;;`
+            (vectorize(arrayPackingVec) `@` innermost(isFullyAppliedMap)) // `;;`
+          //            `;;` (parallel() `@` outermost(isApplied(isMap)))
+        ) `@` inLambda
+    }
+    //
+    //    val packB: Strategy[Rise] =
+    //      rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
+    //        permuteB `;;`
+    //          (vectorize(arrayPackingVec) `@` innermost(isFullyAppliedMap)) // `;;`
+    //        //          (parallel() `@` outermost(isApplied(isMap)))
+    //      ) `@` inLambda
+
+    val strategyHead: Strategy[Rise] = packB `;;`
+      baseline `;`
+      (tile(tileX, tileY) `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(blockedReduce) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder(reordering) // `;;`
+    (vectorize(vec) `@` innermost(isFullyAppliedMap))
+
+    val strategyTail: Strategy[Rise] = reordering match {
+      case List(1, 2, 3, 4, 5, 6) =>
+        println("list ist id don't vectorize")
+        elevate.core.strategies.basic.id[Rise]
+      case _ =>
+        (vectorize(vec) `@` innermost(isFullyAppliedMap))
+    }
+
+    val strategy: Strategy[Rise] = strategyHead `;;` strategyTail
+
+    val result = try {
+      strategy.apply(e)
+    } catch {
+      case e: Throwable => {
+        println("e: " + e)
+        Failure(strategy)
+      }
+    }
+
+    result match {
+      case Success(expression) => Right(expression)
+      case Failure(value) => Left(value.toString())
+    }
+  }
+
 
   val inject: (Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr] = (e, tuningParameterMap, permutationMap) => {
 
@@ -115,7 +204,7 @@ class mmCPU extends test_util.Tests {
     lowering = lowerToC,
     goldExpression = gold,
     iterations = 11,
-    inputSize = 1024,
+    inputSize = N,
     threshold = 10,
     timeout = 10000,
     output = "autotuning",
@@ -152,9 +241,124 @@ class mmCPU extends test_util.Tests {
       Some(executionTime))
   }
 
+  test("get constraints array packing mmCPU") {
+    // rewrite by hand with tunable
+    // derive constraints from that automatically
+
+    val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
+    val permuteB: Strategy[Rise] =
+      tunable("arrayPackingSplit", splitJoin2) `;` DFNF() `;` argument(idAfter) `;`
+        topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
+        argument(argument(idAfter)) `;` elevate.core.strategies.basic.normalize.apply(liftId()) `;`
+        topDown(idToCopy)
+
+    def inLambda(s: Strategy[Rise]): Strategy[Rise] =
+      isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
+
+    val packB: Strategy[Rise] =
+      rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
+        permuteB `;;`
+          (tunable("arrayPackingVec", vectorize) `@` innermost(isFullyAppliedMap)) `;;`
+          (parallel() `@` outermost(isApplied(isMap)))
+      ) `@` inLambda
+
+    val strategy: Strategy[Rise] = packB `;;`
+      baseline `;`
+      (tile() `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (tunable("blockedReduce", splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;`
+      //      reorder(List(1, 2, 5, 3, 6, 4)) `;;`
+      reorder(List(1, 2, 3, 4, 5, 6)) // `;;`
+    //      (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
+
+
+    val rewrittenMM = strategy.apply(mm).get
+
+    println("rewrittenMM: " + rewrittenMM)
+
+    val params = autotune.constraints.collectParameters(rewrittenMM)
+    val constraints = autotune.constraints.collectConstraints(rewrittenMM, params)
+
+    println("params:")
+    params.foreach(println)
+    println("constraints:")
+    constraints.foreach(println)
+
+    val tuner = Tuner(
+      hostCode = HostCode("", "", ""),
+      hmConstraints = true
+    )
+
+    val configFile = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
+
+    println("configFile: \n" + configFile)
+
+
+  }
+
+  test("run experiment mmCPU 2") {
+    val inputSize: Int = N
+
+
+    val expertConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
+      Map(
+        "tuned_tile8575" -> 128,
+        "tuned_tile8576" -> 16,
+        "tuned_blockedReduce8361" -> 512,
+        "tuned_vec8362" -> 16,
+        "tuned_arrayPackingSplit8359" -> 8,
+        "tuned_arrayPackingVec8360" -> 4
+      ),
+      Map(
+        "tuned_reorder" -> List(0, 4, 1, 5, 2, 3)
+      )
+    )
+
+    val defaultConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
+      Map(
+        "tuned_tile8575" -> 32,
+        "tuned_tile8576" -> 32,
+        "tuned_blockedReduce8361" -> 4,
+        "tuned_vec8362" -> 32,
+        "tuned_arrayPackingSplit8359" -> 32,
+        "tuned_arrayPackingVec8360" -> 32
+      ),
+      Map(
+        "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
+      )
+    )
+    //
+    val configs = Seq(
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+    )
+
+    runExperiment(
+      name = s"mmCPU_${inputSize}",
+      configFiles = configs,
+      iterations = 1,
+      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
+      mm,
+      HostCode("", "", ""), // ignore this
+      Seq(inputSize, inputSize, inputSize),
+      strategyMode = Some(inject2),
+      executor = Some(execute),
+      //      plotOnly = true,
+      plotOnly = false,
+      expert = None,
+      default = None,
+      expert2 = Some(expertConfiugration),
+      //      default2 = Some(defaultConfiugration)
+    )
+  }
 
   test("run experiment mmCPU") {
-    val inputSize: Int = 1024
+    val inputSize: Int = N
 
     val expertConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
       Map(
@@ -173,15 +377,27 @@ class mmCPU extends test_util.Tests {
         "tuned_tile51" -> 32,
         "tuned_tile52" -> 32,
         "tuned_split100" -> 4,
-        "tuned_vec101" -> 32
+        "tuned_vec101" -> 8
       ),
       Map(
         "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
       )
     )
 
+    //    val defaultConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
+    //      Map(
+    //        "tuned_tile51" -> 32,
+    //        "tuned_tile52" -> 32,
+    //        "tuned_split100" -> 4,
+    //        "tuned_vec101" -> 32
+    //      ),
+    //      Map(
+    //        "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
+    //      )
+    //    )
+    //
     val configs = Seq(
-      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
