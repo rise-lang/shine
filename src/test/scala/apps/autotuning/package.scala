@@ -179,7 +179,7 @@ package object autotuning {
       expression = eReplaced,
       hostCode = hostCode,
       timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 100,
+      executionIterations = 51,
       speedupFactor = 100,
       execution = Median
     )
@@ -222,7 +222,7 @@ package object autotuning {
       name = version,
       output = s"${output}/${version}",
       timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
+      executionIterations = 51,
       speedupFactor = 100,
       configFile = Some(configFile),
       hmConstraints = true,

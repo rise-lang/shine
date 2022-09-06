@@ -69,13 +69,13 @@ class mmTuning extends test_util.Tests {
        |
        |float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N * M ; i++) {
-//       |  inA[i] = (float)(rand());
+       |  //inA[i] = (float)(rand());
        |  inA[i] = (float)(i+1);
        |}
        |
        |float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < M * O; i++) {
-       |  // inB[i] = (float)(rand());
+       |  //inB[i] = (float)(rand());
        |  inB[i] = (float)(i+1);
        |}
        |
@@ -480,28 +480,25 @@ class mmTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //                  s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      //      s"autotuning/mm_${inputSize}",
-      output = s"/home/jo/development/experiments/tuning/results/mm_${inputSize}",
-      //      s"experiment/results/mm_${inputSize}",
-      mm,
-      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
-      Seq(inputSize, inputSize, inputSize),
+      output = s"experiment/results/mm_${inputSize}",
+      e = mm,
+      hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
+      inputSizes = Seq(inputSize, inputSize, inputSize),
       plotOnly = false,
       expert = Some(expertConfiguration),
-      //      default = Some(defaultConfiguration)
+      default = Some(defaultConfiguration)
     )
   }
 

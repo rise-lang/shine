@@ -53,10 +53,12 @@
       "constraints": [
         "tuned_sp0 >= 0",
         "tuned_sp0 % tuned_sp1 == 0",
-        "((tuned_sp0*(1/(tuned_sp1)))) >= (1)"
+        "((tuned_sp0*(1/(tuned_sp1)))) >= (1)",
+        "tuned_sp0 >= tuned_sp1 * tuned_stride"
       ],
       "dependencies": [
-        "tuned_sp1"
+        "tuned_sp1",
+        "tuned_stride"
       ],
       "transform": "log"
     },

@@ -124,13 +124,15 @@ case class CExecutor(
     try {
       code = genExecutableCode(lowered.get)
 
+      //      println("code: \n" + code)
+
       errorLevel = CompilationError
 
       // compile
       try {
         val bin = compile(code)
 
-        println("compilation nice!")
+        //        println("compilation nice!")
 
         // execute
         try {
@@ -542,12 +544,12 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
-    println("attempt to compile")
+    //    println("attempt to compile")
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
 
-    println("success")
+    //    println("success")
 
     // todo: make this configable using json file
     // compile
@@ -556,9 +558,12 @@ int main(int argc, char** argv) {
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
 
-    //      s"clang $src -o $bin -lm -fopenmp" !!
+    //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"gcc $src -o $bin -lm -fopenmp" !!
+    //    s"gcc $src -o $bin -O3 -lm -fopenmp" !!
+    //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
@@ -660,7 +665,7 @@ int main(int argc, char** argv) {
     val fileHM = new PrintWriter(
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
 
-    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+    //    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
 
     // create string to write to file
     val string = "iteration, runner, timestamp, high-level hash, " +
