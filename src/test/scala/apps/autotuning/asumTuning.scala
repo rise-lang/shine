@@ -1,6 +1,7 @@
 package apps.autotuning
 
 import shine.DPIA.Types.ExpType
+import rise.elevate.Rise
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core._
 import rise.core.types._
@@ -12,12 +13,10 @@ import rise.autotune
 import rise.autotune.{HostCode, Median, Timeouts, tuningParam, wrapOclRun}
 import util.{SyntaxChecker, gen}
 import rise.elevate.rules.traversal.default._
-import rise.openCL.DSL.{mapLocal, mapWorkGroup, toLocalFun}
+import rise.openCL.DSL.{mapGlobal, mapLocal, mapWorkGroup, toGlobal, toLocalFun}
 import rise.openCL.primitives.{oclIterate, oclReduceSeq}
 import shine.OpenCL.KernelExecutor.KernelNoSizes.fromKernelModule
 import util.gen.c.function
-
-
 import apps.separableConvolution2D.mulT
 import rise.core.DSL.HighLevelConstructs.reorderWithStride
 import rise.core.DSL.Type._
@@ -28,8 +27,6 @@ import rise.core.types.DataType._
 import rise.core.types._
 
 import scala.util.Random
-
-
 import apps.mv.ocl._
 import arithexpr.arithmetic.RangeMul
 import rise.autotune
@@ -39,25 +36,27 @@ import rise.core.DSL._
 import rise.core._
 import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
-
-
 import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
-import rise.core._
-import rise.core.types._
-import rise.core.DSL._
-import rise.core.DSL.Type._
-import rise.autotune
-import shine.OpenCL.{GlobalSize, LocalSize}
-import rise.autotune._
-import apps.autotuning._
+import elevate.core.strategies.traversal.topDown
+import rise.elevate.Rise
+import rise.elevate.rules.algorithmic.fuseReduceMap
+import rise.elevate.strategies.traversal._
+
+import scala.collection.immutable
+import scala.language.postfixOps
+import exploration.runner.CExecutor
+import exploration.strategies.simpleStrategiesGPU
+import rise.core.types.{Nat, TuningParameter}
+import rise.elevate.rules.lowering.reduceOCL
 
 import scala.language.postfixOps
 import scala.sys.process._
 
 class asumTuning extends test_util.Tests {
 
-  val inputSize: Int = 2 << 25
+  //  val inputSize: Int = 2 << 25
+  val inputSize: Int = 2 << 9
 
   def inputT(n: Nat) = ArrayType(n, f32)
 
@@ -69,6 +68,31 @@ class asumTuning extends test_util.Tests {
   val high_level = depFun((n: Nat) =>
     fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(lf32(0.0f)))
   )
+
+  // *g >> reduce f init -> reduce (acc, x => f acc (g x)) init
+
+  val fused = (fuseReduceMap `@` topDown[Rise]).apply(high_level).get
+  val fused_ocl = reduceOCL().apply(fused).get
+
+  val kernel = gen.opencl.kernel.asStringFromExpr(fused_ocl)
+
+  val ocl2 = simpleStrategiesGPU.lowering.apply(high_level).get
+  val kernel2 = gen.opencl.kernel.asStringFromExpr(ocl2)
+
+  println("high_elvel: \n" + high_level)
+  println("fused: \n" + fused)
+  println("fused_ocl: \n" + fused_ocl)
+  println("kernel: \n" + kernel)
+
+  println("ocl2: \n" + ocl2)
+  println("kernel2: \n" + kernel2)
+
+  System.exit(0)
+
+  val asum_default = depFun((n: Nat) =>
+    fun(inputT(n))(input => input |> oclReduceSeq(AddressSpace.Private)(fun((x, y) => add(x, fabs(y))))(lf32(0.0f)))
+  )
+
   //
   //  val abs =
   //    depFun((t: DataType) => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
@@ -188,7 +212,7 @@ class asumTuning extends test_util.Tests {
        |
        |  float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
        |  for (int i = 0; i < N ; i++) {
-       |    in[i] = (float)(rand() % 100);
+       |    in[i] = (float)(1);
        |  }
        |
        |  deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
@@ -202,12 +226,23 @@ class asumTuning extends test_util.Tests {
   val finish =
     s"""
        |  // could add error checking
+       |  deviceBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |  printf("N: %d \\n", N);
+       |  for (int i = 0; i < N ; i++) {
+       |  printf("in: %f \\n", in[i]);
+       |  printf("out: %f \\n", out[i]);
+       | }
+       |
+       |
+       |
        |  destroyBuffer(ctx, input);
        |  destroyBuffer(ctx, output);
        |""".stripMargin
   // scalastyle:on
 
-  ignore("print asum") {
+
+  test("print asum") {
 
     println("inputSize: " + inputSize)
 
@@ -217,61 +252,63 @@ class asumTuning extends test_util.Tests {
     val asum: Expr = {
       tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
         tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(nvidiaDerived1)))
+          wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(asum_default)))
     }
 
     println("asum: \n" + asum)
 
     // generate code
     val params: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls0") -> (1: Nat),
       TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("sp0") -> ((2048 * 128): Nat),
-      TuningParameter("sp1") -> (2048: Nat),
-      TuningParameter("stride") -> (128: Nat),
+      //      TuningParameter("sp0") -> (2048 * 128: Nat),
+      //      TuningParameter("sp1") -> (128: Nat),
+      //      TuningParameter("stride") -> (2048: Nat),
     )
 
     val eSub = rise.core.substitute.natsInExpr(params, asum)
-    val eSub2 = rise.core.substitute.natsInExpr(params, nvidiaDerived1)
+    //    val eSub2 = rise.core.substitute.natsInExpr(params, nvidiaDerived1)
 
     // generate code
-    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
-    println("kernel: \n" + kernel)
+    //    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
+    //    println("kernel: \n" + kernel)
 
-    val tp_params = autotune.constraints.collectParameters(asum)
-    val constraints = autotune.constraints.collectConstraints(asum, tp_params)
+    //    val tp_params = autotune.constraints.collectParameters(asum)
+    //    val constraints = autotune.constraints.collectConstraints(asum, tp_params)
 
-    println("Params: ")
-    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
-    println("Constraints: ")
-    constraints.foreach(println)
-    //
-    //    val result = autotune.execution.execute(
-    //      expression = eSub,
-    //      hostCode = HostCode(init(inputSize), compute, finish),
-    //      timeouts = Timeouts(5000, 5000, 5000),
-    //      executionIterations = 1000,
-    //      speedupFactor = 1000,
-    //      execution = Minimum
-    //    )
-    //    println("result: " + result.runtime)
+    //    println("Params: ")
+    //    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
+    //    println("Constraints: ")
+    //    constraints.foreach(println)
 
+    println("asum sub: \n" + eSub)
 
-    val tuner = Tuner(
+    val result = autotune.execution.execute(
+      expression = eSub,
       hostCode = HostCode(init(inputSize), compute, finish),
-      inputSizes = Seq(inputSize),
-      hmConstraints = true,
-      samples = 50,
-      saveToFile = true,
-      name = "asum",
-      output = "autotuning/asum"
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 1000,
+      speedupFactor = 1000,
+      execution = Minimum
     )
-
-    //    val configFile = autotune.configFileGeneration.generateJSON(tp_params, constraints, tuner)
-    //    println("configFile: \n" + configFile)
+    println("result: " + result.runtime)
 
 
-    val tuning_result = autotune.search(tuner)(asum)
+    //    val tuner = Tuner(
+    //      hostCode = HostCode(init(inputSize), compute, finish),
+    //      inputSizes = Seq(inputSize),
+    //      hmConstraints = true,
+    //      samples = 50,
+    //      saveToFile = true,
+    //      name = "asum",
+    //      output = "autotuning/asum"
+    //    )
+    //
+    //    //    val configFile = autotune.configFileGeneration.generateJSON(tp_params, constraints, tuner)
+    //    //    println("configFile: \n" + configFile)
+    //
+    //
+    //    val tuning_result = autotune.search(tuner)(asum)
 
   }
 
