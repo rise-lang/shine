@@ -170,11 +170,11 @@ class scalTuning extends test_util.Tests {
 
   }
 
-  test("test stencil execution") {
+  ignore("test stencil execution") {
     executeStencilDefault(scalDefaultDefault)
   }
 
-  test("scal tuning experiment") {
+  ignore("scal tuning experiment") {
     val inputSize: Int = 1 << 25
 
     val tuner = Tuner(
