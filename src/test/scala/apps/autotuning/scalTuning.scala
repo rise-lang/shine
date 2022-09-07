@@ -18,6 +18,8 @@ class scalTuning extends test_util.Tests {
 
   import rise.openCL.DSL._
 
+  val inputSize = 1 << 25
+
   val scal =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
@@ -52,8 +54,8 @@ class scalTuning extends test_util.Tests {
 
 
   val scalVec =
-    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
+    tuningParam("s0", RangeMul(1, inputSize, 2), (s0: Nat) =>
+      tuningParam("s1", RangeMul(1, inputSize, 2), (s1: Nat) =>
         tuningParam("vec", RangeMul(1, 1024, 2), (vec: Nat) =>
           depFun((n: Nat) => fun(n `.` f32)(input => fun(f32)(alpha =>
             input |>
@@ -135,10 +137,10 @@ class scalTuning extends test_util.Tests {
        |// TODO: could check output here
        |// use given gold expression?
        |
-       |float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-       |for(int i = 0; i < N; i++){
-       |  printf("%f \\n", outputScal[i]);
-       |}
+       |//float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |//for(int i = 0; i < N; i++){
+       | // printf("%f \\n", outputScal[i]);
+       |//}
        |
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
@@ -173,7 +175,7 @@ class scalTuning extends test_util.Tests {
   }
 
   test("scal tuning experiment") {
-    val inputSize: Int = 1024
+    val inputSize: Int = 1 << 25
 
     val tuner = Tuner(
       hostCode = HostCode(init(inputSize), compute, finish),
@@ -195,28 +197,53 @@ class scalTuning extends test_util.Tests {
   }
 
 
-  test("tune scal 1024") {
-    val inputSize: Int = 1024
-    val inputSize2: Int = 1024
+  test("run scal experiments") {
+    val inputSize: Int = 1 << 25
+    val inputSize2: Int = 1 << 25
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (256: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (512: Nat),
+      TuningParameter("s1") -> (1: Nat),
+      TuningParameter("vec") -> (2: Nat)
+    )
+
+    // expert configuration
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (256: Nat),
+      TuningParameter("s0") -> (1: Nat),
+      TuningParameter("s1") -> (512: Nat),
+      TuningParameter("vec") -> (8: Nat)
+    )
 
     val configs = Seq(
       s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json"
     )
-
 
     runExperiment(
       name = s"scal_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"autotuning/scal_${inputSize}",
+      iterations = 10,
+      output = s"experiment/results/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration),
+      //      expert = None,
       disableChecking = true
     )
   }
-
 }

@@ -15,9 +15,9 @@
   },
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 20
+    "number_of_samples": 80
   },
-  "optimization_iterations": 20,
+  "optimization_iterations": 0,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",
