@@ -245,7 +245,7 @@ class asumTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("print asum") {
+  ignore("print asum") {
 
     println("inputSize: " + inputSize)
 
@@ -315,7 +315,7 @@ class asumTuning extends test_util.Tests {
 
   }
 
-  test("print asum 2") {
+  ignore("print asum 2") {
 
     //    println("inputSize: " + inputSize)
     //
