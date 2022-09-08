@@ -225,7 +225,7 @@ class scalTuning extends test_util.Tests {
 
     val configs = Seq(
       //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/bounlog_cot_${inputSize.toString}.json",
