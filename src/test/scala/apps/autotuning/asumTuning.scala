@@ -79,15 +79,15 @@ class asumTuning extends test_util.Tests {
   val ocl2 = simpleStrategiesGPU.lowering.apply(high_level).get
   val kernel2 = gen.opencl.kernel.asStringFromExpr(ocl2)
 
-  println("high_elvel: \n" + high_level)
-  println("fused: \n" + fused)
-  println("fused_ocl: \n" + fused_ocl)
-  println("kernel: \n" + kernel)
+  //  println("high_elvel: \n" + high_level)
+  //  println("fused: \n" + fused)
+  //  println("fused_ocl: \n" + fused_ocl)
+  //  println("kernel: \n" + kernel)
+  //
+  //  println("ocl2: \n" + ocl2)
+  //  println("kernel2: \n" + kernel2)
 
-  println("ocl2: \n" + ocl2)
-  println("kernel2: \n" + kernel2)
-
-  System.exit(0)
+  //  System.exit(0)
 
   val asum_default = depFun((n: Nat) =>
     fun(inputT(n))(input => input |> oclReduceSeq(AddressSpace.Private)(fun((x, y) => add(x, fabs(y))))(lf32(0.0f)))
@@ -198,8 +198,11 @@ class asumTuning extends test_util.Tests {
 
   val asum_1: Expr = {
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(amdDerived1)))
+      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(amdDerived1)))
+      ))
   }
 
   // scalastyle:off
@@ -226,13 +229,13 @@ class asumTuning extends test_util.Tests {
   val finish =
     s"""
        |  // could add error checking
-       |  deviceBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |  printf("N: %d \\n", N);
-       |  for (int i = 0; i < N ; i++) {
-       |  printf("in: %f \\n", in[i]);
-       |  printf("out: %f \\n", out[i]);
-       | }
+       | // deviceBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |  //float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
+       |  //printf("N: %d \\n", N);
+       |  //for (int i = 0; i < N ; i++) {
+       |  //printf("in: %f \\n", in[i]);
+       |  //printf("out: %f \\n", out[i]);
+       | //}
        |
        |
        |
@@ -312,48 +315,48 @@ class asumTuning extends test_util.Tests {
 
   }
 
-  ignore("print asum 2") {
+  test("print asum 2") {
 
-    println("inputSize: " + inputSize)
-
-    //    println("nvidia derived: \n" + nvidiaDerived1)
+    //    println("inputSize: " + inputSize)
     //
-    //     opencl
-
-    // generate code
-    val params: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (128: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("sp0") -> ((4096 * 128): Nat),
-      TuningParameter("sp1") -> (2048: Nat),
-      TuningParameter("stride") -> (64: Nat),
-      TuningParameter("vec0") -> (2: Nat)
-    )
-
-    val eSub = rise.core.substitute.natsInExpr(params, asum_0)
-    val eSub2 = rise.core.substitute.natsInExpr(params, amdDerived1)
-
-    // generate code
-    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
-    println("kernel: \n" + kernel)
-
-    val tp_params = autotune.constraints.collectParameters(asum_0)
-    val constraints = autotune.constraints.collectConstraints(asum_0, tp_params)
-
-    println("Params: ")
-    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
-    println("Constraints: ")
-    constraints.foreach(println)
-
-    val result = autotune.execution.execute(
-      expression = eSub,
-      hostCode = HostCode(init(inputSize), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 1000,
-      speedupFactor = 1000,
-      execution = Minimum
-    )
-    println("result: " + result.runtime)
+    //    //    println("nvidia derived: \n" + nvidiaDerived1)
+    //    //
+    //    //     opencl
+    //
+    //    // generate code
+    //    val params: Map[Nat, Nat] = Map(
+    //      TuningParameter("ls0") -> (128: Nat),
+    //      TuningParameter("gs0") -> (1024: Nat),
+    //      TuningParameter("sp0") -> ((4096 * 128): Nat),
+    //      TuningParameter("sp1") -> (2048: Nat),
+    //      TuningParameter("stride") -> (64: Nat),
+    //      TuningParameter("vec0") -> (2: Nat)
+    //    )
+    //
+    //    val eSub = rise.core.substitute.natsInExpr(params, asum_0)
+    //    val eSub2 = rise.core.substitute.natsInExpr(params, amdDerived1)
+    //
+    //    // generate code
+    //    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
+    //    println("kernel: \n" + kernel)
+    //
+    //    val tp_params = autotune.constraints.collectParameters(asum_0)
+    //    val constraints = autotune.constraints.collectConstraints(asum_0, tp_params)
+    //
+    //    println("Params: ")
+    //    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
+    //    println("Constraints: ")
+    //    constraints.foreach(println)
+    //
+    //    val result = autotune.execution.execute(
+    //      expression = eSub,
+    //      hostCode = HostCode(init(inputSize), compute, finish),
+    //      timeouts = Timeouts(5000, 5000, 5000),
+    //      executionIterations = 1000,
+    //      speedupFactor = 1000,
+    //      execution = Minimum
+    //    )
+    //    println("result: " + result.runtime)
 
 
     val tuner = Tuner(
@@ -371,7 +374,8 @@ class asumTuning extends test_util.Tests {
     //    println("configFile: \n" + configFile)
 
 
-    val tuning_result = autotune.search(tuner)(asum_0)
+    //    val tuning_result = autotune.search(tuner)(asum_0)
+    val tuning_result = autotune.search(tuner)(asum_1)
 
   }
 
@@ -456,7 +460,7 @@ class asumTuning extends test_util.Tests {
     val asum: String = "asum_0"
 
     // expert configuration
-    val defaultConfiguration: Map[Nat, Nat] = Map(
+    val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("sp0") -> ((2048 * 128): Nat),
@@ -465,19 +469,19 @@ class asumTuning extends test_util.Tests {
     )
 
     // todo adjust this
-    val expertConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (16: Nat),
-      TuningParameter("gs0") -> (512: Nat),
-      TuningParameter("sp0") -> (2048: Nat),
-      TuningParameter("sp1") -> (128: Nat),
-      TuningParameter("stride") -> (64: Nat),
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (4: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("sp0") -> (67108864: Nat),
+      TuningParameter("sp1") -> (512: Nat),
+      TuningParameter("stride") -> (4096: Nat),
     )
 
     val configs = Seq(
       s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/atflog_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/${asum}/${inputSize.toString}/atflog_emb_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
@@ -488,14 +492,14 @@ class asumTuning extends test_util.Tests {
       name = s"${asum}_${inputSize}",
       configFiles = configs,
       iterations = 10,
-      output = s"/home/jo/development/experiments/tuning/results/${asum}_${inputSize}",
+      output = s"experiment/results/${asum}_${inputSize}",
       asum_0,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
-      //      expert = None,
+      //        expert = None,
       //      default = None
     )
 
@@ -509,7 +513,9 @@ class asumTuning extends test_util.Tests {
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls1") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
       TuningParameter("sp0") -> ((4096 * 128): Nat),
       TuningParameter("sp1") -> (2048: Nat),
       TuningParameter("stride") -> (64: Nat),
@@ -519,7 +525,9 @@ class asumTuning extends test_util.Tests {
     // todo adjust this
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (128: Nat),
+      TuningParameter("ls1") -> (128: Nat),
       TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
       TuningParameter("sp0") -> ((4096 * 128): Nat),
       TuningParameter("sp1") -> (2048: Nat),
       TuningParameter("stride") -> (64: Nat),
@@ -528,10 +536,10 @@ class asumTuning extends test_util.Tests {
 
     val configs = Seq(
       s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      //      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
@@ -543,14 +551,16 @@ class asumTuning extends test_util.Tests {
     runExperiment(
       name = s"${asum}_${inputSize}",
       configFiles = configs,
-      iterations = 10,
-      output = s"/home/jo/development/experiments/tuning/results/${asum}_${inputSize}",
+      iterations = 3,
+      //      output = s"/home/jo/development/experiments/tuning/results/${asum}_${inputSize}",
+      output = s"experiment/results/${asum}_${inputSize}",
       asum_1,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
       plotOnly = false,
-      expert = Some(expertConfiguration),
+      //      expert = Some(expertConfiguration),
       //      default = Some(defaultConfiguration)
+      expert = None,
       default = None,
       disableChecking = true
     )
