@@ -480,12 +480,14 @@ class mmTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bounlog_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json",
     )
 
     runExperiment(

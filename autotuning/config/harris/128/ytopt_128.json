@@ -1,5 +1,5 @@
 {
-  "application_name": "atf_emb_128",
+  "application_name": "ytopt_128",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,17 +12,17 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "atf_emb_128.log",
+  "log_file": "ytopt_128.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "optimization_method": "ytopt",
   "multistart_hyperparameter_optimization_initial_points": 50,
   "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",

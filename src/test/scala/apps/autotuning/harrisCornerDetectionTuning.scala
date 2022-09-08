@@ -134,15 +134,24 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-  ignore("run harris autotuning mapLocal/mapWorkGroup 128 ") {
+  test("run harris autotuning mapglobal/seq 128 ") {
+
+    //    val harrisTuning =
+    //      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
+    //        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
+    //          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
+    //            lowerOCL(
+    //              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
+    //                ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
+    //          )))
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
         tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
           tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
             lowerOCL(
-              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
-                ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
+              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
           )))
 
     val harrisOCLTuning =
@@ -152,7 +161,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             tuningParam("ls1", RangeMul(1, 256, 2), (ls1: Nat) =>
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
-
 
     //    expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -187,19 +195,21 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      "autotuning/config/harris/128/rs_cot_128.json",
-      //      "autotuning/config/harris/128/rs_emb_128.json",
-      //      "autotuning/config/harris/128/bogp_cot_128.json",
-      //      "autotuning/config/harris/128/bogplsp_cot_128.json",
-      //      "autotuning/config/harris/128/atf_emb_128.json"
+      "autotuning/config/harris/128/rs_cot_128.json",
+      "autotuning/config/harris/128/rs_emb_128.json",
+      "autotuning/config/harris/128/bo_cot_128.json",
+      "autotuning/config/harris/128/bounlog_cot_128.json",
+      "autotuning/config/harris/128/atf_emb_128.json",
+      "autotuning/config/harris/1024/ytopt_128.json",
+      "autotuning/config/harris/1024/ytoptunlog_128.json"
     )
 
     runExperiment(
       name = "harris_128",
       configFiles = configs,
-      iterations = 51,
+      iterations = 10,
       //      "experiment/results/harris",
-      output = s"experiment/results/harris_wl_128",
+      output = s"experiment/results/harris_128",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
       inputSizes = Seq(128, 256),
@@ -207,12 +217,9 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )
-
-
   }
 
-
-  test("run harris autotuning mapLocal/mapWorkGroup 1024") {
+  ignore("run harris autotuning mapLocal/mapWorkGroup 1024") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 1024, 2), (tileX: Nat) =>
@@ -255,12 +262,14 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs = Seq(
-      "autotuning/config/harris/1024/rs_cot_1024.json",
-      "autotuning/config/harris/1024/rs_emb_1024.json",
-      "autotuning/config/harris/1024/ls_cot_1024.json",
-      "autotuning/config/harris/1024/bo_cot_1024.json",
-      "autotuning/config/harris/1024/atf_emb_1024.json",
-      "autotuning/config/harris/1024/ytopt_1024.json"
+      //      "autotuning/config/harris/1024/rs_cot_1024.json",
+      //      "autotuning/config/harris/1024/rs_emb_1024.json",
+      //      "autotuning/config/harris/1024/ls_cot_1024.json",
+      //      "autotuning/config/harris/1024/bo_cot_1024.json",
+      "autotuning/config/harris/1024/bounlog_cot_1024.json",
+      //      "autotuning/config/harris/1024/atf_emb_1024.json",
+      //      "autotuning/config/harris/1024/ytopt_1024.json",
+      "autotuning/config/harris/1024/ytoptunlog_1024.json"
     )
 
     runExperiment(

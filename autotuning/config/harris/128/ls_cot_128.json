@@ -1,5 +1,5 @@
 {
-  "application_name": "ls_cot_harris",
+  "application_name": "ls_cot_128",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,16 +12,22 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "ls_cot_harris.log",
+  "log_file": "ls_cot_128.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "optimization_method": "local_search",
-  "local_search_random_points": 50,
-  "local_search_evaluation_limit": 500,
+  "design_of_experiment": {
+    "number_of_samples": 9
+  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
+  "local_search_evaluation_limit": 150,
+  "local_search_random_points": 10,
+  "optimization_method": "local_search",
+  "optimization_iterations": 141,
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",
