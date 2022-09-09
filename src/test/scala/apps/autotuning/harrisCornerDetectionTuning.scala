@@ -134,25 +134,25 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-  test("run harris autotuning mapglobal/seq 128 ") {
-
-    //    val harrisTuning =
-    //      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
-    //        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
-    //          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
-    //            lowerOCL(
-    //              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
-    //                ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
-    //          )))
+  ignore("run harris autotuning mapglobal/seq 128 ") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
         tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
           tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
             lowerOCL(
-              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
-                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
+              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
+                ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
           )))
+
+    //    val harrisTuning =
+    //      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
+    //        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
+    //          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
+    //            lowerOCL(
+    //              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
+    //                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
+    //          )))
 
     val harrisOCLTuning =
       tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
@@ -287,7 +287,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   }
 
 
-  ignore("run harris autotuning mapGlobal/mapSeq 128 ") {
+  test("run harris autotuning mapGlobal/mapSeq 128 ") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -306,7 +306,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(harrisTuning)
             ))))
 
-
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
@@ -319,22 +318,23 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     )
 
     val defaultConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1: Nat),
-      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("ls0") -> (8: Nat),
+      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("gs0") -> (128: Nat),
+      TuningParameter("gs1") -> (256: Nat),
       TuningParameter("tileX") -> (8: Nat),
-      TuningParameter("tileY") -> (8: Nat),
+      TuningParameter("tileY") -> (16: Nat),
       TuningParameter("vec") -> (4: Nat)
     )
-
 
     val configs = Seq(
       "autotuning/config/harris/128/rs_cot_128.json",
       "autotuning/config/harris/128/rs_emb_128.json",
-      "autotuning/config/harris/128/bogp_cot_128.json",
-      "autotuning/config/harris/128/bogplsp_cot_128.json",
-      "autotuning/config/harris/128/atf_emb_128.json"
+      "autotuning/config/harris/128/bo_cot_128.json",
+      "autotuning/config/harris/128/bounlog_cot_128.json",
+      "autotuning/config/harris/128/atf_emb_128.json",
+      "autotuning/config/harris/128/ytopt_128.json",
+      "autotuning/config/harris/128/ytoptunlog_128.json"
     )
 
     runExperiment(
@@ -342,7 +342,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       configFiles = configs,
       iterations = 10,
       //      "experiment/results/harris",
-      output = s"experiment/results/harris_gs_128",
+      output = s"experiment/results/harris_128",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
       inputSizes = Seq(128, 256),
