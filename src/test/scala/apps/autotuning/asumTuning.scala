@@ -456,7 +456,7 @@ class asumTuning extends test_util.Tests {
   // todo check result of that experiment!
   // check warning about " [...] % 1/4" - what is "%0"?
   test("tune asum 0") {
-    val inputSize: Int = 2 << 25
+    val inputSize: Int = 2 << 23
     val asum: String = "asum_0"
 
     // expert configuration
@@ -472,7 +472,7 @@ class asumTuning extends test_util.Tests {
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (4: Nat),
       TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("sp0") -> (67108864: Nat),
+      TuningParameter("sp0") -> (16777216: Nat),
       TuningParameter("sp1") -> (512: Nat),
       TuningParameter("stride") -> (4096: Nat),
     )
@@ -481,7 +481,7 @@ class asumTuning extends test_util.Tests {
       s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/${asum}/${inputSize.toString}/atflog_emb_${inputSize.toString}.json",
+      s"autotuning/config/${asum}/${inputSize.toString}/atflog_emb_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
@@ -543,7 +543,7 @@ class asumTuning extends test_util.Tests {
       //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //                  s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
     )
