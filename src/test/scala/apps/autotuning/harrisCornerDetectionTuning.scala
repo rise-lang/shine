@@ -163,7 +163,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             ))))
 
     //    expert configuration
-    val expertConfiguration: Map[Nat, Nat] = Map(
+    val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (32: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -174,25 +174,25 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     )
 
     // Michel
-    //    val expertConfiguration: Map[Nat, Nat] = Map(
-    //      TuningParameter("ls0") -> (16: Nat),
-    //      TuningParameter("ls1") -> (16: Nat),
-    //      TuningParameter("gs0") -> (256: Nat),
-    //      TuningParameter("gs1") -> (256: Nat),
-    //      TuningParameter("tileX") -> (16: Nat),
-    //      TuningParameter("tileY") -> (16: Nat),
-    //      TuningParameter("vec") -> (4: Nat)
-    //    )
-
-    val defaultConfiguration: Map[Nat, Nat] = Map(
+    val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (256: Nat),
-      TuningParameter("gs1") -> (128: Nat),
-      TuningParameter("tileX") -> (10: Nat),
-      TuningParameter("tileY") -> (24: Nat),
-      TuningParameter("vec") -> (2: Nat)
+      TuningParameter("gs1") -> (256: Nat),
+      TuningParameter("tileX") -> (16: Nat),
+      TuningParameter("tileY") -> (16: Nat),
+      TuningParameter("vec") -> (4: Nat)
     )
+    //
+    //    val defaultConfiguration: Map[Nat, Nat] = Map(
+    //      TuningParameter("ls0") -> (16: Nat),
+    //      TuningParameter("ls1") -> (16: Nat),
+    //      TuningParameter("gs0") -> (256: Nat),
+    //      TuningParameter("gs1") -> (128: Nat),
+    //      TuningParameter("tileX") -> (10: Nat),
+    //      TuningParameter("tileY") -> (24: Nat),
+    //      TuningParameter("vec") -> (2: Nat)
+    //    )
 
     val configs = Seq(
       "autotuning/config/harris/128/rs_cot_128.json",
