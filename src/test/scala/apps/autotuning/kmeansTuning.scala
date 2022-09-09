@@ -58,14 +58,14 @@ class kmeansTuning extends test_util.Tests {
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.kmeans.kmeansOcl)
           ))))
 
-  val kmeans2: Expr =
-    tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-        tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-            tuningParam("sp0", RangeMul(1, 1024, 2), (sp0: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.kmeans.kmeansOcl2(sp0))
-            )))))
+  //  val kmeans2: Expr =
+  //    tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+  //      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+  //        tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+  //          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+  //            tuningParam("sp0", RangeMul(1, 1024, 2), (sp0: Nat) =>
+  //              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.kmeans.kmeansOcl2(sp0))
+  //            )))))
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (p, c, f) => {
@@ -131,28 +131,28 @@ class kmeansTuning extends test_util.Tests {
     println("result: " + result)
   }
 
-  test("execute kmeans2") {
-    val params: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1: Nat),
-      TuningParameter("sp0") -> (32: Nat)
-    )
-
-    val kmeans_replaced = rise.core.substitute.natsInExpr(params, kmeans2)
-
-    val result = autotune.execution.execute(
-      expression = kmeans_replaced,
-      hostCode = HostCode(init(1024, 5, 34), compute, finish),
-      timeouts = Timeouts(10000, 10000, 100000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      execution = Median
-    )
-
-    println("result: " + result)
-  }
+  //  test("execute kmeans2") {
+  //    val params: Map[Nat, Nat] = Map(
+  //      TuningParameter("ls0") -> (32: Nat),
+  //      TuningParameter("ls1") -> (1: Nat),
+  //      TuningParameter("gs0") -> (1024: Nat),
+  //      TuningParameter("gs1") -> (1: Nat),
+  //      TuningParameter("sp0") -> (32: Nat)
+  //    )
+  //
+  //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, kmeans2)
+  //
+  //    val result = autotune.execution.execute(
+  //      expression = kmeans_replaced,
+  //      hostCode = HostCode(init(1024, 5, 34), compute, finish),
+  //      timeouts = Timeouts(10000, 10000, 100000),
+  //      executionIterations = 10,
+  //      speedupFactor = 100,
+  //      execution = Median
+  //    )
+  //
+  //    println("result: " + result)
+  //  }
 
   test("search kmeans with generated config file") {
 
@@ -180,31 +180,31 @@ class kmeansTuning extends test_util.Tests {
     println("runtime: \n" + bestSample.get.runtime)
   }
 
-  test("search kmeans2 with generated config file") {
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 5, 34), compute, finish),
-      inputSizes = Seq(1024, 5, 34),
-      samples = 100,
-      name = "kmeans2",
-      output = "autotuning/kmeans2",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      runtimeStatistic = Median,
-      speedupFactor = 100,
-      configFile = None,
-      hmConstraints = true,
-    )
-
-    val tuningResult = autotune.search(tuner)(kmeans2)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-    println("runtime: \n" + bestSample.get.runtime)
-  }
+  //  test("search kmeans2 with generated config file") {
+  //
+  //    val tuner = Tuner(
+  //      hostCode = HostCode(init(1024, 5, 34), compute, finish),
+  //      inputSizes = Seq(1024, 5, 34),
+  //      samples = 100,
+  //      name = "kmeans2",
+  //      output = "autotuning/kmeans2",
+  //      timeouts = Timeouts(10000, 10000, 10000),
+  //      executionIterations = 10,
+  //      runtimeStatistic = Median,
+  //      speedupFactor = 100,
+  //      configFile = None,
+  //      hmConstraints = true,
+  //    )
+  //
+  //    val tuningResult = autotune.search(tuner)(kmeans2)
+  //
+  //    println("tuningResult: \n")
+  //    tuningResult.samples.foreach(elem => println(elem))
+  //
+  //    val bestSample = autotune.getBest(tuningResult.samples)
+  //    println("bestSample: \n" + bestSample)
+  //    println("runtime: \n" + bestSample.get.runtime)
+  //  }
 
   ignore("search kmeans with manual config file") {
 
@@ -260,7 +260,10 @@ class kmeansTuning extends test_util.Tests {
 
   test("run kmeans autotuning") {
 
+    val inputSize2: Int = 1 << 19
     val inputSize: Int = 1024
+
+    println("inputSize2: " + inputSize2)
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -293,8 +296,8 @@ class kmeansTuning extends test_util.Tests {
       //      output = s"experiment/results/kmeans_${inputSize}",
       output = s"/home/jo/development/experiments/tuning/results/kmeans_${inputSize}",
       e = kmeans,
-      hostCode = HostCode(init(1024, 5, 34), compute, finish),
-      inputSizes = Seq(inputSize, 5, 34),
+      hostCode = HostCode(init(inputSize2, 10, 34), compute, finish),
+      inputSizes = Seq(inputSize2, 10, 34),
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = None
