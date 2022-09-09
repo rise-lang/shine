@@ -26,6 +26,7 @@ cd ..
 
 # install opentuner
 pip install opentuner
+pip install scikit-optimize
 
 # install shine
 git clone https://github.com/rise-lang/shine.git
