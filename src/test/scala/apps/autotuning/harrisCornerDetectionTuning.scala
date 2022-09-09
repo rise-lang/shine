@@ -307,7 +307,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
             ))))
 
     // expert configuration
-    val expertConfiguration: Map[Nat, Nat] = Map(
+    val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (16: Nat),
       TuningParameter("ls1") -> (32: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -317,7 +317,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       TuningParameter("vec") -> (4: Nat)
     )
 
-    val defaultConfiguration: Map[Nat, Nat] = Map(
+    val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (8: Nat),
       TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (128: Nat),
@@ -348,7 +348,8 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       inputSizes = Seq(128, 256),
       plotOnly = false,
       expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
+      //      default = Some(defaultConfiguration)
+      default = None
     )
   }
 
