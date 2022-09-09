@@ -1,5 +1,5 @@
 {
-  "application_name": "bogp_cot_1024",
+  "application_name": "bo_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bogp_cot_1024.log",
+  "log_file": "bo_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -25,6 +25,15 @@
   },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 144,
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 5,
+  "lengthscale_prior": {
+    "name": "gamma",
+    "parameters": [
+      1.3,
+      0.1
+    ]
+  },
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",
@@ -52,8 +61,7 @@
       ],
       "dependencies": [
         "tuned_vec101"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_tile52": {
       "parameter_type": "ordinal",
@@ -76,8 +84,7 @@
         "1024 % tuned_tile52 == 0",
         "(tuned_tile52) >= (1)"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_vec101": {
       "parameter_type": "ordinal",
@@ -99,8 +106,7 @@
         "tuned_vec101 <= 128",
         "tuned_vec101 % 2 == 0"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_split100": {
       "parameter_type": "ordinal",
@@ -123,8 +129,7 @@
         "1024 % tuned_split100 == 0",
         "(tuned_split100) >= (1)"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_reorder": {
       "parameter_type": "permutation",

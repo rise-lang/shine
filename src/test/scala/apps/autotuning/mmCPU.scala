@@ -30,8 +30,8 @@ import rise.core.types.{Nat, TuningParameter}
 class mmCPU extends test_util.Tests {
 
   // tvm gemm
-  //  val N = 1024
-  val N = 512
+  val N = 1024
+  //  val N = 512
 
   // todo check input vars, maybe dep fun
   val mm: Expr = //infer(
@@ -241,7 +241,7 @@ class mmCPU extends test_util.Tests {
       Some(executionTime))
   }
 
-  test("get constraints array packing mmCPU") {
+  ignore("get constraints array packing mmCPU") {
     // rewrite by hand with tunable
     // derive constraints from that automatically
 
@@ -296,7 +296,7 @@ class mmCPU extends test_util.Tests {
 
   }
 
-  test("run experiment mmCPU 2") {
+  ignore("run experiment mmCPU 2") {
     val inputSize: Int = N
 
 
@@ -329,7 +329,7 @@ class mmCPU extends test_util.Tests {
     )
     //
     val configs = Seq(
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
@@ -353,7 +353,7 @@ class mmCPU extends test_util.Tests {
       expert = None,
       default = None,
       expert2 = Some(expertConfiugration),
-      //      default2 = Some(defaultConfiugration)
+      default2 = Some(defaultConfiugration)
     )
   }
 
@@ -384,33 +384,23 @@ class mmCPU extends test_util.Tests {
       )
     )
 
-    //    val defaultConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
-    //      Map(
-    //        "tuned_tile51" -> 32,
-    //        "tuned_tile52" -> 32,
-    //        "tuned_split100" -> 4,
-    //        "tuned_vec101" -> 32
-    //      ),
-    //      Map(
-    //        "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
-    //      )
-    //    )
-    //
     val configs = Seq(
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //            s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"mmCPU_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
+      iterations = 10,
+      //      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
+      output = s"experiment/results/mmCPU_${inputSize}",
       mm,
       HostCode("", "", ""), // ignore this
       Seq(inputSize, inputSize, inputSize),
