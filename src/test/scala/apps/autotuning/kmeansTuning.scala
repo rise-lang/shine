@@ -157,6 +157,7 @@ class kmeansTuning extends test_util.Tests {
   ignore("search kmeans with generated config file") {
 
     val tuner = Tuner(
+
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
       inputSizes = Seq(1024, 5, 34),
       samples = 10,
@@ -292,6 +293,7 @@ class kmeansTuning extends test_util.Tests {
       configFiles = configs,
       iterations = 10,
       output = s"experiment/results/kmeans_${inputSize}",
+      e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
       inputSizes = Seq(inputSize, 10, 34),
       plotOnly = false,
