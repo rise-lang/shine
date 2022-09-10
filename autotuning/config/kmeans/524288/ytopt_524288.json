@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_cot_524288",
+  "application_name": "ytopt_524288",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,18 +12,18 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_cot_524288.log",
+  "log_file": "ytopt_524288.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 150
+    "number_of_samples": 5
   },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_iterations": 0,
+  "optimization_iterations": 145,
   "multistart_hyperparameter_optimization_initial_points": 50,
   "multistart_hyperparameter_optimization_iterations": 10,
   "input_parameters": {
@@ -48,8 +48,7 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -72,8 +71,7 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -91,8 +89,7 @@
         1024
       ],
       "constraints": [],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -114,8 +111,7 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ],
-      "transform": "log"
+      ]
     }
   }
 }

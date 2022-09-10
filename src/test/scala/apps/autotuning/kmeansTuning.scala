@@ -260,10 +260,7 @@ class kmeansTuning extends test_util.Tests {
 
   test("run kmeans autotuning") {
 
-    val inputSize2: Int = 1 << 19
-    val inputSize: Int = 1024
-
-    println("inputSize2: " + inputSize2)
+    val inputSize: Int = 1 << 19
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -281,27 +278,25 @@ class kmeansTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      //      output = s"experiment/results/kmeans_${inputSize}",
-      output = s"/home/jo/development/experiments/tuning/results/kmeans_${inputSize}",
-      e = kmeans,
-      hostCode = HostCode(init(inputSize2, 10, 34), compute, finish),
-      inputSizes = Seq(inputSize2, 10, 34),
+      iterations = 10,
+      output = s"experiment/results/kmeans_${inputSize}",
+      hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
+      inputSizes = Seq(inputSize, 10, 34),
       plotOnly = false,
       expert = Some(expertConfiguration),
-      default = None
-      //      default = Some(defaultConfiguration)
+      default = Some(defaultConfiguration)
     )
   }
 }
