@@ -109,7 +109,7 @@ class kmeansTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute kmeans") {
+  ignore("execute kmeans") {
     val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
       TuningParameter("ls1") -> (1: Nat),
@@ -154,7 +154,7 @@ class kmeansTuning extends test_util.Tests {
   //    println("result: " + result)
   //  }
 
-  test("search kmeans with generated config file") {
+  ignore("search kmeans with generated config file") {
 
     val tuner = Tuner(
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
