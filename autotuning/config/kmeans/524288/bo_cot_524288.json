@@ -1,5 +1,5 @@
 {
-  "application_name": "bogplsp_cot_1024",
+  "application_name": "bo_cot_524288",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bogplsp_cot_1024.log",
+  "log_file": "bo_cot_524288.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -23,12 +23,17 @@
   "models": {
     "model": "gaussian_process"
   },
-  "lengthscale_prior" : {
-    "name": "gamma",
-    "parameters": [1.3, 0.1]
-  },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 145,
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "lengthscale_prior": {
+    "name": "gamma",
+    "parameters": [
+      1.3,
+      0.1
+    ]
+  },
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -51,8 +56,7 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ],
-      "transform" : "log"
+      ]
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -75,8 +79,7 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ],
-      "transform" : "log"
+      ]
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -94,8 +97,7 @@
         1024
       ],
       "constraints": [],
-      "dependencies": [],
-      "transform" : "log"
+      "dependencies": []
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -117,8 +119,7 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ],
-      "transform" : "log"
+      ]
     }
   }
 }
