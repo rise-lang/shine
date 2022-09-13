@@ -1,5 +1,5 @@
 {
-  "application_name": "bounlog_cot_1024",
+  "application_name": "ytoptlog_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,28 +12,17 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bounlog_cot_1024.log",
+  "log_file": "ytoptlog_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 9
-  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "lengthscale_prior": {
-    "name": "gamma",
-    "parameters": [
-      1.3,
-      0.1
-    ]
-  },
-  "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 141,
+  "optimization_method": "ytopt",
   "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 5,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -51,7 +40,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -74,7 +64,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -83,7 +74,8 @@
         4
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -106,7 +98,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -632,7 +625,8 @@
       "dependencies": [
         "tuned_tileY",
         "tuned_vec"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -654,7 +648,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -1174,7 +1169,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     }
   }
 }

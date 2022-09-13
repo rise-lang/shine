@@ -51,8 +51,7 @@
         1024
       ],
       "constraints": [],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -75,8 +74,7 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -85,8 +83,7 @@
         4
       ],
       "constraints": [],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -109,8 +106,7 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_tileX": {
       "parameter_type": "ordinal",
@@ -636,8 +632,7 @@
       "dependencies": [
         "tuned_tileY",
         "tuned_vec"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -659,8 +654,7 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_tileY": {
       "parameter_type": "ordinal",
@@ -1180,8 +1174,7 @@
         1024
       ],
       "constraints": [],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     }
   }
 }

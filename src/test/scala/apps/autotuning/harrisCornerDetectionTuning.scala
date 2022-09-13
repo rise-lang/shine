@@ -219,7 +219,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     )
   }
 
-  ignore("run harris autotuning mapLocal/mapWorkGroup 1024") {
+  test("run harris autotuning mapLocal/mapWorkGroup 1024") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 1024, 2), (tileX: Nat) =>
@@ -262,14 +262,14 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs = Seq(
-      //      "autotuning/config/harris/1024/rs_cot_1024.json",
-      //      "autotuning/config/harris/1024/rs_emb_1024.json",
+      //      "autotuning/config/harris/1024/rs_cot_524288.json",
+      //      "autotuning/config/harris/1024/rs_emb_524288.json",
       //      "autotuning/config/harris/1024/ls_cot_1024.json",
-      //      "autotuning/config/harris/1024/bo_cot_1024.json",
-      "autotuning/config/harris/1024/bounlog_cot_1024.json",
-      //      "autotuning/config/harris/1024/atf_emb_1024.json",
-      //      "autotuning/config/harris/1024/ytopt_1024.json",
-      "autotuning/config/harris/1024/ytoptunlog_1024.json"
+      //      "autotuning/config/harris/1024/bolog_cot_1024.json",
+      "autotuning/config/harris/1024/bo_cot_1024.json",
+      //      "autotuning/config/harris/1024/atf_emb_524288.json",
+      //      "autotuning/config/harris/1024/ytoptlog_1024.json",
+      //      "autotuning/config/harris/1024/ytopt_1024.json"
     )
 
     runExperiment(
@@ -287,7 +287,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   }
 
 
-  test("run harris autotuning mapGlobal/mapSeq 128 ") {
+  ignore("run harris autotuning mapGlobal/mapSeq 128 ") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -397,11 +397,11 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs = Seq(
-      "autotuning/config/harris/1024/rs_cot_1024.json",
-      "autotuning/config/harris/1024/rs_emb_1024.json",
-      "autotuning/config/harris/1024/bogp_cot_1024.json",
+      "autotuning/config/harris/1024/rs_cot_524288.json",
+      "autotuning/config/harris/1024/rs_emb_524288.json",
+      "autotuning/config/harris/1024/bolog_cot_1024.json",
       "autotuning/config/harris/1024/bogplsp_cot_`1024.json",
-      "autotuning/config/harris/1024/atf_emb_1024.json"
+      "autotuning/config/harris/1024/atf_emb_524288.json"
     )
 
     runExperiment(
