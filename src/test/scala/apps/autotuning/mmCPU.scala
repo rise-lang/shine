@@ -203,7 +203,7 @@ class mmCPU extends test_util.Tests {
   val executor = CExecutor(
     lowering = lowerToC,
     goldExpression = gold,
-    iterations = 11,
+    iterations = 21,
     inputSize = N,
     threshold = 10,
     timeout = 10000,
@@ -285,6 +285,7 @@ class mmCPU extends test_util.Tests {
     constraints.foreach(println)
 
     val tuner = Tuner(
+      inputSizes = Seq(1024),
       hostCode = HostCode("", "", ""),
       hmConstraints = true
     )
@@ -296,7 +297,7 @@ class mmCPU extends test_util.Tests {
 
   }
 
-  ignore("run experiment mmCPU 2") {
+  test("run experiment mmCPU 2") {
     val inputSize: Int = N
 
 
@@ -329,20 +330,19 @@ class mmCPU extends test_util.Tests {
     )
     //
     val configs = Seq(
-      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU2/${inputSize.toString}/ytopt_${inputSize.toString}.json",
     )
 
     runExperiment(
-      name = s"mmCPU_${inputSize}",
+      name = s"mmCPU2_${inputSize}",
       configFiles = configs,
-      iterations = 1,
-      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
+      iterations = 10,
+      output = s"experiment/results/paper/mmCPU2_${inputSize}",
       mm,
       HostCode("", "", ""), // ignore this
       Seq(inputSize, inputSize, inputSize),
@@ -387,12 +387,11 @@ class mmCPU extends test_util.Tests {
     val configs = Seq(
       s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //            s"autotuning/config/mmCPU/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
+      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json"
+      //      s"autotuning/config/mmCPU/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -400,7 +399,7 @@ class mmCPU extends test_util.Tests {
       configFiles = configs,
       iterations = 10,
       //      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
-      output = s"experiment/results/mmCPU_${inputSize}",
+      output = s"experiment/results/paper/mmCPU_${inputSize}",
       mm,
       HostCode("", "", ""), // ignore this
       Seq(inputSize, inputSize, inputSize),
