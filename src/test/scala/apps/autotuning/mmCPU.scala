@@ -152,6 +152,8 @@ class mmCPU extends test_util.Tests {
       }
     }
 
+    println("hallo hilfe!")
+
     result match {
       case Success(expression) => Right(expression)
       case Failure(value) => Left(value.toString())
@@ -267,9 +269,9 @@ class mmCPU extends test_util.Tests {
       (tile() `@` outermost(mapNest(2))) `;;`
       (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (tunable("blockedReduce", splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;`
-      //      reorder(List(1, 2, 5, 3, 6, 4)) `;;`
-      reorder(List(1, 2, 3, 4, 5, 6)) // `;;`
-    //      (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
+      reorder(List(1, 2, 5, 3, 6, 4)) `;;`
+      //      reorder(List(1, 2, 3, 4, 5, 6)) `;;`
+      (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
 
 
     val rewrittenMM = strategy.apply(mm).get
@@ -352,6 +354,8 @@ class mmCPU extends test_util.Tests {
       plotOnly = false,
       expert = None,
       default = None,
+      //      expert2 = None,
+      //      default2 = None
       expert2 = Some(expertConfiugration),
       default2 = Some(defaultConfiugration)
     )
