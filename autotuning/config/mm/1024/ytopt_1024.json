@@ -46,8 +46,7 @@
       ],
       "dependencies": [
         "tuned_v7"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_v4": {
       "parameter_type": "ordinal",
@@ -69,8 +68,7 @@
       ],
       "dependencies": [
         "tuned_v5"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_v5": {
       "parameter_type": "ordinal",
@@ -90,8 +88,7 @@
         "tuned_v5 % 4 == 0",
         "49152 - tuned_v5 * 1 * 4 - tuned_v5 * 1 * 4 - 4 * 1 * 1 >= 0"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_v6": {
       "parameter_type": "ordinal",
@@ -113,8 +110,7 @@
       "dependencies": [
         "tuned_v5",
         "tuned_v8"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_v7": {
       "parameter_type": "ordinal",
@@ -136,8 +132,7 @@
       ],
       "dependencies": [
         "tuned_v5"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_v8": {
       "parameter_type": "ordinal",
@@ -161,8 +156,7 @@
       "dependencies": [
         "tuned_v5",
         "tuned_v7"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -185,8 +179,7 @@
       ],
       "dependencies": [
         "tuned_gs0"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -210,8 +203,7 @@
       "dependencies": [
         "tuned_gs1",
         "tuned_ls0"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -252,8 +244,7 @@
       "constraints": [
         "1024 % tuned_gs1 == 0"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "application_name": "ytoptunlog_1024",
+  "application_name": "bolog_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "ytoptunlog_1024.log",
+  "log_file": "bolog_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -23,9 +23,17 @@
   "models": {
     "model": "gaussian_process"
   },
+  "optimization_method": "bayesian_optimization",
   "optimization_iterations": 139,
   "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
+  "multistart_hyperparameter_optimization_iterations": 5,
+  "lengthscale_prior": {
+    "name": "gamma",
+    "parameters": [
+      1.3,
+      0.1
+    ]
+  },
   "input_parameters": {
     "tuned_v3": {
       "parameter_type": "ordinal",
@@ -46,7 +54,8 @@
       ],
       "dependencies": [
         "tuned_v7"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_v4": {
       "parameter_type": "ordinal",
@@ -68,7 +77,8 @@
       ],
       "dependencies": [
         "tuned_v5"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_v5": {
       "parameter_type": "ordinal",
@@ -88,7 +98,8 @@
         "tuned_v5 % 4 == 0",
         "49152 - tuned_v5 * 1 * 4 - tuned_v5 * 1 * 4 - 4 * 1 * 1 >= 0"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_v6": {
       "parameter_type": "ordinal",
@@ -110,7 +121,8 @@
       "dependencies": [
         "tuned_v5",
         "tuned_v8"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_v7": {
       "parameter_type": "ordinal",
@@ -132,7 +144,8 @@
       ],
       "dependencies": [
         "tuned_v5"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_v8": {
       "parameter_type": "ordinal",
@@ -156,7 +169,8 @@
       "dependencies": [
         "tuned_v5",
         "tuned_v7"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -179,7 +193,8 @@
       ],
       "dependencies": [
         "tuned_gs0"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -203,7 +218,8 @@
       "dependencies": [
         "tuned_gs1",
         "tuned_ls0"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -244,7 +260,8 @@
       "constraints": [
         "1024 % tuned_gs1 == 0"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     }
   }
 }
