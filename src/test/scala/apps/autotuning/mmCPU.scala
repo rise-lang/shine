@@ -299,7 +299,7 @@ class mmCPU extends test_util.Tests {
 
   }
 
-  test("run experiment mmCPU 2") {
+  ignore("run experiment mmCPU 2") {
     val inputSize: Int = N
 
 
