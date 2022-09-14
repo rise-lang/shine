@@ -16,8 +16,7 @@
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 150
+    "doe_type": "random sampling"
   },
   "optimization_method": "exhaustive",
   "scalarization_method": "linear",
