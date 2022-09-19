@@ -400,6 +400,72 @@ object mm {
       .run(start, steps)
   }
 
+  private val split_imprecise =
+    containsMap(`?n`,
+      containsMap(`?n`,
+        containsMap(`?n`,
+          containsMap(`?n`,
+            containsReduceSeq(`?n`,
+              containsReduceSeq(`?n`, containsAddMul))))))
+  private val reorder_1_imprecise =
+    containsMap(`?n`,
+      containsMap(`?n`,
+        containsReduceSeq(`?n`,
+          containsReduceSeq(`?n`,
+            containsMap(`?n`,
+              containsMap(`?n`, containsAddMul))))))
+
+  private def blocking_SR_imprecise(splitStep: GuidedSearch.Step,
+                                    reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
+    val start = mm
+
+    val steps = Seq(
+      splitStep withSketch split_imprecise,
+      reorderStep withSketch reorder_1_imprecise,
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
+  val containsAddMulOverprecise: Sketch =
+    lam(lam(app(app(add, %(1)),
+      app(app(mul, app(fst, %(0))), app(snd, %(0))))))
+
+  private val split_overprecise =
+    containsMap(m /^ cst(32),
+      containsMap(cst(32),
+        containsMap(n /^ cst(32),
+          containsMap(cst(32),
+            containsReduceSeq(k /^ cst(4),
+              containsReduceSeq(cst(4), containsAddMulOverprecise))))))
+  private val reorder_1_overprecise =
+    containsMap(m /^ cst(32),
+      containsMap(n /^ cst(32),
+        containsReduceSeq(k /^ cst(4),
+          containsReduceSeq(cst(4),
+            containsMap(cst(32),
+              containsMap(cst(32), containsAddMulOverprecise))))))
+
+  private def blocking_SR_overprecise(splitStep: GuidedSearch.Step,
+                                      reorderStep: GuidedSearch.Step): GuidedSearch.Result = {
+    val start = mm
+
+    val steps = Seq(
+      splitStep withSketch split_overprecise,
+      reorderStep withSketch reorder_1_overprecise,
+    )
+
+    GuidedSearch.init()
+      .withFilter(ArrayDimensionPredicate(6) && ASTSizePredicate(200) &&
+        StandardConstraintsPredicate)
+      .withRunnerTransform(runnerTrans)
+      .run(start, steps)
+  }
+
   private val lower_1 =
     containsMap(m /^ cst(32),
       containsMap(n /^ cst(32),
@@ -636,6 +702,8 @@ object mm {
       // FIXME: the program found has unwanted split/joins
       // "blocking TT" -> { () => blocking_TT(tilingStepBENF) },
        "blocking SR" -> { () => blocking_SR(splitStepBENF, reorderStepBENF) },
+       // "blocking SR imprecise" -> { () => blocking_SR_imprecise(splitStepBENF, reorderStepBENF) },
+       //"blocking SR overprecise" -> { () => blocking_SR_overprecise(splitStepBENF, reorderStepBENF) },
        // "blocking SSSR" -> blocking_SSSR _, // note: no improvement over SR
       // FIXME: cannot find goal, rewriting is stuck with the given rules
       // "blocking SR CNF" -> { () => blocking_SR(splitStepCNF, reorderStepCNF) },
