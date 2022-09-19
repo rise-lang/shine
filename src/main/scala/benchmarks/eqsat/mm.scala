@@ -61,6 +61,9 @@ object mm {
     app(app(add, ? :: vecT(`?n`, `?dt`)), contains(mul)) :: vecT(`?n`, `?dt`)
   )
 
+  def containsToMem(dt: DataTypePattern, e: Sketch): Sketch =
+    contains(app(let, app(toMem :: (`?t` ->: dt), e)))
+
   val emptyStep = GuidedSearch.Step.init(BENF) /* withExtractor
     GuidedSearch.BeamExtractor(1, LexicographicCost(BENFRedexCount(), AstSize)) */
 
@@ -482,10 +485,10 @@ object mm {
           containsMap(cst(32),
             containsReduceSeq(cst(4),
               containsMap(cst(32), containsAddMul))))),
-      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+      containsToMem(n`.`(k`.`f32),
         containsMap(n /^ cst(32),
           containsMap(k,
-            containsMap(cst(32)`.`f32, ?)))))))
+            containsMap(cst(32)`.`f32, ?)))))
 
   private val lower_3 =
     containsMap(m /^ cst(32),
@@ -494,10 +497,10 @@ object mm {
           containsMap(cst(32),
             containsReduceSeq(cst(4),
               containsMap(cst(1), containsAddMulVec))))),
-      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+      containsToMem(n`.`(k`.`f32),
         containsMapPar(n /^ cst(32),
           containsMap(k,
-            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))
 
   private def arrayPacking_SRCL(): GuidedSearch.Result = {
     val start = mm
@@ -537,10 +540,10 @@ object mm {
           containsMap(cst(32),
             containsReduceSeqUnroll(cst(4),
               containsMap(cst(1), containsAddMulVec))))),
-      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+      containsToMem(n`.`(k`.`f32),
         containsMapPar(n /^ cst(32),
           containsMap(k,
-            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))
 
   private def cacheBlocks_SRCL(): GuidedSearch.Result = {
     val start = mm
@@ -582,10 +585,10 @@ object mm {
           containsMap(cst(32),
             containsReduceSeqUnroll(cst(4),
               containsMap(cst(1), containsAddMulVec))))),
-      contains(app(let, app(toMem :: (`?t` ->: (n`.`(k`.`f32))),
+      containsToMem(n`.`(k`.`f32),
         containsMapPar(n /^ cst(32),
           containsMap(k,
-            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
+            containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))
 
   private def parallel_SRCL(): GuidedSearch.Result = {
     val start = mm
