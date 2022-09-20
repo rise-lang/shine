@@ -1,16 +1,18 @@
 package apps.autotuning
 
 import rise.core.DSL._
-import apps.convolution.hosted.blurYTiled2DTiledLoadingTransposedTuning
+import apps.convolution.hosted.{blurYTiled2DTiledLoadingTransposedTuning, convolutionInternal}
 import apps.separableConvolution2D._
+import arithexpr.arithmetic.RangeMul
 import rise.autotune
-import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, wrapOclRun}
+import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
+import shine.OpenCL.{GlobalSize, LocalSize}
 
 class convolutionTuning extends test_util.Tests {
 
-  val N = 1024
+  val N = 2 << 12
 
   // expressions
   //  val convolution0: Expr = baseVecU(binomialWeights2d)
@@ -18,7 +20,15 @@ class convolutionTuning extends test_util.Tests {
   //  val convolution2: Expr = scanlinePar(binomialWeightsV)(binomialWeightsH)
 
 
-  val convolution = blurYTiled2DTiledLoadingTransposedTuning(N)
+  //  val convolution = blurYTiled2DTiledLoadingTransposedTuning(N)
+  val convolution: ToBeTyped[Expr] =
+    tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+        tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+            tuningParam("s0", RangeMul(1, N, 2), (s0: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(convolutionInternal(s0))
+            )))))
 
 
   // hostcode
@@ -34,12 +44,14 @@ class convolutionTuning extends test_util.Tests {
        |
        |float* m = hostBufferSync(ctx, matrix, N * N * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N * N; i++) {
-       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+       |  // m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+       |  m[i] =  i + 1;
        |}
        |
        |float* w = hostBufferSync(ctx, weights, 17 * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < 17; i++) {
-       |  w[i] = (float)(rand())/(float)(RAND_MAX);
+       |  // w[i] = (float)(rand())/(float)(RAND_MAX);
+       |  w[i] =  i + 1;
        |}
        |
        |// synchronize before entering timed section
@@ -51,7 +63,7 @@ class convolutionTuning extends test_util.Tests {
 
   val compute =
     s"""
-       |fun_run(ctx, &fun, output, matrix, weights);
+       |fun_run(ctx, &fun, output, N, matrix, weights);
        |waitFinished(ctx);
        |""".stripMargin
 
@@ -92,7 +104,7 @@ class convolutionTuning extends test_util.Tests {
     executeConvolutionDefault(convolution)
   }
 
-  ignore("convolution tuning experiment") {
+  test("convolution tuning experiment") {
 
     val tuner = Tuner(
       hostCode = HostCode(init(N), compute, finish),
@@ -115,7 +127,9 @@ class convolutionTuning extends test_util.Tests {
 
 
   test("tune convolution 1024") {
-    val inputSize: Int = 1024
+    //    val inputSize: Int = 1024
+    val inputSize = N
+    println("N: " + N)
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -135,22 +149,22 @@ class convolutionTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/convolution/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
       s"autotuning/config/convolution/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"convolution_${inputSize}",
       configFiles = configs,
-      iterations = 10,
-      s"/home/jo/development/experiments/tuning/results/convolution_${inputSize}",
+      iterations = 3,
+      s"experiment/results/convolution_${inputSize}",
       convolution,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
-      plotOnly = true,
+      plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )

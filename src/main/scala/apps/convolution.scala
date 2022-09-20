@@ -91,6 +91,24 @@ object convolution {
         convolution.blurYTiled2DTiledLoadingTransposed(n)(matrix)(weights))
     ))
 
+    def convolutionInternal(s0: Nat): ToBeTyped[Expr] = {
+        depFun((n: Nat) => fun(
+          (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
+        )((matrix, weights) =>
+          unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
+            mapLocal(1)(mapLocal(0)(dotElemWeightsSeq(weights)))
+              o slide2D(17, 1, 1, 1)
+              o transpose o map(dropLast(1)) $ toLocal(
+              transpose(tile)
+                |> map(split(s0))
+                |> mapLocal(0)(mapSeqUnroll(mapLocal(1)(id)))
+                |> map(join >> padEmpty(1))
+            )
+          ))) o slide2D(80, 64, 16, 16)
+            o padClamp2D(8, 8, 0, 0) $ matrix
+        ))
+    }
+
 
     val blurYTiled2DTiledLoadingTransposedTuningInternal: ToBeTyped[Expr] = {
       tuningParam("s0", RangeMul(1, 1024, 1), (s0: Nat) =>
