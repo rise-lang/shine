@@ -66,11 +66,13 @@
         "tuned_sp0 % (tuned_sp1*tuned_vec0) == 0",
         "(tuned_sp0*tuned_sp1) >= 0",
         "(tuned_sp0*tuned_sp1) % (tuned_sp1*tuned_vec0) == 0",
-        "((tuned_sp0*(1/((tuned_sp1*tuned_vec0))))) >= (1)"
+        "((tuned_sp0*(1/((tuned_sp1*tuned_vec0))))) >= (1)",
+        "tuned_sp0 >= tuned_stride"
       ],
       "dependencies": [
         "tuned_sp1",
-        "tuned_vec0"
+        "tuned_vec0",
+        "tuned_stride"
       ]
     },
     "tuned_gs0": {
@@ -130,7 +132,8 @@
       "constraints": [
         "(67108864*tuned_vec0) >= 0",
         "(67108864*tuned_vec0) % (tuned_sp1*tuned_vec0) == 0",
-        "((67108864*tuned_vec0*(1/((tuned_sp1*tuned_vec0))))) >= (1)"
+        "((67108864*tuned_vec0*(1/((tuned_sp1*tuned_vec0))))) >= (1)",
+        "tuned_sp1 >= 256"
       ],
       "dependencies": [
         "tuned_vec0"
