@@ -215,29 +215,29 @@ class scalTuning extends test_util.Tests {
     // expert configuration
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (256: Nat),
-      TuningParameter("s0") -> (1: Nat),
-      TuningParameter("s1") -> (512: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (32: Nat),
+      TuningParameter("s1") -> (32: Nat),
       TuningParameter("vec") -> (8: Nat)
     )
 
     val configs = Seq(
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
+      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/bounlog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json"
+      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"scal_${inputSize}",
       configFiles = configs,
-      iterations = 10,
+      iterations = 20,
       output = s"experiment/results/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
