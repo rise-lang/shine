@@ -273,32 +273,35 @@ class kmeansTuning extends test_util.Tests {
 
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("ls1") -> (16: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
     )
 
     val configs = Seq(
-      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //            s"autotuning/config/kmeans/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
+      //            s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
+      //      s"autotuning/config/kmeans/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 10,
+      iterations = 19,
       output = s"experiment/results/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
       inputSizes = Seq(inputSize, 10, 34),
       plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
+      expert = None,
+      default = None
+      //      expert = Some(expertConfiguration),
+      //      default = Some(defaultConfiguration)
     )
   }
 }
