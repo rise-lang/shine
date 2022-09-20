@@ -1,5 +1,5 @@
 {
-  "application_name": "ytoptunlog_33554432",
+  "application_name": "ytoptlog_33554432",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,20 +12,17 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "ytoptunlog_33554432.log",
+  "log_file": "ytoptlog_33554432.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 11
-  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_iterations": 139,
+  "optimization_method": "ytopt",
   "multistart_hyperparameter_optimization_initial_points": 50,
   "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -43,7 +40,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -66,7 +64,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_s0": {
       "parameter_type": "ordinal",
@@ -110,7 +109,8 @@
       "dependencies": [
         "tuned_s1",
         "tuned_vec"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -121,7 +121,8 @@
         16
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -144,7 +145,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -166,7 +168,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_s1": {
       "parameter_type": "ordinal",
@@ -203,7 +206,8 @@
       ],
       "dependencies": [
         "tuned_vec"
-      ]
+      ],
+      "transform": "log"
     }
   }
 }

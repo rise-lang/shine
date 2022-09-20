@@ -15,17 +15,14 @@
   "log_file": "ytoptlog_524288.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 5
-  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_iterations": 145,
+  "optimization_method": "ytopt",
   "multistart_hyperparameter_optimization_initial_points": 50,
   "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
