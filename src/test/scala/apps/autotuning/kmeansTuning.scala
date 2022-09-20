@@ -279,12 +279,12 @@ class kmeansTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //            s"autotuning/config/kmeans/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       //      s"autotuning/config/kmeans/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //            s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/ytopt_${inputSize.toString}.json",
       //      s"autotuning/config/kmeans/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
     )
@@ -292,7 +292,7 @@ class kmeansTuning extends test_util.Tests {
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 19,
+      iterations = 11,
       output = s"experiment/results/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
