@@ -34,9 +34,32 @@ object algorithmic {
     case e@App(map(), f) => Success((split(n) >> map(map(f)) >> join) !: e.t)
   }
 
-  // todo adjust this
   @rule def joinSplit: Strategy[Rise] = {
-    case e => Success(e)
+    case e@App(join(),
+      App(App(map(),
+              App(map(), f)),
+          App(DepApp(NatKind, split(), _), input))
+    ) =>
+      Success(map(f)(input) !: e.t)
+
+    case e@Lambda(x,
+      App(join(),
+          App(Lambda(y,
+              App(App(map(),
+                      App(map(), f)),
+                  App(DepApp(NatKind, split(), _),
+                      y_))),
+              x_))) if x == x_ & y == y_ =>
+      Success(map(f) !: e.t)
+
+    case e@App(join(),
+      App(Lambda(y,
+          App(App(map(),
+                  App(map(), f)),
+              App(DepApp(NatKind, split(), _),
+                  y_))),
+          x)) if y == y_ =>
+      Success(map(f)(x) !: e.t)
   }
 
   @rule def splitJoin2(n: Nat): Strategy[Rise] = e => e.t match {
