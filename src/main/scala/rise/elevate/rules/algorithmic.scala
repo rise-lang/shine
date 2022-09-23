@@ -34,6 +34,11 @@ object algorithmic {
     case e@App(map(), f) => Success((split(n) >> map(map(f)) >> join) !: e.t)
   }
 
+  // todo adjust this
+  @rule def joinSplit: Strategy[Rise] = {
+    case e => Success(e)
+  }
+
   @rule def splitJoin2(n: Nat): Strategy[Rise] = e => e.t match {
     case ArrayType(_, _) => Success((toBeTyped(e) |> split(n) |> join) !: e.t)
     case _ => Failure(splitJoin2(n))
