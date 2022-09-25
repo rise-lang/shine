@@ -262,14 +262,13 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs = Seq(
-      //      "autotuning/config/harris/1024/rs_cot_524288.json",
-      //      "autotuning/config/harris/1024/rs_emb_524288.json",
-      //      "autotuning/config/harris/1024/ls_cot_1024.json",
-      //      "autotuning/config/harris/1024/bolog_cot_1024.json",
+      "autotuning/config/harris/1024/rs_cot_524288.json",
+      "autotuning/config/harris/1024/rs_emb_524288.json",
+      "autotuning/config/harris/1024/bolog_cot_1024.json",
       "autotuning/config/harris/1024/bo_cot_1024.json",
-      //      "autotuning/config/harris/1024/atf_emb_524288.json",
-      //      "autotuning/config/harris/1024/ytoptlog_1024.json",
-      //      "autotuning/config/harris/1024/ytopt_1024.json"
+      "autotuning/config/harris/1024/atf_emb_524288.json",
+      "autotuning/config/harris/1024/ytoptlog_1024.json",
+      "autotuning/config/harris/1024/ytopt_1024.json"
     )
 
     runExperiment(
@@ -281,8 +280,10 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),
       plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
+      expert = None,
+      default = None
+      //      expert = Some(expertConfiguration),
+      //      default = Some(defaultConfiguration)
     )
   }
 
