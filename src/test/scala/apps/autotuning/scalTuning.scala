@@ -228,8 +228,8 @@ class scalTuning extends test_util.Tests {
       //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //            s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //            s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
