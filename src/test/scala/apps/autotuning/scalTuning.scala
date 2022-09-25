@@ -225,12 +225,12 @@ class scalTuning extends test_util.Tests {
 
     val configs = Seq(
       //      s"autotuning/config/scal/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
       //            s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       //            s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
@@ -238,7 +238,7 @@ class scalTuning extends test_util.Tests {
     runExperiment(
       name = s"scal_${inputSize}",
       configFiles = configs,
-      iterations = 20,
+      iterations = 10,
       output = s"experiment/results/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
