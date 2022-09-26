@@ -262,19 +262,19 @@ class harrisCornerDetectionTuning extends test_util.Tests {
 
 
     val configs = Seq(
-      "autotuning/config/harris/1024/rs_cot_524288.json",
-      "autotuning/config/harris/1024/rs_emb_524288.json",
-      "autotuning/config/harris/1024/bolog_cot_1024.json",
-      "autotuning/config/harris/1024/bo_cot_1024.json",
-      "autotuning/config/harris/1024/atf_emb_524288.json",
-      "autotuning/config/harris/1024/ytoptlog_1024.json",
-      "autotuning/config/harris/1024/ytopt_1024.json"
+      "autotuning/config/harris/1024/rs_cot_1024.json",
+      "autotuning/config/harris/1024/rs_emb_1024.json",
+      //      "autotuning/config/harris/1024/bolog_cot_1024.json",
+      //      "autotuning/config/harris/1024/bo_cot_1024.json",
+      "autotuning/config/harris/1024/atf_emb_1024.json",
+      //      "autotuning/config/harris/1024/ytoptlog_1024.json",
+      //      "autotuning/config/harris/1024/ytopt_1024.json"
     )
 
     runExperiment(
       name = "harris_1024",
       configFiles = configs,
-      iterations = 10,
+      iterations = 20,
       output = "experiment/results/harris_1024",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
