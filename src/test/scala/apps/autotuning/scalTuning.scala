@@ -231,14 +231,14 @@ class scalTuning extends test_util.Tests {
       s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
+      //      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"scal_${inputSize}",
       configFiles = configs,
-      iterations = 10,
+      iterations = 30,
       output = s"experiment/results/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),

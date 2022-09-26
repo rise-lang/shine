@@ -1,5 +1,5 @@
 {
-  "application_name": "bounlog_cot_33554432",
+  "application_name": "bolog_cot_33554432",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bounlog_cot_33554432.log",
+  "log_file": "bolog_cot_33554432.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -51,7 +51,8 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -74,7 +75,8 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_s0": {
       "parameter_type": "ordinal",
@@ -118,7 +120,8 @@
       "dependencies": [
         "tuned_s1",
         "tuned_vec"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_vec": {
       "parameter_type": "ordinal",
@@ -129,7 +132,8 @@
         16
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -152,7 +156,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -174,7 +179,8 @@
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "transform": "log"
     },
     "tuned_s1": {
       "parameter_type": "ordinal",
@@ -211,7 +217,8 @@
       ],
       "dependencies": [
         "tuned_vec"
-      ]
+      ],
+      "transform": "log"
     }
   }
 }
