@@ -250,7 +250,8 @@ class mmCPU_exploration extends test_util.Tests {
     // cannot at id, everywhere would crash it
     scala.collection.immutable.Seq(
       fuseReduceMap, // tiling block
-      tile(32, 32),
+      //      tile(32, 32),
+      tile(),
       reduceMapFission(),
       reorderTiling,
       mapParCompute() // map par block
@@ -580,6 +581,21 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
+  test("test bidirectional") {
+
+    val e = mm
+    val rule = splitJoin(32)
+    //    val rule = splitJoin2(32)
+    val e2 = exploration.rewriter.everywhere.everywhere(rule)(e)(0)
+
+    println("e: " + e)
+    println("e2: " + e2)
+
+    //    val e3 = exploration.rewriter.everywhere.everywhere(joinSplit(32))(e2)(0)
+
+    //    println("e3: " + e3)
+  }
+
   test("test parameters and everywhere") {
 
     // use tile rule and everywhere thing
@@ -750,7 +766,7 @@ class mmCPU_exploration extends test_util.Tests {
         heuristic = "Random",
         depth = 5,
         samples = 100,
-        repeat = 5
+        repeat = 1
       )
     )
 
@@ -758,7 +774,7 @@ class mmCPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 500,
+        samples = 100,
         repeat = 1
       ),
       MetaheuristicConfig(
@@ -799,9 +815,9 @@ class mmCPU_exploration extends test_util.Tests {
       //      autotuner
       //      tabuSearch
       //      random_ii
-      exhaustive,
+      //      exhaustive,
       //      ii,
-      //      random
+      random
       //      localSearch,
       //      tabuSearchPlain
       //      simulatedAnnealingPlain
@@ -833,7 +849,7 @@ class mmCPU_exploration extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmCPU_fine_light",
-      output = "/home/jo/development/experiments/exploration/thinkjo/parallel_fine_light",
+      output = "/home/jo/development/experiments/exploration/densium4jo/parallel_fine_light",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
@@ -844,7 +860,7 @@ class mmCPU_exploration extends test_util.Tests {
       // todo check whether this can be removed
       rewriteFunction = Some(
         exploration.rewriter.everywhere.neighbourhoodWide(
-          strategies = tile_only,
+          strategies = parallel_fine_light,
           slideWindow = 20
         )
       ),

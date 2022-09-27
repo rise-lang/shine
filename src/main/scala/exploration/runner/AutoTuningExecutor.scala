@@ -3,8 +3,8 @@ package exploration.runner
 import arithexpr.arithmetic.RangeMul
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.heuristic_search.Runner
-import elevate.heuristic_search.util.{Solution, SolutionStep, hashProgram, hashSolution}
-import rise.autotune.{AutoTuningError, EXECUTION_ERROR, HostCode, Median, Timeouts, Tuner, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
+import elevate.heuristic_search.util.{RewriteIdentifier, Solution, SolutionStep, hashProgram, hashSolution}
+import rise.autotune.{AutoTuningError, AutoTuningErrorLevel, EXECUTION_ERROR, HostCode, Median, Timeouts, Tuner, getBest, getDuration, getSamples, search, tuningParam, wrapOclRun}
 import rise.core.Expr
 import rise.core.types.Nat
 import rise.elevate.Rise
@@ -12,6 +12,7 @@ import rise.eqsat.Rewrite
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{Time, TimeSpan}
 import elevate.heuristic_search._
+import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.nio.file.{Files, Paths}
@@ -26,7 +27,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                               iterations: Int,
                               inputSize: Int,
                               threshold: Double,
-                              output: String
+                              output: String,
+                              samples: Int = 5,
                              ) extends Runner[Rise] {
 
 
@@ -46,11 +48,30 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                          samples: ListBuffer[TuningResultStatistic]
                        )
 
+  case class ExecutionStatistics(
+                                  performanceValue: Double,
+                                  min: Double,
+                                  max: Double,
+                                  std: Double
+                                ) {
+    override def toString() = {
+      s"""
+         |PerformanceValue: ${performanceValue}
+         |Min: ${min}
+         |Max: ${max}
+         |std: ${std}
+         |""".stripMargin
+    }
+  }
+
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
   val random = new scala.util.Random
+  var counter = 0
 
   var duration: Long = 0
+
+  writeHeader(output + "/" + "executor.csv")
 
   def plot(): Unit = {
 
@@ -138,8 +159,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   override def checkSolution(solution: Solution[Rise]): Boolean = {
     //    val checkStart = System.currentTimeMillis()
-    //    val result = exploration.runner.checkSolution(lowering, solution)
-    val result = exploration.runner.checkSolutionC(lowering)(solution)
+    val result = exploration.runner.checkSolution(lowering, solution)
+    //    val result = exploration.runner.checkSolutionC(lowering)(solution)
     //    duration += System.currentTimeMillis() - checkStart
     //    println("checking duration total: " + duration.toDouble/1000 + " s")
     //    println("checking duration total: " + duration.toDouble/1000/60 + " m")
@@ -188,60 +209,264 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   // define lowering and gold
 
   // define executor
-  val executor = CExecutor(
-    lowering = lowering,
-    goldExpression = goldExpression,
-    iterations = 5,
-    inputSize = 128,
-    threshold = 100,
-    output = output,
-    saveToDisk = true
-  )
+  //  val executor = CExecutor(
+  //    lowering = lowering,
+  //    goldExpression = goldExpression,
+  //    iterations = 5,
+  //    inputSize = 128,
+  //    threshold = 100,
+  //    output = output,
+  //    saveToDisk = true
+  //  )
 
 
-  // define execution function
-  val executeInternal: Expr => (
-    Either[AutoTuningError, Double],
-      Option[Double],
-      Option[Double],
-      Option[Double]
-    ) = s => {
-
-    println("execute from here!!")
-
-    //    val strategies = immutable.Seq.empty[Strategy[Rise]]
-
-    val executionStart = System.currentTimeMillis()
-
-    //    val sol = Solution[Rise](
-    //      solutionSteps = scala.collection.immutable.Seq(
-    //        SolutionStep[Rise](
-    //          expression = e,
-    //          strategy = null,
-    //          location = -1
-    //        )
-    //      )
-    //    )
-
-    val result = executor.execute(s)
-
-    // todo move to other thing
-    val runtime: Either[AutoTuningError, Double] = result match {
-      case Some(value) => Right(value)
-      case None => Left(AutoTuningError(EXECUTION_ERROR, None))
-    }
-
-    // todo measure these properly
-    val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
-    val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
-    val executionTime = (System.currentTimeMillis() - executionStart).toDouble
-
-    (runtime,
-      Some(codegenTime),
-      Some(compilationTime),
-      Some(executionTime))
-  }
-
+  //  // define execution function
+  //  val executeInternal: Expr => (
+  //    Either[AutoTuningError, Double],
+  //      Option[Double],
+  //      Option[Double],
+  //      Option[Double]
+  //    ) = s => {
+  //
+  //    println("execute from here!!")
+  //
+  //    //    val strategies = immutable.Seq.empty[Strategy[Rise]]
+  //
+  //    val executionStart = System.currentTimeMillis()
+  //
+  //    //    val sol = Solution[Rise](
+  //    //      solutionSteps = scala.collection.immutable.Seq(
+  //    //        SolutionStep[Rise](
+  //    //          expression = e,
+  //    //          strategy = null,
+  //    //          location = -1
+  //    //        )
+  //    //      )
+  //    //    )
+  //
+  //    val result = executor.execute(s)
+  //
+  //    // todo move to other thing
+  //    val runtime: Either[AutoTuningError, Double] = result match {
+  //      case Some(value) => Right(value)
+  //      case None => Left(AutoTuningError(EXECUTION_ERROR, None))
+  //    }
+  //
+  //    // todo measure these properly
+  //    val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
+  //    val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
+  //    val executionTime = (System.currentTimeMillis() - executionStart).toDouble
+  //
+  //    (runtime,
+  //      Some(codegenTime),
+  //      Some(compilationTime),
+  //      Some(executionTime))
+  //  }
+  //
+  //
+  //  def execute_CPU(solution: Solution[Rise]): ExplorationResult[Rise] = {
+  //    val totalDurationStart = System.currentTimeMillis()
+  //
+  //    number = number + 1
+  //
+  //    // each call of execute save following information
+  //    // +1 solution
+  //    // number of samples
+  //    // number of executions
+  //    // duration
+  //
+  //    // todo work with gold expression
+  //
+  //    println("solution: " + solution)
+  //    println(hashProgram(solution.expression()))
+  //
+  //
+  //    //    // todo adjust this for autotuning benchmarks
+  //    //    val tuner = Tuner(
+  //    //      hostCode = HostCode("", "", ""), // we don't need that
+  //    //      samples = 100,
+  //    //      name = "rs_emb_1024",
+  //    //      output = "autotuning/tvm_gemm",
+  //    //      timeouts = Timeouts(5000, 5000, 1000),
+  //    //      executionIterations = 10,
+  //    //      speedupFactor = 100,
+  //    //      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
+  //    //      configFile = Some("autotuning/config/mmCPU/rs_emb_1024.json"),
+  //    //      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024_reorder.json"),
+  //    //      hmConstraints = true,
+  //    //      //      strategyMode = None,
+  //    //      executor = Some(execute),
+  //    //      saveToFile = true
+  //    //    )
+  //
+  //
+  //    // todo make this hostcode option for tuner
+  //
+  //    //    println("create tuner")
+  //
+  //    // create tuner
+  //    val tuner = Tuner(
+  //      hostCode = HostCode("", "", ""), // we don't need that
+  //      samples = iterations,
+  //      name = "mm",
+  //      output = "exploration/",
+  //      timeouts = Timeouts(100000, 100000, 100000), // we might want to adjust this
+  //      executionIterations = 10,
+  //      speedupFactor = threshold,
+  //      runtimeStatistic = Median,
+  //      configFile = None,
+  //      //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
+  //      hmConstraints = true,
+  //      executor = Some(executeInternal),
+  //      //      hmConstraints = false,
+  //      saveToFile = false
+  //    )
+  //
+  //    //    println("lower expression")
+  //
+  //    // lower expression
+  //    val loweringDurationStart = System.currentTimeMillis()
+  //    val lowered = lowering.apply(solution.expression())
+  //    val loweringDuration = System.currentTimeMillis() - loweringDurationStart
+  //
+  //    val (result, statistic) = lowered match {
+  //      case Success(p) => {
+  //
+  //        //        // now wrap ocl
+  //        //        val eTuning: Expr =
+  //        //          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+  //        //            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+  //        //              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+  //        //                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+  //        //                          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
+  //        //                ))))
+  //
+  //        //        val eTuning: Expr =
+  //        //          tuningParam("i", RangeMul(0, 1, 1), (i: Nat) =>
+  //        //            lowered.get
+  //        //          )
+  //
+  //        //        println("eTuning: \n" + eTuning)
+  //
+  //        //        val params = rise.autotune.constraints.collectParameters(eTuning)
+  //        //        println("params: ")
+  //        //        params.foreach(println)
+  //
+  //        //        println("search")
+  //
+  //        // run tuning
+  //        val tuningDurationStart = System.currentTimeMillis()
+  //        val (runtime, tuningStatistic) = try {
+  //          val result = search(tuner)(lowered.get)
+  //
+  //          // meta information
+  //          //          val duration = getDuration(result)
+  //          val samples = getSamples(result)
+  //
+  //          result.samples.foreach(println)
+  //
+  //          //          println("samples: " + samples)
+  //
+  //          val best = getBest(result.samples)
+  //          //          println("best: " + best)
+  //          //          println("lowered: " + lowered)
+  //
+  //          val runtime = best match {
+  //            case Some(_) =>
+  //              best.get.runtime match {
+  //                case Right(value) => Some(TimeSpan.inMilliseconds(value.value))
+  //                case Left(value) => None
+  //              }
+  //            case None => None
+  //          }
+  //
+  //          val tuningDuration = System.currentTimeMillis() - tuningDurationStart
+  //          val totalDuration = System.currentTimeMillis() - totalDurationStart
+  //
+  //          (
+  //            runtime,
+  //            TuningResultStatistic(
+  //              number = number,
+  //              solution = solution,
+  //              timestamp = System.currentTimeMillis(),
+  //              duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+  //              durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
+  //              durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
+  //              samples = samples,
+  //              executions = tuner.executionIterations * samples,
+  //              runtime
+  //            )
+  //          )
+  //        } catch {
+  //          case e: Throwable =>
+  //
+  //            println("tuning is brorken! mey friend")
+  //            //            println("e: " + e)
+  //
+  //
+  //            val tuningDuration = System.currentTimeMillis() - tuningDurationStart
+  //            val totalDuration = System.currentTimeMillis() - totalDurationStart
+  //
+  //            (
+  //              None,
+  //              TuningResultStatistic(
+  //                number = number,
+  //                solution = solution,
+  //                timestamp = System.currentTimeMillis(),
+  //                duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+  //                durationTuning = TimeSpan.inMilliseconds(tuningDuration.toDouble),
+  //                durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
+  //                samples = 0,
+  //                executions = 0,
+  //                None
+  //              )
+  //            )
+  //        }
+  //
+  //        (
+  //          (solution.expression(), runtime),
+  //          tuningStatistic
+  //        )
+  //      }
+  //      case Failure(s) =>
+  //
+  //        // duration lowering
+  //        // measure
+  //
+  //        // durationTuning = 0
+  //        val totalDuration = System.currentTimeMillis() - totalDurationStart
+  //
+  //        (
+  //          (solution.expression(), None),
+  //          TuningResultStatistic(
+  //            number = number,
+  //            solution = solution,
+  //            timestamp = System.currentTimeMillis(),
+  //            duration = TimeSpan.inMilliseconds(totalDuration.toDouble),
+  //            durationTuning = TimeSpan.inMilliseconds(0.0),
+  //            durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
+  //            samples = 0,
+  //            executions = 0,
+  //            None
+  //          )
+  //        )
+  //    }
+  //
+  //    saveTuningResults(statistic, solution, lowered.get)
+  //
+  //    // convert from Option[TimeSpan] to Double
+  //    val resultingRuntime = result._2 match {
+  //      case Some(value) => Some(value.value)
+  //      case None => None
+  //    }
+  //
+  //    (result._1, resultingRuntime)
+  //    ExplorationResult(
+  //      solution,
+  //      resultingRuntime,
+  //      None
+  //    )
+  //  }
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
     val totalDurationStart = System.currentTimeMillis()
@@ -259,49 +484,21 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     println("solution: " + solution)
     println(hashProgram(solution.expression()))
 
-
-    //    // todo adjust this for autotuning benchmarks
-    //    val tuner = Tuner(
-    //      hostCode = HostCode("", "", ""), // we don't need that
-    //      samples = 100,
-    //      name = "rs_emb_1024",
-    //      output = "autotuning/tvm_gemm",
-    //      timeouts = Timeouts(5000, 5000, 1000),
-    //      executionIterations = 10,
-    //      speedupFactor = 100,
-    //      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
-    //      configFile = Some("autotuning/config/mmCPU/rs_emb_1024.json"),
-    //      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024_reorder.json"),
-    //      hmConstraints = true,
-    //      //      strategyMode = None,
-    //      executor = Some(execute),
-    //      saveToFile = true
-    //    )
-
-
-    // todo make this hostcode option for tuner
-
-    //    println("create tuner")
-
-    // create tuner
+    // todo adjust this for autotuning benchmarks
     val tuner = Tuner(
-      hostCode = HostCode("", "", ""), // we don't need that
-      samples = iterations,
+      hostCode = hostCode.get, // we don't need that, yes we do!
+      samples = samples,
       name = "mm",
-      output = "exploration/",
-      timeouts = Timeouts(100000, 100000, 100000), // we might want to adjust this
+      output = "exploration",
+      timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
-      speedupFactor = threshold,
-      runtimeStatistic = Median,
+      speedupFactor = 100,
+      //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
       configFile = None,
-      //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
       hmConstraints = true,
-      executor = Some(executeInternal),
-      //      hmConstraints = false,
-      saveToFile = false
+      executor = None,
+      saveToFile = true
     )
-
-    //    println("lower expression")
 
     // lower expression
     val loweringDurationStart = System.currentTimeMillis()
@@ -311,14 +508,14 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val (result, statistic) = lowered match {
       case Success(p) => {
 
-        //        // now wrap ocl
-        //        val eTuning: Expr =
-        //          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        //            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-        //              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        //                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-        //                          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
-        //                ))))
+        // now wrap ocl
+        val eTuning: Expr =
+          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+                  wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
+                ))))
 
         //        val eTuning: Expr =
         //          tuningParam("i", RangeMul(0, 1, 1), (i: Nat) =>
@@ -336,7 +533,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         // run tuning
         val tuningDurationStart = System.currentTimeMillis()
         val (runtime, tuningStatistic) = try {
-          val result = search(tuner)(lowered.get)
+          val result = search(tuner)(eTuning)
 
           // meta information
           //          val duration = getDuration(result)
@@ -345,6 +542,26 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           result.samples.foreach(println)
 
           //          println("samples: " + samples)
+
+          // write samples (append) to executor output file
+          counter += result.samples.size
+
+          result.samples.foreach(sample => {
+
+
+            val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
+              case Left(error) => (None, Some(error.errorLevel))
+              case Right(runtime) => (Some(runtime.value), None)
+            }
+
+            writeValues(
+              path = output + "/" + "executor.csv",
+              result = (solution, lowered.get, performanceValue, errorLevel),
+              statistics = None,
+              solution.rewrites(),
+              "executor"
+            )
+          })
 
           val best = getBest(result.samples)
           //          println("best: " + best)
@@ -703,4 +920,90 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     (s"cp -r ${output}/tuning_executor_hm.csv ${output}/hm" !!)
 
   }
+
+
+  def writeValues(path: String,
+                  result: (Solution[Rise], Rise, Option[Double], Option[AutoTuningErrorLevel]),
+                  statistics: Option[ExecutionStatistics],
+                  rewrite: Seq[RewriteIdentifier[Rise]],
+                  name: String): Unit = {
+
+    //    samples += 1
+
+    // open file to append values
+    val file = new PrintWriter(
+      new FileOutputStream(new File(path), true))
+
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
+
+    // create string to write to file
+    var string = s"$counter,$name,${System.currentTimeMillis().toString}," +
+      hashSolution(result._1) + "," +
+      hashProgram(result._2) + "," +
+      rewrite.mkString("\"[", ",", "]\"") + "," +
+      result._4.toString + ","
+
+    result._3 match {
+      case Some(value) => string += value.toString + ","
+      case _ => string += "-1,"
+    }
+
+    statistics match {
+      case Some(stats) => // print statistics
+        string += s"${stats.min},${stats.max},${stats.std},${iterations}\n"
+      case None =>
+        string += s"None,None,None,${iterations}\n"
+    }
+
+
+    val stringHmAppendix = result._3 match {
+      case Some(value) => value.toString + "," + "True" + "," + System.currentTimeMillis().toString + "\n"
+      case None => "-1" + "," + "False" + "," + System.currentTimeMillis().toString + "\n"
+    }
+
+    val stringHm = s"${counter}" + "," + stringHmAppendix
+
+    // write to file and close
+    file.write(string)
+    fileHM.write(stringHm)
+
+    counter += 1
+
+    // plot every 10 executions
+    //    counter % printEvery match {
+    //      case 0 => plot()
+    //      case _ =>
+    //    }
+
+
+    file.close()
+    fileHM.close()
+  }
+
+  def writeHeader(path: String): Unit = {
+    // open file
+    val file = new PrintWriter(
+      new FileOutputStream(new File(path), false))
+
+    val fileHM = new PrintWriter(
+      new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), false))
+
+    //    println("hello: " + path.substring(0, path.size - 4) + "_hm.csv")
+
+    // create string to write to file
+    val string = "iteration,runner,timestamp,high-level hash," +
+      "low-level hash,rewrite,error-level,runtime,min,max,std,executions \n"
+
+    val stringHM = "index,runtime,Valid,Timestamp" + "\n"
+
+    // write to file and close
+    file.write(string)
+    fileHM.write(stringHM)
+
+    fileHM.close()
+    file.close()
+  }
+
+
 }

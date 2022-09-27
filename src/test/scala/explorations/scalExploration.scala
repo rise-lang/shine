@@ -61,7 +61,7 @@ object scalExploration {
   val scal3 = sjtp.apply(scal2).get
   val scal4 = sjtp.apply(scal3).get
 
-  // try differnt lowering options
+  // try different lowering options
   // 1D
   val lowered1 = exploration.strategies.defaultStrategiesGPU.lowerGs0.apply(scal)
   val lowered2 = exploration.strategies.defaultStrategiesGPU.lowerWrgLcl.apply(scal2)

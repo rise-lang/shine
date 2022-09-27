@@ -36,29 +36,29 @@ object algorithmic {
 
   @rule def joinSplit: Strategy[Rise] = {
     case e@App(join(),
-      App(App(map(),
-              App(map(), f)),
-          App(DepApp(NatKind, split(), _), input))
+    App(App(map(),
+    App(map(), f)),
+    App(DepApp(NatKind, split(), _), input))
     ) =>
       Success(map(f)(input) !: e.t)
 
     case e@Lambda(x,
-      App(join(),
-          App(Lambda(y,
-              App(App(map(),
-                      App(map(), f)),
-                  App(DepApp(NatKind, split(), _),
-                      y_))),
-              x_))) if x == x_ & y == y_ =>
+    App(join(),
+    App(Lambda(y,
+    App(App(map(),
+    App(map(), f)),
+    App(DepApp(NatKind, split(), _),
+    y_))),
+    x_))) if x == x_ & y == y_ =>
       Success(map(f) !: e.t)
 
     case e@App(join(),
-      App(Lambda(y,
-          App(App(map(),
-                  App(map(), f)),
-              App(DepApp(NatKind, split(), _),
-                  y_))),
-          x)) if y == y_ =>
+    App(Lambda(y,
+    App(App(map(),
+    App(map(), f)),
+    App(DepApp(NatKind, split(), _),
+    y_))),
+    x)) if y == y_ =>
       Success(map(f)(x) !: e.t)
   }
 
@@ -116,6 +116,8 @@ object algorithmic {
   //
   def reduceMapFission2(implicit ev: Traversable[Rise]): Strategy[Rise] =
     normalize(ev)(reduceMapFission())
+
+  //  @rule def reduceMapFission: Strategy[Rise] = reduceMapFission
 
   @rule def reduceMapFission()(implicit ev: Traversable[Rise]): Strategy[Rise] = {
     case e@App(App(ReduceX(), Lambda(acc, Lambda(y,

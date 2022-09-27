@@ -62,9 +62,21 @@ class strategyPlayground extends test_util.Tests {
 
     val mm_plain = (joinSplit `@` topDown[Rise]).apply(mm_split).get
 
+    // rewrite to normal form
+    // DFNF() does not work here
+    val mm_split2 = BENF().apply(mm_split).get
+    val mm_plain2 = (joinSplit `@` topDown[Rise]).apply(mm_split2).get
+
+    val mm_plain3 = BENF().apply(mm_plain2).get
+
     println("mm: \n" + mm)
     println("mm_split: \n" + mm_split)
+    println("mm_split2: \n" + mm_split2)
+
     println("mm_plain: \n" + mm_plain)
+    println("mm_plain2: \n" + mm_plain2)
+    println("mm_plain3: \n" + mm_plain3)
+
 
   }
 

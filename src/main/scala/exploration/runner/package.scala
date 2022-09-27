@@ -277,14 +277,58 @@ package object runner {
         // scalastyle:on
       }
 
+      object mmHostCode {
+
+        val init: (Int, Int, Int) => String = (N, M, O) => {
+          s"""
+             |const int N = ${N};
+             |const int M = ${M};
+             |const int O = ${O};
+             |
+             |srand(time(NULL));
+             |
+             |Buffer inputA = createBuffer(ctx, N * M * sizeof(float), HOST_WRITE | DEVICE_READ);
+             |Buffer inputB = createBuffer(ctx, M * O * sizeof(float), HOST_WRITE | DEVICE_READ);
+             |Buffer outputC = createBuffer(ctx, N * O *  sizeof(float), HOST_READ | DEVICE_WRITE);
+             |
+             |float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
+             |for (int i = 0; i < N * M ; i++) {
+//       |  inA[i] = (float)(rand());
+             |  inA[i] = (float)(i+1);
+             |}
+             |
+             |float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
+             |for (int i = 0; i < M * O; i++) {
+             |  // inB[i] = (float)(rand());
+             |  inB[i] = (float)(i+1);
+             |}
+             |
+             |""".stripMargin
+        }
+
+        val compute =
+          s"""
+             |fun_run(ctx, &fun, outputC, inputA, inputB);
+             |""".stripMargin
+
+        val finish =
+          s"""
+             |// TODO: could check output here
+             |
+             |destroyBuffer(ctx, inputA);
+             |destroyBuffer(ctx, inputB);
+             |destroyBuffer(ctx, outputC);
+             |""".stripMargin
+      }
+
 
       this.synchronized {
 
         val tuner = Tuner(
-          hostCode = HostCode(mvHostCode.init(1024, 1024), mvHostCode.compute, mvHostCode.finish),
-          inputSizes = Seq(1024, 1024),
+          hostCode = HostCode(mmHostCode.init(1024, 1024, 1024), mvHostCode.compute, mvHostCode.finish),
+          inputSizes = Seq(1024, 1024, 1024),
           samples = 100,
-          name = "mv",
+          name = "mm",
           output = "exploration/",
           timeouts = Timeouts(100000, 100000, 100000),
           executionIterations = 10,

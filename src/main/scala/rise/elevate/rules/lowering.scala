@@ -18,6 +18,7 @@ import rise.elevate.rules.traversal._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
 import rise.elevate.strategies.traversal._
+import rise.openCL.DSL.{toGlobal, toPrivate}
 import rise.openMP.{primitives => omp}
 
 object lowering {
@@ -245,6 +246,15 @@ object lowering {
       // inject toMem between map and reduce
       Success(
         (map(g)(in) |> toMem |> reduce(f)(init)) !: e.t
+      )
+  }
+
+  // add copy to memory after map inside a reduce (we don't want to fuse)
+  @rule def addCopiesForUnfusedReduceOcl(): Strategy[Rise] = {
+    case e@App(App(App(r@ReduceX(), f), init), App(App(map(), g), in)) =>
+      // inject toMem between map and reduce
+      Success(
+        (map(g)(in) |> toPrivate |> reduce(f)(init)) !: e.t
       )
   }
 

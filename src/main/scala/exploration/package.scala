@@ -45,7 +45,8 @@ package object exploration {
   case class ExecutorConfig(
                              name: String,
                              iterations: Int,
-                             threshold: Double
+                             threshold: Double,
+                             samples: Int = 5
                            )
 
   case class NeighborhoodConfig(
@@ -402,6 +403,7 @@ package object exploration {
         goldExpression = gold,
         hostCode = explorer.hostCode,
         iterations = explorer.executor.iterations,
+        samples = explorer.executor.samples,
         inputSize = explorer.inputSize,
         threshold = explorer.executor.threshold,
         output = executorOutput
