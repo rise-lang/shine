@@ -110,7 +110,7 @@ class TestExecution extends test_util.Tests {
 
       // check for execution error
       result.runtime match {
-        case Left(value) => value.errorLevel.equals(EXECUTION_ERROR)
+        case Left(value) => assert(value.errorLevel.equals(EXECUTION_ERROR))
         case Right(_) => // do nothing result is fine
       }
     })
