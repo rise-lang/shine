@@ -19,6 +19,8 @@ import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
 import rise.elevate.strategies.traversal._
 import rise.openCL.DSL.{toGlobal, toPrivate}
+import rise.openCL.primitives.{mapGlobal, mapLocal, mapWorkGroup}
+import rise.openMP.primitives.mapPar
 import rise.openMP.{primitives => omp}
 
 object lowering {
@@ -39,10 +41,18 @@ object lowering {
     case m@map() => Success(p.mapSeq !: m.t)
   }
 
+  @rule def mapSeqReverse: Strategy[Rise] = {
+    case m@rise.core.primitives.mapSeq() => Success(rise.core.primitives.map !: m.t)
+  }
+
   def `map -> mapPar`: Strategy[Rise] = mapPar
 
   @rule def mapPar: Strategy[Rise] = {
     case m@map() => Success(omp.mapPar !: m.t)
+  }
+
+  @rule def mapParReverse: Strategy[Rise] = {
+    case m@rise.openMP.primitives.mapPar() => Success(rise.core.primitives.map !: m.t)
   }
 
   def `map -> mapStream`: Strategy[Rise] = mapStream
@@ -69,16 +79,28 @@ object lowering {
     case m@map() => Success(rise.openCL.DSL.mapGlobal(dim) !: m.t)
   }
 
+  @rule def mapGlobalReverse: Strategy[Rise] = {
+    case m@mapGlobal(_) => Success(rise.core.primitives.map !: m.t)
+  }
+
   def `map -> mapLocal`(dim: Int = 0): Strategy[Rise] = mapLocal(dim)
 
   @rule def mapLocal(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapLocal(dim) !: m.t)
   }
 
+  @rule def mapLocalReverse: Strategy[Rise] = {
+    case m@mapLocal(_) => Success(rise.core.primitives.map !: m.t)
+  }
+
   def `map -> mapWorkGroup`(dim: Int = 0): Strategy[Rise] = mapWorkGroup(dim)
 
   @rule def mapWorkGroup(dim: Int = 0): Strategy[Rise] = {
     case m@map() => Success(rise.openCL.DSL.mapWorkGroup(dim) !: m.t)
+  }
+
+  @rule def mapWorkGroupReverse: Strategy[Rise] = {
+    case m@mapWorkGroup(_) => Success(rise.core.primitives.map !: m.t)
   }
 
   def `reduce -> reduceSeq`: Strategy[Rise] = reduceSeq

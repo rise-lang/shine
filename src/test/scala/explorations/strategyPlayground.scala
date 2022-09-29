@@ -80,4 +80,19 @@ class strategyPlayground extends test_util.Tests {
 
   }
 
+  test("map Global inverted") {
+
+    val mm_glb = (rise.elevate.rules.lowering.mapGlobal(0) `@` topDown[Rise]).apply(mm).get
+    val mm_glb2 = (rise.elevate.rules.lowering.mapGlobal(1) `@` topDown[Rise]).apply(mm_glb).get
+    val mm_glb_reverse = (rise.elevate.rules.lowering.mapGlobalReverse `@` topDown[Rise]).apply(mm_glb2).get
+    val mm_glb_reverse2 = (rise.elevate.rules.lowering.mapGlobalReverse `@` topDown[Rise]).apply(mm_glb_reverse).get
+
+    println("mm: \n" + mm)
+    println("mm_glb: \n" + mm_glb)
+    println("mm_glb2: \n" + mm_glb2)
+    println("mm_glb_reverse: \n" + mm_glb_reverse)
+    println("mm_glb_reverse2: \n" + mm_glb_reverse2)
+
+  }
+
 }

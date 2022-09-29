@@ -194,11 +194,15 @@ class mmGPU_exploration extends test_util.Tests {
       joinSplit, // split join reverse
       rise.elevate.rules.lowering.mapGlobal(0),
       rise.elevate.rules.lowering.mapGlobal(1),
+      rise.elevate.rules.lowering.mapGlobalReverse,
       rise.elevate.rules.lowering.mapWorkGroup(0),
       rise.elevate.rules.lowering.mapWorkGroup(1),
+      rise.elevate.rules.lowering.mapWorkGroupReverse,
       rise.elevate.rules.lowering.mapLocal(0),
       rise.elevate.rules.lowering.mapLocal(1),
-      rise.elevate.rules.lowering.mapSeqCompute()
+      rise.elevate.rules.lowering.mapLocalReverse,
+      rise.elevate.rules.lowering.mapSeqCompute(),
+      rise.elevate.rules.lowering.mapSeqReverse,
     )
   }
 
@@ -313,7 +317,7 @@ class mmGPU_exploration extends test_util.Tests {
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
-        depth = 14, // ignored in this case
+        depth = 14, // ignored in this case -> is it?
         samples = 10,
         repeat = 1
       )
@@ -336,7 +340,7 @@ class mmGPU_exploration extends test_util.Tests {
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //            randomGraph,
+      //      randomGraph,
       localSearchGraph
       //      ii
       //      exhaustive
@@ -365,7 +369,7 @@ class mmGPU_exploration extends test_util.Tests {
       //      normalForm = Some(DFNF()),
       normalForm = None,
       importExport = None,
-      expert = Some(0.026912),
+      expert = Some(0.00384),
       overwrite = false
     )
 
