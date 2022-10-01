@@ -48,12 +48,12 @@ def get_runtime_index(reader):
     runtime_index = 0
     counter = 0
     for elem in header:
-#         print("index: " + str(counter) + " elem: " + str(elem))
+        #         print("index: " + str(counter) + " elem: " + str(elem))
         if ('runtime' in elem):
             runtime_index = counter
         counter += 1
 
-#     print("runtime_index is: " + str(runtime_index))
+    #     print("runtime_index is: " + str(runtime_index))
 
     return runtime_index
 
@@ -90,19 +90,19 @@ def process_file(sub_folder, file):
         else:
             line_count += 1
 
-#             print("row: " + str(line_count) + " value: " + str(row[runtime_index]))
+            #             print("row: " + str(line_count) + " value: " + str(row[runtime_index]))
 
-            if(str(row[runtime_index]) == '-1'):
+            if (str(row[runtime_index]) == '-1'):
                 data.append((False, float(2147483647)))
-            elif(str(row[runtime_index + 1]) == 'False'):
+            elif (str(row[runtime_index + 1]) == 'False'):
                 data.append((False, float(2147483647)))
             else:
                 data.append((True, float(row[runtime_index])))
 
-#             if (str(row[runtime_index + 1]) == 'True'):
-#                 data.append((True, float(row[runtime_index])))
-#             else:
-#                 data.append((False, float(2147483647)))
+    #             if (str(row[runtime_index + 1]) == 'True'):
+    #                 data.append((True, float(row[runtime_index])))
+    #             else:
+    #                 data.append((False, float(2147483647)))
 
     return data
 
@@ -330,19 +330,18 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
         data_internal[key] = pe
 
     # convert to log
-    if(log):
+    if (log):
         default = np.log10(default)
 
     for key in data_internal:
         pe = []
         for elem in data_internal[key]:
-            if(log):
+            if (log):
                 pe.append(np.log10(elem))
             else:
                 pe.append(elem)
 
         data_internal[key] = pe
-
 
     # print("data_internal: " + str(data_internal))
 
@@ -361,36 +360,36 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
             means_preparation[counter].append(elem)
 
     # get means
-#     map(lambda x: x*x, numbers)
+    #     map(lambda x: x*x, numbers)
 
     minElem = min(list(map(lambda x: len(x), means_preparation)))
     print("type: " + str(type(means_preparation)))
     print("minElem: " + str(minElem))
     print("type: " + str(type(minElem)))
-#     help = 0
-#     if(len(minElem) == 1):
-#         help = minElem
-#     else:
-#         help = min(minElem)
+    #     help = 0
+    #     if(len(minElem) == 1):
+    #         help = minElem
+    #     else:
+    #         help = min(minElem)
 
-#     print("help: " + str(help))
+    #     print("help: " + str(help))
 
-#     for i in range(len(means_preparation[0])):
+    #     for i in range(len(means_preparation[0])):
     for i in range(minElem):
         means_internal = []
         means_internal2 = []
         for file in means_preparation:
             means_internal.append(file[i])
             means_internal2.append(file[i])
-#             means_internal2.append(default / file[i])
+        #             means_internal2.append(default / file[i])
 
         # print("get mean from: " + str(i))
         # print(str(means_internal))
         # print("mean is: " + str(np.mean(np.array(means_internal))))
 
-#         means.append(default / np.mean(np.array(means_internal)))
+        #         means.append(default / np.mean(np.array(means_internal)))
         means.append(np.median(np.array(means_internal)))
-#         means.append(np.mean(np.array(means_internal)))
+        #         means.append(np.mean(np.array(means_internal)))
         confidence.append(sem(means_internal2) * 1.96)
         # confidence.append(1.96 * np.std(means_internal) / np.sqrt(len(means_internal)))
 
@@ -398,7 +397,7 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
     # print("confidence: " + str(confidence))
 
     # means
-    means = means[0:2423]
+    means = means[0:50000]
 
     # df_se = df.groupby('order_hour_of_day').quantity.apply(sem).mul(1.96)
 
@@ -407,8 +406,7 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
 
     plt.ylabel("Log Runtime (ms)", fontsize=16)
     # qx = means.index
-    plt.plot(x, means, alpha = 0.8, color=color, lw=2, label=name)
-
+    plt.plot(x, means, alpha=0.8, color=color, lw=2, label=name)
 
     lower = []
     upper = []
@@ -425,7 +423,8 @@ def plot_performance_evolution_confidence(name, default, expert, data, log):
     # plot time series with error band
     # get performance evolution data
 
-    plt.figure(figsize=(16, 9), dpi=1000)
+    # plt.figure(figsize=(16, 9), dpi=1000)
+    plt.figure(figsize=(10, 10), dpi=1000)
 
     counter = 0
 
@@ -450,7 +449,8 @@ def plot_performance_evolution_confidence(name, default, expert, data, log):
         print(str(key))
 
     for key in keys:
-        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)], log)
+        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)],
+                                                       log)
         counter += 1
 
     # Decorations
@@ -468,50 +468,52 @@ def plot_performance_evolution_confidence(name, default, expert, data, log):
     plt.xlim(s, e)
 
     # draw expert
-#     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
-    if(log):
+    #     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+    if (log):
         expert = np.log10(expert)
 
-    plt.axhline(y=expert, color='black', linestyle='-', label='Expert')
+    plt.axhline(y=expert, color='black', linestyle='-', label='Expert', alpha=0.5)
 
     # draw legend
     plt.legend()
 
     # Draw Horizontal Tick lines
-#     print("y_up: " + str(y_up))
-#     step = int(y_up)
-#     if y_up > 200:
-#         step = 50
-#     elif y_up > 50:
-#         step = 10
-#     elif y_up > 10:
-#         step = 5
-#     else:
-#         step = 1
-#
-#     print("step: " + str(step))
-#     for y in range(0, int(y_up) + 1, step):
-#         plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
+    #     print("y_up: " + str(y_up))
+    #     step = int(y_up)
+    #     if y_up > 200:
+    #         step = 50
+    #     elif y_up > 50:
+    #         step = 10
+    #     elif y_up > 10:
+    #         step = 5
+    #     else:
+    #         step = 1
+    #
+    #     print("step: " + str(step))
+    #     for y in range(0, int(y_up) + 1, step):
+    #         plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
 
-    save = str(output) + "/" + str(global_name)  + ".pdf"
+    save = str(output) + "/" + str(global_name) + ".pdf"
     print("save: " + str(save))
 
-    if(log):
+    if (log):
         plt.savefig(str(output) + "/" + str(global_name) + '_log.pdf', dpi=1000)
-
-    print("y_up: " + str(y_up))
-    step = int(y_up)
-    if y_up > 200:
-        step = 50
-    elif y_up > 50:
-        step = 10
-    elif y_up > 10:
-        step = 2
-    elif y_up > 5:
-        step = 1
     else:
         plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
 
+    # print("y_up: " + str(y_up))
+    #     step = int(y_up)
+    #     if y_up > 200:
+    #         step = 50
+    #     elif y_up > 50:
+    #         step = 10
+    #     elif y_up > 10:
+    #         step = 2
+    #     elif y_up > 5:
+    #         step = 1
+    #     else:
+    #         plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
+    #
     return 0
 
 
@@ -536,11 +538,13 @@ print("folders")
 for elem in folders:
     print(str(elem[0]))
 
+
 # print("type: " + str(type(folders)))
 # os.path.getmtime(path)
 
 def pather(folder):
     return os.path.getmtime(folder[1])
+
 
 folders = sorted(folders, key=pather, reverse=False)
 
@@ -554,12 +558,11 @@ print("\n\n")
 
 counter = 0
 for (name, path) in folders:
-     print('folder name: ' + name)
-#     # print('folder path: ' + path)
-     #sub_path = str(path) + '/' + str(name) + '_' + 'hm'
-     data[name] = (counter, process_subfolder(path))
-     counter += 1
-
+    print('folder name: ' + name)
+    #     # print('folder path: ' + path)
+    # sub_path = str(path) + '/' + str(name) + '_' + 'hm'
+    data[name] = (counter, process_subfolder(path))
+    counter += 1
 
 print("\n\n")
 
@@ -571,16 +574,17 @@ for elem in data:
 
 print("\n")
 
-#sub_path = "csv"
-#data['random'] = process_subfolder(sub_path)
+# sub_path = "csv"
+# data['random'] = process_subfolder(sub_path)
 
 # print('data: ' + str(data))
 
 # now we have data dictionary containing all values of output files
 
-#default = 43.937866
+# default = 43.937866
 default = 200.0
-expert = 2.64
+# expert = 2.64
+expert = 0.009632
 
 # data['default'] = {'default': default}
 # data['expert'] = {'expert': expert}

@@ -885,8 +885,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         solution.rewrites().mkString("\"[", ",", "]\"") + "," + // rewrite
         "no error reports for tuning" + "," + // error level
         runtime + "," + // runtime
-        runtime + "," + // min
-        runtime + "," + // max
+        runtime + "," + // min // best tuning sample -> should match runtime as runtime is defined as best tuning sample
+        runtime + "," + // max // todo write worst tuning sample here
         "0" + "," + // std
         tuningResultStatistic.executions.toString + "," + // executions
         tuningResultStatistic.samples.toString + "," + // samples

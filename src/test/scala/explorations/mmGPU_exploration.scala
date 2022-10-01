@@ -187,9 +187,9 @@ class mmGPU_exploration extends test_util.Tests {
   // reverse rules
   val rules: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
-      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
+      //      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
       fuseReduceMap, // fusion
-      reduceMapFission(), // fission
+      //      reduceMapFission(), // fission
       splitJoinRule, // split join
       joinSplit, // split join reverse
       rise.elevate.rules.lowering.mapGlobal(0),
@@ -309,8 +309,8 @@ class mmGPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 3,
-        samples = 100,
+        depth = 10,
+        samples = 1000,
       )
     )
 
@@ -326,7 +326,7 @@ class mmGPU_exploration extends test_util.Tests {
     val localSearchGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "LocalSearchGraph",
-        depth = 5, //
+        depth = 15, // what does that mean?
         //        samples = 10, // ignored in this case
         repeat = 1
       )
@@ -336,21 +336,20 @@ class mmGPU_exploration extends test_util.Tests {
       name = "AutoTuning",
       iterations = 10,
       threshold = 10,
-      samples = 5
+      samples = 20
     )
 
     val experiment = scala.collection.immutable.Seq(
       //      randomGraph,
-      localSearchGraph
+      //      localSearchGraph,
       //      ii
-      //      exhaustive
+      exhaustive
     )
-
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmGPU_maps",
-      output = "/home/jo/development/experiments/exploration/densium4jo/mmGPU",
+      output = "/home/jo/development/experiments/exploration/dodekarch/mmGPU",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
@@ -369,7 +368,7 @@ class mmGPU_exploration extends test_util.Tests {
       //      normalForm = Some(DFNF()),
       normalForm = None,
       importExport = None,
-      expert = Some(0.00384),
+      expert = Some(0.009632),
       overwrite = false
     )
 
