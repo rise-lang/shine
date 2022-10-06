@@ -84,7 +84,8 @@ def process_file(sub_folder, file):
     data = []
 
     for row in csv_reader:
-        if line_count == 0:
+        # don't skip header
+        if line_count == -1:
             # skip header
             line_count += 1
         else:
