@@ -67,7 +67,9 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
   val random = new scala.util.Random
-  var counter = 0
+
+  var counterTotal = 0
+  var counterExpressions = 0
 
   var duration: Long = 0
 
@@ -544,10 +546,10 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           //          println("samples: " + samples)
 
           // write samples (append) to executor output file
-          counter += result.samples.size
+          //          counterTotal += result.samples.size
+          counterExpressions += result.samples.size // why?
 
           result.samples.foreach(sample => {
-
 
             val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
               case Left(error) => (None, Some(error.errorLevel))
@@ -938,7 +940,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
 
     // create string to write to file
-    var string = s"$counter,$name,${System.currentTimeMillis().toString}," +
+    var string = s"$counterTotal,$name,${System.currentTimeMillis().toString}," +
       hashSolution(result._1) + "," +
       hashProgram(result._2) + "," +
       rewrite.mkString("\"[", ",", "]\"") + "," +
@@ -962,13 +964,13 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       case None => "-1" + "," + "False" + "," + System.currentTimeMillis().toString + "\n"
     }
 
-    val stringHm = s"${counter}" + "," + stringHmAppendix
+    val stringHm = s"${counterTotal}" + "," + stringHmAppendix
 
     // write to file and close
     file.write(string)
     fileHM.write(stringHm)
 
-    counter += 1
+    counterTotal += 1
 
     // plot every 10 executions
     //    counter % printEvery match {
