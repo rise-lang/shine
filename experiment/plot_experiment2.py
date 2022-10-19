@@ -472,6 +472,10 @@ def plot_performance_evolution_confidence(name, default, expert, data, log):
     #     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
     if (log):
         expert = np.log10(expert)
+    else:
+        expert = expert
+
+    # print("Expert: " + str(expert))
 
     plt.axhline(y=expert, color='black', linestyle='-', label='Expert', alpha=0.5)
 
