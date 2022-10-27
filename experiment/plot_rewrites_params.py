@@ -160,7 +160,7 @@ def plot_scatter_groups(global_name, default, expert, data, log):
                 if (current == elem2[0]):
                     counter += 1
                 else:
-                    vertical.append(counter)
+                    vertical.append(counter + 0.5)
                     counter += 1
                     current = elem2[0]
 
