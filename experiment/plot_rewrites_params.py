@@ -153,7 +153,19 @@ def plot_scatter_groups(global_name, default, expert, data, log):
             current = data[key][1][elem][0][0]
             counter = 0
             # add at begin
-            vertical.append(counter)
+            # vertical.append(counter)
+
+            # store begin index
+            # store end endix
+
+            # ymin = min(y[begin, end])
+            # ymax = max(y[begin, end])
+            begin = 0
+            end = 0
+
+            plt.figure(figsize=(10, 10), dpi=1000)
+
+            width = 2
 
             # add vertical lines
             for elem2 in data[key][1][elem]:
@@ -161,14 +173,29 @@ def plot_scatter_groups(global_name, default, expert, data, log):
                     counter += 1
                 else:
                     vertical.append(counter + 0.5)
+                    end = counter
+
+                    print("min: " + str(min(y[begin:end])))
+                    print("max: " + str(max(y[begin:end])))
+
+                    # plt.vlines(x=(begin - 0.4), ymin=min(y[begin:end]) - 0.05, ymax=max(y[begin:end]) + 0.05, alpha=0.5,
+                    #            linewidth=width,
+                    #            colors='black')
+                    # plt.vlines(x=(end + 0.4), ymin=min(y[begin:end]), ymax=max(y[begin:end]), alpha=0.5,
+                    #            linewidth=0.5,
+                    #            colors='black')
+
                     counter += 1
                     current = elem2[0]
+                    begin = counter
 
+            end = counter
+            # plt.vlines(x=(begin - 0.4), ymin=min(y[begin:end]) - 0.05, ymax=max(y[begin:end]) + 0.05, alpha=0.5,
+            #            linewidth=width, colors='black')
             # add line at the end
-            vertical.append(counter)
+            # vertical.append(counter)
 
-            plt.figure(figsize=(10, 10), dpi=1000)
-            plt.vlines(x=vertical, ymin=min(y), ymax=max(y), alpha=0.5, linewidth=0.5, colors='black')
+            # plt.vlines(x=vertical, ymin=min(y), ymax=max(y), alpha=0.5, linewidth=0.5, colors='black')
             plt.scatter(x, y, s=5, alpha=1, c=colors[0], edgecolor='black', linewidth=0)
             plt.title(str(path))
             plt.tight_layout()
