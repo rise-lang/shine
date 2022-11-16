@@ -560,7 +560,7 @@ int main(int argc, char** argv) {
 
     //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
-    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -O3 -lm -fopenmp" !!
     //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
