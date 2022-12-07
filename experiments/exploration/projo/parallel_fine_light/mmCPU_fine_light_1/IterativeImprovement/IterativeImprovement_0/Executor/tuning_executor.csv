@@ -1,0 +1,3 @@
+iteration,runner,timestamp,high-level hash,low-level hash,rewrite,error-level,runtime,min,max,std,executions,samples,duration,durationTuning,durationLowering
+1,executor,1668618082770,e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,440939e7ec4205d1058dbf0dcc425e3ca180f81845e305caa769e0b340909a68,"[(id, 0),(id, 0),(id, 0),(id, 0),(id, 0),(id, 0)]",no error reports for tuning,9.915,9.915,9.915,0,10,1,1990.0 ms,1976.0 ms,6.0 ms,
+2,executor,1668618085449,a8a3c4091abdff2fe0b1750200f145995aa7db546dfabdc14ca59e9ee8bf6cc7,02315525ab4af5a76d3652d905817e4f4fc7c1a1fae127f3e1a9284aeb79616b,"[(id, 0),(id, 0),(id, 0),(id, 0),(id, 0),(fuseReduceMap, 0)]",no error reports for tuning,6.8,6.8,6.8,0,10,1,1848.0 ms,1846.0 ms,0.0 ms,
