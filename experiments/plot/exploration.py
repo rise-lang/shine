@@ -354,8 +354,8 @@ def performance_evolution_grouped(plot: Plot) -> None:
             plot_data.append((counter, float(elem[1])))
 
 
-    for i in plot_data:
-        print(str(i))
+    # for i in plot_data:
+        # print(str(i))
 
 
     # plot 
@@ -432,7 +432,7 @@ def performance_evolution_grouped(plot: Plot) -> None:
         plt.plot(grouped_x, grouped_pe, color='green', alpha=0.7)
 
         # set vertical lines 
-        plt.vlines(x=counter, ymin=global_min,ymax=global_max, color='black', linewidth=0.5, alpha=0.5)
+        # plt.vlines(x=counter, ymin=global_min,ymax=global_max, color='black', linewidth=0.5, alpha=0.5)
 
 
 
@@ -445,7 +445,7 @@ def performance_evolution_grouped(plot: Plot) -> None:
 
 
 # main here
-args = parser.parse_args()
+# args = parser.parse_args()
 
 # set args manually 
 
@@ -465,7 +465,8 @@ def create_plot(parser: argparse.ArgumentParser) -> Plot:
 
 # plot: Plot = create_plot(parser)
 
-plot: Plot = Plot('exploration.csv', 'plot', 'exploration.pdf', False)
+# plot: Plot = Plot('exploration.csv', 'plot', 'exploration.pdf', False)
+plot: Plot = Plot('exhaustive_0.csv', 'plot', 'exploration.pdf', True)
 
 performance_evolution_grouped(plot)
 
