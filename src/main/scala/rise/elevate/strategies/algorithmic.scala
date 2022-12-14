@@ -55,6 +55,7 @@ object algorithmic {
           if (gx2 =~= x) {
             Some(map(f))
           } else {
+            elevate.core.applyCount += 1 // COUNT EACH FISSION AS A RULE
             mapFullFissionRec(x, gx2).map(p => p >> map(f))
           }
         case _ => None

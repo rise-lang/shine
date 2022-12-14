@@ -19,7 +19,7 @@ package object rules {
     case _ => Failure(betaReduction)
   }
 
-  //TODO @rule
+  //TODO @rule? @predicate?
   def containsAtLeast(n: Int, x: Rise)(implicit ev: Traversable[Rise]): Strategy[Rise] =
     skip(n)(isEqualTo(x))
 

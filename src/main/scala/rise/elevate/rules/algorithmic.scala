@@ -494,14 +494,16 @@ object algorithmic {
 
   // the inner strategies shouldn't be accessible from the outside
   // because they might change the semantics of a program
-  @rule def freshLambdaIdentifier()(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
-    @rule def freshIdentifier: Strategy[Rise] = {
+  def freshLambdaIdentifier()(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
+    def freshIdentifier: Strategy[Rise] = {
       case Identifier(name) ::: t =>
         Success(Identifier(freshName("fresh_"+ name))(t))
+      case _ => Failure(freshIdentifier)
     }
 
-    @rule def replaceIdentifier(curr: Identifier, newId: Identifier): Strategy[Rise] = {
+    def replaceIdentifier(curr: Identifier, newId: Identifier): Strategy[Rise] = {
       case x: Identifier if curr =~= x => Success(newId)
+      case _ => Failure(replaceIdentifier(curr, newId))
     }
 
     e match {

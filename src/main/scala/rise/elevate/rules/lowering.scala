@@ -79,9 +79,11 @@ object lowering {
       Success(p.mapSeq(f) !: e.t)
   }
 
-  @rule def isMappingZip: Strategy[Rise] = {
+  // TODO: @predicate?
+  def isMappingZip: Strategy[Rise] = {
     case l@Lambda(_, App(App(zip(), a), b)) => Success(l)
     case m@Lambda(_, App(App(map(), f), arg)) => isMappingZip(f)
+    case _ => Failure(isMappingZip)
   }
 
   // TODO: load identity instead, then change with other rules?
@@ -95,11 +97,11 @@ object lowering {
       p.rotateValues(sz)(eraseType(write)) !: e.t)
   }
 
-  @rule def containsComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] =
+  def containsComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] =
     topDown(isComputation())(ev)
 
   // requires type information!
-  @rule def isComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
+  def isComputation()(implicit ev: Traversable[Rise]): Strategy[Rise] = e => {
     def isPairOrBasicType(t: ExprType): Boolean = t match {
       case _ if typeHasTrivialCopy(t) => true
       case PairType(a, b) => isPairOrBasicType(a) && isPairOrBasicType(b)
@@ -179,15 +181,18 @@ object lowering {
   }
 
   // todo currently only works for mapSeq
-  @rule def isCopy: Strategy[Rise] = {
+  def isCopy: Strategy[Rise] = {
     case c@App(p.let(), id) if isId(id) => Success(c)
     case c@App(App(p.mapSeq(), id), etaInput) if isId(id) => Success(c)
     case App(App(p.mapSeq(), Lambda(_, f)), etaInput) => isCopy(f)
     case c@App(id, _) if isId(id) => Success(c)
+    case _ => Failure(isCopy)
   }
 
-  @rule def isId: Strategy[Rise] = {
+  // TODO: @predicate?
+  def isId: Strategy[Rise] = {
     case l@Lambda(x1, x2) if x1 =~= x2 => Success(l)
+    case _ => Failure(isId)
   }
 
   // requires expr to be in LCNF

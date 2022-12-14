@@ -234,8 +234,18 @@ class harrisCornerDetectionHalideCheck
     assert(Wo % 8 == 0)
     val typed = util.printTime("infer", harris(strip, 8).toExpr)
 
+    // reset rewrite step counter
+    elevate.core.Success.rewriteCount = 0
+    elevate.core.applyCount = 0
+
     val lowered4 =
       rewrite.ocl.harrisBufferedVecAlignedSplitPar(4, strip)(typed).get
+
+    println("----")
+    println(s"required rewrite steps: ${elevate.core.Success.rewriteCount}")
+    println(s"required rewrite steps (atomic): ${elevate.core.applyCount}\n")
+    println("----")
+
     checkOCL(lowered4, LocalSize(1), GlobalSize(Ho / strip))
 
     val lowered8 =
@@ -247,8 +257,18 @@ class harrisCornerDetectionHalideCheck
     assert(Wo % 8 == 0)
     val typed = util.printTime("infer", harris(strip, 8).toExpr)
 
+    // reset rewrite step counter
+    elevate.core.Success.rewriteCount = 0
+    elevate.core.applyCount = 0
+
     val lowered4 =
       rewrite.ocl.harrisBufferedRegRotVecAlignedSplitPar(4, strip)(typed).get
+
+    println("----")
+    println(s"required rewrite steps: ${elevate.core.Success.rewriteCount}")
+    println(s"required rewrite steps (atomic): ${elevate.core.applyCount}\n")
+    println("----")
+
     checkOCL(lowered4, LocalSize(1), GlobalSize(Ho / strip))
 
     val lowered8 =
