@@ -6,6 +6,7 @@ modules.xml
 .metals
 .bloop
 .bsp
+.DS_Store
 
 *.aux
 *.bbl

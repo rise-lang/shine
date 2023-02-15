@@ -1,7 +1,6 @@
 #!/bin/python3.8
 
 import csv
-import os
 import sys
 import copy
 
