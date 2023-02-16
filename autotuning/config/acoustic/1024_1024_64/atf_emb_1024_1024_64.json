@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_cot_1024_1024_64",
+  "application_name": "atf_emb_1024_1024_64",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,15 +12,12 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_cot_1024_1024_64.log",
+  "log_file": "atf_emb_1024_1024_64.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 100
-  },
   "scalarization_method": "linear",
-  "optimization_iterations": 0,
+  "optimization_method": "opentuner",
+  "optimization_iterations": 100,
   "input_parameters" : {
     "tuned_gs0" : {
       "parameter_type": "ordinal",

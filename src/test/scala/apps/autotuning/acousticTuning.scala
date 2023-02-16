@@ -133,9 +133,9 @@ class acousticTuning extends test_util.Tests {
 
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (8: Nat),
-      TuningParameter("gs0") -> (256: Nat),
-      TuningParameter("gs1") -> (128: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
     )
 
     val defaultConfiguration: Map[Nat, Nat] = Map(
@@ -147,13 +147,14 @@ class acousticTuning extends test_util.Tests {
 
     // todo add configs here
     val configs = Seq(
-      s"autotuning/config/acoustic/1024_1024_64/rs_cot_1024_1024_64.json"
+      s"autotuning/config/acoustic/1024_1024_64/rs_cot_1024_1024_64.json",
+      s"autotuning/config/acoustic/1024_1024_64/atf_emb_1024_1024_64.json"
     )
 
     runExperiment(
       name = s"acoustic_1024_1024_64",
       configFiles = configs,
-      iterations = 3,
+      iterations = 5,
       output = s"experiment/results/acoustic_1024_1024_64",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
