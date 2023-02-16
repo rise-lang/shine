@@ -7,12 +7,15 @@ import scala.util.Using
 object ExecuteOpenCL {
   case class Exception(msg: String) extends Throwable
 
+  // todo check adjustments for macOS
   val runtimePath = "runtime/"
   val platformPath = "runtime/ocl/"
   val executorHeadersPath = "lib/executor/lib/Executor/include/"
   val libs = "-lm -lOpenCL"
+//  val libs = "-lm -framework OpenCL"
   val includes = s"-I$runtimePath -I$executorHeadersPath"
   val libDirs: String = tryToFindOpenCLLibDir()
+//  val libDirs: String = ""
 
   def tryToFindOpenCLLibDir(): String = {
     import scala.io.Source

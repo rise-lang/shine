@@ -1,6 +1,6 @@
-# python?
-# plotting script for exploration
-
+#!/usr/bin/python3
+from __future__ import annotations
+from typing import Optional
 
 import csv
 import os
@@ -185,6 +185,7 @@ def bar(filename, invalid, title, log, output):
 #     ax.bar_label(rects3, padding=3)
 
     fig.tight_layout()
+    plt.tight_layout()
 
     plt.savefig(output, dpi=1000)
 #     plt.show()
