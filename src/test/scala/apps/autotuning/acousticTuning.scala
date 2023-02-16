@@ -147,14 +147,14 @@ class acousticTuning extends test_util.Tests {
 
     // todo add configs here
     val configs = Seq(
-      s"autotuning/config/acoustic/1024_1024_1024/rs_cot_1024_1024_1024.json"
+      s"autotuning/config/acoustic/1024_1024_64/rs_cot_1024_1024_64.json"
     )
 
     runExperiment(
-      name = s"acoustic_1024_1024_1024",
+      name = s"acoustic_1024_1024_64",
       configFiles = configs,
       iterations = 3,
-      output = s"experiment/results/acoustic_128_64_32",
+      output = s"experiment/results/acoustic_1024_1024_64",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
       inputSizes = Seq(O, N, M), // check whether this is replaced
