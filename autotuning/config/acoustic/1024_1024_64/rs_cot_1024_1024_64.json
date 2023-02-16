@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_cot_1024_1024_1024",
+  "application_name": "rs_cot_1024_1024_64",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "rs_cot_1024_1024_1024.log",
+  "log_file": "rs_cot_1024_1024_64.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
