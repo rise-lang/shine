@@ -70,7 +70,11 @@ class acousticTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  ignore("execute acoustic stencil") {
+  test("execute acoustic stencil") {
+
+    val O: Int = 1024
+    val N: Int = 1024
+    val M: Int = 64
 
     val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(stencilMSS)
 
@@ -125,7 +129,7 @@ class acousticTuning extends test_util.Tests {
 
     val O: Int = 1024
     val N: Int = 1024
-    val M: Int = 1024
+    val M: Int = 64
 
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
