@@ -238,6 +238,49 @@ class mmGPU_exploration extends test_util.Tests {
     )
   }
 
+  test("tune expert") {
+
+    val lowering: Strategy[Rise] =
+      lowering0 `;` // add copies if necessary
+        lowering1 `;` // reduce -> reduceSeq
+        lowering2 `;` // reduceSeq -> reduceOcl
+        lowering3 `;` // map -> map global 0 (topdown/outermost)
+        lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
+        lowering5 // map (compute) -> mapSeq
+
+    val lowered = lowering.apply(mm).get
+    println("lowered: \n" + lowered)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(N, N, N), compute, finish(N, N, N)),
+      inputSizes = scala.collection.immutable.Seq(N, N, N),
+      samples = 100,
+      hmConstraints = true,
+      name = "test",
+      output = "autotuning",
+      saveToFile = true
+    )
+
+    val ocl: Rise =
+      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
+        tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered)
+            ))))
+
+    val result = autotune.search(tuner)(ocl)
+
+    result.samples.foreach(elem => {
+      println(elem.parameters)
+      println(elem.runtime)
+    }
+    )
+
+    val best = autotune.getBest(result.samples)
+    println("best: " + best)
+  }
+
   test("create output file") {
     // compute mm result
     //    val N = 4
@@ -310,7 +353,7 @@ class mmGPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "exhaustive",
         depth = 10,
-        samples = 1000,
+        samples = 500,
       )
     )
 
@@ -327,7 +370,7 @@ class mmGPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "LocalSearchGraph",
         depth = 15, // what does that mean?
-        //        samples = 10, // ignored in this case
+        samples = 50, // ignored in this case
         repeat = 1
       )
     )
@@ -336,7 +379,7 @@ class mmGPU_exploration extends test_util.Tests {
       name = "AutoTuning",
       iterations = 10,
       threshold = 10,
-      samples = 20
+      samples = 30
     )
 
     val experiment = scala.collection.immutable.Seq(

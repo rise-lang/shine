@@ -165,7 +165,7 @@ def plot_scatter_groups(global_name, default, expert, data, log):
 
             plt.figure(figsize=(10, 10), dpi=1000)
 
-            width = 2
+            width = 0.5
 
             # add vertical lines
             for elem2 in data[key][1][elem]:
@@ -178,9 +178,11 @@ def plot_scatter_groups(global_name, default, expert, data, log):
                     print("min: " + str(min(y[begin:end])))
                     print("max: " + str(max(y[begin:end])))
 
-                    # plt.vlines(x=(begin - 0.4), ymin=min(y[begin:end]) - 0.05, ymax=max(y[begin:end]) + 0.05, alpha=0.5,
-                    #            linewidth=width,
-                    #            colors='black')
+                    plt.vlines(x=(begin + (end - begin) / 2), ymin=min(y[begin:end]) - 0.05,
+                               ymax=max(y[begin:end]) + 0.05,
+                               alpha=0.7,
+                               linewidth=width,
+                               colors='black')
                     # plt.vlines(x=(end + 0.4), ymin=min(y[begin:end]), ymax=max(y[begin:end]), alpha=0.5,
                     #            linewidth=0.5,
                     #            colors='black')
@@ -190,13 +192,13 @@ def plot_scatter_groups(global_name, default, expert, data, log):
                     begin = counter
 
             end = counter
-            # plt.vlines(x=(begin - 0.4), ymin=min(y[begin:end]) - 0.05, ymax=max(y[begin:end]) + 0.05, alpha=0.5,
-            #            linewidth=width, colors='black')
+            plt.vlines(x=(begin - 0.4), ymin=min(y[begin:end]) - 0.01, ymax=max(y[begin:end]) + 0.01, alpha=0.7,
+                       linewidth=width, colors='black')
             # add line at the end
             # vertical.append(counter)
 
             # plt.vlines(x=vertical, ymin=min(y), ymax=max(y), alpha=0.5, linewidth=0.5, colors='black')
-            plt.scatter(x, y, s=5, alpha=1, c=colors[0], edgecolor='black', linewidth=0)
+            plt.scatter(x, y, s=4, alpha=1, c=colors[0], edgecolor='black', linewidth=0)
             plt.title(str(path))
             plt.tight_layout()
             plt.savefig(str(output) + "/" + str(global_name) + '_scatter.pdf', dpi=1000)

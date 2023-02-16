@@ -420,6 +420,115 @@ def plot_performance_evolution_confidence_internal(default, name, data_internal2
     return 0
 
 
+def plot_scatter_groups_internal(default, name, data_internal2, color, log):
+    # do what?
+    return 0
+
+
+def plot_scatter_groups(name, default, expert, data, log):
+    # scatter plot in groups of same rewrites
+
+    # plt.figure(figsize=(16, 9), dpi=1000)
+    plt.figure(figsize=(10, 10), dpi=1000)
+
+    counter = 0
+
+    keys = []
+    for key in data:
+        keys.append(key)
+
+    # print("keys: " + str(keys))
+    # print("keys: " + str(sorted(keys)))
+
+    print("keys: ")
+    for key in keys:
+        print(str(key))
+
+    def sorter(key):
+        return data[key][0]
+
+    keys = sorted(keys, key=sorter)
+
+    print("keys: ")
+    for key in keys:
+        print(str(key))
+
+    for key in keys:
+        plot_performance_evolution_confidence_internal(default, str(key), data[key][1], colors[counter % len(colors)],
+                                                       log)
+        counter += 1
+
+    # Decorations
+    # Lighten borders
+    plt.gca().spines["top"].set_alpha(1)
+    plt.gca().spines["bottom"].set_alpha(1)
+    plt.gca().spines["right"].set_alpha(1)
+    plt.gca().spines["left"].set_alpha(1)
+    # plt.xticks(x[::2], [str(d) for d in x[::2]], fontsize=12)
+    plt.title(name + " - Scatter Rewrites and Params", fontsize=22)
+    plt.xlabel("Samples")
+
+    s, e = plt.gca().get_xlim()
+    y_low, y_up = plt.gca().get_ylim()
+    plt.xlim(s, e)
+
+    # todo
+    # cut x axis into groups of same rewrites
+
+    # draw expert
+    #     plt.axhline(y=default / expert, color='black', linestyle='-', label='Expert')
+    if (log):
+        expert = np.log10(expert)
+    else:
+        expert = expert
+
+    # print("Expert: " + str(expert))
+
+    plt.axhline(y=expert, color='black', linestyle='-', label='Expert', alpha=0.5)
+
+    # draw legend
+    plt.legend()
+
+    # Draw Horizontal Tick lines
+    #     print("y_up: " + str(y_up))
+    #     step = int(y_up)
+    #     if y_up > 200:
+    #         step = 50
+    #     elif y_up > 50:
+    #         step = 10
+    #     elif y_up > 10:
+    #         step = 5
+    #     else:
+    #         step = 1
+    #
+    #     print("step: " + str(step))
+    #     for y in range(0, int(y_up) + 1, step):
+    #         plt.hlines(y, xmin=s, xmax=e, colors='black', alpha=0.5, linestyles="--", lw=0.5)
+
+    save = str(output) + "/" + str(global_name) + ".pdf"
+    print("save: " + str(save))
+
+    if (log):
+        plt.savefig(str(output) + "/" + str(global_name) + '_log.pdf', dpi=1000)
+    else:
+        plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
+
+    # print("y_up: " + str(y_up))
+    #     step = int(y_up)
+    #     if y_up > 200:
+    #         step = 50
+    #     elif y_up > 50:
+    #         step = 10
+    #     elif y_up > 10:
+    #         step = 2
+    #     elif y_up > 5:
+    #         step = 1
+    #     else:
+    #         plt.savefig(str(output) + "/" + str(global_name) + '.pdf', dpi=1000)
+    #
+    return 0
+
+
 def plot_performance_evolution_confidence(name, default, expert, data, log):
     # plot time series with error band
     # get performance evolution data
@@ -589,7 +698,8 @@ print("\n")
 # default = 43.937866
 default = 200.0
 # expert = 2.64
-expert = 0.009632
+# expert = 0.009632
+expert = 0.012288
 
 # data['default'] = {'default': default}
 # data['expert'] = {'expert': expert}
@@ -603,10 +713,11 @@ expert = 0.009632
 print("performance_evolution")
 # global_name = "exploration"
 log = True
-plot_performance_evolution_confidence(global_name, default, expert, data, log)
-log = False
-plot_performance_evolution_confidence(global_name, default, expert, data, log)
+plot_scatter_groups(global_name, default, expert, data, log)
 
+# plot_performance_evolution_confidence(global_name, default, expert, data, log)
+# log = False
+# plot_performance_evolution_confidence(global_name, default, expert, data, log)
 print("name: " + str(global_name))
 
 # creating the dataset
