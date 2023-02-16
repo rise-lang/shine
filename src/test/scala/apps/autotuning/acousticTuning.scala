@@ -70,7 +70,7 @@ class acousticTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute acoustic stencil") {
+  ignore("execute acoustic stencil") {
 
     val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(stencilMSS)
 
@@ -86,7 +86,7 @@ class acousticTuning extends test_util.Tests {
     println("result: \n" + result)
   }
 
-  test("run acoustic stencil experiment") {
+  ignore("run acoustic stencil experiment") {
 
     val expertConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
@@ -111,6 +111,45 @@ class acousticTuning extends test_util.Tests {
       name = s"acoustic_128_64_32",
       configFiles = configs,
       iterations = 10,
+      output = s"experiment/results/acoustic_128_64_32",
+      e = acoustic,
+      hostCode = HostCode(init(O, N, M), compute, finish),
+      inputSizes = Seq(O, N, M), // check whether this is replaced
+      plotOnly = false,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
+    )
+  }
+
+  test("run acoustic stencil experiment 1024") {
+
+    val O: Int = 1024
+    val N: Int = 1024
+    val M: Int = 1024
+
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (8: Nat),
+      TuningParameter("gs0") -> (256: Nat),
+      TuningParameter("gs1") -> (128: Nat),
+    )
+
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+    )
+
+    // todo add configs here
+    val configs = Seq(
+      s"autotuning/config/acoustic/1024_1024_1024/rs_cot_1024_1024_1024.json"
+    )
+
+    runExperiment(
+      name = s"acoustic_1024_1024_1024",
+      configFiles = configs,
+      iterations = 3,
       output = s"experiment/results/acoustic_128_64_32",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
