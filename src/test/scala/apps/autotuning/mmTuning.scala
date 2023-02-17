@@ -487,14 +487,15 @@ class mmTuning extends test_util.Tests {
       //            s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      // s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
-      iterations = 30,
+      iterations = 2,
       output = s"experiment/results/mm_${inputSize}",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
