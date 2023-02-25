@@ -495,7 +495,7 @@ class mmTuning extends test_util.Tests {
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
-      iterations = 2,
+      iterations = 3,
       output = s"experiment/results/mm_${inputSize}",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
