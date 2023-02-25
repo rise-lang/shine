@@ -228,9 +228,10 @@ class scalTuning extends test_util.Tests {
       //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+//      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+//      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+            s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
       //      s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
@@ -239,12 +240,14 @@ class scalTuning extends test_util.Tests {
       name = s"scal_${inputSize}",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/scal_${inputSize}",
+      output = s"experiment/results/paper/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration),
+      expert = None,
+      default = None,
+//      expert = Some(expertConfiguration),
+//      default = Some(defaultConfiguration),
       //      expert = None,
       disableChecking = true
     )

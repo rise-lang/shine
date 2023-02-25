@@ -488,21 +488,23 @@ class mmTuning extends test_util.Tests {
       //      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       // s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_default_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
       //      s"autotuning/config/mm/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
-      iterations = 3,
-      output = s"experiment/results/mm_${inputSize}",
+      iterations = 30,
+      output = s"experiment/results/paper/mm_${inputSize}",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),
       plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
+      expert = None,
+      default = None
+      //       expert = Some(expertConfiguration),
+//      default = Some(defaultConfiguration)
     )
   }
 

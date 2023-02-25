@@ -478,22 +478,23 @@ class asumTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
       //      s"autotuning/config/${asum}/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       //      s"autotuning/config/${asum}/${inputSize.toString}/atflog_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/${asum}/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
+//      s"autotuning/config/${asum}/${inputSize.toString}/ytoptlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"${asum}_${inputSize}",
       configFiles = configs,
-      iterations = 5,
-      output = s"experiment/results/${asum}_${inputSize}",
+      iterations = 30,
+      output = s"experiment/results/paper/${asum}_${inputSize}",
       asum_0,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
