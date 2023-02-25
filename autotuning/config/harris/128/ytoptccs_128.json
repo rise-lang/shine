@@ -32,6 +32,7 @@
       ],
       "constraints": [],
       "dependencies": [],
+      "parameter_default": 2,
       "transform": "log"
     },
     "tuned_tileY": {
@@ -169,6 +170,7 @@
       ],
       "constraints": [],
       "dependencies": [],
+      "parameter_default": 2,
       "transform": "log"
     },
     "tuned_tileX": {
@@ -312,6 +314,7 @@
         "tuned_tileY",
         "tuned_vec"
       ],
+      "parameter_default": 72,
       "transform": "log"
     },
     "tuned_gs0": {
@@ -333,6 +336,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
+      "parameter_default": 256,
       "transform": "log"
     },
     "tuned_gs1": {
@@ -354,6 +358,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
+      "parameter_default": 2,
       "transform": "log"
     },
     "tuned_ls0": {
@@ -375,6 +380,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
+      "parameter_default": 2,
       "transform": "log"
     },
     "tuned_ls1": {
@@ -392,6 +398,7 @@
       ],
       "constraints": [],
       "dependencies": [],
+      "parameter_default": 2,
       "transform": "log"
     }
   }

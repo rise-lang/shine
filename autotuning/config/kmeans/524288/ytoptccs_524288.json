@@ -45,6 +45,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
+      "parameter_default": 4,
       "transform": "log"
     },
     "tuned_gs1": {
@@ -68,6 +69,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
+      "parameter_default": 512,
       "transform": "log"
     },
     "tuned_ls0": {
@@ -87,6 +89,7 @@
       ],
       "constraints": [],
       "dependencies": [],
+      "parameter_default": 2,
       "transform": "log"
     },
     "tuned_ls1": {
@@ -110,6 +113,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
+      "parameter_default": 512,
       "transform": "log"
     }
   }
