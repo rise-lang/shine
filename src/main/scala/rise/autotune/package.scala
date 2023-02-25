@@ -335,9 +335,9 @@ package object autotune {
     // check if config file exists
     assert(os.isFile(configFile))
 
-    val hypermapper2 = os.proc("python3", "~/hypermapper_dev/hypermapper/hypermapper.py", configFile)
+    val hypermapper2 = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile)
     print("hypermapper: " + hypermapper2)
-    val hypermapper = os.proc("python3", "~/hypermapper_dev/hypermapper/hypermapper.py", configFile).spawn()
+    val hypermapper = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
     // main tuning loop
