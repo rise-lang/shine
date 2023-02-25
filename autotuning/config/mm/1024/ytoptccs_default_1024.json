@@ -183,8 +183,7 @@
         1024
       ],
       "constraints": [
-        "tuned_gs0 % tuned_ls0 == 0",
-        "tuned_ls0 <= 1024"
+        "tuned_gs0 % tuned_ls0 == 0"
       ],
       "dependencies": [
         "tuned_gs0"
