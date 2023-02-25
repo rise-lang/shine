@@ -268,7 +268,7 @@ package object autotuning {
       val commands: (String, String, String, Option[Double], Option[Double]) => Seq[String] = (config, folders, output, expertConfiguration, defaultConfiguration) => {
 
         val command: String =
-          "hm-plot-optimization-results " +
+          "python3 /home/jo/hypermapper_dev/plot/plot_optimization_results.py " +
             s"-j ${config} " +
             "-i " +
             folders +
@@ -281,7 +281,7 @@ package object autotuning {
 
         val commandExp: String = expertConfiguration match {
           case Some(value) =>
-            "hm-plot-optimization-results " +
+              "python3 /home/jo/hypermapper_dev/plot/plot_optimization_results.py " +
               s"-j ${config} " +
               "-i " +
               folders +
@@ -299,7 +299,7 @@ package object autotuning {
 
         val commandDefault: String = defaultConfiguration match {
           case Some(value) =>
-            "hm-plot-optimization-results " +
+              "python3 /home/jo/hypermapper_dev/plot/plot_optimization_results.py " +
               s"-j ${config} " +
               "-i " +
               folders +
