@@ -171,89 +171,71 @@ class constraintsEvaluation extends test_util.Tests {
   }
 
 
-  ignore("constraints test mm") {
+  test("constraints test mm") {
     val inputSize: Int = 1024
 
-    // expert configuration
-    val expertConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (8: Nat),
-      TuningParameter("gs0") -> (256: Nat),
-      TuningParameter("gs1") -> (128: Nat),
-      TuningParameter("v3") -> (4: Nat),
-      TuningParameter("v4") -> (8: Nat),
-      TuningParameter("v5") -> (64: Nat), // tile-width A
-      TuningParameter("v6") -> (128: Nat), // divides v8 x v5
-      TuningParameter("v7") -> (128: Nat), // tile-width B
-      TuningParameter("v8") -> (16: Nat) // tile-height A,B
-    )
-
-    val defaultConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-      TuningParameter("v3") -> (4: Nat),
-      TuningParameter("v4") -> (1: Nat),
-      TuningParameter("v5") -> (4: Nat), // tile-width A
-      TuningParameter("v6") -> (4: Nat), // divides v8 x v5
-      TuningParameter("v7") -> (4: Nat), // tile-width B
-      TuningParameter("v8") -> (1: Nat) // tile-height A,B
-    )
-
     val configs = Seq(
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //            s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      // s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json",
+      s"autotuning/config/constraints/mm/mm_base.json",
     )
 
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/mm_${inputSize}",
+      output = s"experiment/results/paper/constraints/mm",
       e = mm,
       hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),
       plotOnly = false,
       expert = None,
-      default = None
-      //       expert = Some(expertConfiguration),
-//      default = Some(defaultConfiguration)
+      default = None,
+        feasibility = false
     )
+
+    val configs2 = Seq(
+      s"autotuning/config/constraints/mm/mm_faes.json",
+      s"autotuning/config/constraints/mm/mm_faes0.json",
+    )
+
+    runExperiment(
+      name = s"mm_${inputSize}",
+      configFiles = configs2,
+      iterations = 30,
+      output = s"experiment/results/paper/constraints/mm",
+      e = mm,
+      hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
+      inputSizes = Seq(inputSize, inputSize, inputSize),
+      plotOnly = false,
+      expert = None,
+      default = None,
+    )
+
   }
 
 
 
-  test("constraints test scal") {
+  ignore("constraints test scal") {
     val inputSize: Int = 1 << 25
     val inputSize2: Int = 1 << 25
 
-//    val configs = Seq(
-//      s"autotuning/config/constraints/scal/scal_faes.json",
-//      s"autotuning/config/constraints/scal/scal_faes0.json"
-//    )
-//
-//    runExperiment(
-//      name = s"scal_${inputSize}",
-//      configFiles = configs,
-//      iterations = 30,
-//      output = s"experiment/results/paper/constraints/scal",
-//      e = scalOcl,
-//      hostCode = HostCode(scal_host_code.init(inputSize2), scal_host_code.compute, scal_host_code.finish),
-//      inputSizes = Seq(inputSize2),
-//      expert = None,
-//      default = None,
-//      disableChecking = true
-//    )
-//
+    val configs = Seq(
+      s"autotuning/config/constraints/scal/scal_faes.json",
+      s"autotuning/config/constraints/scal/scal_faes0.json"
+    )
+
+    runExperiment(
+      name = s"scal_${inputSize}",
+      configFiles = configs,
+      iterations = 30,
+      output = s"experiment/results/paper/constraints/scal",
+      e = scalOcl,
+      hostCode = HostCode(scal_host_code.init(inputSize2), scal_host_code.compute, scal_host_code.finish),
+      inputSizes = Seq(inputSize2),
+      expert = None,
+      default = None,
+      disableChecking = true
+    )
+
     val configs2 = Seq(
       s"autotuning/config/constraints/scal/scal_base.json",
     )
