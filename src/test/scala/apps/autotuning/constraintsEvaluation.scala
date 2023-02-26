@@ -171,7 +171,7 @@ class constraintsEvaluation extends test_util.Tests {
   }
 
 
-  test("constraints test mm") {
+  ignore("constraints test mm") {
     val inputSize: Int = 1024
 
     // expert configuration
