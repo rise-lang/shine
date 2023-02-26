@@ -214,7 +214,7 @@ class constraintsEvaluation extends test_util.Tests {
 
 
 
-  ignore("constraints test scal") {
+  test("constraints test scal") {
     val inputSize: Int = 1 << 25
     val inputSize2: Int = 1 << 25
 
