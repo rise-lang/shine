@@ -40,7 +40,8 @@ package object autotune {
                    failureMode: FailureMode = IntMax,
                    strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
                    executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
-                   disableChecking: Boolean = false
+                   disableChecking: Boolean = false,
+                   feasibility: Boolean = true
                   )
 
   // necessary host-code parts to execute the program
@@ -364,7 +365,13 @@ package object autotune {
           // read in header
           val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
           // start forming response
-          var response = s"${header.mkString(",")},runtime,Valid\n"
+          var response = tuner.feasibility match{
+            case true => s"${header.mkString(",")},runtime,Valid\n"
+            case false => s"${header.mkString(",")},runtime\n"
+          }
+
+//          var response = s"${header.mkString(",")},runtime,Valid\n"
+
           for (_ <- Range(0, numberOfEvalRequests)) {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
@@ -391,34 +398,71 @@ package object autotune {
                 //                println("parametersValues: ")
                 //                parametersValues.foreach(println)
 
-                response += s"${
-                  parametersValues.map(x => {
-                    try {
-                      x.toFloat.toInt.toString
-                    } catch {
-                      case e: Throwable => x
-                    }
-                  }).mkString(",")
-                },${runtime},False\n"
+                val add =  tuner.feasibility match {
+                  case true => {
+                    s"${
+                      parametersValues.map(x => {
+                        try {
+                          x.toFloat.toInt.toString
+                        } catch {
+                          case e: Throwable => x
+                        }
+                      }).mkString(",")
+                    },${
+                      runtime
+                    },False\n"
+                  }
+                  case false => s"${
+                      parametersValues.map(x => {
+                        try {
+                          x.toFloat.toInt.toString
+                        } catch {
+                          case e: Throwable => x
+                        }
+                      }).mkString(",")
+                    },${
+                      runtime
+                    }\n"
+                  }
+
+                response += add
 
               //                println("response: \n" + response)
               //                println("response: \n" + response)
               case Right(value) =>
 
                 // make sure to response int values
-                response += s"${
-                  parametersValues.map(x => {
-                    try {
-                      x.toFloat.toInt.toString
-                    } catch {
-                      case e: Throwable => x
-                    }
-                  }).mkString(",")
-                },${value.value},True\n"
+                val add = tuner.feasibility match {
+                  case true =>
+                s"${
+                parametersValues.map (x => {
+                try {
+                x.toFloat.toInt.toString
+                } catch {
+                case e: Throwable => x
+                }
+                }).mkString (",")
+                },${
+                value.value
+                },True\n"
 
-              //                println("response: \n" + response)
+                  case false =>
+                  s"${
+                parametersValues.map (x => {
+                try {
+                x.toFloat.toInt.toString
+                } catch {
+                case e: Throwable => x
+                }
+                }).mkString (",")
+                },${
+                value.value
+                }\n"
 
+                }
               //                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
+
+              response += add
             }
           }
 

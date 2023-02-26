@@ -26,7 +26,7 @@ import rise.openCL.DSL.mapGlobal
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.{GlobalSize, LocalSize}
 
-class constraints extends test_util.Tests {
+class constraintsEvaluation extends test_util.Tests {
 
   import rise.openCL.DSL._
 
@@ -237,7 +237,6 @@ class constraints extends test_util.Tests {
     val inputSize2: Int = 1 << 25
 
     val configs = Seq(
-      s"autotuning/config/constraints/scal/scal_base.json",
       s"autotuning/config/constraints/scal/scal_faes.json",
       s"autotuning/config/constraints/scal/scal_faes0.json"
     )
@@ -253,6 +252,25 @@ class constraints extends test_util.Tests {
       expert = None,
       default = None,
       disableChecking = true
+    )
+
+    val configs2 = Seq(
+      s"autotuning/config/constraints/scal/scal_base.json",
+    )
+
+
+    runExperiment(
+      name = s"scal_${inputSize}",
+      configFiles = configs2,
+      iterations = 30,
+      output = s"experiment/results/paper/constraints/scal",
+      e = scalOcl,
+      hostCode = HostCode(scal_host_code.init(inputSize2), scal_host_code.compute, scal_host_code.finish),
+      inputSizes = Seq(inputSize2),
+      expert = None,
+      default = None,
+      disableChecking = true,
+      feasibility = false
     )
   }
 
