@@ -506,8 +506,6 @@ class asumTuning extends test_util.Tests {
       //        expert = None,
       //      default = None
     )
-
-
   }
 
   ignore("tune asum 1") {
