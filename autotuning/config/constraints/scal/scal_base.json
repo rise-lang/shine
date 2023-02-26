@@ -11,7 +11,7 @@
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 8
+    "number_of_samples": 1
   },
   "scalarization_method": "linear",
   "models": {
