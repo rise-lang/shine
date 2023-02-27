@@ -90,7 +90,6 @@
         1024
       ],
       "constraints": [
-        "tuned_vec101 <= 128",
         "tuned_vec101 % 2 == 0"
       ],
       "dependencies": [],
