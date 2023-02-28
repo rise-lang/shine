@@ -12,10 +12,6 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 0
-  },
   "log_file": "ytoptccs_16777216.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
@@ -93,6 +89,32 @@
       "parameter_default" : 1024,
       "transform": "log"
     },
+    "tuned_sp1": {
+      "parameter_type": "ordinal",
+      "values": [
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+        524288,
+        1048576,
+        2097152,
+        4194304,
+        8388608,
+        16777216
+      ],
+      "constraints": [],
+      "dependencies": [],
+      "parameter_default" : 8192,
+      "transform": "log"
+    },
     "tuned_stride": {
       "parameter_type": "ordinal",
       "values": [
@@ -125,32 +147,6 @@
       "constraints": [],
       "dependencies": [],
       "parameter_default" : 1024,
-      "transform": "log"
-    },
-    "tuned_sp1": {
-      "parameter_type": "ordinal",
-      "values": [
-        256,
-        512,
-        1024,
-        2048,
-        4096,
-        8192,
-        16384,
-        32768,
-        65536,
-        131072,
-        262144,
-        524288,
-        1048576,
-        2097152,
-        4194304,
-        8388608,
-        16777216
-      ],
-      "constraints": [],
-      "dependencies": [],
-      "parameter_default" : 8192,
       "transform": "log"
     },
     "tuned_ls0": {
