@@ -12,6 +12,10 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 0
+  },
   "log_file": "ytoptccs_16777216.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
