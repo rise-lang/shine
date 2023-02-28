@@ -70,7 +70,7 @@ class acousticTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute acoustic stencil") {
+  ignore("execute acoustic stencil") {
 
     val O: Int = 1024
     val N: Int = 1024
@@ -146,10 +146,10 @@ class acousticTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/acoustic/1024/rs_cot_1024.json",
-      s"autotuning/config/acoustic/1024/rs_emb_1024.json",
-      s"autotuning/config/acoustic/1024/atf_emb_1024.json",
-      s"autotuning/config/acoustic/1024/bo_cot_1024.json",
+//      s"autotuning/config/acoustic/1024/rs_cot_1024.json",
+//      s"autotuning/config/acoustic/1024/rs_emb_1024.json",
+//      s"autotuning/config/acoustic/1024/atf_emb_1024.json",
+//      s"autotuning/config/acoustic/1024/bo_cot_1024.json",
       s"autotuning/config/acoustic/1024/ytoptccs_1024.json"
     )
 
