@@ -193,8 +193,8 @@ class constraintsEvaluation extends test_util.Tests {
 //    )
 
     val configs2 = Seq(
-      s"autotuning/config/constraints/mm/mm_faes.json",
-      s"autotuning/config/constraints/mm/mm_faes0.json",
+      s"autotuning/config/constraints/mm/mm_feas.json",
+      s"autotuning/config/constraints/mm/mm_feas0.json",
     )
 
     runExperiment(
@@ -211,7 +211,6 @@ class constraintsEvaluation extends test_util.Tests {
     )
 
   }
-
 
 
   ignore("constraints test scal") {
