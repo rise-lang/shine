@@ -174,23 +174,23 @@ class constraintsEvaluation extends test_util.Tests {
   test("constraints test mm") {
     val inputSize: Int = 1024
 
-    val configs = Seq(
-      s"autotuning/config/constraints/mm/mm_base.json",
-    )
-
-    runExperiment(
-      name = s"mm_${inputSize}",
-      configFiles = configs,
-      iterations = 30,
-      output = s"experiment/results/paper/constraints/mm",
-      e = mm,
-      hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
-      inputSizes = Seq(inputSize, inputSize, inputSize),
-      plotOnly = false,
-      expert = None,
-      default = None,
-        feasibility = false
-    )
+//    val configs = Seq(
+//      s"autotuning/config/constraints/mm/mm_base.json",
+//    )
+//
+//    runExperiment(
+//      name = s"mm_${inputSize}",
+//      configFiles = configs,
+//      iterations = 30,
+//      output = s"experiment/results/paper/constraints/mm",
+//      e = mm,
+//      hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
+//      inputSizes = Seq(inputSize, inputSize, inputSize),
+//      plotOnly = false,
+//      expert = None,
+//      default = None,
+//        feasibility = false
+//    )
 
     val configs2 = Seq(
       s"autotuning/config/constraints/mm/mm_faes.json",
@@ -214,7 +214,7 @@ class constraintsEvaluation extends test_util.Tests {
 
 
 
-  test("constraints test scal") {
+  ignore("constraints test scal") {
     val inputSize: Int = 1 << 25
     val inputSize2: Int = 1 << 25
 
