@@ -70,26 +70,6 @@ class scalTuning extends test_util.Tests {
           )))
         )))
 
-
-  //  val partitionedStencil: Expr = {
-  //    depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
-  //      input |>
-  //        padCst2D(padSize)(lf32(0.0f)) |>
-  //        slide2D(stencilSize, 1) |>
-  //        // partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-  //        partition(3)(n2nFun(m =>
-  //          SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))
-  //        )) |>
-  //        depMapSeq(
-  //          // mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-  //          mapGlobal(1)(mapGlobal(0)(
-  //            join >> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
-  //          ))
-  //        ) |>
-  //        join
-  //    ))
-  //  }
-
   val scalOcl: Expr =
     tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
       tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
@@ -97,10 +77,6 @@ class scalTuning extends test_util.Tests {
           tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(scalVec)
           ))))
-
-
-
-  // todo adjsut hostcode
 
   // hostcode
   val init: Int => String = N => {
@@ -153,9 +129,6 @@ class scalTuning extends test_util.Tests {
     println("Expression: \n" + e)
 
     val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(e)
-    //        val eOcl = e
-
-    //    println("Expression: \n" + eOcl)
 
     val result = rise.autotune.execution.execute(
       expression = eOcl,
@@ -224,16 +197,11 @@ class scalTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/scal/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-//      s"autotuning/config/scal/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-//      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-            s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
+      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json"
     )
 
     runExperiment(
@@ -244,11 +212,8 @@ class scalTuning extends test_util.Tests {
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),
-      expert = None,
-      default = None,
-//      expert = Some(expertConfiguration),
-//      default = Some(defaultConfiguration),
-      //      expert = None,
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration),
       disableChecking = true
     )
   }

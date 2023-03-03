@@ -2,29 +2,16 @@ package apps.autotuning
 
 import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
-import rise.autotune
 import rise.autotune._
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
-import rise.core.types._
 import shine.OpenCL.{GlobalSize, LocalSize}
-
 import scala.language.postfixOps
-
-import arithexpr.arithmetic.RangeMul
-import rise.autotune
-import rise.autotune._
-import rise.core.DSL.HighLevelConstructs.{padCst2D, slide2D}
-import rise.core.DSL.Type._
-import rise.core.DSL._
 import rise.core.Expr
 import rise.core.primitives.{add, asScalar, asVectorAligned, join, mapSeq, split, vectorFromScalar}
 import rise.core.types.DataType.{ArrayType, f32}
 import rise.core.types.{AddressSpace, Nat, TuningParameter}
-import rise.openCL.DSL.mapGlobal
-import rise.openCL.primitives.oclReduceSeq
-import shine.OpenCL.{GlobalSize, LocalSize}
 
 class constraintsEvaluation extends test_util.Tests {
 
@@ -77,8 +64,7 @@ class constraintsEvaluation extends test_util.Tests {
 
 
   // scalastyle:off
-  object mm_host_code
-  {
+  object mm_host_code {
     val init: (Int, Int, Int) => String = (N, M, O) => {
       s"""
          |const int N = ${N};
@@ -124,8 +110,7 @@ class constraintsEvaluation extends test_util.Tests {
 
 
   // hostcode
-  object scal_host_code
-  {
+  object scal_host_code {
     val init: Int => String = N => {
       s"""
          |const int N = ${N};
@@ -174,23 +159,23 @@ class constraintsEvaluation extends test_util.Tests {
   test("constraints test mm") {
     val inputSize: Int = 1024
 
-//    val configs = Seq(
-//      s"autotuning/config/constraints/mm/mm_base.json",
-//    )
-//
-//    runExperiment(
-//      name = s"mm_${inputSize}",
-//      configFiles = configs,
-//      iterations = 30,
-//      output = s"experiment/results/paper/constraints/mm",
-//      e = mm,
-//      hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
-//      inputSizes = Seq(inputSize, inputSize, inputSize),
-//      plotOnly = false,
-//      expert = None,
-//      default = None,
-//        feasibility = false
-//    )
+    val configs = Seq(
+      s"autotuning/config/constraints/mm/mm_base.json",
+    )
+
+    runExperiment(
+      name = s"mm_${inputSize}",
+      configFiles = configs,
+      iterations = 30,
+      output = s"experiment/results/paper/constraints/mm",
+      e = mm,
+      hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
+      inputSizes = Seq(inputSize, inputSize, inputSize),
+      plotOnly = false,
+      expert = None,
+      default = None,
+      feasibility = false
+    )
 
     val configs2 = Seq(
       s"autotuning/config/constraints/mm/mm_feas.json",
@@ -238,7 +223,7 @@ class constraintsEvaluation extends test_util.Tests {
     val configs2 = Seq(
       s"autotuning/config/constraints/scal/scal_base.json",
     )
-//
+    //
 
     runExperiment(
       name = s"scal_${inputSize}",
@@ -254,10 +239,4 @@ class constraintsEvaluation extends test_util.Tests {
       feasibility = false
     )
   }
-
-
-  // todo
-  // add mode/option, where we just return a high value for failing expressions -> not tuple
-
-
 }

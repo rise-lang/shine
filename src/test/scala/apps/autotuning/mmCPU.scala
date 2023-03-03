@@ -389,36 +389,28 @@ class mmCPU extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-//      s"autotuning/config/mmCPU/${inputSize.toString}/ytopt_${inputSize.toString}.json"
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mmCPU/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/mmCPU/${inputSize.toString}/ytoptccs_${inputSize.toString}.json"
-      //      s"autotuning/config/mmCPU/${inputSize.toString}/ytoptlog_${inputSize.toString}.json"
     )
 
     runExperiment(
       name = s"mmCPU_${inputSize}",
       configFiles = configs,
       iterations = 30,
-      //      output = s"/home/jo/development/experiments/tuning/dodekarch/mmCPU_${inputSize}",
       output = s"experiment/results/paper/mmCPU_${inputSize}",
       mm,
-      HostCode("", "", ""), // ignore this
+      HostCode("", "", ""), // ignore this (we execute manually)
       Seq(inputSize, inputSize, inputSize),
       strategyMode = Some(inject),
       executor = Some(execute),
-      //      plotOnly = true
       plotOnly = false,
       expert = None,
       default = None,
-      expert2 = None,
-      default2 = None
-      //      expert2 = Some(expertConfiugration),
-      //      default2 = Some(defaultConfiugration)
+      expert2 = Some(expertConfiugration),
+      default2 = Some(defaultConfiugration)
     )
   }
 

@@ -145,15 +145,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
                 ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
           )))
 
-    //    val harrisTuning =
-    //      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
-    //        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
-    //          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
-    //            lowerOCL(
-    //              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
-    //                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
-    //          )))
-
     val harrisOCLTuning =
       tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
         tuningParam("gs1", RangeMul(1, 256, 2), (gs1: Nat) =>
@@ -195,14 +186,14 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     //    )
 
     val configs = Seq(
-//      "autotuning/config/harris/128/rs_cot_128.json",
-//      "autotuning/config/harris/128/rs_emb_128.json",
-//      "autotuning/config/harris/128/bo_cot_128.json",
-//      "autotuning/config/harris/128/bounlog_cot_128.json",
-//      "autotuning/config/harris/128/atf_emb_128.json",
-//      "autotuning/config/harris/128/ytopt_128.json",
-        "autotuning/config/harris/128/ytoptccs_128.json",
-//      "autotuning/config/harris/128/ytoptunlog_128.json"
+      //      "autotuning/config/harris/128/rs_cot_128.json",
+      //      "autotuning/config/harris/128/rs_emb_128.json",
+      //      "autotuning/config/harris/128/bo_cot_128.json",
+      //      "autotuning/config/harris/128/bounlog_cot_128.json",
+      //      "autotuning/config/harris/128/atf_emb_128.json",
+      //      "autotuning/config/harris/128/ytopt_128.json",
+      "autotuning/config/harris/128/ytoptccs_128.json",
+      //      "autotuning/config/harris/128/ytoptunlog_128.json"
     )
 
     runExperiment(
@@ -216,8 +207,8 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       plotOnly = false,
       expert = None,
       default = None,
-//        expert = Some(expertConfiguration),
-//      default = Some(defaultConfiguration)
+      //        expert = Some(expertConfiguration),
+      //      default = Some(defaultConfiguration)
     )
   }
 
@@ -262,16 +253,12 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       TuningParameter("vec") -> (4: Nat)
     )
 
-
     val configs = Seq(
-//      "autotuning/config/harris/1024/rs_cot_1024.json",
-//      "autotuning/config/harris/1024/rs_emb_1024.json",
-      //      "autotuning/config/harris/1024/bolog_cot_1024.json",
-      //      "autotuning/config/harris/1024/bo_cot_1024.json",
-//      "autotuning/config/harris/1024/opentuner.json",
-      //      "autotuning/config/harris/1024/ytoptlog_1024.json",
-      //      "autotuning/config/harris/1024/ytopt_1024.json"
-            "autotuning/config/harris/1024/ytoptccs_1024.json"
+      "autotuning/config/harris/1024/rs_cot_1024.json",
+      "autotuning/config/harris/1024/rs_emb_1024.json",
+      "autotuning/config/harris/1024/bolog_cot_1024.json",
+      "autotuning/config/harris/1024/atf_emb_1024.json",
+      "autotuning/config/harris/1024/ytoptccs_1024.json"
     )
 
     runExperiment(
@@ -283,10 +270,8 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),
       plotOnly = false,
-      expert = None,
-      default = None
-      //      expert = Some(expertConfiguration),
-      //      default = Some(defaultConfiguration)
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 
