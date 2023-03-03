@@ -13,7 +13,7 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 import scala.language.postfixOps
 
-class mm extends test_util.Tests {
+class mmEmbedding extends test_util.Tests {
 
   val mmTuning: ToBeTyped[Expr] =
     tuningParam("v3", RangeAdd(1, 1024, 1), (v3: Nat) =>

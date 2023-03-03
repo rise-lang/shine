@@ -11,7 +11,7 @@ import rise.openCL.DSL._
 import shine.OpenCL.{GlobalSize, LocalSize}
 import apps.autotuning._
 
-class harris extends test_util.Tests {
+class harrisEmbedding extends test_util.Tests {
 
   // hostcode
 
