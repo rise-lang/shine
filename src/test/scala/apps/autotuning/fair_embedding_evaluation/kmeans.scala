@@ -2,7 +2,6 @@ package apps.autotuning.fair_embedding_evaluation
 
 import apps.autotuning._
 import arithexpr.arithmetic.RangeMul
-import rise.autotune
 import rise.autotune._
 import rise.core._
 import rise.core.types._

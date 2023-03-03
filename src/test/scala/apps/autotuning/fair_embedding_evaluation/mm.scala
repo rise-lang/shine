@@ -5,7 +5,6 @@ import apps.mm.mmNVIDIAWithParams
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.autotune
 import rise.autotune._
-import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core._
 import rise.core.types._
