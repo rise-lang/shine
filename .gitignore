@@ -6,6 +6,7 @@ modules.xml
 .metals
 .bloop
 .bsp
+.DS_Store
 
 *.aux
 *.bbl
@@ -19,3 +20,4 @@ modules.xml
 *.sc
 
 opentuner.db
+
