@@ -75,7 +75,7 @@ class mmEmbedding extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  ignore("execute expert configuration") {
+  test("execute expert configuration") {
     // execute config with "expert parameter configuration"
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
