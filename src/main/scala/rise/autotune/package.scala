@@ -330,12 +330,12 @@ package object autotune {
     println("configFile: " + configFile)
 
     // check if hypermapper is installed
-    ("which hypermapper" !!)
+    // ("which hypermapper" !!)
 
     // check if config file exists
     assert(os.isFile(configFile))
 
-    val hypermapper = os.proc("hypermapper", configFile).spawn()
+    val hypermapper = os.proc("python", "/scratch/tmp/j_lenf01/baco/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
     // main tuning loop
