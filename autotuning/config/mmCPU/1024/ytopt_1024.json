@@ -16,8 +16,13 @@
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "scalarization_method": "linear",
+  "models": {
+    "model": "gaussian_process"
+  },
   "optimization_method": "ytopt",
-  "optimization_iterations": 20,
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 150,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",
@@ -45,8 +50,7 @@
       ],
       "dependencies": [
         "tuned_vec101"
-      ],
-      "transform": "log"
+      ]
     },
     "tuned_tile52": {
       "parameter_type": "ordinal",
@@ -69,8 +73,7 @@
         "1024 % tuned_tile52 == 0",
         "(tuned_tile52) >= (1)"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_vec101": {
       "parameter_type": "ordinal",
@@ -92,8 +95,7 @@
         "tuned_vec101 <= 128",
         "tuned_vec101 % 2 == 0"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_split100": {
       "parameter_type": "ordinal",
@@ -116,8 +118,7 @@
         "1024 % tuned_split100 == 0",
         "(tuned_split100) >= (1)"
       ],
-      "dependencies": [],
-      "transform": "log"
+      "dependencies": []
     },
     "tuned_reorder": {
       "parameter_type": "permutation",

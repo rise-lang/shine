@@ -1,14 +1,22 @@
 package apps
 
+import arithexpr.arithmetic.RangeMul
 import rise.core.DSL._
 import rise.core.DSL.Type._
-import rise.core._
+import rise.core.{DSL, _}
 import rise.core.primitives._
 import rise.core.types._
 import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
+import shine.DPIA.primitives.functional.MapSeq
 import shine.OpenCL.KernelExecutor._
+
+import rise.core.DSL._
+import rise.core._
+import rise.core.types._
+import rise.core.DSL.let
+
 
 object kmeans {
   private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
@@ -33,7 +41,7 @@ object kmeans {
 
   // FIXME: could not find original Lift expression, this is made up
   val kmeansHighLevel: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
-    (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
+    (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>
     features |> transpose |> map(fun(feature =>
       clusters |> reduceSeq(fun(tuple => fun(cluster => {
@@ -56,7 +64,7 @@ object kmeans {
   })
 
   val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
-    (f`.`p`.`f32) ->: (c`.`f`.`f32) ->: (p`.`int)
+    (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>
     features |> transpose |> mapGlobal(fun(feature =>
       clusters |> oclReduceSeq(AddressSpace.Private)(
@@ -71,14 +79,39 @@ object kmeans {
     ))
   ))
 
+  //  val kmeansOcl2: ToBeTyped[Expr] = {
+  def kmeansOcl2(sp0: Nat): ToBeTyped[Expr] = {
+    depFun((p: Nat, c: Nat, f: Nat) => fun(
+      (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
+    )((features, clusters) =>
+      features |> transpose |>
+        split(sp0) |>
+        mapWorkGroup(
+          let(toLocal(mapLocal(fun(x => x)))) be (localClusters =>
+            mapLocal(fun(feature =>
+              localClusters |> oclReduceSeq(AddressSpace.Private)(
+                fun(tuple => fun(cluster => {
+                  val dist = zip(feature)(cluster) |>
+                    oclReduceSeq(AddressSpace.Private)(update)(lf32(0.0f))
+                  testF(dist)(tuple)
+                }))
+              )(
+                makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
+              ) |> select
+            ))
+            )) |> join
+    ))
+  }
+
+
   import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   def runOriginalKernel(
-    name: String,
-    features: Array[Array[Float]],
-    clusters: Array[Array[Float]]
-  ): (Array[Int], TimeSpan[Time.ms]) = {
+                         name: String,
+                         features: Array[Array[Float]],
+                         clusters: Array[Array[Float]]
+                       ): (Array[Int], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -115,10 +148,10 @@ object kmeans {
   }
 
   def runKernel(
-    k: KernelNoSizes,
-    features: Array[Array[Float]],
-    clusters: Array[Array[Float]]
-  ): (Array[Int], TimeSpan[Time.ms]) = {
+                 k: KernelNoSizes,
+                 features: Array[Array[Float]],
+                 clusters: Array[Array[Float]]
+               ): (Array[Int], TimeSpan[Time.ms]) = {
     val C = clusters.length
     val F = features.length
     val P = features(0).length

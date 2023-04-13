@@ -322,12 +322,14 @@ case class CExecutor(
     try {
       code = genExecutableCode(lowered.get)
 
+      //      println("code: \n" + code)
+
       errorLevel = CompilationError
 
       // compile
       try {
         val bin = compile(code)
-
+        
         // execute
         try {
           errorLevel = ExecutionError
@@ -761,23 +763,16 @@ int main(int argc, char** argv) {
   }
 
   def compile(code: String): String = {
+
     // create files for source code and binary
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
     val bin = createTempFile("bin-", "").getAbsolutePath
 
     // todo: make this configable using json file
     // compile
-    //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
-    //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
-
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
-    //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
-
-    //      s"clang $src -o $bin -lm -fopenmp" !!
-    //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     s"gcc -O2 $src -o $bin -lm -fopenmp" !!
     //    s"clang $src -o $bin -lm -fopenmp" !!
-    //    s"gcc $src -o $bin -lm -fopenmp" !!
 
     bin
   }

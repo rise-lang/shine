@@ -16,6 +16,12 @@ import util.gen
 
 import scala.collection.immutable.Map
 
+sealed trait ExecutionBackend
+
+case object C_Backend extends ExecutionBackend
+
+case object OpenCL_Backend extends ExecutionBackend
+
 package object runner {
 
   def performanceModel(expression: Rise): Double = {

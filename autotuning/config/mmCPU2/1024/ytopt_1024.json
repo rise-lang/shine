@@ -1,0 +1,148 @@
+{
+  "application_name": "ytopt_1024",
+  "optimization_objectives": [
+    "runtime"
+  ],
+  "feasible_output": {
+    "enable_feasible_predictor": true,
+    "name": "Valid",
+    "true_value": "True",
+    "false_value": "False"
+  },
+  "hypermapper_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "ytopt_1024.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 6
+  },
+  "scalarization_method": "linear",
+  "models": {
+    "model": "gaussian_process"
+  },
+  "optimization_iterations": 144,
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "input_parameters": {
+    "tuned_tile8575": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "tuned_tile8575 >= 0",
+        "tuned_tile8575 % tuned_vec8362 == 0",
+        "((tuned_tile8575*(1/(tuned_vec8362)))) >= (1)"
+      ],
+      "dependencies": [
+        "tuned_vec8362"
+      ]
+    },
+    "tuned_arrayPackingVec8360": {
+      "parameter_type": "ordinal",
+      "values": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "constraints": [],
+      "dependencies": []
+    },
+    "tuned_blockedReduce8361": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [],
+      "dependencies": []
+    },
+    "tuned_vec8362": {
+      "parameter_type": "ordinal",
+      "values": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "constraints": [],
+      "dependencies": []
+    },
+    "tuned_arrayPackingSplit8359": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [
+        "((tuned_arrayPackingSplit8359*(1/(tuned_arrayPackingVec8360)))) >= (1)",
+        "tuned_arrayPackingSplit8359 >= 0",
+        "tuned_arrayPackingSplit8359 % tuned_arrayPackingVec8360 == 0"
+      ],
+      "dependencies": [
+        "tuned_arrayPackingVec8360"
+      ]
+    },
+    "tuned_tile8576": {
+      "parameter_type": "ordinal",
+      "values": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "constraints": [],
+      "dependencies": []
+    },
+    "tuned_reorder": {
+      "parameter_type": "permutation",
+      "values": [
+        6
+      ],
+      "parametrization": "spearman",
+      "constraints": [
+        "((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 2) & (tuned_reorder_3 == 4) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 4) & (tuned_reorder_1 == 0) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 4) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 4) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 2) & (tuned_reorder_4 == 5) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 4) & (tuned_reorder_1 == 0) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 4) & (tuned_reorder_2 == 1) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3)) | ((tuned_reorder_0 == 0) & (tuned_reorder_1 == 1) & (tuned_reorder_2 == 4) & (tuned_reorder_3 == 5) & (tuned_reorder_4 == 2) & (tuned_reorder_5 == 3))"
+      ],
+      "dependencies": []
+    }
+  }
+}

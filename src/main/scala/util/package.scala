@@ -36,8 +36,7 @@ package object util {
   }
 
   def assertSame[T](a: T, b: T, msg: String)
-    (implicit same: AssertSame[T]): Unit =
-  {
+                   (implicit same: AssertSame[T]): Unit = {
     same(a, b, msg)
   }
 
@@ -82,7 +81,7 @@ package object util {
   case class MemoryStats(used: Long, total: Long) {
     def pretty(): String =
       s"used: ${prettyMem(used)}, " +
-      s"total: ${prettyMem(total)}"
+        s"total: ${prettyMem(total)}"
 
     def max(other: MemoryStats): MemoryStats = {
       MemoryStats(this.used max other.used, this.total max other.total)
@@ -109,9 +108,9 @@ package object util {
   }
 
   def dotPrintTmp(
-    name: String,
-    r: elevate.core.RewriteResult[rise.elevate.Rise]
-  ): Unit = r match {
+                   name: String,
+                   r: elevate.core.RewriteResult[rise.elevate.Rise]
+                 ): Unit = r match {
     case elevate.core.Success(p) => dotPrintTmp(name, p)
     case _ =>
   }

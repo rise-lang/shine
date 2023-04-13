@@ -157,7 +157,7 @@ class gemvTuning extends test_util.Tests {
       "autotuning/config/gemv/1024/rs_cot_1024.json",
       "autotuning/config/gemv/1024/rs_emb_1024.json",
       "autotuning/config/gemv/1024/ls_cot_1024.json",
-      "autotuning/config/gemv/1024/atf_emb_1024.json",
+      "autotuning/config/gemv/1024/opentuner.json",
       "autotuning/config/gemv/1024/borf_cot_1024.json",
       "autotuning/config/gemv/1024/bogp_cot_1024.json"
     )

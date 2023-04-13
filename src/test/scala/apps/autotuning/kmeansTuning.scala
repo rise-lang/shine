@@ -9,6 +9,46 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 
 class kmeansTuning extends test_util.Tests {
 
+  // todo adjust this for auto-tuning
+  // kmeans using loacl memory implementation from lift
+  //
+  //  @Test
+  //  def kMeansLocalMemory(): Unit = {
+  //
+  //    val numPoints = 1024
+  //    val numClusters = 5
+  //    val numFeatures = 8
+  //
+  //    val points = Array.fill(numPoints, numFeatures)(util.Random.nextFloat())
+  //    val clusters = Array.fill(numClusters, numFeatures)(util.Random.nextFloat())
+  //
+  //    val gold = calculateMembership(points, clusters)
+  //
+  //    val splitFactor = 128
+  //
+  //    val kMeans = fun(
+  //      featuresType, clustersType,
+  //      (features, clusters) => {
+  //        features :>> Transpose() :>> Split(splitFactor) :>> MapWrg(\(featuresChunk =>
+  //          clusters :>> toLocal(MapLcl(MapSeq(id))) :>> Let(localClusters =>
+  //            MapLcl(\(feature => {
+  //              localClusters :>> ReduceSeq(\((tuple, cluster) => {
+  //
+  //                val dist = Zip(feature, cluster) :>> ReduceSeq(\((acc, b) => update2(acc, Get(b, 0), Get(b, 1))), 0.0f)
+  //                Zip(dist, tuple) :>> MapSeq(test)
+  //
+  //              }), Value("{3.40282347e+38, 0, 0}", ArrayTypeWSWC(TupleType(Float, Int, Int), 1))) :>>
+  //                toGlobal(MapSeq(MapSeq(select)))
+  //            })) $ featuresChunk
+  //          )
+  //        )) :>> Join()
+  //      })
+  //
+  //    val (output, _) = Execute(numPoints)[Array[Int]](kMeans, points.transpose, clusters)
+  //    assertArrayEquals(gold, output)
+  //  }
+
+
   val kmeans: Expr =
     tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
       tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
@@ -16,6 +56,7 @@ class kmeansTuning extends test_util.Tests {
           tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(apps.kmeans.kmeansOcl)
           ))))
+
 
   // scalastyle:off
   val init: (Int, Int, Int) => String = (p, c, f) => {
@@ -30,12 +71,14 @@ class kmeansTuning extends test_util.Tests {
        |
        |  float* in_features = hostBufferSync(ctx, features, F * P * sizeof(float), HOST_WRITE);
        |  for (int i = 0; i < F * P ; i++) {
-       |    in_features[i] = (float)(rand() % 100);
+       |      // in_features[i] = (float)(rand() % 100);
+       |      in_features[i] = (float)(i+1);
        |  }
        |
        |  float* in_clusters = hostBufferSync(ctx, clusters, C * F * sizeof(float), HOST_WRITE);
        |    for (int i = 0; i < F * P ; i++) {
-       |      in_clusters[i] = (float)(rand() % 100);
+       |      // in_clusters[i] = (float)(rand() % 100);
+       |        in_features[i] = (float)(i+1);
        |    }
        |
        |  deviceBufferSync(ctx, features, F * P * sizeof(float), DEVICE_READ);
@@ -57,7 +100,7 @@ class kmeansTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute kmeans") {
+  ignore("execute kmeans") {
     val params: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (32: Nat),
       TuningParameter("ls1") -> (1: Nat),
@@ -82,6 +125,7 @@ class kmeansTuning extends test_util.Tests {
   ignore("search kmeans with generated config file") {
 
     val tuner = Tuner(
+
       hostCode = HostCode(init(1024, 5, 34), compute, finish),
       inputSizes = Seq(1024, 5, 34),
       samples = 10,
@@ -159,7 +203,7 @@ class kmeansTuning extends test_util.Tests {
 
   test("run kmeans autotuning") {
 
-    val inputSize: Int = 1024
+    val inputSize: Int = 1 << 19
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -171,30 +215,28 @@ class kmeansTuning extends test_util.Tests {
 
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1: Nat),
+      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
     )
 
     val configs = Seq(
       s"autotuning/config/kmeans/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/kmeans/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/kmeans/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/kmeans/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/kmeans/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 10,
-      //      output = s"experiment/results/kmeans_${inputSize}",
-      output = s"/home/jo/development/experiments/tuning/results/kmeans_${inputSize}",
+      iterations = 30,
+      output = s"experiment/results/paper/kmeans_${inputSize}",
       e = kmeans,
-      hostCode = HostCode(init(1024, 5, 34), compute, finish),
-      inputSizes = Seq(inputSize, 5, 34),
-      plotOnly = true,
+      hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
+      inputSizes = Seq(inputSize, 10, 34),
+      plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
     )

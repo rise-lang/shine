@@ -21,6 +21,7 @@ case object `-1` extends FailureMode
 
 case object IntMax extends FailureMode
 
+
 case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                            codegenTime: Option[TimeSpan[Time.ms]],
                            compilationTime: Option[TimeSpan[Time.ms]],

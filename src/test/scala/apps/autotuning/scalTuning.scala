@@ -18,6 +18,8 @@ class scalTuning extends test_util.Tests {
 
   import rise.openCL.DSL._
 
+  val inputSize = 1 << 25
+
   val scal =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
@@ -45,9 +47,15 @@ class scalTuning extends test_util.Tests {
     )))
 
 
+  val scalDefaultDefault =
+    depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
+      input |> mapGlobal(fun(x => alpha * x))
+    )))
+
+
   val scalVec =
-    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
-      tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
+    tuningParam("s0", RangeMul(1, inputSize, 2), (s0: Nat) =>
+      tuningParam("s1", RangeMul(1, inputSize, 2), (s1: Nat) =>
         tuningParam("vec", RangeMul(1, 1024, 2), (vec: Nat) =>
           depFun((n: Nat) => fun(n `.` f32)(input => fun(f32)(alpha =>
             input |>
@@ -62,26 +70,6 @@ class scalTuning extends test_util.Tests {
           )))
         )))
 
-
-  //  val partitionedStencil: Expr = {
-  //    depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
-  //      input |>
-  //        padCst2D(padSize)(lf32(0.0f)) |>
-  //        slide2D(stencilSize, 1) |>
-  //        // partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-  //        partition(3)(n2nFun(m =>
-  //          SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))
-  //        )) |>
-  //        depMapSeq(
-  //          // mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-  //          mapGlobal(1)(mapGlobal(0)(
-  //            join >> oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
-  //          ))
-  //        ) |>
-  //        join
-  //    ))
-  //  }
-
   val scalOcl: Expr =
     tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
       tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
@@ -90,10 +78,6 @@ class scalTuning extends test_util.Tests {
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(scalVec)
           ))))
 
-
-
-  // todo adjsut hostcode
-
   // hostcode
   val init: Int => String = N => {
     s"""
@@ -101,18 +85,19 @@ class scalTuning extends test_util.Tests {
        |
        |srand(time(NULL));
        |
-       |Buffer input = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
-       |Buffer output = createBuffer(ctx, N * N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
+       |Buffer input = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_READ);
+       |Buffer output = createBuffer(ctx, N * sizeof(float), HOST_READ | HOST_WRITE | DEVICE_WRITE);
        |
-       |float* m = hostBufferSync(ctx, input, N * N * sizeof(float), HOST_WRITE);
-       |for (int i = 0; i < N * N; i++) {
-       |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
+       |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
+       |for (int i = 0; i < N; i++) {
+       |  // m[i] = (float)(rand()) * 10.0f;
+       |  m[i] = 1.0f;
        |}
        |
        |int alpha = 10;
        |
        |// synchronize before entering timed section
-       |deviceBufferSync(ctx, input, N * N * sizeof(float), DEVICE_READ);
+       |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
        |waitFinished(ctx);
        |""".stripMargin
   }
@@ -128,20 +113,22 @@ class scalTuning extends test_util.Tests {
        |// TODO: could check output here
        |// use given gold expression?
        |
+       |//float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |//for(int i = 0; i < N; i++){
+       | // printf("%f \\n", outputScal[i]);
+       |//}
+       |
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
 
 
   def executeStencilDefault(e: Expr) = {
-    val inputSize: Int = 1024
+    val inputSize: Int = 12
 
     println("Expression: \n" + e)
 
-    val eOcl = wrapOclRun(LocalSize(2), GlobalSize(1024))(e)
-    //        val eOcl = e
-
-    //    println("Expression: \n" + eOcl)
+    val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(e)
 
     val result = rise.autotune.execution.execute(
       expression = eOcl,
@@ -156,12 +143,12 @@ class scalTuning extends test_util.Tests {
 
   }
 
-  test("test stencil execution") {
-    executeStencilDefault(scalDefault)
+  ignore("test stencil execution") {
+    executeStencilDefault(scalDefaultDefault)
   }
 
-  test("scal tuning experiment") {
-    val inputSize: Int = 1024
+  ignore("scal tuning experiment") {
+    val inputSize: Int = 1 << 25
 
     val tuner = Tuner(
       hostCode = HostCode(init(inputSize), compute, finish),
@@ -183,28 +170,51 @@ class scalTuning extends test_util.Tests {
   }
 
 
-  test("tune scal 1024") {
-    val inputSize: Int = 1024
-    val inputSize2: Int = 1024
+  test("run scal experiments") {
+    val inputSize: Int = 1 << 25
+    val inputSize2: Int = 1 << 25
+
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (256: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (512: Nat),
+      TuningParameter("s1") -> (1: Nat),
+      TuningParameter("vec") -> (2: Nat)
+    )
+
+    // expert configuration
+    val defaultConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (1: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1: Nat),
+      TuningParameter("s0") -> (32: Nat),
+      TuningParameter("s1") -> (32: Nat),
+      TuningParameter("vec") -> (8: Nat)
+    )
 
     val configs = Seq(
       s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json"
+      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json"
     )
-
 
     runExperiment(
       name = s"scal_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"autotuning/scal_${inputSize}",
+      iterations = 30,
+      output = s"experiment/results/paper/scal_${inputSize}",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration),
       disableChecking = true
     )
   }
-
 }

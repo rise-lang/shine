@@ -41,7 +41,7 @@ class mvTuning extends test_util.Tests {
       wrapOclMv(mvFusedAMDParam(s0))
     )
 
-   // mvKeplerBest
+  // mvKeplerBest
   val mvKeplerBestTuning: ToBeTyped[Expr] =
     tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
       wrapOclMv(mvKeplerBestParam(s0))
@@ -145,18 +145,37 @@ class mvTuning extends test_util.Tests {
 
   }
 
-  test("tune gemv 1024"){
+  test("tune gemv 1024") {
     // change name to run other version
     val version = mvKeplerBestTuning
     val name = "mvKeplerBestTuning"
 
+    // expert configuration
+    val expertConfiguration: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("s0") -> (32: Nat),
+    )
+
+    // default configuration
+    //    val defaultConfiguration: Map[Nat, Nat] = Map(
+    //      TuningParameter("ls0") -> (32: Nat),
+    //      TuningParameter("ls1") -> (8: Nat),
+    //      TuningParameter("gs0") -> (256: Nat),
+    //      TuningParameter("gs1") -> (128: Nat),
+    //      TuningParameter("s0") -> (4: Nat),
+    //    )
+
+
     val configs = Seq(
       "autotuning/config/mv/1024/rs_cot_1024.json",
-      "autotuning/config/mv/1024/rs_emb_1024.json",
-      "autotuning/config/mv/1024/ls_cot_1024.json",
-      "autotuning/config/mv/1024/atf_emb_1024.json",
-      "autotuning/config/mv/1024/borf_cot_1024.json",
-      "autotuning/config/mv/1024/bogp_cot_1024.json"
+      //      "autotuning/config/mv/1024/rs_emb_1024.json",
+      //      "autotuning/config/mv/1024/ls_cot_1024.json",
+      //      "autotuning/config/mv/1024/opentuner.json",
+      //      "autotuning/config/mv/1024/borf_cot_1024.json",
+      //      "autotuning/config/mv/1024/bogp_cot_1024.json"
     )
 
     runExperiment(
@@ -166,7 +185,8 @@ class mvTuning extends test_util.Tests {
       s"autotuning/${name}",
       version,
       HostCode(init(1024, 1024), compute, finish),
-      Seq(1024, 1024, 1024)
+      Seq(1024, 1024, 1024),
+      expert = Some(expertConfiguration)
     )
   }
 }
