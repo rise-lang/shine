@@ -1,5 +1,5 @@
 #!/bin/bash
 
 sbt "testOnly apps.autotuning.mmCPU"
-sbt "testOnly apps.autotuning.stencilTuning"
+sbt "testOnly apps.autotuning.asumTuning"
 

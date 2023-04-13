@@ -70,7 +70,7 @@ class acousticTuning extends test_util.Tests {
   // scalastyle:on
 
 
-  test("execute acoustic stencil") {
+  ignore("execute acoustic stencil") {
 
     val O: Int = 1024
     val N: Int = 1024
@@ -145,17 +145,19 @@ class acousticTuning extends test_util.Tests {
       TuningParameter("gs1") -> (1024: Nat),
     )
 
-    // todo add configs here
     val configs = Seq(
-      s"autotuning/config/acoustic/1024_1024_64/rs_cot_1024_1024_64.json",
-      s"autotuning/config/acoustic/1024_1024_64/atf_emb_1024_1024_64.json"
+      s"autotuning/config/acoustic/1024/rs_cot_1024.json",
+      s"autotuning/config/acoustic/1024/rs_emb_1024.json",
+      s"autotuning/config/acoustic/1024/atf_emb_1024.json",
+      s"autotuning/config/acoustic/1024/bo_cot_1024.json",
+      s"autotuning/config/acoustic/1024/ytoptccs_1024.json"
     )
 
     runExperiment(
-      name = s"acoustic_1024_1024_64",
+      name = s"stencil",
       configFiles = configs,
-      iterations = 5,
-      output = s"experiment/results/acoustic_1024_1024_64",
+      iterations = 30,
+      output = s"experiment/results/paper/stencil",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
       inputSizes = Seq(O, N, M), // check whether this is replaced

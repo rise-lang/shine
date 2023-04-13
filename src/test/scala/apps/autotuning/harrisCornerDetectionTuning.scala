@@ -134,7 +134,7 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     println("best: \n" + best)
   }
 
-  ignore("run harris autotuning mapglobal/seq 128 ") {
+  test("run harris autotuning mapglobal/seq 128 ") {
 
     val harrisTuning =
       tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
@@ -144,15 +144,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
               ocl.harrisTileShiftInwardsPar(tileX, tileY, mapWorkGroup(_),
                 ocl.harrisVecUnaligned2(vec, mapLocal(_), toLocal)))
           )))
-
-    //    val harrisTuning =
-    //      tuningParam("tileX", RangeAdd(1, 256, 2), (tileX: Nat) =>
-    //        tuningParam("tileY", RangeAdd(1, 256, 2), (tileY: Nat) =>
-    //          tuningParam("vec", RangeAdd(1, 256, 2), (vec: Nat) =>
-    //            lowerOCL(
-    //              ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
-    //                ocl.harrisVecUnaligned2(vec, _ => mapSeq, toPrivate)))
-    //          )))
 
     val harrisOCLTuning =
       tuningParam("gs0", RangeMul(1, 256, 2), (gs0: Nat) =>
@@ -195,27 +186,29 @@ class harrisCornerDetectionTuning extends test_util.Tests {
     //    )
 
     val configs = Seq(
-      "autotuning/config/harris/128/rs_cot_128.json",
-      "autotuning/config/harris/128/rs_emb_128.json",
-      "autotuning/config/harris/128/bo_cot_128.json",
-      "autotuning/config/harris/128/bounlog_cot_128.json",
-      "autotuning/config/harris/128/atf_emb_128.json",
-      "autotuning/config/harris/128/ytopt_128.json",
-      "autotuning/config/harris/128/ytoptunlog_128.json"
+      //      "autotuning/config/harris/128/rs_cot_128.json",
+      //      "autotuning/config/harris/128/rs_emb_128.json",
+      //      "autotuning/config/harris/128/bo_cot_128.json",
+      //      "autotuning/config/harris/128/bounlog_cot_128.json",
+      //      "autotuning/config/harris/128/atf_emb_128.json",
+      //      "autotuning/config/harris/128/ytopt_128.json",
+      "autotuning/config/harris/128/ytoptccs_128.json",
+      //      "autotuning/config/harris/128/ytoptunlog_128.json"
     )
 
     runExperiment(
       name = "harris_128",
       configFiles = configs,
-      iterations = 10,
-      //      "experiment/results/harris",
-      output = s"experiment/results/harris_128",
+      iterations = 30,
+      output = s"experiment/results/paper/harris_128",
       harrisOCLTuning,
       HostCode(init(128, 256), compute, finish),
       inputSizes = Seq(128, 256),
       plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
+      expert = None,
+      default = None,
+      //        expert = Some(expertConfiguration),
+      //      default = Some(defaultConfiguration)
     )
   }
 
@@ -260,30 +253,25 @@ class harrisCornerDetectionTuning extends test_util.Tests {
       TuningParameter("vec") -> (4: Nat)
     )
 
-
     val configs = Seq(
       "autotuning/config/harris/1024/rs_cot_1024.json",
       "autotuning/config/harris/1024/rs_emb_1024.json",
-      //      "autotuning/config/harris/1024/bolog_cot_1024.json",
-      //      "autotuning/config/harris/1024/bo_cot_1024.json",
+      "autotuning/config/harris/1024/bolog_cot_1024.json",
       "autotuning/config/harris/1024/atf_emb_1024.json",
-      //      "autotuning/config/harris/1024/ytoptlog_1024.json",
-      //      "autotuning/config/harris/1024/ytopt_1024.json"
+      "autotuning/config/harris/1024/ytoptccs_1024.json"
     )
 
     runExperiment(
       name = "harris_1024",
       configFiles = configs,
-      iterations = 20,
-      output = "experiment/results/harris_1024",
+      iterations = 30,
+      output = "experiment/results/paper/harris_1024",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),
       plotOnly = false,
-      expert = None,
-      default = None
-      //      expert = Some(expertConfiguration),
-      //      default = Some(defaultConfiguration)
+      expert = Some(expertConfiguration),
+      default = Some(defaultConfiguration)
     )
   }
 

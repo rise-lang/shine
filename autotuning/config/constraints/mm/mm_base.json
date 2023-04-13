@@ -1,28 +1,33 @@
 {
-  "application_name": "ytoptccs_1024",
+  "application_name": "mm_base",
   "optimization_objectives": [
     "runtime"
   ],
-  "feasible_output": {
-    "enable_feasible_predictor": true,
-    "name": "Valid",
-    "true_value": "True",
-    "false_value": "False"
-  },
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "ytoptccs_1024.log",
+  "log_file": "mm_base.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
+  "design_of_experiment": {
+    "doe_type": "random sampling",
+    "number_of_samples": 11
+  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "ytopt_ccs",
+  "optimization_method": "bayesian_optimization",
+  "optimization_iterations": 139,
   "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
-  "optimization_iterations": 150,
+  "multistart_hyperparameter_optimization_iterations": 5,
+  "lengthscale_prior": {
+    "name": "gamma",
+    "parameters": [
+      1.3,
+      0.1
+    ]
+  },
   "input_parameters": {
     "tuned_v3": {
       "parameter_type": "ordinal",
@@ -44,7 +49,6 @@
       "dependencies": [
         "tuned_v7"
       ],
-      "parameter_default" : 16,
       "transform": "log"
     },
     "tuned_v4": {
@@ -68,7 +72,6 @@
       "dependencies": [
         "tuned_v5"
       ],
-      "parameter_default" : 4,
       "transform": "log"
     },
     "tuned_v5": {
@@ -90,7 +93,6 @@
         "49152 - tuned_v5 * 1 * 4 - tuned_v5 * 1 * 4 - 4 * 1 * 1 >= 0"
       ],
       "dependencies": [],
-      "parameter_default" : 4,
       "transform": "log"
     },
     "tuned_v6": {
@@ -114,7 +116,6 @@
         "tuned_v5",
         "tuned_v8"
       ],
-      "parameter_default" : 8,
       "transform": "log"
     },
     "tuned_v7": {
@@ -138,7 +139,6 @@
       "dependencies": [
         "tuned_v5"
       ],
-      "parameter_default" : 16,
       "transform": "log"
     },
     "tuned_v8": {
@@ -164,7 +164,6 @@
         "tuned_v5",
         "tuned_v7"
       ],
-      "parameter_default" : 32,
       "transform": "log"
     },
     "tuned_ls0": {
@@ -183,12 +182,12 @@
         1024
       ],
       "constraints": [
-        "tuned_gs0 % tuned_ls0 == 0"
+        "tuned_gs0 % tuned_ls0 == 0",
+        "tuned_ls0 <= 1024"
       ],
       "dependencies": [
         "tuned_gs0"
       ],
-      "parameter_default" : 16,
       "transform": "log"
     },
     "tuned_ls1": {
@@ -214,7 +213,6 @@
         "tuned_gs1",
         "tuned_ls0"
       ],
-      "parameter_default" : 64,
       "transform": "log"
     },
     "tuned_gs0": {
@@ -236,7 +234,6 @@
         "1024 % tuned_gs0 == 0"
       ],
       "dependencies": [],
-      "parameter_default" : 1024,
       "transform": "log"
     },
     "tuned_gs1": {
@@ -258,7 +255,6 @@
         "1024 % tuned_gs1 == 0"
       ],
       "dependencies": [],
-      "parameter_default" : 64,
       "transform": "log"
     }
   }

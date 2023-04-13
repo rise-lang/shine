@@ -403,29 +403,6 @@ class mmTuning extends test_util.Tests {
 
   }
 
-
-  //  ignore("tune mm 128"){
-  //
-  //    val configs = Seq(
-  //      "autotuning/config/mm/128/rs_cot_128.json",
-  //      "autotuning/config/mm/128/rs_emb_128.json",
-  //      "autotuning/config/mm/128/ls_cot_128.json",
-  //      "autotuning/config/mm/128/atf_emb_128.json",
-  //      "autotuning/config/mm/128/borf_cot_128.json",
-  //      "autotuning/config/mm/128/bogp_cot_128.json"
-  //    )
-  //
-  //    runExperiment(
-  //      name = "mm_128",
-  //      configFiles = configs,
-  //      iterations = 2,
-  //      "autotuning/mm_128",
-  //      mm,
-  //      HostCode(init(128, 128, 128), compute, finish),
-  //      Seq(128, 128, 128)
-  //    )
-  //  }
-
   ignore("tune mm 128") {
     val inputSize: Int = 128
 
@@ -480,23 +457,18 @@ class mmTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //            s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      // s"autotuning/config/mm/${inputSize.toString}/ytopt_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/ytoptunlog_${inputSize.toString}.json",
     )
 
     runExperiment(
       name = s"mm_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"experiment/results/mm_${inputSize}",
+      iterations = 30,
+      output = s"experiment/results/paper/mm_${inputSize}",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),

@@ -143,7 +143,7 @@ class stencilTuning extends test_util.Tests {
 
   }
 
-  ignore("test stencil execution") {
+  test("test stencil execution") {
     executeStencilDefault(stencil)
   }
 
