@@ -76,7 +76,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   writeHeader(output + "/" + "executor.csv")
 
-  // todo adjust heeader
+  // todo adjust header
 
   def plot(): Unit = {
 
@@ -176,67 +176,54 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
   // define lowering and gold
 
-  // define executor
-  val executor = CExecutor(
-    lowering = lowering,
-    goldExpression = goldExpression,
-    iterations = 5, // check this
-    inputSize = 128, // check this
-    threshold = 100,
-    output = output,
-    saveToDisk = true
-  )
-
-
-  // define execution function
-  val executeInternal: Expr => (
-    Either[AutoTuningError, Double],
-      Option[Double],
-      Option[Double],
-      Option[Double]
-    ) = s => {
-
-    println("execute from here!!")
-
-    //    val strategies = immutable.Seq.empty[Strategy[Rise]]
-
-    val executionStart = System.currentTimeMillis()
-
-    //    val sol = Solution[Rise](
-    //      solutionSteps = scala.collection.immutable.Seq(
-    //        SolutionStep[Rise](
-    //          expression = e,
-    //          strategy = null,
-    //          location = -1
-    //        )
-    //      )
-    //    )
-
-    val result = executor.execute(s)
-
-    // todo move to other thing
-    val runtime: Either[AutoTuningError, Double] = result match {
-      case Some(value) => Right(value)
-      case None => Left(AutoTuningError(EXECUTION_ERROR, None))
-    }
-
-    // todo measure these properly
-    val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
-    val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
-    val executionTime = (System.currentTimeMillis() - executionStart).toDouble
-
-    (runtime,
-      Some(codegenTime),
-      Some(compilationTime),
-      Some(executionTime))
-  }
-
   // make this generic?
 
   // todo check output
   // high-level
   // low-level hash
   def executeC(solution: Solution[Rise]): ExplorationResult[Rise] = {
+
+    // define and prepare executor executor
+    val executor = CExecutor(
+      lowering = lowering,
+      goldExpression = goldExpression,
+      iterations = 5, // check this
+      inputSize = 128, // check this
+      threshold = 100,
+      output = output,
+      saveToDisk = false
+    )
+
+    // define execution function
+    val executeInternal: Expr => (
+      Either[AutoTuningError, Double],
+        Option[Double],
+        Option[Double],
+        Option[Double]
+      ) = s => {
+
+      println("execute from here!!")
+
+      val executionStart = System.currentTimeMillis()
+
+      val result = executor.execute(s)
+
+      // todo move to other thing
+      val runtime: Either[AutoTuningError, Double] = result match {
+        case Some(value) => Right(value)
+        case None => Left(AutoTuningError(EXECUTION_ERROR, None))
+      }
+
+      // todo measure these properly
+      val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
+      val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
+      val executionTime = (System.currentTimeMillis() - executionStart).toDouble
+
+      (runtime,
+        Some(codegenTime),
+        Some(compilationTime),
+        Some(executionTime))
+    }
 
     val totalDurationStart = System.currentTimeMillis()
 
