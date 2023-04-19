@@ -165,7 +165,7 @@ object riseExploration {
           executorOutput,
           expert = expert
         )
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput, executionBackend = OpenCL_Backend)
       case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")

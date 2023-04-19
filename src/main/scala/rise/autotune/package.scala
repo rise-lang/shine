@@ -326,14 +326,17 @@ package object autotune {
     println("configFile: " + configFile)
 
     // check if hypermapper is installed
-//    ("which hypermapper" !!)
+    //    ("which hypermapper" !!)
 
     // check if config file exists
     assert(os.isFile(configFile))
 
-//    val hypermapper2 = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile)
-//    print("hypermapper: " + hypermapper2)
-    val hypermapper = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile).spawn()
+    //    val hypermapper2 = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile)
+    //    print("hypermapper: " + hypermapper2)
+    val hypermapper = os.proc("python3", "/home/jo/development/tuning/hypermapper_dev/scripts/hypermapper.py", configFile).spawn()
+
+
+    // val hypermapper = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
     // main tuning loop
@@ -360,12 +363,12 @@ package object autotune {
           // read in header
           val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
           // start forming response
-          var response = tuner.feasibility match{
+          var response = tuner.feasibility match {
             case true => s"${header.mkString(",")},runtime,Valid\n"
             case false => s"${header.mkString(",")},runtime\n"
           }
 
-//          var response = s"${header.mkString(",")},runtime,Valid\n"
+          //          var response = s"${header.mkString(",")},runtime,Valid\n"
 
           for (_ <- Range(0, numberOfEvalRequests)) {
             // read in parameters values
@@ -393,7 +396,7 @@ package object autotune {
                 //                println("parametersValues: ")
                 //                parametersValues.foreach(println)
 
-                val add =  tuner.feasibility match {
+                val add = tuner.feasibility match {
                   case true => {
                     s"${
                       parametersValues.map(x => {
@@ -408,17 +411,17 @@ package object autotune {
                     },False\n"
                   }
                   case false => s"${
-                      parametersValues.map(x => {
-                        try {
-                          x.toFloat.toInt.toString
-                        } catch {
-                          case e: Throwable => x
-                        }
-                      }).mkString(",")
-                    },${
-                      runtime
-                    }\n"
-                  }
+                    parametersValues.map(x => {
+                      try {
+                        x.toFloat.toInt.toString
+                      } catch {
+                        case e: Throwable => x
+                      }
+                    }).mkString(",")
+                  },${
+                    runtime
+                  }\n"
+                }
 
                 response += add
 
@@ -429,35 +432,35 @@ package object autotune {
                 // make sure to response int values
                 val add = tuner.feasibility match {
                   case true =>
-                s"${
-                parametersValues.map (x => {
-                try {
-                x.toFloat.toInt.toString
-                } catch {
-                case e: Throwable => x
-                }
-                }).mkString (",")
-                },${
-                value.value
-                },True\n"
+                    s"${
+                      parametersValues.map(x => {
+                        try {
+                          x.toFloat.toInt.toString
+                        } catch {
+                          case e: Throwable => x
+                        }
+                      }).mkString(",")
+                    },${
+                      value.value
+                    },True\n"
 
                   case false =>
-                  s"${
-                parametersValues.map (x => {
-                try {
-                x.toFloat.toInt.toString
-                } catch {
-                case e: Throwable => x
-                }
-                }).mkString (",")
-                },${
-                value.value
-                }\n"
+                    s"${
+                      parametersValues.map(x => {
+                        try {
+                          x.toFloat.toInt.toString
+                        } catch {
+                          case e: Throwable => x
+                        }
+                      }).mkString(",")
+                    },${
+                      value.value
+                    }\n"
 
                 }
-              //                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
+                //                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
 
-              response += add
+                response += add
             }
           }
 

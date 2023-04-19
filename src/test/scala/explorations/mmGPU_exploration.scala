@@ -337,49 +337,49 @@ class mmGPU_exploration extends test_util.Tests {
 
   }
 
-  test("mmCPU - explore maps") {
+  test("mmGPU - explore maps") {
 
     //    val e = arrayPacking.apply(mm).get
 
-    val ii = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 5,
-        repeat = 1
-      )
-    )
+    //    val ii = scala.collection.immutable.Seq(
+    //      MetaheuristicConfig(
+    //        heuristic = "IterativeImprovement",
+    //        depth = 5,
+    //        repeat = 1
+    //      )
+    //    )
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "exhaustive",
-        depth = 10,
-        samples = 500,
-      )
-    )
-
-    val randomGraph = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "RandomGraph",
-        depth = 14, // ignored in this case -> is it?
+        depth = 4,
         samples = 10,
-        repeat = 1
       )
     )
 
-    val localSearchGraph = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "LocalSearchGraph",
-        depth = 15, // what does that mean?
-        samples = 50, // ignored in this case
-        repeat = 1
-      )
-    )
+    //    val randomGraph = scala.collection.immutable.Seq(
+    //      MetaheuristicConfig(
+    //        heuristic = "RandomGraph",
+    //        depth = 14, // ignored in this case -> is it?
+    //        samples = 10,
+    //        repeat = 1
+    //      )
+    //    )
+    //
+    //    val localSearchGraph = scala.collection.immutable.Seq(
+    //      MetaheuristicConfig(
+    //        heuristic = "LocalSearchGraph",
+    //        depth = 15, // what does that mean?
+    //        samples = 50, // ignored in this case
+    //        repeat = 1
+    //      )
+    //    )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 10,
+      iterations = 5,
       threshold = 10,
-      samples = 30
+      samples = 3
     )
 
     val experiment = scala.collection.immutable.Seq(
@@ -392,7 +392,7 @@ class mmGPU_exploration extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmGPU_maps",
-      output = "/home/jo/development/experiments/exploration/dodekarch/mmGPU",
+      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/mmGPU",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
