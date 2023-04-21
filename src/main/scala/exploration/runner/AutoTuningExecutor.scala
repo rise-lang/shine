@@ -65,6 +65,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     }
   }
 
+
   val tuningResults = new ListBuffer[TuningResultStatistic]()
   var number = 0
   val random = new scala.util.Random
@@ -135,8 +136,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // performance evolution plot
     try {
       // call plot
-      val command = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration "
-      val command2 = s"hm-plot-optimization-results -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration "
+      val command = s"python3 ${exploration.configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration "
+      val command2 = s"python3 ${exploration.configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration "
       println("plot: " + command)
       (command !!)
       println("plotlog: " + command2)
@@ -306,7 +307,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           case e: Throwable =>
 
             println("tuning is brorken! mey friend")
-            //            println("e: " + e)
+            println("e: " + e)
 
 
             val tuningDuration = System.currentTimeMillis() - tuningDurationStart
@@ -411,7 +412,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       configFile = None,
       hmConstraints = true,
       executor = None,
-      saveToFile = true
+      saveToFile = true,
+      tunerRoot = exploration.configuration.tunerRoot
     )
 
     // lower expression
@@ -498,7 +500,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           case e: Throwable =>
 
             println("tuning is brorken! mey friend")
-            //            println("e: " + e)
+            println("e: " + e)
 
 
             val tuningDuration = System.currentTimeMillis() - tuningDurationStart
@@ -603,7 +605,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       case Some(value) => value.value
       case None => "-1"
     }
-    
+
     // write line
     val line =
       tuningResultStatistic.number.toString + "," + // iteration

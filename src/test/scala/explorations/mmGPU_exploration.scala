@@ -7,7 +7,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.heuristic_search.util.Solution
 import elevate.macros.RuleMacro.rule
-import exploration.neighborhoods.NTreeChildrenChoice
+import exploration.neighborhoods._
 import exploration.runner.{AutoTuningExecutor, CExecutor}
 import exploration.{ExecutorConfig, MetaheuristicConfig, NeighborhoodConfig}
 import rise.autotune
@@ -189,7 +189,7 @@ class mmGPU_exploration extends test_util.Tests {
     scala.collection.immutable.Seq(
       //      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
       fuseReduceMap, // fusion
-      //      reduceMapFission(), // fission
+      reduceMapFission(), // fission
       splitJoinRule, // split join
       joinSplit, // split join reverse
       rise.elevate.rules.lowering.mapGlobal(0),
@@ -341,52 +341,53 @@ class mmGPU_exploration extends test_util.Tests {
 
     //    val e = arrayPacking.apply(mm).get
 
-    //    val ii = scala.collection.immutable.Seq(
-    //      MetaheuristicConfig(
-    //        heuristic = "IterativeImprovement",
-    //        depth = 5,
-    //        repeat = 1
-    //      )
-    //    )
-
-    val exhaustive = scala.collection.immutable.Seq(
+    val ii = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 4,
-        samples = 10,
+        heuristic = "IterativeImprovement",
+        depth = 10,
+        //        samples = 50,
+        //        repeat = 1
       )
     )
 
-    //    val randomGraph = scala.collection.immutable.Seq(
-    //      MetaheuristicConfig(
-    //        heuristic = "RandomGraph",
-    //        depth = 14, // ignored in this case -> is it?
-    //        samples = 10,
-    //        repeat = 1
-    //      )
-    //    )
-    //
-    //    val localSearchGraph = scala.collection.immutable.Seq(
-    //      MetaheuristicConfig(
-    //        heuristic = "LocalSearchGraph",
-    //        depth = 15, // what does that mean?
-    //        samples = 50, // ignored in this case
-    //        repeat = 1
-    //      )
-    //    )
+
+    val exhaustive = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Exhaustive",
+        depth = 4,
+        samples = 15,
+      )
+    )
+
+    // the local search we want to use
+    val localSearchGraph = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "LocalSearchGraph",
+        depth = 5, // seems to be ignored
+        samples = 15, // not ignored
+        repeat = 1
+      )
+    )
+
+    val localSearchExp = scala.collection.immutable.Seq(
+      localSearchGraph,
+      exhaustive
+      // random?
+      // tabu search? -> something more advanced
+    )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
       iterations = 5,
       threshold = 10,
-      samples = 3
+      samples = 10
     )
 
     val experiment = scala.collection.immutable.Seq(
       //      randomGraph,
       //      localSearchGraph,
       //      ii
-      exhaustive
+      //            exhaustive
     )
 
     // setup explorer config
@@ -394,12 +395,12 @@ class mmGPU_exploration extends test_util.Tests {
       name = "mmGPU_maps",
       output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/mmGPU",
       inputSize = N,
-      metaheuristics = Right(experiment),
+      metaheuristics = Right(localSearchExp),
       executor = executor,
       lowering = lowering,
       strategies = rules, // is this ignored here?
       hostCode = Some(HostCode(init(N, N, N), compute, finish(N, N, N))),
-      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeChildrenChoice),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeChildrenParentChoice),
       rewriteFunction = None,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(rules)),
       //      rewriteFunction = Some(

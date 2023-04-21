@@ -10,8 +10,13 @@ import exploration.neighborhoods._
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
 import scala.language.{existentials, postfixOps}
+import java.io.{File, FileOutputStream, PrintWriter}
 
 package object exploration {
+
+  object configuration {
+    val tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev"
+  }
 
   case class Explorer(
                        name: String = "exploration",
@@ -54,225 +59,325 @@ package object exploration {
                                  slideWindow: Int = 10 // size? // distance?
                                )
 
+  def checkInstallation(): Boolean = {
+
+    println("Check Installation")
+
+    // check compiler?
+
+    // check clap?
+
+    // call tuner with dummy json-file
+    val configFile =
+      s"""{
+         | "application_name" : "checkTuner",
+         | "optimization_objectives" : ["runtime"],
+         | "hypermapper_mode" : {
+         |   "mode" : "client-server"
+         | },
+         | "log_file" : "checkTuner.log",
+         | "output_data_file": "checkTuner.csv",
+         | "design_of_experiment" : {
+         |   "doe_type" : "random sampling",
+         |   "number_of_samples" : 1
+         | },
+         | "optimization_iterations" : 1,
+         | "optimization_method" : "opentuner",
+         | "input_parameters" : {
+         |     "A" : {
+         |        "parameter_type" : "integer",
+         |        "values" : [0, 1],
+         |        "constraints" : [],
+         |        "dependencies" : []
+         |      },
+         |      "B" : {
+         |         "parameter_type" : "integer",
+         |         "values" : [0, 1],
+         |         "constraints" : [],
+         |         "dependencies" : []
+         |    }
+         |  }
+         |}
+         |""".stripMargin
+
+    val filePath = "/tmp/checkTuner.json"
+
+    val file = new PrintWriter(
+      new FileOutputStream(
+        new File(filePath), false))
+    file.write(configFile)
+    file.close()
+
+    val hypermapper = os.proc("python3", configuration.tunerRoot + "/hypermapper/optimizer.py", filePath).spawn()
+
+    var done: Boolean = false
+    var hypermapperError: Boolean = false
+    while (hypermapper.isAlive() && !done) {
+      hypermapper.stdout.readLine() match {
+        case null =>
+          done = true
+          hypermapperError = true
+        case "End of HyperMapper" =>
+          done = true
+        case "Best point found:" =>
+          val headers = hypermapper.stdout.readLine()
+          val values = hypermapper.stdout.readLine()
+          hypermapper.stdout.readLine() // consume empty line
+        case request if request.contains("warning") => // ignore
+        case request if request.contains("Request") =>
+          // read in header
+          val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+          // start forming response
+          var response = s"${header.mkString(",")},runtime\n"
+          val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
+          response += parametersValues.map(x => {
+            try {
+              x.toFloat.toInt.toString
+            } catch {
+              case e: Throwable => x
+            }
+          }).mkString(",")
+          response += "," + "0.0\n"
+
+          // send response to hypermapper
+          hypermapper.stdin.write(response)
+          hypermapper.stdin.flush()
+        case message => println("message: " + message)
+      }
+    }
+
+    // clean up and remove temporary files
+    ("rm /tmp/checkTuner.json" !!)
+    ("rm checkTuner.csv" !!)
+    ("rm checkTuner.log" !!)
+
+    !hypermapperError
+  }
+
   def explore(explorer: Explorer)(expression: Expr)
   : ExplorationResult[Rise] = {
 
 
-    // make output
-    (s"mkdir -p ${explorer.output}" !!)
+    // check dependencies
+    checkInstallation() match {
+      case true =>
+        println("Success")
 
-    explorer.metaheuristics match {
-      case Left(config) => {
 
-        // create output parent folder (if not existent)
+        // make output
         (s"mkdir -p ${explorer.output}" !!)
 
-        val uniqueFilename_full = explorer.overwrite match {
-          case false => uniqueFilename(explorer.output + "/" + explorer.name)
-          case true => explorer.output + "/" + explorer.name
-        }
+        explorer.metaheuristics match {
+          case Left(config) => {
 
-        (s"mkdir -p ${uniqueFilename_full}/hm" !!)
-        (s"mkdir -p ${uniqueFilename_full}/csv" !!)
+            // create output parent folder (if not existent)
+            (s"mkdir -p ${explorer.output}" !!)
 
-        for (iteration <- Range(0, config.reverse.last.repeat)) {
-          println("iteration: " + iteration)
+            val uniqueFilename_full = explorer.overwrite match {
+              case false => uniqueFilename(explorer.output + "/" + explorer.name)
+              case true => explorer.output + "/" + explorer.name
+            }
+
+            (s"mkdir -p ${uniqueFilename_full}/hm" !!)
+            (s"mkdir -p ${uniqueFilename_full}/csv" !!)
+
+            for (iteration <- Range(0, config.reverse.last.repeat)) {
+              println("iteration: " + iteration)
 
 
-          // start rise exploration here!
-          val entryPoint = prepareExploration(
-            expression,
-            explorer,
-            uniqueFilename_full,
-            config,
-            iteration
-          )
+              // start rise exploration here!
+              val entryPoint = prepareExploration(
+                expression,
+                explorer,
+                uniqueFilename_full,
+                config,
+                iteration
+              )
 
-          val solution = Solution[Rise](
-            solutionSteps = scala.collection.immutable.Seq(
-              SolutionStep[Rise](
-                expression = expression,
-                strategy = elevate.core.strategies.basic.id[Rise], //
-                location = 0
+              val solution = Solution[Rise](
+                solutionSteps = scala.collection.immutable.Seq(
+                  SolutionStep[Rise](
+                    expression = expression,
+                    strategy = elevate.core.strategies.basic.id[Rise], //
+                    location = 0
+                  )
+                )
+              )
+
+              entryPoint.execute(solution)
+
+              (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
+              (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+
+              // copy tuningStatistics.json
+
+              (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
+            }
+
+            // plot total
+            // directory uniqueFilename_full
+            // plot
+            val plot = explorer.expert match {
+              case Some(value) => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+              case None => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+            }
+            val plot_log = explorer.expert match {
+              case Some(value) => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+              case None => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+            }
+
+            (plot !!)
+            (plot_log !!)
+
+            // dummy output therefore id strategy
+            val solutionResult = Solution[Rise](
+              solutionSteps = scala.collection.immutable.Seq(
+                SolutionStep[Rise](
+                  expression = expression,
+                  strategy = elevate.core.strategies.basic.id[Rise],
+                  location = 0
+                )
               )
             )
-          )
-
-          entryPoint.execute(solution)
-
-          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
-          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/${config.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/csv" !!)
-
-          // copy tuningStatistics.json
-
-          (s"cp ${uniqueFilename_full}/${config.reverse.last.heuristic}_${iteration}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
-        }
-
-        // plot total
-        // directory uniqueFilename_full
-        // plot
-        val plot = explorer.expert match {
-          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
-        }
-        val plot_log = explorer.expert match {
-          case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-          case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
-        }
-
-        (plot !!)
-        (plot_log !!)
 
 
-        // dummy output therefore id strategy
-        val solutionResult = Solution[Rise](
-          solutionSteps = scala.collection.immutable.Seq(
-            SolutionStep[Rise](
-              expression = expression,
-              strategy = elevate.core.strategies.basic.id[Rise],
-              location = 0
-            )
-          )
-        )
-
-
-        ExplorationResult(
-          solution = solutionResult,
-          performance = None,
-          searchSpace = None
-        )
-
-
-      }
-      case Right(config) => {
-
-        // run stuff in loop
-
-        // mkdir on top
-
-        // create output parent folder (if not existent)
-        (s"mkdir -p ${explorer.output}" !!)
-
-        val uniqueFilenameRoot = explorer.overwrite match {
-          case false => uniqueFilename(explorer.output + "/" + explorer.name)
-          case true => explorer.output + "/" + explorer.name
-        }
-
-        //        val uniqueFilenameRoot = uniqueFilename(explorer.output + "/" + explorer.name)
-
-        config.foreach(metaheuristic => {
-
-
-          val methodName = metaheuristic.reverse.last.heuristic
-
-          // don't overwrite methods
-          val uniqueFilename_full = uniqueFilename(uniqueFilenameRoot + "/" + methodName)
-
-          (s"mkdir -p ${uniqueFilename_full}/hm" !!)
-          (s"mkdir -p ${uniqueFilename_full}/csv" !!)
-
-          for (iteration <- Range(0, metaheuristic.reverse.last.repeat)) {
-            println("iteration: " + iteration)
-
-            //            val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
-            //            println("jsonPath: " + jsonPath)
-
-            //            System.exit(0)
-
-            // start rise exploration here!
-            val entryPoint = prepareExploration(
-              expression,
-              explorer,
-              uniqueFilename_full,
-              metaheuristic,
-              iteration
+            ExplorationResult(
+              solution = solutionResult,
+              performance = None,
+              searchSpace = None
             )
 
-            // todo make this generic
-            // add solution on leaf layer
 
-            // make space for id strategy
-            var steps = scala.collection.mutable.Seq.empty[SolutionStep[Rise]]
-            Range(0, entryPoint.depth + 1).foreach(elem => {
-              steps = steps :+ SolutionStep[Rise](
-                expression = expression,
-                strategy = elevate.core.strategies.basic.id[Rise], //
-                location = 0
-              )
+          }
+          case Right(config) => {
+
+            // run stuff in loop
+
+            // mkdir on top
+
+            // create output parent folder (if not existent)
+            (s"mkdir -p ${explorer.output}" !!)
+
+            val uniqueFilenameRoot = explorer.overwrite match {
+              case false => uniqueFilename(explorer.output + "/" + explorer.name)
+              case true => explorer.output + "/" + explorer.name
+            }
+
+            //        val uniqueFilenameRoot = uniqueFilename(explorer.output + "/" + explorer.name)
+
+            config.foreach(metaheuristic => {
+
+
+              val methodName = metaheuristic.reverse.last.heuristic
+
+              // don't overwrite methods
+              val uniqueFilename_full = uniqueFilename(uniqueFilenameRoot + "/" + methodName)
+
+              (s"mkdir -p ${uniqueFilename_full}/hm" !!)
+              (s"mkdir -p ${uniqueFilename_full}/csv" !!)
+
+              for (iteration <- Range(0, metaheuristic.reverse.last.repeat)) {
+                println("iteration: " + iteration)
+
+                //            val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
+                //            println("jsonPath: " + jsonPath)
+
+                //            System.exit(0)
+
+                // start rise exploration here!
+                val entryPoint = prepareExploration(
+                  expression,
+                  explorer,
+                  uniqueFilename_full,
+                  metaheuristic,
+                  iteration
+                )
+
+                // todo make this generic
+                // add solution on leaf layer
+
+                // make space for id strategy
+                var steps = scala.collection.mutable.Seq.empty[SolutionStep[Rise]]
+                Range(0, entryPoint.depth + 1).foreach(elem => {
+                  steps = steps :+ SolutionStep[Rise](
+                    expression = expression,
+                    strategy = elevate.core.strategies.basic.id[Rise], //
+                    location = 0
+                  )
+                })
+
+                val solution = Solution[Rise](
+                  solutionSteps = steps.toSeq
+                )
+
+                //            val solution = Solution[Rise](
+                //              solutionSteps = scala.collection.immutable.Seq(
+                //                SolutionStep[Rise](
+                //                  expression = expression,
+                //                  strategy = elevate.core.strategies.basic.id[Rise], //
+                //                  location = 0
+                //                )
+                //              )
+                //            )
+
+                //            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
+                entryPoint.execute(solution)
+
+                (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
+                (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
+
+                // copy json
+                val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
+                (s"cp ${uniqueFilename_full}/${jsonPath}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
+              }
+
+              // plot total
+              // directory uniqueFilename_full
+              // plot
+              val plot = explorer.expert match {
+                case Some(value) => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+                case None => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+              }
+              val plot_log = explorer.expert match {
+                case Some(value) => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+                case None => s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+              }
+
+              (plot !!)
+              (plot_log !!)
+
             })
 
+            plot_experiment(uniqueFilenameRoot, config, explorer)
+            plot_experiment2(uniqueFilenameRoot, explorer)
+
+            // todo it might be necessary to call this during a search
+            // reset counter
+            rise.core.freshName.reset()
+
             val solution = Solution[Rise](
-              solutionSteps = steps.toSeq
+              solutionSteps = scala.collection.immutable.Seq(
+                SolutionStep[Rise](
+                  expression = expression,
+                  strategy = elevate.core.strategies.basic.id[Rise], //
+                  location = 0
+                )
+              )
             )
 
-            //            val solution = Solution[Rise](
-            //              solutionSteps = scala.collection.immutable.Seq(
-            //                SolutionStep[Rise](
-            //                  expression = expression,
-            //                  strategy = elevate.core.strategies.basic.id[Rise], //
-            //                  location = 0
-            //                )
-            //              )
-            //            )
-
-            //            entryPoint.execute(Solution(expression, Seq.empty[Strategy[Rise]]))
-            entryPoint.execute(solution)
-
-            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_hm_${iteration}.csv ${uniqueFilename_full}/hm" !!)
-            (s"cp ${uniqueFilename_full}/${metaheuristic.reverse.last.heuristic}_${iteration}/${metaheuristic.reverse.last.heuristic}_${iteration}.csv ${uniqueFilename_full}/csv" !!)
-
-            // copy json
-            val jsonPath = metaheuristic.map(elem => elem.heuristic + "_" + iteration.toString).mkString("/")
-            (s"cp ${uniqueFilename_full}/${jsonPath}/Executor/tuningStatistics.json ${uniqueFilename_full}" !!) // should not matter
-          }
-
-          // plot total
-          // directory uniqueFilename_full
-          // plot
-          val plot = explorer.expert match {
-            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
-          }
-          val plot_log = explorer.expert match {
-            case Some(value) => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-            case None => s"hm-plot-optimization-results -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
-          }
-
-          (plot !!)
-          (plot_log !!)
-
-        })
-
-        plot_experiment(uniqueFilenameRoot, config, explorer)
-        plot_experiment2(uniqueFilenameRoot, explorer)
-
-        // todo it might be necessary to call this during a search
-        // reset counter
-        rise.core.freshName.reset()
-
-        val solution = Solution[Rise](
-          solutionSteps = scala.collection.immutable.Seq(
-            SolutionStep[Rise](
-              expression = expression,
-              strategy = elevate.core.strategies.basic.id[Rise], //
-              location = 0
+            ExplorationResult(
+              solution = solution,
+              performance = None,
+              searchSpace = None
             )
-          )
-        )
-
-        ExplorationResult(
-          solution = solution,
-          performance = None,
-          searchSpace = None
-        )
-
-      }
+          }
+        }
+      case false => throw new Exception("Some requirements are not met - check your installation")
     }
-
   }
 
   def plot_experiment2(uniqueFilenameRoot: String, explorer: Explorer) = {
-    val command = s"python experiment/plot_experiment2.py ${uniqueFilenameRoot}"
+    val command = s"python3 experiment/plot_experiment2.py ${uniqueFilenameRoot}"
 
     println("command: " + command)
 
@@ -297,7 +402,7 @@ package object exploration {
     }
 
     val plot_command =
-      "hm-plot-optimization-results " +
+      s"python3 ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py " +
         s"-j ${configFile} " +
         "-i " +
         folders +
@@ -309,7 +414,7 @@ package object exploration {
         s"--title ${explorer.name} "
 
     val plot_log_command =
-      "hm-plot-optimization-results " +
+      s"python3  ${configuration.tunerRoot}/hypermapper/plot_optimization_results.py " +
         s"-j ${configFile} " +
         "-i " +
         folders +
@@ -321,11 +426,10 @@ package object exploration {
         exp +
         s"--title ${explorer.name} "
 
-
     println("command: " + plot_command)
     plot_command !!
 
-    println("command: " + plot_command)
+    println("command: " + plot_log_command)
     plot_log_command !!
 
   }
