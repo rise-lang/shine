@@ -19,3 +19,6 @@ def gap8hwConv7x4: (bias: nat) -> {iw: nat} -> {ih: nat} ->
     {ow: nat} -> {oh: nat} ->
         {s: data} ->
             iw.ih.s -> 7.4.s -> ow.oh.s
+
+def copyToL1: {t: data} -> t -> t
+def copyToL2: {t: data} -> t -> t
