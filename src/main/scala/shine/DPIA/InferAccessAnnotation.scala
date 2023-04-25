@@ -638,6 +638,18 @@ private class InferAccessAnnotation {
             expT(ArrayType(oh, ArrayType(ow, s)), write)
           )
       }
+
+      case rg8p.copyToL1() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, write) ->: expT(dt, read)
+        case _ => error()
+      }
+
+      case rg8p.copyToL2() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, write) ->: expT(dt, read)
+        case _ => error()
+      }
     }
 
     checkConsistency(p.t, primitiveType)

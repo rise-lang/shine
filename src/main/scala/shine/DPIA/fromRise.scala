@@ -981,6 +981,15 @@ object fromRise {
           )
       }
 
+      case rgap8.copyToL1() => fromType {
+        case expT(t, `write`) ->: expT(_, `read`) =>
+          fun[ExpType](expT(t, write), e => gap8.CopyToL1(t, e))
+      }
+
+      case rgap8.copyToL2() => fromType {
+        case expT(dt, `write`) ->: expT(_, `read`) =>
+          fun[ExpType](expT(dt, write), e => gap8.CopyToL2(dt, e))
+      }
 
       case _ => throw new Exception(s"Missing rule for $p")
     }
