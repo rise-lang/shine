@@ -47,9 +47,9 @@ final case class DepLambda[T, I, U <: PhraseType](kind: Kind[T, I],
 }
 
 object DepLambda {
-  def apply[T, I](kind: Kind[T, I], x: I): Object {
-    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
-  } = new {
+  def apply[T, I](kind: Kind[T, I], x: I): Helper[T, I] = Helper(kind, x)
+
+  case class Helper[T, I](kind: Kind[T, I], x: I) {
     def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 }

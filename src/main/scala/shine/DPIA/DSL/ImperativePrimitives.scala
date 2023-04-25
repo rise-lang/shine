@@ -20,7 +20,7 @@ object `new` {
 
   def apply(dt: DataType,
             f: Phrase[VarType] => Phrase[CommType]): New =
-    New(dt, λ(varT(dt))( v => f(v) ))
+    New(dt, fun(varT(dt))(v => f(v) ))
 }
 
 object newDoubleBuffer {
@@ -30,7 +30,7 @@ object newDoubleBuffer {
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
-    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, fun(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps._1._1
       val swap: Phrase[CommType] = ps._1._2
       val done: Phrase[CommType] = ps._2
@@ -45,11 +45,16 @@ object `if` {
     IfThenElse(cond, thenP, elseP)
 
   //noinspection TypeAnnotation
-  def apply(cond: Phrase[ExpType]) = new {
-    def `then`[T <: PhraseType](thenP: Phrase[T]) = new {
-      def `else`(elseP: Phrase[T]): IfThenElse[T] = {
-        IfThenElse(cond, thenP, elseP)
-      }
+  def apply(cond: Phrase[ExpType]): IfHelper = IfHelper(cond)
+
+  case class IfHelper(cond: Phrase[ExpType]) {
+    def `then`[T <: PhraseType](thenP: Phrase[T]): ThenHelper[T] =
+      ThenHelper(cond, thenP)
+  }
+
+  case class ThenHelper[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T]) {
+    def `else`(elseP: Phrase[T]): IfThenElse[T] = {
+      IfThenElse(cond, thenP, elseP)
     }
   }
 }
@@ -57,14 +62,14 @@ object `if` {
 object `for` {
   def apply(n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For = apply(false, n, f)
   def apply(unroll: Boolean, n: Nat, f: Identifier[ExpType] => Phrase[CommType]): For =
-    For(unroll)(n, λ(expT(idx(n), read))( i => f(i) ))
+    For(unroll)(n, fun(expT(idx(n), read))(i => f(i) ))
 }
 
 object forNat {
   def apply(n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = apply(false, n, f)
   def apply(unroll: Boolean, n: Nat, f: NatIdentifier => Phrase[CommType]): ForNat = {
     import arithexpr.arithmetic.RangeAdd
-    ForNat(unroll)(n, nFun(i => f(i), RangeAdd(0, n, 1)))
+    ForNat(unroll)(n, nFun(RangeAdd(0, n, 1))(i => f(i)))
   }
 }
 

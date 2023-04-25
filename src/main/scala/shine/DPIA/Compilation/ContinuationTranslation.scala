@@ -30,13 +30,13 @@ object ContinuationTranslation {
       case n: Natural => C(n)
 
       case u@UnaryOp(op, e) =>
-        con(e)(λ(u.t)(x =>
+        con(e)(fun(u.t)(x =>
           C(UnaryOp(op, x))
         ))
 
       case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
+        con(e1)(fun(b.t)(x =>
+          con(e2)(fun(b.t)(y =>
             C(BinOp(op, x, y))
           ))
         ))
@@ -55,7 +55,7 @@ object ContinuationTranslation {
       }
 
       case IfThenElse(cond, thenP, elseP) =>
-        con(cond)(λ(cond.t) { x =>
+        con(cond)(fun(cond.t) { x =>
           `if`(x) `then` con(thenP)(C) `else` con(elseP)(C)
         })
 
@@ -69,15 +69,15 @@ object ContinuationTranslation {
                (C: Phrase[ExpType ->: CommType])
                (implicit context: TranslationContext): Phrase[CommType] = E match {
     case AsScalar(n, m, dt, access, array) =>
-      con(array)(λ(array.t)(x =>
+      con(array)(fun(array.t)(x =>
         C(AsScalar(n, m, dt, access, x))))
 
     case AsVector(n, m, dt, access, array) =>
-      con(array)(λ(array.t)(x =>
+      con(array)(fun(array.t)(x =>
         C(AsVector(n, m, dt, access, x))))
 
     case AsVectorAligned(n, m, w, dt, array) =>
-      con(array)(λ(array.t)(x =>
+      con(array)(fun(array.t)(x =>
         C(AsVectorAligned(n, m, w, dt, x)) ))
 
     case Cast(dt1, dt2, e) =>
@@ -89,34 +89,34 @@ object ContinuationTranslation {
         C(Cycle(n, m, dt, x))))
 
     case DepIdx(n, ft, index, array) =>
-      con(array)(λ(expT(n`.d`ft, read))(e =>
+      con(array)(fun(expT(n`.d`ft, read))(e =>
         C(DepIdx(n, ft, index, e))))
 
     case DepJoin(n, lenF, dt, array) =>
-      con(array)(λ(expT(n `.d` { i => lenF(i)`.`dt }, read))(x =>
+      con(array)(fun(expT(n `.d` { i => lenF(i)`.`dt }, read))(x =>
         C(DepJoin(n, lenF, dt, x))))
 
     case depMapSeq: DepMapSeq =>
       val (n, _, ft2, _, _) = depMapSeq.unwrap
-      `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
+      `new`(n`.d`ft2, fun(varT(n`.d`ft2))(tmp =>
         acc(depMapSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case DepZip(n, ft1, ft2, e1, e2) =>
-      con(e1)(λ(ExpType(DepArrayType(n, ft1), read))(x =>
-        con(e2)(λ(ExpType(DepArrayType(n, ft2), read))(y =>
+      con(e1)(fun(ExpType(DepArrayType(n, ft1), read))(x =>
+        con(e2)(fun(ExpType(DepArrayType(n, ft2), read))(y =>
           C(DepZip(n, ft1, ft2, x, y)) )) ))
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the continuation translation
-      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
+      con(input)(fun(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_(NatKind)((fst: NatIdentifier) =>
-            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
+          depFun(NatKind)((fst: NatIdentifier) =>
+            fun(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               con(f(fst)(snd))(C)
             )), pair)))
 
     case Drop(n, m, dt, array) =>
-      con(array)(λ(expT((n + m)`.` dt, read))(x =>
+      con(array)(fun(expT((n + m)`.` dt, read))(x =>
         C(Drop(n, m, dt, x))))
 
     case ffc@ForeignFunctionCall(funDecl, n) =>
@@ -126,7 +126,7 @@ object ContinuationTranslation {
         ts match {
           // with only one argument left to process return the assignment of the function call
           case Seq( (arg, inT) ) =>
-            con(arg)(λ(expT(inT, read))(e =>
+            con(arg)(fun(expT(inT, read))(e =>
               ffc.outT match {
                 // TODO: this is an ugly fix to avoid calling the function multiple times
                 //  for pair assignment, see:
@@ -147,7 +147,7 @@ object ContinuationTranslation {
               }))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
-            con(arg)(λ(expT(inT, read))(e =>
+            con(arg)(fun(expT(inT, read))(e =>
               rec(tail, exps :+ e, inTs :+ inT) ))
         }
       }
@@ -155,7 +155,7 @@ object ContinuationTranslation {
       rec(ffc.args zip ffc.inTs, Seq(), Seq())
 
     case Fst(dt1, dt2, pair) =>
-      con(pair)(λ(expT(dt1 x dt2, read))(x =>
+      con(pair)(fun(expT(dt1 x dt2, read))(x =>
         C(Fst(dt1, dt2, x))))
 
     case Gather(n, m, dt, indices, input) =>
@@ -171,25 +171,25 @@ object ContinuationTranslation {
             con(f(i))(fun(expT(dt, read))(g => Apply(cont, g)))))))
 
     case Idx(n, dt, index, array) =>
-      con(array)(λ(expT(n`.`dt, read))(e =>
+      con(array)(fun(expT(n`.`dt, read))(e =>
         con(index)(fun(index.t)(i =>
           C(Idx(n, dt, i, e))))))
 
     case idx@shine.OpenCL.primitives.imperative.IdxDistribute(level) =>
       val (m, n, stride, dt, array) = idx.unwrap
-      con(array)(λ(expT(m`.`dt, read))(e =>
+      con(array)(fun(expT(m`.`dt, read))(e =>
         C(shine.OpenCL.primitives.imperative.IdxDistribute(level)(m, n, stride, dt, e))))
 
     case IdxVec(n, st, index, vector) =>
-      con(vector)(λ(expT(vec(n, st), read))(e =>
+      con(vector)(fun(expT(vec(n, st), read))(e =>
         C(IdxVec(n, st, index, e))))
 
     case IndexAsNat(n, e) =>
-      con(e)(λ(expT(idx(n), read))(x =>
+      con(e)(fun(expT(idx(n), read))(x =>
         C(IndexAsNat(n, x))))
 
     case Join(n, m, w, dt, array) =>
-      con(array)(λ(expT(n`.`(m`.`dt), read))(x =>
+      con(array)(fun(expT(n`.`(m`.`dt), read))(x =>
         C(Join(n, m, w, dt, x))))
 
     case Let(dt1, dt2, access, value, f) =>
@@ -223,12 +223,12 @@ object ContinuationTranslation {
       })
 
     case MakePair(dt1, dt2, access, fst, snd) =>
-      con(fst)(λ(expT(dt1, read))(x =>
-        con(snd)(λ(expT(dt2, read))(y =>
+      con(fst)(fun(expT(dt1, read))(x =>
+        con(snd)(fun(expT(dt2, read))(y =>
           C(MakePair(dt1, dt2, access, x, y))))))
 
     case Map(n, dt1, dt2, access, f, array) =>
-      con(array)(λ(expT(n`.`dt1, read))(x =>
+      con(array)(fun(expT(n`.`dt1, read))(x =>
         C(MapRead(n, dt1, dt2,
           fun(expT(dt1, read))(a =>
             fun(expT(dt2, read) ->: (comm: CommType))(cont =>
@@ -243,7 +243,7 @@ object ContinuationTranslation {
       val (n, _, dt2, _, _) = mapSeq.unwrap
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
-      `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
+      `new`(n`.`dt2, fun(varT(n`.`dt2))(tmp =>
         acc(mapSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case MapSnd(w, dt1, dt2, dt3, f, record) =>
@@ -254,25 +254,25 @@ object ContinuationTranslation {
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
       `new`(vec(n, dt2),
-        λ(varT(vec(n, dt2)))(tmp =>
+        fun(varT(vec(n, dt2)))(tmp =>
           acc(mapVec)(tmp.wr) `;`
             C(tmp.rd)))
 
     case NatAsIndex(n, e) =>
-      con(e)(λ(e.t)(x =>
+      con(e)(fun(e.t)(x =>
         C(NatAsIndex(n, x))))
 
     case PadCst(n, l, r, dt, padExp, array) =>
-      con(array)(λ(expT(n`.`dt, read))(x =>
-        con(padExp)(λ(expT(dt, read))(p =>
+      con(array)(fun(expT(n`.`dt, read))(x =>
+        con(padExp)(fun(expT(dt, read))(p =>
           C(PadCst(n, l, r, dt, p, x))))))
 
     case PadClamp(n, l, r, dt, array) =>
-      con(array)(λ(expT(n`.`dt, read))(x =>
+      con(array)(fun(expT(n`.`dt, read))(x =>
         C(PadClamp(n, l, r, dt, x))))
 
     case Partition(n, m, lenF, dt, array) =>
-      con(array)(λ(expT(n`.`dt, read))(x =>
+      con(array)(fun(expT(n`.`dt, read))(x =>
         C(Partition(n, m, lenF, dt, x))))
 
     case PrintType(msg, dt, access, input) =>
@@ -280,7 +280,7 @@ object ContinuationTranslation {
 
     case reduceSeq@ReduceSeq(unroll) =>
       val (n, dt1, dt2, f, init, array) = reduceSeq.unwrap
-      con(array)(λ(expT(n`.`dt1, read))(X => {
+      con(array)(fun(expT(n`.`dt1, read))(X => {
         comment("reduceSeq") `;`
           `new`(dt2, accum =>
             acc(init)(accum.wr) `;`
@@ -290,28 +290,28 @@ object ContinuationTranslation {
       }))
 
     case Reorder(n, dt, access, idxF, idxFinv, input) =>
-      con(input)(λ(expT(n`.`dt, read))(x =>
+      con(input)(fun(expT(n`.`dt, read))(x =>
         C(Reorder(n, dt, access, idxF, idxFinv, x))))
 
     case scanSeq@ScanSeq(n, dt1, dt2, f, init, array) =>
-      `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
+      `new`(n`.`dt2, fun(varT(n`.`dt2))(tmp =>
         acc(scanSeq)(tmp.wr) `;` C(tmp.rd) ))
 
     case slide@Slide(n, sz, sp, dt, input) =>
       val inputSize = sp*n+sz
-      con(input)(λ(expT(inputSize`.`dt, read))(x =>
+      con(input)(fun(expT(inputSize`.`dt, read))(x =>
         C(Slide(n, sz, sp, dt, x)) ))
 
     case Snd(dt1, dt2, pair) =>
-      con(pair)(λ(expT(dt1 x dt2, read))(x =>
+      con(pair)(fun(expT(dt1 x dt2, read))(x =>
         C(Snd(dt1, dt2, x))))
 
     case Split(n, m, w, dt, array) =>
-      con(array)(λ(expT((m * n)`.`dt, read))(x =>
+      con(array)(fun(expT((m * n)`.`dt, read))(x =>
         C(Split(n, m, w, dt, x))))
 
     case Take(n, m, dt, array) =>
-      con(array)(λ(expT((n + m)`.`dt, read))(x =>
+      con(array)(fun(expT((n + m)`.`dt, read))(x =>
         C(Take(n, m, dt, x))))
 
     case ToMem(dt, input) =>
@@ -322,49 +322,49 @@ object ContinuationTranslation {
         C(Transpose(n, m, dt, access, x))))
 
     case TransposeDepArray(n, m, f, array) =>
-      con(array)(λ(expT(n`.`(m`.d`f), read))(x =>
+      con(array)(fun(expT(n`.`(m`.d`f), read))(x =>
         C(TransposeDepArray(n, m, f, x))))
 
     case Unzip(n, dt1, dt2, access, e) =>
-      con(e)(λ(expT(n`.`(dt1 x dt2), read))(x =>
+      con(e)(fun(expT(n`.`(dt1 x dt2), read))(x =>
         C(Unzip(n, dt1, dt2, access, x))))
 
     case VectorFromScalar(n, dt, arg) =>
-      con(arg)(λ(expT(dt, read))(e =>
+      con(arg)(fun(expT(dt, read))(e =>
         C(VectorFromScalar(n, dt, e)) ))
 
     case Zip(n, dt1, dt2, access, e1, e2) =>
-      con(e1)(λ(expT(n`.`dt1, read))(x =>
-        con(e2)(λ(expT(n`.`dt2, read))(y =>
+      con(e1)(fun(expT(n`.`dt1, read))(x =>
+        con(e2)(fun(expT(n`.`dt2, read))(y =>
           C(Zip(n, dt1, dt2, access, x, y)) )) ))
 
     // OpenMP
     case depMapPar@omp.DepMapPar(n, ft1, ft2, f, array) =>
-      `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
+      `new`(n`.d`ft2, fun(varT(n`.d`ft2))(tmp =>
         acc(depMapPar)(tmp.wr) `;` C(tmp.rd) ))
 
     case mapPar@omp.MapPar(n, dt1, dt2, f, array) =>
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
-      `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
+      `new`(n`.`dt2, fun(varT(n`.`dt2))(tmp =>
         acc(mapPar)(tmp.wr) `;` C(tmp.rd) ))
 
     case omp.ReducePar(n, dt1, dt2, f, init, array) =>
-      con(array)(λ(expT(n`.`dt1, read))(X =>
-        con(init)(λ(expT(dt2, read))(Y =>
+      con(array)(fun(expT(n`.`dt1, read))(X =>
+        con(init)(fun(expT(dt2, read))(Y =>
           ???
         ))))
 
     // OpenCL
     case depMap: ocl.DepMap =>
       val (n, _, ft2, _, _) = depMap.unwrap
-      `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
+      `new`(n`.d`ft2, fun(varT(n`.d`ft2))(tmp =>
         acc(depMap)(tmp.wr) `;` C(tmp.rd) ))
 
     case map@ocl.Map(level, dim) =>
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
-      `new`(map.n `.` map.dt2, λ(varT(map.n `.` map.dt2))(tmp =>
+      `new`(map.n `.` map.dt2, fun(varT(map.n `.` map.dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
     case fc@ocl.OpenCLFunctionCall(name, n) =>
@@ -374,11 +374,11 @@ object ContinuationTranslation {
         ts match {
           // with only one argument left to process continue with the OpenCLFunction call
           case Seq( (arg, inT) ) =>
-            con(arg)(λ(expT(inT, read))(e =>
+            con(arg)(fun(expT(inT, read))(e =>
               C(ocl.OpenCLFunctionCall(name, n)(inTs :+ inT, fc.outT, es :+ e)) ))
           // with a `tail` of arguments left, rec
           case Seq( (arg, inT), tail@_* ) =>
-            con(arg)(λ(expT(inT, read))(e => rec(tail, es :+ e, inTs :+ inT) ))
+            con(arg)(fun(expT(inT, read))(e => rec(tail, es :+ e, inTs :+ inT) ))
         }
       }
 
@@ -387,7 +387,7 @@ object ContinuationTranslation {
     case reduceSeq@ocl.ReduceSeq(unroll) =>
       val (n, a, dt1, dt2, f, init, array) = reduceSeq.unwrap
 
-      con(array)(λ(expT(n`.`dt1, read))(X => {
+      con(array)(fun(expT(n`.`dt1, read))(X => {
         val adj = AdjustArraySizesForAllocations(init, dt2, a)
 
         comment("oclReduceSeq") `;`
@@ -420,19 +420,19 @@ object ContinuationTranslation {
 
       println("WARNING: map loop continuation translation allocates memory")
       // TODO should be removed
-      `new`(n `.` dt2, λ(varT(n `.` dt2))(tmp =>
+      `new`(n `.` dt2, fun(varT(n `.` dt2))(tmp =>
         acc(map)(tmp.wr) `;` C(tmp.rd)))
 
-    case m@cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
+    case m@cuda.MapFragment(rows, columns, layers, dt, frag, layout, f, input) =>
       val fragType = FragmentType(rows, columns, layers, dt, frag, layout)
       shine.OpenCL.primitives.imperative.New(AddressSpace.Private, fragType,
-        λ(VarType(fragType))(fragmentAcc =>
+        fun(VarType(fragType))(fragmentAcc =>
           (if (input.t.accessType.toString == write.toString)
             acc(input)(fragmentAcc.wr) `;`
               cudaIm.ForFragment(rows, columns, layers, dt, frag, layout, fragmentAcc.rd, fragmentAcc.wr,
-                λ(expT(dt, read))(x =>
-                  λ(accT(dt))(o =>
-                    acc(fun(x))(o))))
+                fun(expT(dt, read))(x =>
+                  fun(accT(dt))(o =>
+                    acc(f(x))(o))))
           else
             acc(m)(fragmentAcc.wr)) `;`
             C(fragmentAcc.rd)))
