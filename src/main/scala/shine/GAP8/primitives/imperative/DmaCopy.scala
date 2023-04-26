@@ -11,7 +11,7 @@ import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class DmaCopy(tt: shine.GAP8.DMATransferType)(val dt: DataType, val src: Phrase[ExpType], val dst: Phrase[AccType]) extends CommandPrimitive {
   assert {
-    src :: expT(dt, read)
+    src :: expT(dt, write)
     dst :: accT(dt)
     true
   }

@@ -33,15 +33,5 @@ def conv7x4(w: nat,
             filter: exp[28.dt, read],
             out: acc[(w-6).(h-3).dt]): comm
 
-
-//def dmaCopy{a: shine.GAP8.MemoryType}(dt: data): comm
-
-def dmaCopy{tt: shine.GAP8.DMATransferType}(dt: data, src: exp[dt, read], dst: acc[dt]): comm
-//def memoryAlloc{mt: shine.GAP8.MemoryType}(size: nat, dt: data): comm
+def dmaCopy{tt: shine.GAP8.DMATransferType}(dt: data, src: exp[dt, write], dst: acc[dt]): comm
 def memoryAlloc{mt: shine.GAP8.MemoryType}(dt: data, f: var[dt] -> comm): comm
-
-//def new(dt: data, f: var[dt] -> comm): comm
-//def dmaCopy(a: shine.GAP8.MemoryType, dt: data): comm
-//def dmaCopy(a: shine.GAP8.MemoryType, dt: data, output: acc[dt]): acc[dt]
-//def dmaCopyToL1(dt: data, output: acc[dt]): acc[dt]
-//def dmaCopyToL2(dt: data, output: acc[dt]): acc[dt]
