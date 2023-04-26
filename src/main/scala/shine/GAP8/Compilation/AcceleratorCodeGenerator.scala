@@ -98,9 +98,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
               Seq(
                 srcC,
                 dstC,
-                //C.AST.Literal(ArithExpr.toInt(copy.dt.asInstanceOf[ArrayType].size).toString),
                 C.AST.Literal(ArithExpr.toInt(size).toString),
-                C.AST.Literal(copy.tt.toGAP8string),
+                C.AST.Literal(transferType.toGAP8string),
                 C.AST.Literal(""),
                 C.AST.Literal("")
               )
@@ -122,9 +121,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
           val va = Identifier(s"${v.name}_a", v.t.t2)
           val vC = C.AST.DeclRef(v.name)
 
-          C.AST.Block(immutable.Seq(
-            //
-            //C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt), Funcall (malloc))),
+          C.AST.Block(Seq(
             C.AST.DeclStmt(C.AST.VarDecl(
               vC.name,
               typ(dt),
@@ -134,15 +131,9 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
               ))
             )),
             //Generate here a call to malloc
-            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
-              updatedIdentEnv (va -> vC))))
-
-          /*C.AST.Block(Seq(
-            C.AST.ExprStmt(C.AST.Assignment(
-              ???,
-              ???
-            ))
-          ))*/
+            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |>
+              cmd(env updatedIdentEnv (ve -> vC) updatedIdentEnv (va -> vC))
+          ))
         case _ => throw new RuntimeException("This should not happen")
       }
     }
