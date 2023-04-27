@@ -38,5 +38,8 @@ def funConv7x4(
     filter: exp[7.4.dt, read]
 ): exp[(w-6).(h-3).dt, write]
 
-def copyToL1(dt: data, input: exp[dt, write]): exp[dt, read]
-def copyToL2(dt: data, input: exp[dt, write]): exp[dt, read]
+def copyToL1(dt: data, input: exp[dt, read]): exp[dt, write]
+def copyToL2(dt: data, input: exp[dt, read]): exp[dt, write]
+
+def allocL1(dt: data, input: exp[dt, write]): exp[dt, read]
+def allocL2(dt: data, input: exp[dt, write]): exp[dt, read]

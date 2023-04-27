@@ -11,9 +11,9 @@ import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class CopyToL2(val dt: DataType, val input: Phrase[ExpType]) extends ExpPrimitive {
   assert {
-    input :: expT(dt, write)
+    input :: expT(dt, read)
     true
   }
-  override val t: ExpType = expT(dt, read)
+  override val t: ExpType = expT(dt, write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): CopyToL2 = new CopyToL2(v.data(dt), VisitAndRebuild(input, v))
 }
