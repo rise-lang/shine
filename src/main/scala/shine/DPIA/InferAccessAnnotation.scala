@@ -641,11 +641,23 @@ private class InferAccessAnnotation {
 
       case rg8p.copyToL1() => p.t match {
         case (dt: DataType) ->: (_: DataType) =>
-          expT(dt, write) ->: expT(dt, read)
+          expT(dt, read) ->: expT(dt, write)
         case _ => error()
       }
 
       case rg8p.copyToL2() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, read) ->: expT(dt, write)
+        case _ => error()
+      }
+
+      case rg8p.allocL1() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, write) ->: expT(dt, read)
+        case _ => error()
+      }
+
+      case rg8p.allocL2() => p.t match {
         case (dt: DataType) ->: (_: DataType) =>
           expT(dt, write) ->: expT(dt, read)
         case _ => error()

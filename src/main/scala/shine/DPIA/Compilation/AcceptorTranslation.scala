@@ -1,25 +1,22 @@
 package shine.DPIA.Compilation
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
+import rise.core.DSL.Type._
+import rise.core.substitute.{natInType => substituteNatInType}
+import rise.core.types.DataType._
+import rise.core.types.{Nat, NatIdentifier, _}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL.{comment, _}
 import shine.DPIA.Phrases._
-import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
-import rise.core.DSL.Type._
-import rise.core.types.DataType._
-import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
-import rise.core.types.DataTypeOps._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
+import shine.GAP8.{L1toL2, L2toL1}
+import shine.GAP8.primitives.{functional => gap8, imperative => gap8Imp}
+import shine.OpenCL.primitives.{functional => ocl, imperative => oclImp}
 import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{imperative => oclImp}
-import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{imperative => cudaImp}
-import shine.GAP8.primitives.{functional => gap8}
-import shine.GAP8.primitives.{imperative => gap8Imp}
+import shine.cuda.primitives.{functional => cuda, imperative => cudaImp}
 
 object AcceptorTranslation {
   def acc(E: Phrase[ExpType])
@@ -426,6 +423,17 @@ object AcceptorTranslation {
           gap8Imp.Conv7x4(w, h, bias, dt, inInner, filterInner, A)
         ))
       }))
+
+    case gap8.CopyToL1(dt, input) =>
+      con(input)(λ(ExpType(dt, read))(i =>
+        gap8Imp.DmaCopy(L2toL1)(dt, i, A)
+      ))
+
+    case gap8.CopyToL2(dt, input) =>
+      con(input)(λ(ExpType(dt, read))(i =>
+        gap8Imp.DmaCopy(L1toL2)(dt, i, A)
+      ))
+
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???
     }

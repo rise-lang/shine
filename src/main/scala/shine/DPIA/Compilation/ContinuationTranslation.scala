@@ -408,7 +408,7 @@ object ContinuationTranslation {
       shine.OpenCL.DSL.`new` (addrSpace) (adj.dt, tmp =>
         acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
 
-    case gap8.CopyToL1(dt, input) =>
+    /*case gap8.CopyToL1(dt, input) =>
       shine.GAP8.DSL.GAP8MemoryAlloc(L1)(dt, tmp => {
         gap8Imp.DmaCopy(L2toL1)(dt, input, tmp.wr) `;`
           C(tmp.rd)
@@ -418,6 +418,16 @@ object ContinuationTranslation {
       shine.GAP8.DSL.GAP8MemoryAlloc(L2)(dt, tmp => {
         gap8Imp.DmaCopy(L1toL2)(dt, input, tmp.wr) `;`
           C(tmp.rd)
+      })*/
+
+    case gap8.AllocL1(dt, input) =>
+      shine.GAP8.DSL.GAP8MemoryAlloc(L1)(dt, tmp => {
+        acc(input)(tmp.wr) `;` C(tmp.rd)
+      })
+
+    case gap8.AllocL2(dt, input) =>
+      shine.GAP8.DSL.GAP8MemoryAlloc(L2)(dt, tmp => {
+        acc(input)(tmp.wr) `;` C(tmp.rd)
       })
 
     // CUDA
