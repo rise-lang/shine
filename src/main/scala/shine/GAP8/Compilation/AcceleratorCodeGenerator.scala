@@ -2,16 +2,14 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
-import arithexpr.arithmetic.ArithExpr.toInt
 import rise.core.types.DataType
 import rise.core.types.DataType.ArrayType
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, PhrasePair}
-import shine.DPIA.Types.{AccType, CommType, ExpType}
-import shine.DPIA.primitives.functional.{Join, PadClamp}
-import shine.GAP8.{ConvolutionFilterSize, MemoryType}
-import shine.GAP8.primitives.imperative.{Conv3x3, Conv5x5, Conv7x4, Conv7x7, DmaCopy, MemoryAlloc}
+import shine.DPIA.Types.{CommType, ExpType}
+import shine.GAP8.ConvolutionFilterSize
+import shine.GAP8.primitives.imperative._
 import shine.{C, OpenMP}
 
 import scala.collection.{immutable, mutable}
@@ -84,24 +82,19 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     // Source address        Destination address  Size Direction Merge Struct
     // Identifier[ExpType]   Identifier[ExpType]  Nat  Nat       Nat   Identifier[ExpType]
     case copy@DmaCopy(transferType) =>
-      println("In DmaCopy")
-      val (size, elemType) = copy.dt match {
-        case ArrayType(size, elemType) =>
-          (toInt(size), elemType)
-        case _ => throw new RuntimeException(s"Expected ArrayType, got ${copy.dt}")
-      }
-      copy.src |> exp(env, Nil, (srcC: C.AST.Expr) => {
-        copy.dst |> acc(env, Nil, (dstC: C.AST.Expr) => {
+      val size = shine.GAP8.AST.Types.sizeInBytes(copy.dt)
+      copy.dst |> acc(env, Nil, (dstC: C.AST.Expr) => {
+        copy.src |> exp(env, Nil, (srcC: C.AST.Expr) => {
           C.AST.Block(Seq(
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("rt_dma_memcpy"),
               Seq(
                 srcC,
                 dstC,
-                C.AST.Literal(ArithExpr.toInt(size).toString),
+                C.AST.Literal(size.toString),
                 C.AST.Literal(transferType.toGAP8string),
-                C.AST.Literal(""),
-                C.AST.Literal("")
+                C.AST.Literal("merge"),
+                C.AST.Literal("transferobj")
               )
             ))
           ))
@@ -113,7 +106,6 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     // Array Type  Memory Type          Size
     // DataType    Nat / Address Space  Nat
     case malloc@MemoryAlloc(memoryType) => {
-      println("In MemoryAlloc")
       val dt = malloc.dt
       malloc.f match {
         case Lambda(v, p) =>
@@ -127,12 +119,21 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
               typ(dt),
               Some(C.AST.FunCall(
                 C.AST.DeclRef("rt_alloc"),
-                Seq()
+                Seq(
+                  C.AST.Literal(memoryType.toAllocString),
+                  C.AST.Literal(shine.GAP8.AST.Types.sizeInBytes(dt).toString)
+                )
               ))
             )),
-            //Generate here a call to malloc
             Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |>
-              cmd(env updatedIdentEnv (ve -> vC) updatedIdentEnv (va -> vC))
+              cmd(env updatedIdentEnv (ve -> vC) updatedIdentEnv (va -> vC)),
+            //TODO: Generate dealloc / free?
+            C.AST.ExprStmt(
+              C.AST.FunCall(
+                C.AST.DeclRef("free"),
+                Seq()
+              )
+            )
           ))
         case _ => throw new RuntimeException("This should not happen")
       }
@@ -140,8 +141,6 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
 
     case phrase => phrase |> super.cmd(env)
   }
-
-  private def arraySizeHelper(dt: DataType): Nat = ???
 
   private def generateCalls(fs: ConvolutionFilterSize, w: Nat, h: Nat, bias: Nat,
                                        in: Expr, filter: Expr, output: Expr): Stmt = {
@@ -204,6 +203,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
         C.AST.Cast(C.AST.Type.u32, C.AST.Literal(qnorm.toString))
       )
     ))
+
+  override def typ(dt: DataType): Type = super.typ(dt)
 }
 
 object AcceleratorCodeGenerator {
