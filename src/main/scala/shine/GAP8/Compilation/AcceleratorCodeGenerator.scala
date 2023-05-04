@@ -33,6 +33,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       identifier.name,
       ExpType(ArrayType(height, ArrayType(width, dt)), rise.core.types.read)
     )
+    println(s"I'm looking for $oldFilterId in ${env.identEnv}")
+    //println(s"temp $temp")
     val ref = env.identEnv(oldFilterId)
     val identEnv = env.identEnv - oldFilterId
     CodeGenerator.Environment(identEnv + ((identifier, ref)),
@@ -44,7 +46,9 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     case Conv3x3(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
+          println(s"Old env: $env")
           val env2 = swapEnvIdentifier(filter, dt, env, 3, 3)
+          println(s"New env: $env2")
           filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._3x3, w, h, bias, inC, filterC, outputC)
           })
