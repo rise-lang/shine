@@ -394,9 +394,10 @@ object AcceptorTranslation {
     // TODO: think about generalizing this. This currently only works if the filter is an identifier
     case gap8.FunConv3x3(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-        // import shine.DPIA.primitives.functional.{Join, PadClamp}
         // val paddedArray = PadClamp(3 * 3, 0, 1, dt, Join(3, 3, read, dt, filter))
+        //val paddedArray = PadCst(3 * 3, 0, 1, dt, Literal(Unsigned8BitIntData(0)), Join(3, 3, read, dt, filter))
         val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
+        println(s"paddedarray: $paddedArray")
         con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
           gap8Imp.Conv3x3(w, h, bias, dt, inInner, filterInner, A)
         ))
