@@ -3,12 +3,12 @@ package shine.GAP8.Compilation
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
 import rise.core.types.DataType
-import rise.core.types.DataType.ArrayType
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, PhrasePair}
 import shine.DPIA.Types.{CommType, ExpType}
 import shine.GAP8.ConvolutionFilterSize
+import shine.GAP8.primitives.functional.Cast
 import shine.GAP8.primitives.imperative._
 import shine.{C, OpenMP}
 
@@ -22,34 +22,21 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
 
   override def translationContext: TranslationContext = super.translationContext
 
-  private def swapEnvIdentifier(
-                                 identifier: Identifier[ExpType],
-                                 dt: DataType,
-                                 env: Environment,
-                                 height: Nat,
-                                 width: Nat
-                               ): Environment = {
-    val oldFilterId = Identifier(
-      identifier.name,
-      ExpType(ArrayType(height, ArrayType(width, dt)), rise.core.types.read)
-    )
-    println(s"I'm looking for $oldFilterId in ${env.identEnv}")
-    //println(s"temp $temp")
-    val ref = env.identEnv(oldFilterId)
-    val identEnv = env.identEnv - oldFilterId
-    CodeGenerator.Environment(identEnv + ((identifier, ref)),
-      env.commEnv, env.contEnv, env.letNatEnv)
+  override def exp(env: Environment,
+                   path: List[shine.C.Compilation.CodeGenerator.PathExpr],
+                   cont: Expr => Stmt): Phrase[ExpType] => Stmt = {
+    case Cast(_, _, input) =>
+      super.exp(env, path, cont)(input)
+    case other =>
+      super.exp(env, path, cont)(other)
   }
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     //TODO: Supoort multicycle output for 3x3
-    case Conv3x3(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
+    case Conv3x3(w, h, bias, dt, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          println(s"Old env: $env")
-          val env2 = swapEnvIdentifier(filter, dt, env, 3, 3)
-          println(s"New env: $env2")
-          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
+          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._3x3, w, h, bias, inC, filterC, outputC)
           })
         })
@@ -57,8 +44,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     case Conv5x5(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          val env2 = swapEnvIdentifier(filter, dt, env, 5, 5)
-          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
+          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._5x5, w, h, bias, inC, filterC, outputC)
           })
         })
@@ -66,8 +52,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     case Conv7x7(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          val env2 = swapEnvIdentifier(filter, dt, env, 7, 7)
-          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
+          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._7x7, w, h, bias, inC, filterC, outputC)
           })
         })
@@ -75,13 +60,11 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     case Conv7x4(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
-          val env2 = swapEnvIdentifier(filter, dt, env, 7, 4)
-          filter |> exp(env2, Nil, (filterC: C.AST.Expr) => {
+          filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
             generateCalls(shine.GAP8._7x4, w, h, bias, inC, filterC, outputC)
           })
         })
       })
-
 
     /**
       * Generates a call to DMA transfer
@@ -145,8 +128,12 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
             //TODO: Generate dealloc / free?
             C.AST.ExprStmt(
               C.AST.FunCall(
-                C.AST.DeclRef("free"),
-                Seq()
+                C.AST.DeclRef("rt_free"),
+                Seq(
+                  C.AST.Literal(memoryType.toAllocString),
+                  C.AST.Literal(vC.name),
+                  C.AST.Literal(shine.GAP8.AST.Types.sizeInBytes(dt).toString)
+                )
               )
             )
           ))
