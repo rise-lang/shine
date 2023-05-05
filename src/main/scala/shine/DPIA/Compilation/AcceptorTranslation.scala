@@ -390,36 +390,50 @@ object AcceptorTranslation {
           con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
-    //GAP8
+    // GAP8
     // TODO: think about generalizing this. This currently only works if the filter is an identifier
     case gap8.FunConv3x3(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-        // val paddedArray = PadClamp(3 * 3, 0, 1, dt, Join(3, 3, read, dt, filter))
-        //val paddedArray = PadCst(3 * 3, 0, 1, dt, Literal(Unsigned8BitIntData(0)), Join(3, 3, read, dt, filter))
-        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
-        println(s"paddedarray: $paddedArray")
+        // val paddedArray = PadCst(3 * 3, 0, 1, dt, Literal(Unsigned8BitIntData(0)), Join(3, 3, read, dt, filter))
+        // val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
+        val paddedArray = gap8.Cast(
+          ArrayType(3, ArrayType(3, dt)),
+          ArrayType(10, dt),
+          filter
+        )
         con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
           gap8Imp.Conv3x3(w, h, bias, dt, inInner, filterInner, A)
         ))
       }))
-    //TODO: Placeholders. Rethink
     case gap8.FunConv5x5(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(26, dt), read))
+        val paddedArray = gap8.Cast(
+          ArrayType(5, ArrayType(5, dt)),
+          ArrayType(26, dt),
+          filter
+        )
         con(paddedArray)(λ(ExpType(ArrayType(26, dt), read))(filterInner =>
           gap8Imp.Conv5x5(w, h, bias, dt, inInner, filterInner, A)
         ))
       }))
     case gap8.FunConv7x7(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(56, dt), read))
+        val paddedArray = gap8.Cast(
+          ArrayType(7, ArrayType(7, dt)),
+          ArrayType(56, dt),
+          filter
+        )
         con(paddedArray)(λ(ExpType(ArrayType(56, dt), read))(filterInner =>
           gap8Imp.Conv7x7(w, h, bias, dt, inInner, filterInner, A)
         ))
       }))
     case gap8.FunConv7x4(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
-        val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(28, dt), read))
+        val paddedArray = gap8.Cast(
+          ArrayType(7, ArrayType(4, dt)),
+          ArrayType(28, dt),
+          filter
+        )
         con(paddedArray)(λ(ExpType(ArrayType(28, dt), read))(filterInner =>
           gap8Imp.Conv7x4(w, h, bias, dt, inInner, filterInner, A)
         ))

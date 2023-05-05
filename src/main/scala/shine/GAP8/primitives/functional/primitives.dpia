@@ -43,3 +43,5 @@ def copyToL2(dt: data, input: exp[dt, read]): exp[dt, write]
 
 def allocL1(dt: data, input: exp[dt, write]): exp[dt, read]
 def allocL2(dt: data, input: exp[dt, write]): exp[dt, read]
+
+def cast(dt1: data, dt2: data, input: exp[dt1, read]): exp[dt2, read]
