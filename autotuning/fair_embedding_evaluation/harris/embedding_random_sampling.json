@@ -24,8 +24,8 @@
   },
   "scalarization_method": "linear",
   "optimization_method": "embedding_random_sampling",
-  "optimization_iterations": 100,
-  "time_budget": 10,
+  "optimization_iterations": 1000,
+  "time_budget": 2,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",
