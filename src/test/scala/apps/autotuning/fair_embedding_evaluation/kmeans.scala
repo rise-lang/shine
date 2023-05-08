@@ -87,7 +87,7 @@ class kmeansEmbedding extends test_util.Tests {
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 30,
+      iterations = 2,
       output = s"experiment/results/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),

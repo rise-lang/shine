@@ -176,7 +176,7 @@ class mmEmbedding extends test_util.Tests {
     runExperiment(
       name = s"mm",
       configFiles = configs,
-      iterations = 30,
+      iterations = 2,
       output = s"experiment/results/fair_embedding_evaluation",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),

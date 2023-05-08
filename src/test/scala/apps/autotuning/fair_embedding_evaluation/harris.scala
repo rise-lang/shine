@@ -102,7 +102,7 @@ class harrisEmbedding extends test_util.Tests {
     runExperiment(
       name = "harris",
       configFiles = configs,
-      iterations = 30,
+      iterations = 2,
       output = s"experiment/results/fair_embedding_evaluation",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
