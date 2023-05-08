@@ -103,7 +103,7 @@ class harrisEmbedding extends test_util.Tests {
       name = "harris",
       configFiles = configs,
       iterations = 2,
-      output = s"experiment/results/fair_embedding_evaluation",
+      output = s"experiments/autotuning/dodekajo/fair_embedding_evaluation/harris",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),

@@ -177,7 +177,7 @@ class mmEmbedding extends test_util.Tests {
       name = s"mm",
       configFiles = configs,
       iterations = 2,
-      output = s"experiment/results/fair_embedding_evaluation",
+      output = s"experiments/autotuning/dodekajo/fair_embedding_evaluation/mm",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),
