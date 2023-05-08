@@ -142,63 +142,63 @@ Context createContextWithIDs(cl_platform_id platform_id, cl_device_id device_id)
   return context;
 }
 
-// version for palma
-Context createDefaultContext() {
-  // NULL platform does not work with the AMD APP SDK
-  // we take the first returned platform as the default
-  cl_platform_id platform_id;
-  cl_uint platform_count = 2;
-  cl_platform_id platforms[2];
-  oclFatalError(clGetPlatformIDs(2, platforms, NULL),
-    "could not get platform IDs");
-  if (platform_count == 0) {
-    fprintf(stderr, "did not find any OpenCL platform\n");
-    exit(EXIT_FAILURE);
-  }
-
-
-  cl_device_id device_id;
-  cl_uint device_count = 2;
-  // using CL_DEVICE_TYPE_DEFAULT does not work with the AMD APP SDK
-  // we take the first returned device as the default instead
-  //oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, &device_count),
-  //oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &device_count),
-  oclFatalError(clGetDeviceIDs(platforms[1], CL_DEVICE_TYPE_ALL, 2, &device_id, &device_count),
-    "could not get device IDs");
-  if (device_count == 0) {
-    fprintf(stderr, "did not find any OpenCL device\n");
-    exit(EXIT_FAILURE);
-  }
-
-  return createContextWithIDs(platforms[1], device_id);
-}
-
-// old version
+//// version for palma
 //Context createDefaultContext() {
 //  // NULL platform does not work with the AMD APP SDK
 //  // we take the first returned platform as the default
 //  cl_platform_id platform_id;
-//  cl_uint platform_count = 0;
-//  oclFatalError(clGetPlatformIDs(1, &platform_id, &platform_count),
+//  cl_uint platform_count = 2;
+//  cl_platform_id platforms[2];
+//  oclFatalError(clGetPlatformIDs(2, platforms, NULL),
 //    "could not get platform IDs");
 //  if (platform_count == 0) {
 //    fprintf(stderr, "did not find any OpenCL platform\n");
 //    exit(EXIT_FAILURE);
 //  }
 //
+//
 //  cl_device_id device_id;
-//  cl_uint device_count = 0;
+//  cl_uint device_count = 2;
 //  // using CL_DEVICE_TYPE_DEFAULT does not work with the AMD APP SDK
 //  // we take the first returned device as the default instead
-//  oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, &device_count),
+//  //oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, &device_count),
+//  //oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, &device_count),
+//  oclFatalError(clGetDeviceIDs(platforms[1], CL_DEVICE_TYPE_ALL, 2, &device_id, &device_count),
 //    "could not get device IDs");
 //  if (device_count == 0) {
 //    fprintf(stderr, "did not find any OpenCL device\n");
 //    exit(EXIT_FAILURE);
 //  }
 //
-//  return createContextWithIDs(platform_id, device_id);
+//  return createContextWithIDs(platforms[1], device_id);
 //}
+
+// old version
+Context createDefaultContext() {
+  // NULL platform does not work with the AMD APP SDK
+  // we take the first returned platform as the default
+  cl_platform_id platform_id;
+  cl_uint platform_count = 0;
+  oclFatalError(clGetPlatformIDs(1, &platform_id, &platform_count),
+    "could not get platform IDs");
+  if (platform_count == 0) {
+    fprintf(stderr, "did not find any OpenCL platform\n");
+    exit(EXIT_FAILURE);
+  }
+
+  cl_device_id device_id;
+  cl_uint device_count = 0;
+  // using CL_DEVICE_TYPE_DEFAULT does not work with the AMD APP SDK
+  // we take the first returned device as the default instead
+  oclFatalError(clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 1, &device_id, &device_count),
+    "could not get device IDs");
+  if (device_count == 0) {
+    fprintf(stderr, "did not find any OpenCL device\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return createContextWithIDs(platform_id, device_id);
+}
 
 Context createContext(const char* platform_subname, const char* device_type_str) {
   cl_device_type device_type;
