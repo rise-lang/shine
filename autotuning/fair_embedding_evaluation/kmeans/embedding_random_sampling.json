@@ -24,8 +24,8 @@
   },
   "scalarization_method": "linear",
   "optimization_method": "embedding_random_sampling",
-  "optimization_iterations": 100,
-  "time_budget": 2,
+  "optimization_iterations": 1000000,
+  "time_budget": 1440,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",

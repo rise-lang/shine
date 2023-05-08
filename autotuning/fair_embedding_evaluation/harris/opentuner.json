@@ -24,8 +24,8 @@
   },
   "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 10000,
-  "time_budget": 2,
+  "optimization_iterations": 1000000,
+  "time_budget": 1440,
   "input_parameters": {
     "tuned_vec": {
       "parameter_type": "ordinal",

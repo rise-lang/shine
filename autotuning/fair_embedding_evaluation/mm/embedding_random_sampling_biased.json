@@ -24,8 +24,8 @@
   },
   "scalarization_method": "linear",
   "optimization_method": "embedding_random_sampling_biased",
-  "optimization_iterations": 100,
-  "time_budget": 2,
+  "optimization_iterations": 1000000,
+  "time_budget": 1440,
   "input_parameters": {
     "tuned_v3": {
       "parameter_type": "ordinal",
