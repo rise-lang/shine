@@ -70,7 +70,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       * Generates a call to DMA transfer
       * rt_dma_memcpy(src, dest, size, direction, merge, struct)
       * rt_dma_wait(struct)
-      *
+      * ext loc
       * TODO: Rethink this as it issues a call which will wait for the transfer to complete
       * immediately after the transfer has begun. Separating these two concerns could enable
       * parallelization of transfers and other useful calculations
@@ -79,12 +79,18 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       val size = shine.GAP8.AST.Types.sizeInBytes(copy.dt)
       copy.dst |> acc(env, Nil, (dstC: C.AST.Expr) => {
         copy.src |> exp(env, Nil, (srcC: C.AST.Expr) => {
+          val (ext, loc) = transferType match {
+            case shine.GAP8.L1toL2 =>
+              (dstC, srcC)
+            case shine.GAP8.L2toL1 =>
+              (srcC, dstC)
+          }
           C.AST.Block(Seq(
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("rt_dma_memcpy"),
               Seq(
-                srcC,
-                dstC,
+                ext,
+                loc,
                 C.AST.Literal(size.toString),
                 C.AST.Literal(transferType.toGAP8string),
                 C.AST.Literal(0.toString),
