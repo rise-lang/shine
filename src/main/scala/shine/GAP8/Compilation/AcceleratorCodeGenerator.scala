@@ -114,14 +114,19 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
           C.AST.Block(Seq(
             C.AST.DeclStmt(C.AST.VarDecl(
               vC.name,
-              typ(dt),
-              Some(C.AST.FunCall(
-                C.AST.DeclRef("rt_alloc"),
-                Seq(
-                  C.AST.Literal(memoryType.toAllocString),
-                  C.AST.Literal(shine.GAP8.AST.Types.sizeInBytes(dt).toString)
+              arrayToPointerType(dt),
+              Some(
+                C.AST.Cast(
+                  C.AST.PointerType(shine.GAP8.AST.Types.toStdint(dt), false),
+                  C.AST.FunCall(
+                    C.AST.DeclRef("rt_alloc"),
+                    Seq(
+                      C.AST.Literal(memoryType.toAllocString),
+                      C.AST.Literal(shine.GAP8.AST.Types.sizeInBytes(dt).toString)
+                    )
+                  )
                 )
-              ))
+              )
             )),
             Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |>
               cmd(env updatedIdentEnv (ve -> vC) updatedIdentEnv (va -> vC)),
@@ -206,6 +211,14 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       )
     ))
 
+  private def arrayToPointerType(dt: DataType): Type =
+    dt match {
+      case rise.core.types.DataType.ArrayType(size, elemType) =>
+        C.AST.PointerType(
+          C.AST.BasicType(shine.GAP8.AST.Types.toStdint(elemType).toString, false)
+        )
+      case _ => typ(dt)
+    }
   override def typ(dt: DataType): Type = super.typ(dt)
 }
 
