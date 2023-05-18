@@ -22,6 +22,9 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
 
   override def translationContext: TranslationContext = super.translationContext
 
+  override def updatedRanges(key: String, value: arithexpr.arithmetic.Range): AcceleratorCodeGenerator =
+    new AcceleratorCodeGenerator(decls, ranges.updated(key, value))
+
   override def exp(env: Environment,
                    path: List[shine.C.Compilation.CodeGenerator.PathExpr],
                    cont: Expr => Stmt): Phrase[ExpType] => Stmt = {

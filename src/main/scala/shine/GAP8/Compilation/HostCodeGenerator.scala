@@ -30,6 +30,10 @@ case class HostCodeGenerator(
                             ) extends CodeGenerator(decls, ranges){
   override def name: String = "GAP8 Host"
 
+  override def updatedRanges(key: String,
+                             value: arithexpr.arithmetic.Range): HostCodeGenerator =
+    new HostCodeGenerator(decls, ranges.updated(key, value), acceleratorFunctions)
+
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case k@KernelCallCmd(kernelName, numCores, numArgs) =>
       val calledKernel = acceleratorFunctions
