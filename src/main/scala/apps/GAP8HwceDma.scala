@@ -6,7 +6,7 @@ import rise.core.DSL.HighLevelConstructs.{slide2D, zipND}
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.DSL.Type.`.`
 import rise.core.DSL.{ToBeTyped, TypeAnnotationHelper, depFun, foreignFun, fun, let, letf, li16, lu8}
-import rise.core.primitives.{add, cast, fst, join, mapSeq, padCst, slide, snd, zip}
+import rise.core.primitives.{add, cast, fst, join, mapSeq, padCst, slide, snd, transpose, zip}
 import rise.core.types.DataType.{ArrayType, i16, u8}
 import rise.core.types.Nat
 import rise.elevate.Rise
@@ -80,11 +80,12 @@ object GAP8HwceDma {
     )
     //println(translateToString(util.gen.gap8.hosted("conv").fromExpr(fixSizeDmaHwce)))
 
-    val n: Nat = 320
+    val n: Nat = 322
     val m: Nat = 240
     val numStripes: Nat = 12
     val stripeSize: Nat = n * (m / numStripes)
     val tileSize: Nat = 80 * 80
+    val stripeHeight: Nat = m / numStripes
     val tiledFixSizeDmaHwce: ToBeTyped[Rise] =
       fun(
         ArrayType(n, ArrayType(m, i16)) ->:
@@ -94,26 +95,30 @@ object GAP8HwceDma {
         gap8Run(8)(
           hw |> copyToL1 |> allocL1 |> letf(l1hw =>
             vw |> copyToL1 |> allocL1 |> letf(l1vw =>
-              pic |> slide(stripeSize)(stripeSize - 1) |>
+              //
+              pic |> slide(18)(16) |>
                 mapSeq(fun(stripe =>
+                  //stripe
+                  //stripe is 2D
                   stripe |> copyToL1 |> allocL1 |> letf(l1stripe =>
-                    l1stripe |> mapPar(fun(row => row |> padCst(1)(1)(li16(0)))) |> // mapSeq(fun(x => cast(x) :: i16)) |>
-                        letf(l1convstripe =>
-                          gap8hwConv3x3(0)(l1convstripe, l1hw) |> letf(hconvres =>
-                            gap8hwConv3x3(0)(l1convstripe, l1vw) |> letf(vconvres =>
-                              zip(hconvres)(vconvres) |>
-                                mapPar(fun((h, v) =>
-                                  gapSqrt(add(h * h)(v * v))
-                                )) |> allocL1 |> copyToL2
-                            )
+                    l1stripe |> // |> mapPar(fun(row => row |> padCst(1)(1)(li16(0)))) // |>
+                      letf(l1convstripe =>
+                        gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
+                          gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
+                            zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                              add(fst(elems))(snd(elems))
+                            ))) |> allocL1 |> copyToL2
                           )
                         )
-                  )))
+                      )
+                  )
+                  )
+                ) |> join
               )
             )
         )
       )
-    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
+      println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
 
     val tiledFixSizeDmaHwce2: ToBeTyped[Rise] =
       fun(
@@ -153,11 +158,16 @@ object GAP8HwceDma {
         hw |> copyToL1 |> allocL1 |> letf(l1hw =>
           vw |> copyToL1 |> allocL1 |> letf(l1vw =>
             pic |> copyToL1 |> allocL1 |> letf(l1pic =>
-              gap8hwConv3x3(0)(l1pic, l1hw) |> allocL1 |> letf (hconvres => //hconvres |> copyToL2
+              gap8hwConv3x3(0)(l1pic, l1hw) |> allocL1 |> letf (hconvres => // hconvres |> copyToL2
                 gap8hwConv3x3(0)(l1pic, l1vw) |> allocL1 |> letf (vconvres =>
-                  zip(hconvres)(vconvres) |> mapPar(fun(x =>
-                    add(fst(x))(snd(x))
-                  )) |> allocL1 |> copyToL2
+                  zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                    add(fst(elems))(snd(elems))
+                  ))) |> allocL1 |> copyToL2
+                  /*zip(hconvres)(vconvres) |> mapPar(fun(rows =>
+                    zip(fst(rows))(snd(rows)) |> mapPar(fun(elems =>
+                      add(fst(elems))(snd(elems))
+                    ))
+                  )) |> allocL1 |> copyToL2*/
                 )
               )
             )
@@ -165,6 +175,6 @@ object GAP8HwceDma {
         )
       )
     )
-    println(translateToString(util.gen.gap8.hosted("doubleconv").fromExpr(simpleNoSlide)))
+    //println(translateToString(util.gen.gap8.hosted("doubleconv").fromExpr(simpleNoSlide)))
   }
 }
