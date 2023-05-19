@@ -974,7 +974,7 @@ object fromRise {
           expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
           depFun(NatKind, bias)(
             fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-              fun[ExpType](expT(ArrayType(7, ArrayType(4, s)), read), filter =>
+              fun[ExpType](expT(ArrayType(4, ArrayType(7, s)), read), filter =>
                 gap8.FunConv7x4(w, h, bias, s, input, filter)
               )
             )

@@ -13,7 +13,7 @@ object gap8hwConv7x4 extends Builder {
     override val name: String = "gap8hwConv7x4"
     override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: ExprType = expl { (bias: Nat) => impl { (iw: Nat) => impl { (ih: Nat) => impl { (ow: Nat) => impl { (oh: Nat) => impl { (s: DataType) => ArrayType(iw, ArrayType(ih, s)) ->: ArrayType(7, ArrayType(4, s)) ->: ArrayType(ow, ArrayType(oh, s)) } } } } } }
+    override def typeScheme: ExprType = expl { (bias: Nat) => impl { (ih: Nat) => impl { (iw: Nat) => impl { (oh: Nat) => impl { (ow: Nat) => impl { (s: DataType) => ArrayType(ih, ArrayType(iw, s)) ->: ArrayType(4, ArrayType(7, s)) ->: ArrayType(oh, ArrayType(ow, s)) } } } } } }
   }
   override def toString: String = "gap8hwConv7x4"
   override def primitive: rise.core.Primitive = Primitive()()

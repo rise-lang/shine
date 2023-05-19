@@ -13,7 +13,7 @@ final case class Conv5x5(val w: Nat, val h: Nat, val bias: Nat, val dt: DataType
   assert {
     in :: expT(ArrayType(w, ArrayType(h, dt)), read)
     filter :: expT(ArrayType(26, dt), read)
-    out :: accT(ArrayType(w - 4, ArrayType(h - 4, dt)))
+    out :: accT(ArrayType(h - 4, ArrayType(w - 4, dt)))
     true
   }
   override val t: CommType = comm

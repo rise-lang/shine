@@ -634,7 +634,7 @@ private class InferAccessAnnotation {
         case bias `(Nat)->:` (ArrayType(h, ArrayType(w, s: DataType)) ->:
           ArrayType(_, ArrayType(_, _)) ->: ArrayType(oh, ArrayType(ow, _))) =>
           nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), read)
-            ->: expT(ArrayType(7, ArrayType(4, s)), read) ->:
+            ->: expT(ArrayType(4, ArrayType(7, s)), read) ->:
             expT(ArrayType(oh, ArrayType(ow, s)), write)
           )
       }

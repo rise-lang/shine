@@ -44,7 +44,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
           })
         })
       })
-    case Conv5x5(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
+    case Conv5x5(w, h, bias, dt, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
@@ -52,7 +52,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
           })
         })
       })
-    case Conv7x7(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
+    case Conv7x7(w, h, bias, dt, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
@@ -60,7 +60,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
           })
         })
       })
-    case Conv7x4(w, h, bias, dt, in, filter: Identifier[ExpType], out) =>
+    case Conv7x4(w, h, bias, dt, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {

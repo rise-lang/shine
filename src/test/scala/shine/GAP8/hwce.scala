@@ -239,7 +239,7 @@ class hwce extends test_util.Tests {
       * HWCE_ProcessOneTile7x4(e1, output, e2, 0, n, m)
       * */
     val expr: ToBeTyped[Rise] = {
-      fun((w`.`h`.`i16) ->: (7`.`4`.`i16) ->: ((w - 6)`.`(h - 3)`.`i16))((in, filter) =>
+      fun((h`.`w`.`i16) ->: (4`.`7`.`i16) ->: ((h - 3)`.`(w - 6)`.`i16))((in, filter) =>
         gap8Run(8)(
           gap8hwConv7x4(0)(in)(filter)
         )

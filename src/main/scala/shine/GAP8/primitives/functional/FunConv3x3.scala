@@ -11,10 +11,10 @@ import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
 final case class FunConv3x3(val w: Nat, val h: Nat, val bias: Nat, val dt: DataType, val in: Phrase[ExpType], val filter: Phrase[ExpType]) extends ExpPrimitive {
   assert {
-    in :: expT(ArrayType(w, ArrayType(h, dt)), read)
+    in :: expT(ArrayType(h, ArrayType(w, dt)), read)
     filter :: expT(ArrayType(3, ArrayType(3, dt)), read)
     true
   }
-  override val t: ExpType = expT(ArrayType(w - 2, ArrayType(h - 2, dt)), write)
+  override val t: ExpType = expT(ArrayType(h - 2, ArrayType(w - 2, dt)), write)
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): FunConv3x3 = new FunConv3x3(v.nat(w), v.nat(h), v.nat(bias), v.data(dt), VisitAndRebuild(in, v), VisitAndRebuild(filter, v))
 }

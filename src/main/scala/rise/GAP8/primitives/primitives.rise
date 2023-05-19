@@ -1,24 +1,24 @@
 def gap8RunPrimitive: (cores: nat) -> {t: data} -> t -> t
 
-def gap8hwConv3x3: (bias: nat) -> {iw: nat} -> {ih: nat} ->
-    {ow: nat} -> {oh: nat} ->
+def gap8hwConv3x3: (bias: nat) -> {ih: nat} -> {iw: nat} ->
+    {oh: nat} -> {ow: nat} ->
         {s: data} ->
-            iw.ih.s -> 3.3.s -> ow.oh.s
+            ih.iw.s -> 3.3.s -> oh.ow.s
 
-def gap8hwConv5x5: (bias: nat) -> {iw: nat} -> {ih: nat} ->
-    {ow: nat} -> {oh: nat} ->
+def gap8hwConv5x5: (bias: nat) -> {ih: nat} -> {iw: nat} ->
+    {oh: nat} -> {ow: nat} ->
         {s: data} ->
-            iw.ih.s -> 5.5.s -> ow.oh.s
+            ih.iw.s -> 5.5.s -> oh.ow.s
 
-def gap8hwConv7x7: (bias: nat) -> {iw: nat} -> {ih: nat} ->
-    {ow: nat} -> {oh: nat} ->
+def gap8hwConv7x7: (bias: nat) -> {ih: nat} -> {iw: nat} ->
+    {oh: nat} -> {ow: nat} ->
         {s: data} ->
-            iw.ih.s -> 7.7.s -> ow.oh.s
+            ih.iw.s -> 7.7.s -> oh.ow.s
 
-def gap8hwConv7x4: (bias: nat) -> {iw: nat} -> {ih: nat} ->
-    {ow: nat} -> {oh: nat} ->
+def gap8hwConv7x4: (bias: nat) -> {ih: nat} -> {iw: nat} ->
+    {oh: nat} -> {ow: nat} ->
         {s: data} ->
-            iw.ih.s -> 7.4.s -> ow.oh.s
+            ih.iw.s -> 4.7.s -> oh.ow.s
 
 def copyToL1: {t: data} -> t -> t
 def copyToL2: {t: data} -> t -> t

@@ -430,7 +430,7 @@ object AcceptorTranslation {
     case gap8.FunConv7x4(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
         val paddedArray = gap8.Cast(
-          ArrayType(7, ArrayType(4, dt)),
+          ArrayType(4, ArrayType(7, dt)),
           ArrayType(28, dt),
           filter
         )
