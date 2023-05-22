@@ -123,7 +123,7 @@ object gen {
         functionFromExpr(name, gen) andThen
           GAP8.Module.injectUnpacking andThen
           C.Module.translateToString andThen
-          run(SyntaxChecker(_))
+          run(SyntaxChecker.checkGAP8(_))
     }
 
     type HostedModule = GAP8.Module

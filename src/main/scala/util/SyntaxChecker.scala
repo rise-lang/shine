@@ -29,6 +29,16 @@ object SyntaxChecker {
         throw Exception(s"Code: `$code' did not pass syntax check")
     }
   }
+  /**
+    * TODO: clang emits "error: use of undeclared identifier 'ARCHI_CL_EVT_ACC0'".
+    * TODO: Think of a better way to make the code pass syntax checking
+    * */
+
+  @throws[SyntaxChecker.Exception]("if code does not pass the GAP8-like syntax check")
+  def checkGAP8(code: String): Unit = {
+    val mockDefine = "#define ARCHI_CL_EVT_ACC0 12"
+    apply(mockDefine + "\n" + code)
+  }
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the OpenCL syntax check")
   def checkOpenCL(code: String): Unit = {
