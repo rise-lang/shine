@@ -80,32 +80,92 @@ object GAP8HwceDma {
     )
     //println(translateToString(util.gen.gap8.hosted("conv").fromExpr(fixSizeDmaHwce)))
 
-    val n: Nat = 322
-    val m: Nat = 240
+    //Passes
+    val theSmallestSlide: ToBeTyped[Rise] = fun(
+      ArrayType(5, i16) ->: ArrayType(3, ArrayType(3, i16))
+    )(arr =>
+      gap8Run(8)(
+        arr |> slide(3)(1) |> mapSeq(mapSeq(fun(elem => add(elem)(li16(1)))))
+      )
+    )
+    //printf(translateToString(util.gen.gap8.hosted("theSmallest").fromExpr(theSmallestSlide)))
+    translateToString(util.gen.gap8.hosted("theSmallest").fromExpr(theSmallestSlide))
+    println("======================================================================")
+
+    val inBetweenSlideExample: ToBeTyped[Rise] = fun(
+      ArrayType(5, i16) ->: ArrayType(3, ArrayType(3, i16))
+    )(arr =>
+      gap8Run(8)(
+        arr |> slide(3)(1) |> mapSeq(fun(tile =>
+          tile |> letf(tstletf =>
+            tstletf |> mapSeq(fun(elem => add(elem)(li16(1))))
+          )
+        ))
+      )
+    )
+    println(translateToString(util.gen.gap8.hosted("inBetween").fromExpr(inBetweenSlideExample)))
+    //translateToString(util.gen.gap8.hosted("inBetween").fromExpr(inBetweenSlideExample))
+    println("======================================================================")
+    //Does not pass
+    val evenSmallerSlideExample: ToBeTyped[Rise] = fun(
+      ArrayType(5, i16) ->: ArrayType(3, ArrayType(3, i16))
+    )(arr =>
+      gap8Run(8)(
+        arr |> slide(3)(1) |> mapSeq(fun(tile =>
+          tile |> copyToL1 |> allocL1 |> letf(tilel1 =>
+            tilel1 |> mapSeq(fun(elem => add(elem)(li16(1)))) |> allocL1 |> copyToL2
+          )
+        ))
+      )
+    )
+    //println(translateToString(util.gen.gap8.hosted("evenSmallerSlideExample").fromExpr(evenSmallerSlideExample)))
+    //translateToString(util.gen.gap8.hosted("evenSmallerSlideExample").fromExpr(evenSmallerSlideExample))
+
+    //No way
+    val minSlideExample: ToBeTyped[Rise] = fun(
+      ArrayType(5, ArrayType(5, i16)) ->:
+        ArrayType(3, ArrayType(5, i16)) ->:
+      ArrayType(9, ArrayType(5, i16)))((sth, filter) =>
+      gap8Run(8)(
+        sth |> slide(3)(1) |> mapSeq(fun(tile =>
+          tile |> copyToL1 |> allocL1 |> letf(tilel1 =>
+            zipND(2)(tilel1, filter) |> mapPar(mapPar(fun(elems =>
+              add(fst(elems))(snd(elems))
+            ))) |> allocL1 |> copyToL2
+          )
+        )) |> join
+      )
+    )
+    //println(translateToString(util.gen.gap8.hosted("minSlide").fromExpr(minSlideExample)))
+
+    //old w=322, slide(18)(16)
+    val w: Nat = 320
+    val h: Nat = 240
     val numStripes: Nat = 12
-    val stripeSize: Nat = n * (m / numStripes)
-    val tileSize: Nat = 80 * 80
-    val stripeHeight: Nat = m / numStripes
+    val stripeSize: Nat = w * (h / numStripes)
+    val stripeHeight: Nat = h / numStripes
+    //Are you serious?
     val tiledFixSizeDmaHwce: ToBeTyped[Rise] =
       fun(
-        ArrayType(n, ArrayType(m, i16)) ->:
+        ArrayType(h, ArrayType(w, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
-          ArrayType(n - 2, ArrayType(m - 2, i16)))((pic, hw, vw) =>
+          ArrayType(h - 2, ArrayType(w - 2, i16)))((pic, hw, vw) =>
         gap8Run(8)(
           hw |> copyToL1 |> allocL1 |> letf(l1hw =>
             vw |> copyToL1 |> allocL1 |> letf(l1vw =>
-              //
-              pic |> slide(18)(16) |>
+              pic |> slide(16)(14) |>
                 mapSeq(fun(stripe =>
                   //stripe
                   //stripe is 2D
                   stripe |> copyToL1 |> allocL1 |> letf(l1stripe =>
-                    l1stripe |> // |> mapPar(fun(row => row |> padCst(1)(1)(li16(0)))) // |>
+                    l1stripe |> // |> mapPar(fun(row => row |> padCst(1)(1)(li16(0)))) |>
                       letf(l1convstripe =>
                         gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
                           gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
                             zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                              //gapSqrt
+                              //pad left,right somewhere?
                               add(fst(elems))(snd(elems))
                             ))) |> allocL1 |> copyToL2
                           )
@@ -118,35 +178,7 @@ object GAP8HwceDma {
             )
         )
       )
-      println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
-
-    val tiledFixSizeDmaHwce2: ToBeTyped[Rise] =
-      fun(
-        ArrayType(n, ArrayType(m, i16)) ->:
-          ArrayType(3, ArrayType(3, i16)) ->:
-          ArrayType(3, ArrayType(3, i16)) ->:
-          ArrayType(n - 2, ArrayType(m - 2, i16)))((pic, hw, vw) =>
-        gap8Run(8)(
-          hw |> copyToL1 |> allocL1 |> letf(l1hw =>
-            vw |> copyToL1 |> allocL1 |> letf(l1vw =>
-              pic |> slide(80)(80) |>
-                mapSeq(fun(tile =>
-                  tile |> copyToL1 |> allocL1 |> letf(l1tile =>
-                    gap8hwConv3x3(0)(l1tile, l1hw) |> letf(hconvres =>
-                      gap8hwConv3x3(0)(l1tile, l1vw) |> letf(vconvres =>
-                        zipND(2)(hconvres, vconvres) |> mapPar(fun((h, v) =>
-                          gapSqrt(add(h * h)(v * v))
-                        )) |> allocL1 |> copyToL2
-                      )
-                    )
-                  )
-                ))
-            )
-          )
-        )
-      )
-
-    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce2)))
+    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
 
     val simpleNoSlide: ToBeTyped[Rise] =
       fun(
