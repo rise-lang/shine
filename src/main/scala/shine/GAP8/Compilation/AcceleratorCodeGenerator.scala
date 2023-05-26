@@ -3,6 +3,7 @@ package shine.GAP8.Compilation
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
 import rise.core.types.DataType
+import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, PhrasePair}
@@ -80,8 +81,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       * */
     case copy@DmaCopy(transferType) =>
       val size = shine.GAP8.AST.Types.sizeInBytes(copy.dt)
-      copy.dst |> acc(env, Nil, (dstC: C.AST.Expr) => {
-        copy.src |> exp(env, Nil, (srcC: C.AST.Expr) => {
+      copy.dst |> acc(env, List(CIntExpr(0)), (dstC: C.AST.Expr) => {
+        copy.src |> exp(env, List(CIntExpr(0)), (srcC: C.AST.Expr) => {
           val (ext, loc) = transferType match {
             case shine.GAP8.L1toL2 =>
               (dstC, srcC)
@@ -92,6 +93,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
             C.AST.ExprStmt(C.AST.FunCall(
               C.AST.DeclRef("rt_dma_memcpy"),
               Seq(
+                // TODO: Reference fetch via ampersand might be needed (ext,loc)
                 ext,
                 loc,
                 C.AST.Literal(size.toString),
