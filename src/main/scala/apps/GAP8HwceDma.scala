@@ -1,7 +1,7 @@
 package apps
 
 import rise.GAP8.DSL.gap8Run
-import rise.GAP8.primitives.{allocL1, copyToL1, copyToL2, gap8hwConv3x3}
+import rise.GAP8.primitives.{allocL1, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3}
 import rise.core.DSL.HighLevelConstructs.{padCst2D, zipND}
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.DSL.{ToBeTyped, depFun, foreignFun, fun, letf, li16}
@@ -162,11 +162,12 @@ object GAP8HwceDma {
         gap8Run(8)(
           hw |> copyToL1 |> allocL1 |> letf(l1hw =>
             vw |> copyToL1 |> allocL1 |> letf(l1vw =>
-              // pic |> padCst2D(1, 1, 0, 0)(li16(0)) |> slide(16)(14) |>
-              pic |> slide (16)(14) |>
+               // pic |> padCst2D(1, 1, 0, 0)(li16(0)) |> slide(16)(14) |>
+                pic |> slide (16)(14) |>
                 mapSeq(fun(stripe =>
-                  stripe |> copyToL1 |> allocL1 |> letf(l1stripe =>
-                    l1stripe |> padCst2D(0, 0, 1, 1)(li16(0)) |>
+                  stripe |> copy2DOffsetToL1(1)(1) |> allocL1 |> // letf(l1stripe =>
+                    // l1stripe |> padCst2D(0, 0, 1, 1)(li16(0)) |>
+                      // mapSeq(mapSeq(fun(x => x))) |> allocL1 |>
                       letf(l1convstripe =>
                         gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
                           gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
@@ -175,7 +176,7 @@ object GAP8HwceDma {
                             ))) |> allocL1 |> copyToL2
                           )
                         )
-                      )
+                      // )
                   )
                 )) |> join
               )
