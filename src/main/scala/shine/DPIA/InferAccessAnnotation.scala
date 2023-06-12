@@ -651,8 +651,17 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      // case n `(Nat)->:` ((dt1: DataType) ->: (dt2: DataType)) =>
+      // nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
+      case rg8p.copy2DOffsetToL1() => p.t match {
+        case offsetX `(Nat)->:` (offsetY `(Nat)->:` ((ArrayType(n, ArrayType(m, t: DataType))) ->: (_: DataType))) =>
+          nFunT(offsetX, nFunT(offsetY, expT(n`.`m`.`t, read) ->: expT((n + 2 * offsetY)`.`(m + 2 * offsetX)`.`t, write)))
+        case _ => error()
+      }
+
       case rg8p.allocL1() => p.t match {
         case (dt: DataType) ->: (_: DataType) =>
+          println(dt)
           expT(dt, write) ->: expT(dt, read)
         case _ => error()
       }

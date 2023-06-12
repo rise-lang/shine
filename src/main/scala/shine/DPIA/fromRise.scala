@@ -990,6 +990,19 @@ object fromRise {
         case expT(dt, `read`) ->: expT(_, `write`) =>
           fun[ExpType](expT(dt, read), e => gap8.CopyToL2(dt, e))
       }
+      //case nFunT(n, expT(ArrayType(_, t), a) ->:
+      //          expT(ArrayType(m, ArrayType(_, _)), _))
+      //        =>
+      //        depFun(NatKind, n)(
+      //          fun[ExpType](expT({m*n}`.`t, a), e =>
+      //            Split(n, m, a, t, e)))
+
+      case rgap8.copy2DOffsetToL1() => fromType {
+        case nFunT(offsetX, nFunT(offsetY, expT(ArrayType(n, ArrayType(m, t)), `read`) ->: expT(_, `write`))) =>
+          depFun(NatKind, offsetX)(depFun(NatKind, offsetY)(fun[ExpType](expT(n`.`m`.`t, read), input =>
+            gap8.Copy2DOffsetToL1(t, n, m, offsetX, offsetY, input)
+          )))
+      }
 
       case rgap8.allocL1() => fromType {
         case expT(dt, `write`) ->: expT(_, `read`) =>
