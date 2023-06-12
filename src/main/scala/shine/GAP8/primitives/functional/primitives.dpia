@@ -41,6 +41,9 @@ def funConv7x4(
 def copyToL1(dt: data, input: exp[dt, read]): exp[dt, write]
 def copyToL2(dt: data, input: exp[dt, read]): exp[dt, write]
 
+def copy2DOffsetToL1(dt: data, n: nat, m: nat,
+    offsetX: nat, offsetY: nat, input: exp[n.m.dt, read]): exp[(n+2*offsetY).(m+2*offsetX).dt, write]
+
 def allocL1(dt: data, input: exp[dt, write]): exp[dt, read]
 def allocL2(dt: data, input: exp[dt, write]): exp[dt, read]
 

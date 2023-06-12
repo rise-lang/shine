@@ -23,5 +23,9 @@ def gap8hwConv7x4: (bias: nat) -> {ih: nat} -> {iw: nat} ->
 def copyToL1: {t: data} -> t -> t
 def copyToL2: {t: data} -> t -> t
 
+def copy2DOffsetToL1: {t: data} -> {n: nat} -> {m: nat}
+    -> (offsetX: nat) -> (offsetY: nat) -> (n.m.t)
+        -> (n + 2 * offsetY).(m + 2 * offsetX).t
+
 def allocL1: {t: data} -> t -> t
 def allocL2: {t: data} -> t -> t
