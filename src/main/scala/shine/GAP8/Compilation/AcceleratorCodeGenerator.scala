@@ -202,6 +202,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     }
   }
 
+  //TODO: Lazy val
   private val hwceEnableCall = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("HWCE_Enable"), Seq()))
   private val hwceDisableCall = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("HWCE_Disable"), Seq()))
   private val hwceSoftResetCall = C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("HwCE_SoftReset"), Seq()))
