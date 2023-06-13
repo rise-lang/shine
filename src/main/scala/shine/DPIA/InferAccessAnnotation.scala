@@ -604,11 +604,11 @@ private class InferAccessAnnotation {
       }
 
       case rg8p.gap8hwConv3x3() => p.t match {
-        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, s: DataType)) ->:
-          ArrayType(_, ArrayType(_, _)) ->: ArrayType(oh, ArrayType(ow, _))) =>
-          nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), read)
-            ->: expT(ArrayType(3, ArrayType(3, s)), read) ->:
-            expT(ArrayType(oh, ArrayType(ow, s)), write)
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(3, ArrayType(3, dt)), read) ->:
+            expT(ArrayType(h-2, ArrayType(w-2, dt)), write)
           )
       }
 
@@ -654,14 +654,13 @@ private class InferAccessAnnotation {
       // case n `(Nat)->:` ((dt1: DataType) ->: (dt2: DataType)) =>
       // nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
       case rg8p.copy2DOffsetToL1() => p.t match {
-        case offsetX `(Nat)->:` (offsetY `(Nat)->:` ((ArrayType(n, ArrayType(m, t: DataType))) ->: (_: DataType))) =>
-          nFunT(offsetX, nFunT(offsetY, expT(n`.`m`.`t, read) ->: expT((n + 2 * offsetY)`.`(m + 2 * offsetX)`.`t, write)))
+        case offsetH `(Nat)->:` (offsetW `(Nat)->:` ((ArrayType(h, ArrayType(w, dt: DataType))) ->: (_: DataType))) =>
+          nFunT(offsetH, nFunT(offsetW, expT(h`.`w`.`dt, read) ->: expT((h + 2 * offsetH)`.`(w + 2 * offsetW)`.`dt, write)))
         case _ => error()
       }
 
       case rg8p.allocL1() => p.t match {
         case (dt: DataType) ->: (_: DataType) =>
-          println(dt)
           expT(dt, write) ->: expT(dt, read)
         case _ => error()
       }

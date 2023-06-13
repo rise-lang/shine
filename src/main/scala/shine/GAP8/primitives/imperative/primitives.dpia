@@ -1,10 +1,10 @@
 def kernelCallCmd{name: String, cores: Int, n: Int}
     (inTs: n*data, dt: data, args: n*exp[*inTs, read], output: acc[dt]): comm
 
-def conv3x3(w: nat,
-            h: nat,
-            bias: nat,
+def conv3x3(h: nat,
+            w: nat,
             dt: data,
+            bias: nat,
             in: exp[h.w.dt, read],
             filter: exp[10.dt, read],
             out: acc[(h-2).(w-2).dt]): comm
@@ -35,3 +35,8 @@ def conv7x4(w: nat,
 
 def dmaCopy{tt: shine.GAP8.DMATransferType}(dt: data, src: exp[dt, read], dst: acc[dt]): comm
 def memoryAlloc{mt: shine.GAP8.MemoryType}(dt: data, f: var[dt] -> comm): comm
+
+def dma2DOffsetCopy{tt: shine.GAP8.DMATransferType}(dt: data, h: nat, w: nat,
+    offsetH: nat, offsetW: nat, src: exp[n.m.dt, read], dst: acc[(h+2*offsetH).(w+2*offsetW).dt]): comm
+
+def memorySet(dt: data, value: exp[int, read], array: acc[dt]): comm

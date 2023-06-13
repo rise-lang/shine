@@ -930,13 +930,13 @@ object fromRise {
       }
 
       case rgap8.gap8hwConv3x3() => fromType {
-        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
-          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
             depFun(NatKind, bias)(
-              fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-                fun[ExpType](expT(ArrayType(3, ArrayType(3, s)), read), filter =>
-                  gap8.FunConv3x3(w, h, bias, s, input, filter)
+              fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+                fun[ExpType](expT(ArrayType(3, ArrayType(3, dt)), read), filter =>
+                  gap8.FunConv3x3(h, w, dt, bias, input, filter)
                 )
               )
             )
@@ -998,9 +998,9 @@ object fromRise {
       //            Split(n, m, a, t, e)))
 
       case rgap8.copy2DOffsetToL1() => fromType {
-        case nFunT(offsetX, nFunT(offsetY, expT(ArrayType(n, ArrayType(m, t)), `read`) ->: expT(_, `write`))) =>
-          depFun(NatKind, offsetX)(depFun(NatKind, offsetY)(fun[ExpType](expT(n`.`m`.`t, read), input =>
-            gap8.Copy2DOffsetToL1(t, n, m, offsetX, offsetY, input)
+        case nFunT(offsetH, nFunT(offsetW, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->: expT(_, `write`))) =>
+          depFun(NatKind, offsetH)(depFun(NatKind, offsetW)(fun[ExpType](expT(h`.`w`.`dt, read), input =>
+            gap8.Copy2DOffsetToL1(dt, h, w, offsetH, offsetW, input)
           )))
       }
 

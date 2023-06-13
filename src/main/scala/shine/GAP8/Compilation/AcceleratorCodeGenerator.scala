@@ -37,7 +37,7 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
 
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     //TODO: Supoort multicycle output for 3x3
-    case Conv3x3(w, h, bias, dt, in, filter, out) =>
+    case Conv3x3(h, w, dt, bias, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
@@ -156,6 +156,12 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
         case _ => throw new RuntimeException("This should not happen")
       }
     }
+
+    case MemorySet(dt, value, array) =>
+      C.AST.Comment("TODO: memset( ... )")
+
+    case copy@Dma2DOffsetCopy(transferType) =>
+      C.AST.Comment("TODO: dma2dOffsetCopy( ... )")
 
     case phrase => phrase |> super.cmd(env)
   }

@@ -392,7 +392,7 @@ object AcceptorTranslation {
 
     // GAP8
     // TODO: think about generalizing this. This currently only works if the filter is an identifier
-    case gap8.FunConv3x3(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
+    case gap8.FunConv3x3(h, w, dt, bias, in, filter: Identifier[ExpType]) =>
       con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
         // val paddedArray = PadCst(3 * 3, 0, 1, dt, Literal(Unsigned8BitIntData(0)), Join(3, 3, read, dt, filter))
         // val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
@@ -402,7 +402,7 @@ object AcceptorTranslation {
           filter
         )
         con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
-          gap8Imp.Conv3x3(w, h, bias, dt, inInner, filterInner, A)
+          gap8Imp.Conv3x3(h, w, dt, bias, inInner, filterInner, A)
         ))
       }))
     case gap8.FunConv5x5(w, h, bias, dt, in, filter: Identifier[ExpType]) =>
@@ -448,6 +448,15 @@ object AcceptorTranslation {
       con(input)(λ(ExpType(dt, read))(i =>
         gap8Imp.DmaCopy(L1toL2)(dt, i, A)
       ))
+
+    case gap8.Copy2DOffsetToL1(dt, h, w, offsetH, offsetW, input) =>
+      con(input)(λ(ExpType(h`.`w`.`dt, read))(i =>
+        // set larger output to 0
+        gap8Imp.MemorySet((h+2*offsetH)`.`(w+2*offsetW)`.`dt, Literal(IntData(0)), A) `;`
+          // copy smaller input into output with offset
+          gap8Imp.Dma2DOffsetCopy(L2toL1)(dt, h, w, offsetH, offsetW, i, A)
+      ))
+
 
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???

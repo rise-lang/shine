@@ -3,10 +3,10 @@ def kernelCall{name: String, cores: Int, n:Int}(inTs: n*data, outT: data, args: 
 def run{cores: Nat}(dt: data, input: exp[dt, write]): exp[dt, write]
 
 def funConv3x3(
-    w: nat,
     h: nat,
-    bias: nat,
+    w: nat,
     dt: data,
+    bias: nat,
     in: exp[h.w.dt, read],
     filter: exp[3.3.dt, read]
 ): exp[(h-2).(w-2).dt, write]
@@ -41,8 +41,8 @@ def funConv7x4(
 def copyToL1(dt: data, input: exp[dt, read]): exp[dt, write]
 def copyToL2(dt: data, input: exp[dt, read]): exp[dt, write]
 
-def copy2DOffsetToL1(dt: data, n: nat, m: nat,
-    offsetX: nat, offsetY: nat, input: exp[n.m.dt, read]): exp[(n+2*offsetY).(m+2*offsetX).dt, write]
+def copy2DOffsetToL1(dt: data, h: nat, w: nat,
+    offsetH: nat, offsetW: nat, input: exp[h.w.dt, read]): exp[(h+2*offsetH).(w+2*offsetW).dt, write]
 
 def allocL1(dt: data, input: exp[dt, write]): exp[dt, read]
 def allocL2(dt: data, input: exp[dt, write]): exp[dt, read]

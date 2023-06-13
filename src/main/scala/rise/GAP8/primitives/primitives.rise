@@ -1,9 +1,8 @@
 def gap8RunPrimitive: (cores: nat) -> {t: data} -> t -> t
 
-def gap8hwConv3x3: (bias: nat) -> {ih: nat} -> {iw: nat} ->
-    {oh: nat} -> {ow: nat} ->
-        {s: data} ->
-            ih.iw.s -> 3.3.s -> oh.ow.s
+def gap8hwConv3x3: {h: nat} -> {w: nat} -> {dt: data} ->
+    (bias: nat) ->
+        h.w.dt -> 3.3.dt -> (h-2).(w-2).dt
 
 def gap8hwConv5x5: (bias: nat) -> {ih: nat} -> {iw: nat} ->
     {oh: nat} -> {ow: nat} ->
@@ -23,9 +22,9 @@ def gap8hwConv7x4: (bias: nat) -> {ih: nat} -> {iw: nat} ->
 def copyToL1: {t: data} -> t -> t
 def copyToL2: {t: data} -> t -> t
 
-def copy2DOffsetToL1: {t: data} -> {n: nat} -> {m: nat}
-    -> (offsetX: nat) -> (offsetY: nat) -> (n.m.t)
-        -> (n + 2 * offsetY).(m + 2 * offsetX).t
+def copy2DOffsetToL1: {t: data} -> {h: nat} -> {w: nat}
+    -> (offsetH: nat) -> (offsetW: nat) -> (h.w.t)
+        -> (h + 2 * offsetH).(w + 2 * offsetW).t
 
 def allocL1: {t: data} -> t -> t
 def allocL2: {t: data} -> t -> t

@@ -1,5 +1,6 @@
 package apps
 
+import arithexpr.arithmetic.NamedVar
 import rise.GAP8.DSL.gap8Run
 import rise.GAP8.primitives.{allocL1, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3}
 import rise.core.DSL.HighLevelConstructs.{padCst2D, zipND}
@@ -158,7 +159,7 @@ object GAP8HwceDma {
         ArrayType(h, ArrayType(w, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
-          ArrayType(h - 2, ArrayType(w, i16)))((pic, hw, vw) =>
+          ArrayType(h + NamedVar("rest"), ArrayType(w, i16)))((pic, hw, vw) =>
         gap8Run(8)(
           hw |> copyToL1 |> allocL1 |> letf(l1hw =>
             vw |> copyToL1 |> allocL1 |> letf(l1vw =>

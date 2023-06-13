@@ -13,7 +13,7 @@ object copy2DOffsetToL1 extends Builder {
     override val name: String = "copy2DOffsetToL1"
     override def setType(ty: ExprType): Primitive = Primitive()(ty)
     override def primEq(obj: rise.core.Primitive): Boolean = obj.getClass == getClass
-    override def typeScheme: ExprType = impl { (t: DataType) => impl { (n: Nat) => impl { (m: Nat) => expl { (offsetX: Nat) => expl { (offsetY: Nat) => ArrayType(n, ArrayType(m, t)) ->: ArrayType(n + 2 * offsetY, ArrayType(m + 2 * offsetX, t)) } } } } }
+    override def typeScheme: ExprType = impl { (t: DataType) => impl { (h: Nat) => impl { (w: Nat) => expl { (offsetH: Nat) => expl { (offsetW: Nat) => ArrayType(h, ArrayType(w, t)) ->: ArrayType(h + 2 * offsetH, ArrayType(w + 2 * offsetW, t)) } } } } }
   }
   override def toString: String = "copy2DOffsetToL1"
   override def primitive: rise.core.Primitive = Primitive()()
