@@ -4,20 +4,17 @@ def gap8hwConv3x3: {h: nat} -> {w: nat} -> {dt: data} ->
     (bias: nat) ->
         h.w.dt -> 3.3.dt -> (h-2).(w-2).dt
 
-def gap8hwConv5x5: (bias: nat) -> {ih: nat} -> {iw: nat} ->
-    {oh: nat} -> {ow: nat} ->
-        {s: data} ->
-            ih.iw.s -> 5.5.s -> oh.ow.s
+def gap8hwConv5x5: {h: nat} -> {w: nat} -> {dt: data} ->
+    (bias: nat) ->
+        h.w.dt -> 5.5.dt -> (h-4).(w-4).dt
 
-def gap8hwConv7x7: (bias: nat) -> {ih: nat} -> {iw: nat} ->
-    {oh: nat} -> {ow: nat} ->
-        {s: data} ->
-            ih.iw.s -> 7.7.s -> oh.ow.s
+def gap8hwConv7x7: {h: nat} -> {w: nat} -> {dt: data} ->
+    (bias: nat) ->
+        h.w.dt -> 7.7.dt -> (h-6).(w-6).dt
 
-def gap8hwConv7x4: (bias: nat) -> {ih: nat} -> {iw: nat} ->
-    {oh: nat} -> {ow: nat} ->
-        {s: data} ->
-            ih.iw.s -> 4.7.s -> oh.ow.s
+def gap8hwConv7x4: {h: nat} -> {w: nat} -> {dt: data} ->
+    (bias: nat) ->
+        h.w.dt -> 4.7.dt -> (h-3).(w-6).dt
 
 def copyToL1: {t: data} -> t -> t
 def copyToL2: {t: data} -> t -> t

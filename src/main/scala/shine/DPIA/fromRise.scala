@@ -943,39 +943,39 @@ object fromRise {
       }
 
       case rgap8.gap8hwConv5x5() => fromType {
-        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
-          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
           depFun(NatKind, bias)(
-            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-              fun[ExpType](expT(ArrayType(5, ArrayType(5, s)), read), filter =>
-                gap8.FunConv5x5(w, h, bias, s, input, filter)
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(5, ArrayType(5, dt)), read), filter =>
+                gap8.FunConv5x5(h, w, dt, bias, input, filter)
               )
             )
           )
       }
 
       case rgap8.gap8hwConv7x7() => fromType {
-        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
-          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
           depFun(NatKind, bias)(
-            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-              fun[ExpType](expT(ArrayType(7, ArrayType(7, s)), read), filter =>
-                gap8.FunConv7x7(w, h, bias, s, input, filter)
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(7, ArrayType(7, dt)), read), filter =>
+                gap8.FunConv7x7(h, w, dt, bias, input, filter)
               )
             )
           )
       }
 
       case rgap8.gap8hwConv7x4() => fromType {
-        case nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), `read`) ->:
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
           expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
-          expT(ArrayType(oh, ArrayType(ow, _)), `write`)) =>
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
           depFun(NatKind, bias)(
-            fun[ExpType](expT(ArrayType(h, ArrayType(w, s)), read), input =>
-              fun[ExpType](expT(ArrayType(4, ArrayType(7, s)), read), filter =>
-                gap8.FunConv7x4(w, h, bias, s, input, filter)
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(4, ArrayType(7, dt)), read), filter =>
+                gap8.FunConv7x4(h, w, dt, bias, input, filter)
               )
             )
           )

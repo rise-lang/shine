@@ -12,28 +12,28 @@ def funConv3x3(
 ): exp[(h-2).(w-2).dt, write]
 
 def funConv5x5(
-    w: nat,
     h: nat,
-    bias: nat,
+    w: nat,
     dt: data,
+    bias: nat,
     in: exp[h.w.dt, read],
     filter: exp[5.5.dt, read]
 ): exp[(h-4).(w-4).dt, write]
 
 def funConv7x7(
-    w: nat,
     h: nat,
-    bias: nat,
+    w: nat,
     dt: data,
+    bias: nat,
     in: exp[h.w.dt, read],
     filter: exp[7.7.dt, read]
 ): exp[(h-6).(w-6).dt, write]
 
 def funConv7x4(
-    w: nat,
     h: nat,
-    bias: nat,
+    w: nat,
     dt: data,
+    bias: nat,
     in: exp[h.w.dt, read],
     filter: exp[4.7.dt, read]
 ): exp[(h-3).(w-6).dt, write]
@@ -42,7 +42,8 @@ def copyToL1(dt: data, input: exp[dt, read]): exp[dt, write]
 def copyToL2(dt: data, input: exp[dt, read]): exp[dt, write]
 
 def copy2DOffsetToL1(dt: data, h: nat, w: nat,
-    offsetH: nat, offsetW: nat, input: exp[h.w.dt, read]): exp[(h+2*offsetH).(w+2*offsetW).dt, write]
+    offsetH: nat, offsetW: nat,
+    input: exp[h.w.dt, read]): exp[(h+2*offsetH).(w+2*offsetW).dt, write]
 
 def allocL1(dt: data, input: exp[dt, write]): exp[dt, read]
 def allocL2(dt: data, input: exp[dt, write]): exp[dt, read]

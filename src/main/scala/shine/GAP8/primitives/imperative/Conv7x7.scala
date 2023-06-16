@@ -9,7 +9,7 @@ import rise.core.types.{ FunType => _, DepFunType => _, TypePlaceholder => _, Ty
 import rise.core.types.DataType._
 import rise.core.types.Kind.{ Identifier => _, _ }
 import shine.DPIA._
-final case class Conv7x7(val w: Nat, val h: Nat, val bias: Nat, val dt: DataType, val in: Phrase[ExpType], val filter: Phrase[ExpType], val out: Phrase[AccType]) extends CommandPrimitive {
+final case class Conv7x7(val h: Nat, val w: Nat, val dt: DataType, val bias: Nat, val in: Phrase[ExpType], val filter: Phrase[ExpType], val out: Phrase[AccType]) extends CommandPrimitive {
   assert {
     in :: expT(ArrayType(h, ArrayType(w, dt)), read)
     filter :: expT(ArrayType(56, dt), read)
@@ -17,5 +17,5 @@ final case class Conv7x7(val w: Nat, val h: Nat, val bias: Nat, val dt: DataType
     true
   }
   override val t: CommType = comm
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Conv7x7 = new Conv7x7(v.nat(w), v.nat(h), v.nat(bias), v.data(dt), VisitAndRebuild(in, v), VisitAndRebuild(filter, v), VisitAndRebuild(out, v))
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Conv7x7 = new Conv7x7(v.nat(h), v.nat(w), v.data(dt), v.nat(bias), VisitAndRebuild(in, v), VisitAndRebuild(filter, v), VisitAndRebuild(out, v))
 }

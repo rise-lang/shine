@@ -608,34 +608,34 @@ private class InferAccessAnnotation {
           ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
           nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
             ->: expT(ArrayType(3, ArrayType(3, dt)), read) ->:
-            expT(ArrayType(h-2, ArrayType(w-2, dt)), write)
+            expT(ArrayType(h - 2, ArrayType(w - 2, dt)), write)
           )
       }
 
       case rg8p.gap8hwConv5x5() => p.t match {
-        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, s: DataType)) ->:
-          ArrayType(_, ArrayType(_, _)) ->: ArrayType(oh, ArrayType(ow, _))) =>
-          nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), read)
-            ->: expT(ArrayType(5, ArrayType(5, s)), read) ->:
-            expT(ArrayType(oh, ArrayType(ow, s)), write)
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(5, ArrayType(5, dt)), read) ->:
+            expT(ArrayType(h - 4, ArrayType(w - 4, dt)), write)
           )
       }
 
       case rg8p.gap8hwConv7x7() => p.t match {
-        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, s: DataType)) ->:
-          ArrayType(_, ArrayType(_, _)) ->: ArrayType(oh, ArrayType(ow, _))) =>
-          nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), read)
-            ->: expT(ArrayType(7, ArrayType(7, s)), read) ->:
-            expT(ArrayType(oh, ArrayType(ow, s)), write)
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(7, ArrayType(7, dt)), read) ->:
+            expT(ArrayType(h - 6, ArrayType(w - 6, dt)), write)
           )
       }
 
       case rg8p.gap8hwConv7x4() => p.t match {
-        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, s: DataType)) ->:
-          ArrayType(_, ArrayType(_, _)) ->: ArrayType(oh, ArrayType(ow, _))) =>
-          nFunT(bias, expT(ArrayType(h, ArrayType(w, s)), read)
-            ->: expT(ArrayType(4, ArrayType(7, s)), read) ->:
-            expT(ArrayType(oh, ArrayType(ow, s)), write)
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(4, ArrayType(7, dt)), read) ->:
+            expT(ArrayType(h - 3, ArrayType(w - 6, dt)), write)
           )
       }
 

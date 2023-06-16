@@ -9,26 +9,26 @@ def conv3x3(h: nat,
             filter: exp[10.dt, read],
             out: acc[(h-2).(w-2).dt]): comm
 
-def conv5x5(w: nat,
-            h: nat,
-            bias: nat,
+def conv5x5(h: nat,
+            w: nat,
             dt: data,
-            in: exp[w.h.dt, read],
+            bias: nat,
+            in: exp[h.w.dt, read],
             filter: exp[26.dt, read],
             out: acc[(h-4).(w-4).dt]): comm
 
-def conv7x7(w: nat,
-            h: nat,
-            bias: nat,
+def conv7x7(h: nat,
+            w: nat,
             dt: data,
+            bias: nat,
             in: exp[h.w.dt, read],
             filter: exp[56.dt, read],
             out: acc[(h-6).(w-6).dt]): comm
 
-def conv7x4(w: nat,
-            h: nat,
-            bias: nat,
+def conv7x4(h: nat,
+            w: nat,
             dt: data,
+            bias: nat,
             in: exp[h.w.dt, read],
             filter: exp[28.dt, read],
             out: acc[(h-3).(w-6).dt]): comm
@@ -37,6 +37,7 @@ def dmaCopy{tt: shine.GAP8.DMATransferType}(dt: data, src: exp[dt, read], dst: a
 def memoryAlloc{mt: shine.GAP8.MemoryType}(dt: data, f: var[dt] -> comm): comm
 
 def dma2DOffsetCopy{tt: shine.GAP8.DMATransferType}(dt: data, h: nat, w: nat,
-    offsetH: nat, offsetW: nat, src: exp[n.m.dt, read], dst: acc[(h+2*offsetH).(w+2*offsetW).dt]): comm
+    offsetH: nat, offsetW: nat,
+    src: exp[h.w.dt, read], dst: acc[(h+2*offsetH).(w+2*offsetW).dt]): comm
 
 def memorySet(dt: data, value: exp[int, read], array: acc[dt]): comm
