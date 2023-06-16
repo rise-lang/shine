@@ -41,31 +41,31 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
-            generateCalls(shine.GAP8._3x3, w, h, bias, inC, filterC, outputC)
+            generateCalls(shine.GAP8._3x3, h, w, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv5x5(w, h, bias, dt, in, filter, out) =>
+    case Conv5x5(h, w, dt, bias, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
-            generateCalls(shine.GAP8._5x5, w, h, bias, inC, filterC, outputC)
+            generateCalls(shine.GAP8._5x5, h, w, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv7x7(w, h, bias, dt, in, filter, out) =>
+    case Conv7x7(h, w, dt, bias, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
-            generateCalls(shine.GAP8._7x7, w, h, bias, inC, filterC, outputC)
+            generateCalls(shine.GAP8._7x7, h, w, bias, inC, filterC, outputC)
           })
         })
       })
-    case Conv7x4(w, h, bias, dt, in, filter, out) =>
+    case Conv7x4(h, w, dt, bias, in, filter, out) =>
       out |> acc(env, Nil, (outputC: C.AST.Expr) => {
         in |> exp(env, Nil, (inC: C.AST.Expr) => {
           filter |> exp(env, Nil, (filterC: C.AST.Expr) => {
-            generateCalls(shine.GAP8._7x4, w, h, bias, inC, filterC, outputC)
+            generateCalls(shine.GAP8._7x4, h, w, bias, inC, filterC, outputC)
           })
         })
       })
@@ -158,26 +158,43 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
     }
 
     case MemorySet(dt, value, array) =>
-      C.AST.Comment("TODO: memset( ... )")
+      array |> acc(env, Nil, (arrayC: C.AST.Expr) => {
+        value |> exp(env, Nil, (valueC: C.AST.Expr) => {
+          C.AST.Block(Seq(
+            C.AST.Comment("TODO: memset( ... )"),
+            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memset"), Seq(
+
+            )))
+          ))
+        })
+      })
+
+
 
     case copy@Dma2DOffsetCopy(transferType) =>
-      C.AST.Comment("TODO: dma2dOffsetCopy( ... )")
+      copy.dst |> acc(env, CIntExpr(0) :: Nil, (dstC: C.AST.Expr) => {
+        copy.src |> exp(env, CIntExpr(0) :: Nil, (srcC: C.AST.Expr) => {
+          C.AST.Block(Seq(
+            C.AST.Comment("TODO: dma2dOffsetCopy( ... )")
+          ))
+        })
+      })
 
     case phrase => phrase |> super.cmd(env)
   }
 
-  private def generateCalls(fs: ConvolutionFilterSize, w: Nat, h: Nat, bias: Nat,
+  private def generateCalls(fs: ConvolutionFilterSize, h: Nat, w: Nat, bias: Nat,
                                        in: Expr, filter: Expr, output: Expr): Stmt = {
     C.AST.Block(Seq(
       hwceEnableCall,
       hwceGenericInitCall(fs),
       hwceSetYinModeCall(),
-      generateHwceCallFunction(fs, w, h, bias, in, filter, output),
+      generateHwceCallFunction(fs, h, w, bias, in, filter, output),
       hwceDisableCall
     ))
   }
 
-  private def generateHwceCallFunction(fs: ConvolutionFilterSize, w: Nat, h: Nat, bias: Nat,
+  private def generateHwceCallFunction(fs: ConvolutionFilterSize, h: Nat, w: Nat, bias: Nat,
                                        in: Expr, filter: Expr, output: Expr): Stmt = {
     fs match {
       case shine.GAP8._3x3 =>
