@@ -2,13 +2,14 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic
 import arithexpr.arithmetic.ArithExpr
+import arithexpr.arithmetic.ArithExpr.toInt
 import rise.core.types.DataType
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, PhrasePair}
 import shine.DPIA.Types.{CommType, ExpType}
-import shine.GAP8.ConvolutionFilterSize
+import shine.GAP8.{ConvolutionFilterSize, DMATransferType}
 import shine.GAP8.primitives.functional.Cast
 import shine.GAP8.primitives.imperative._
 import shine.{C, OpenMP}
@@ -161,21 +162,52 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       array |> acc(env, Nil, (arrayC: C.AST.Expr) => {
         value |> exp(env, Nil, (valueC: C.AST.Expr) => {
           C.AST.Block(Seq(
-            C.AST.Comment("TODO: memset( ... )"),
+            C.AST.Comment("memset"),
             C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("memset"), Seq(
-
+              arrayC,
+              valueC,
+              C.AST.Literal(shine.GAP8.AST.Types.sizeInBytes(dt).toString)
             )))
           ))
         })
       })
 
-
-
+    //rt_dma_memcpy_2d(unsigned int ext,
+    // unsigned int loc,
+    // unsigned short size,
+    // unsigned short stride,
+    // unsigned short length,
+    // rt_dma_dir_e dir, int merge, rt_dma_copy_t *copy);
+    // stride  2D stride, which is the number of bytes which are added to the beginning of the current line to switch to the next one. Must fit in 16 bits, i.e. must be less than 65536.
+    // length  2D length, which is the number of transfered bytes after which the DMA will switch to the next line. Must fit in 16 bits, i.e. must be less than 65536.
     case copy@Dma2DOffsetCopy(transferType) =>
       copy.dst |> acc(env, CIntExpr(0) :: Nil, (dstC: C.AST.Expr) => {
         copy.src |> exp(env, CIntExpr(0) :: Nil, (srcC: C.AST.Expr) => {
+          val (ext, loc) = transferType match {
+            case shine.GAP8.L1toL2 =>
+              (dstC, srcC)
+            case shine.GAP8.L2toL1 =>
+              (srcC, dstC)
+          }
+          val stride = toInt(copy.offsetH).toString
+          val length = toInt(copy.offsetW).toString
+          val size = shine.GAP8.AST.Types.sizeInBytes(copy.dt) * copy.h * copy.w
           C.AST.Block(Seq(
-            C.AST.Comment("TODO: dma2dOffsetCopy( ... )")
+            C.AST.Comment("dma2dOffsetCopy"),
+            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("rt_dma_memcpy_2d"), Seq(
+              ext,
+              loc,
+              C.AST.Literal(size.toString),
+              C.AST.Literal(stride),
+              C.AST.Literal(length),
+              C.AST.Literal(transferType.toGAP8string),
+              C.AST.Literal(0.toString),
+              C.AST.Literal("&L2toL1")
+            ))),
+            C.AST.ExprStmt(C.AST.FunCall(
+              C.AST.DeclRef("rt_dma_wait"),
+              Seq(C.AST.Literal("&L2toL1"))
+            ))
           ))
         })
       })
