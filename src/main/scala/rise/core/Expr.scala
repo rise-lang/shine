@@ -66,4 +66,7 @@ abstract class Primitive extends Expr {
     throw RenderException(s"the name of Primitive must be set by ${getClass}")
   override def setType(t: ExprType): Primitive =
     throw TypeException(s"setType method must be overridden by ${getClass}")
+
+  def toDPIA: shine.DPIA.Phrases.Phrase[_ <: shine.DPIA.Types.PhraseType] =
+    throw new Exception(s"must be overridden")
 }

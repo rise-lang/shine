@@ -139,15 +139,16 @@ object fromRise {
             Map(n, s, t, ai, f, e)))
       }
 
-      case core.mapSeq() => fromType {
-        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
-          expT(ArrayType(n, _), `read`) ->:
-          expT(ArrayType(_, _), `write`)
-        =>
-        fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
-          fun[ExpType](expT(n`.`s, read), e =>
-            MapSeq(unroll = false)(n, s, t, f, e)))
-      }
+      case core.mapSeq() => p.toDPIA
+//        fromType {
+//        case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
+//          expT(ArrayType(n, _), `read`) ->:
+//          expT(ArrayType(_, _), `write`)
+//        =>
+//        fun[ExpType ->: ExpType](expT(s, read) ->: expT(t, write), f =>
+//          fun[ExpType](expT(n`.`s, read), e =>
+//            MapSeq(unroll = false)(n, s, t, f, e)))
+//      }
 
       case core.mapStream() => fromType {
         case ( expT(s, `read`) ->: expT(t, `write`) ) ->:
