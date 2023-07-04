@@ -154,37 +154,126 @@ object GAP8HwceDma {
 
     val w: Nat = 320
     val h: Nat = 240
+    //Padded horizontally
     val tiledFixSizeDmaHwce: ToBeTyped[Rise] =
       fun(
         ArrayType(h, ArrayType(w, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
           ArrayType(3, ArrayType(3, i16)) ->:
-          ArrayType(h + NamedVar("rest"), ArrayType(w, i16)))((pic, hw, vw) =>
+          ArrayType(h - 2, ArrayType(w, i16)))((pic, hw, vw) =>
         gap8Run(8)(
           hw |> copyToL1 |> allocL1 |> letf(l1hw =>
             vw |> copyToL1 |> allocL1 |> letf(l1vw =>
                // pic |> padCst2D(1, 1, 0, 0)(li16(0)) |> slide(16)(14) |>
+                // pic: 240.320.i16
                 pic |> slide (16)(14) |>
+                // 14*16+16 => 240 (n: 16)
+                // 17.16.320.i16
                 mapSeq(fun(stripe =>
-                  stripe |> copy2DOffsetToL1(1)(1) |> allocL1 |> // letf(l1stripe =>
+                  // stripe: 16.320.i16
+                  stripe |> copy2DOffsetToL1(0)(1) |> allocL1 |> // letf(l1stripe =>
+
                     // l1stripe |> padCst2D(0, 0, 1, 1)(li16(0)) |>
                       // mapSeq(mapSeq(fun(x => x))) |> allocL1 |>
+                      // l1convstripe: 18.322.i16
+                    // if offsetH = 0 -> 16.322.i16
                       letf(l1convstripe =>
+                        // convresult(s): 16.320.i16
+                        // if offsetH =0 -> 14.320.i16
                         gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
                           gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
+                            // zipND: 16.320.(i16, i16)
                             zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
                               gapSqrt(add(mul(fst(elems))(fst(elems)))(mul(snd(elems))(snd(elems))))
+                              //copy back 16.320.i16
                             ))) |> allocL1 |> copyToL2
                           )
                         )
                       // )
                   )
+                  //(17*16).320.i16
+                  //offsetH -> 0 (17*14).320.i16
                 )) |> join
               )
             )
         )
       )
-    println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
+    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwce)))
+
+    //Padded vertically
+    val tiledFixSizeDmaHwcePaddedVertically: ToBeTyped[Rise] =
+      fun(
+        ArrayType(h, ArrayType(w, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(h - 2, ArrayType(w - 2, i16)))((pic, hw, vw) =>
+        gap8Run(8)(
+          hw |> copyToL1 |> allocL1 |> letf(l1hw =>
+            vw |> copyToL1 |> allocL1 |> letf(l1vw =>
+              // pic: 240.320.i16
+              pic |> slide(16)(14) |>
+                // 14*16+16 => 240 (n: 16)
+                // 17.16.320.i16
+                mapSeq(fun(stripe =>
+                  // stripe: 16.320.i16
+                  stripe |> copy2DOffsetToL1(1)(0) |> allocL1 |> // letf(l1stripe =>
+                    // l1convstripe 18.320.i16
+                    letf(l1convstripe =>
+                      // convresult(s): 16.318.i16
+                      gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
+                        gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
+                          // zipND: 16.318.(i16, i16)
+                          zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                            gapSqrt(add(mul(fst(elems))(fst(elems)))(mul(snd(elems))(snd(elems))))
+                            //copy back 16.318.i16
+                          ))) |> allocL1 |> take(15) |> drop(1) |> copyToL2
+                        )
+                      )
+                    )
+                  //(17*16).318.i16
+                )) |> join
+            )
+          )
+        )
+      )
+    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwcePaddedVertically)))
+
+    val tiledFixSizeDmaHwceNoPadding: ToBeTyped[Rise] =
+      fun(
+        ArrayType(h, ArrayType(w, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(h - 2, ArrayType(w - 2, i16)))((pic, hw, vw) =>
+        gap8Run(8)(
+          hw |> copyToL1 |> allocL1 |> letf(l1hw =>
+            vw |> copyToL1 |> allocL1 |> letf(l1vw =>
+              // pic: 240.320.i16
+              pic |> slide(16)(14) |>
+                // 14*16+16 => 240 (n: 16)
+                // 17.16.320.i16
+                mapSeq(fun(stripe =>
+                  // stripe: 16.320.i16
+                  stripe |> copyToL1 |> allocL1 |> // letf(l1stripe =>
+                    // l1convstripe 16.320.i16
+                    letf(l1convstripe =>
+                      // convresult(s): 14.318.i16
+                      gap8hwConv3x3(0)(l1convstripe, l1hw) |> allocL1 |> letf(hconvres =>
+                        gap8hwConv3x3(0)(l1convstripe, l1vw) |> allocL1 |> letf(vconvres =>
+                          // zipND: 14.318.(i16, i16)
+                          zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                            gapSqrt(add(mul(fst(elems))(fst(elems)))(mul(snd(elems))(snd(elems))))
+                            //copy back 14.318.i16
+                          ))) |> allocL1 |> copyToL2
+                        )
+                      )
+                    )
+                  //(17*14).318.i16
+                )) |> join
+            )
+          )
+        )
+      )
+    println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwceNoPadding)))
 
     val simpleNoSlide: ToBeTyped[Rise] =
       fun(
