@@ -6,7 +6,7 @@ import arithexpr.arithmetic.ArithExpr.toInt
 import rise.core.types.DataType
 import shine.C.Compilation.CodeGenerator.CIntExpr
 import shine.DPIA.Compilation.{CodeGenerator, TranslationContext}
-import shine.DPIA.Nat
+import shine.DPIA.{Nat, freshName}
 import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, PhrasePair}
 import shine.DPIA.Types.{CommType, ExpType}
 import shine.GAP8.{ConvolutionFilterSize, DMATransferType}
@@ -95,8 +95,8 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
               C.AST.DeclRef("rt_dma_memcpy"),
               Seq(
                 // TODO: Reference fetch via ampersand might be needed (ext,loc)
-                ext,
-                loc,
+                C.AST.Cast(C.AST.Type.u32, C.AST.UnaryExpr(C.AST.UnaryOperator.&, ext)),
+                C.AST.Cast(C.AST.Type.u32, C.AST.UnaryExpr(C.AST.UnaryOperator.&, loc)),
                 C.AST.Literal(size.toString),
                 C.AST.Literal(transferType.toGAP8string),
                 C.AST.Literal(0.toString),
@@ -189,17 +189,17 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
             case shine.GAP8.L2toL1 =>
               (srcC, dstC)
           }
-          val stride = toInt(copy.offsetH).toString
-          val length = toInt(copy.offsetW).toString
+          val stride = toInt(copy.offsetH) * shine.GAP8.AST.Types.sizeInBytes(copy.dt)
+          val length = toInt(copy.w) * shine.GAP8.AST.Types.sizeInBytes(copy.dt)
           val size = shine.GAP8.AST.Types.sizeInBytes(copy.dt) * copy.h * copy.w
           C.AST.Block(Seq(
             C.AST.Comment("dma2dOffsetCopy"),
             C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("rt_dma_memcpy_2d"), Seq(
-              ext,
-              loc,
+              C.AST.Cast(C.AST.Type.u32, C.AST.UnaryExpr(C.AST.UnaryOperator.&, ext)),
+              C.AST.Cast(C.AST.Type.u32, C.AST.UnaryExpr(C.AST.UnaryOperator.&, loc)),
               C.AST.Literal(size.toString),
-              C.AST.Literal(stride),
-              C.AST.Literal(length),
+              C.AST.Literal(stride.toString),
+              C.AST.Literal(length.toString),
               C.AST.Literal(transferType.toGAP8string),
               C.AST.Literal(0.toString),
               C.AST.Literal("&L2toL1")
@@ -213,6 +213,34 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
       })
 
     case phrase => phrase |> super.cmd(env)
+  }
+
+  //*(x401 + (i + 1) * (322) + (j + 1)) = *(e48 + (4480 * i_410) + i * 320 + j);
+  //TODO: Finish
+  private def generate2DLoopTransfer(
+                                      width: Int, height: Int,
+                                      src: C.AST.Expr, dst: C.AST.Expr,
+                                      offsetX: Int, offsetY: Int): Stmt = {
+    val firstVar = freshName("dma2d_")
+    val secondVar = freshName("dma2d_")
+    C.AST.ForLoop(
+      init = C.AST.DeclStmt(C.AST.VarDecl(firstVar, C.AST.Type.int, None)),
+      cond = C.AST.BinaryExpr(C.AST.Literal(firstVar), C.AST.BinaryOperator.<, C.AST.Literal(width.toString)),
+      increment = C.AST.Assignment(C.AST.DeclRef(firstVar), C.AST.BinaryExpr(C.AST.DeclRef(firstVar), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
+      body = C.AST.Block(Seq(
+        C.AST.ForLoop(
+          init = C.AST.DeclStmt(C.AST.VarDecl(secondVar, C.AST.Type.int, None)),
+          cond = C.AST.BinaryExpr(C.AST.Literal(secondVar), C.AST.BinaryOperator.<, C.AST.Literal(height.toString)),
+          increment = C.AST.Assignment(C.AST.DeclRef(secondVar), C.AST.BinaryExpr(C.AST.DeclRef(secondVar), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
+          body = C.AST.Block(Seq(
+            C.AST.ExprStmt(C.AST.Assignment(
+              C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.ArithmeticExpr(???)),
+              C.AST.UnaryExpr(C.AST.UnaryOperator.*, C.AST.ArithmeticExpr(???))
+            ))
+          ))
+        )
+      ))
+    )
   }
 
   private def generateCalls(fs: ConvolutionFilterSize, h: Nat, w: Nat, bias: Nat,
