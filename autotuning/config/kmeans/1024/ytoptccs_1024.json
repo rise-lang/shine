@@ -1,5 +1,5 @@
 {
-  "application_name": "bogp_cot_1024",
+  "application_name": "ytoptccs_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,19 +12,17 @@
   "hypermapper_mode": {
     "mode": "client-server"
   },
-  "log_file": "bogp_cot_1024.log",
+  "log_file": "ytoptccs_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "design_of_experiment": {
-    "doe_type": "random sampling",
-    "number_of_samples": 5
-  },
   "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
-  "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 145,
+  "optimization_method": "ytopt_ccs",
+  "multistart_hyperparameter_optimization_initial_points": 50,
+  "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 20,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -42,12 +40,13 @@
         1024
       ],
       "constraints": [
-        "tuned_gs0 >= 0",
         "tuned_gs0 % tuned_ls0 == 0"
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "parameter_default": 4,
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -65,12 +64,13 @@
         1024
       ],
       "constraints": [
-        "tuned_gs1 >= 0",
         "tuned_gs1 % tuned_ls1 == 0"
       ],
       "dependencies": [
         "tuned_ls1"
-      ]
+      ],
+      "parameter_default": 512,
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -88,7 +88,9 @@
         1024
       ],
       "constraints": [],
-      "dependencies": []
+      "dependencies": [],
+      "parameter_default": 2,
+      "transform": "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -110,7 +112,9 @@
       ],
       "dependencies": [
         "tuned_ls0"
-      ]
+      ],
+      "parameter_default": 512,
+      "transform": "log"
     }
   }
 }

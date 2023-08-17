@@ -15,7 +15,7 @@
   },
   "design_of_experiment": {
     "doe_type": "embedding random sampling",
-    "number_of_samples": 150
+    "number_of_samples": 20
   },
   "optimization_iterations": 0,
   "input_parameters": {
@@ -41,7 +41,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_gs1": {
       "parameter_type": "ordinal",
@@ -65,7 +65,7 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls0": {
       "parameter_type": "ordinal",
@@ -84,7 +84,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     },
     "tuned_ls1": {
       "parameter_type": "ordinal",
@@ -107,7 +107,7 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     }
   }
 }
