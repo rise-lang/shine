@@ -350,12 +350,39 @@ class mmGPU_exploration extends test_util.Tests {
       )
     )
 
+    val randomGraph = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "RandomGraph",
+        depth = 30, // is this ignored?
+        samples = 30, // does not scale well
+        repeat = 5
+      )
+    )
+
+    val tabuSearchPlain = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "TabuSearchPlain",
+        depth = 7, // is this ignored?
+        samples = 100,
+        repeat = 3
+      )
+    )
+
+    val simulatedAnnealingPlain = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "SimulatedAnnealingPlain",
+        depth = 7, // is this ignored?
+        samples = 100,
+        repeat = 3
+      )
+    )
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
-        depth = 4,
-        samples = 15,
+        depth = 7, // is this ignored? -> maybe not for tree window slide
+        samples = 30,
+        repeat = 5
       )
     )
 
@@ -363,16 +390,21 @@ class mmGPU_exploration extends test_util.Tests {
     val localSearchGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "LocalSearchGraph",
-        depth = 5, // seems to be ignored
-        samples = 15, // not ignored
-        repeat = 1
+        depth = 10, // seems to be ignored
+        samples = 100, // not ignored
+        repeat = 5
       )
     )
 
     val localSearchExp = scala.collection.immutable.Seq(
-      localSearchGraph,
-      exhaustive
-      // random?
+      //      random,
+      //      tabuSearchPlain,
+      //      simulatedAnnealingPlain,
+      //      exhaustive,
+      exhaustive,
+      //      localSearchGraph,
+      randomGraph
+      //       random?
       // tabu search? -> something more advanced
     )
 
@@ -400,7 +432,8 @@ class mmGPU_exploration extends test_util.Tests {
       lowering = lowering,
       strategies = rules, // is this ignored here?
       hostCode = Some(HostCode(init(N, N, N), compute, finish(N, N, N))),
-      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeChildrenParentChoice),
+      //      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeLeafsWindowChoice),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
       rewriteFunction = None,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(rules)),
       //      rewriteFunction = Some(
