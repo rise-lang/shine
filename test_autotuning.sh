@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sbt "testOnly apps.autotuning.testAutotuning"
+sbt "testOnly apps.autotuning.testTuning"

@@ -62,6 +62,7 @@ class testTuning extends test_util.Tests {
   test("run autotuning test based on kmeans") {
 
     val inputSize: Int = 1 << 10
+    println("inputSize: " + inputSize)
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -73,7 +74,7 @@ class testTuning extends test_util.Tests {
 
     val defaultConfiguration: Map[Nat, Nat] = Map(
       TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (16: Nat),
+      TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
     )
