@@ -37,7 +37,9 @@ package object autotune {
                    executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
-                   tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev"
+                   tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev",
+                   tunerPath: String = "hypermapper/hypermapper.py",
+                   tunerPython: String = "python3.8"
                   )
 
   // necessary host-code parts to execute the program
@@ -336,7 +338,8 @@ package object autotune {
     //    print("hypermapper: " + hypermapper2)
     //    val hypermapper = os.proc("python3", "/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py", configFile).spawn()
 
-    val hypermapper = os.proc("python3", tuner.tunerRoot + "/hypermapper/optimizer.py", configFile).spawn()
+    val hypermapper = os.proc(tuner.tunerPython, tuner.tunerRoot + "/" + tuner.tunerPath, configFile).spawn()
+    //    val hypermapper = os.proc("python3.8", "/home/jo/development/tuning/baco/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
     // main tuning loop
@@ -710,7 +713,7 @@ package object autotune {
     }
 
     // plot results using hypermapper
-    (s"python3 ${tuner.tunerRoot}/hypermapper/plot_optimization_results.py " +
+    (s"${tuner.tunerPython} ${tuner.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
       "-j " + configFile + " " +
       "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
       "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
