@@ -71,15 +71,26 @@ class kmeansTuning extends test_util.Tests {
        |
        |  float* in_features = hostBufferSync(ctx, features, F * P * sizeof(float), HOST_WRITE);
        |  for (int i = 0; i < F * P ; i++) {
-       |      // in_features[i] = (float)(rand() % 100);
        |      in_features[i] = (float)(i+1);
        |  }
        |
        |  float* in_clusters = hostBufferSync(ctx, clusters, C * F * sizeof(float), HOST_WRITE);
-       |    for (int i = 0; i < F * P ; i++) {
-       |      // in_clusters[i] = (float)(rand() % 100);
+       |    for (int i = 0; i < C * F ; i++) {
        |        in_features[i] = (float)(i+1);
        |    }
+       |
+       |// init checking
+       |  FILE *fptr;
+       |
+       |  if ((fptr = fopen("autotuning/gold/kmeans_${f}_${c}_${f}.csv","r")) == NULL){
+       |    return 133;
+       |   }
+       |  float gold[P];
+       |
+       |  for(int i = 0; i<P; i++){
+       |    fscanf(fptr, "%f,", &gold[i]);
+       |  }
+       |  fclose(fptr);
        |
        |  deviceBufferSync(ctx, features, F * P * sizeof(float), DEVICE_READ);
        |  deviceBufferSync(ctx, clusters, C * F * sizeof(float), DEVICE_READ);
@@ -88,6 +99,14 @@ class kmeansTuning extends test_util.Tests {
   val compute =
     s"""
        |    fun_init_run(ctx, output, P, C, F, features, clusters);
+       |
+       |  float* out = hostBufferSync(ctx, output, P * sizeof(float), HOST_READ);
+       |  for(int i = 0; i < P; i++){
+       |    if(out[i] != gold[i]){
+       |      return 132;
+       |    }
+       |  }
+       |
        |""".stripMargin
 
   val finish =
@@ -99,6 +118,23 @@ class kmeansTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
+
+
+  test("create output file") {
+
+    val P = 1024
+    val C = 10
+    val F = 34
+
+    // compute kmeans
+    val gold_expression = util.gen.c.function.asStringFromExpr(apps.kmeans.kmeansSeq)
+    // wrap host code around
+
+    // write C to file
+    //    val result = C.mkString(",")
+    //    util.writeToPath(s"autotuning/gold/kmeans_${P}_${C}_${F}.csv", result)
+
+  }
 
   ignore("execute kmeans") {
     val params: Map[Nat, Nat] = Map(
