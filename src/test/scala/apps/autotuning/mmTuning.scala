@@ -1,6 +1,6 @@
 package apps.autotuning
 
-import apps.mm.mmNVIDIAWithParams
+import apps.mm.{mmAMD, mmNVIDIAWithParams}
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.core._
 import rise.core.types._
@@ -10,6 +10,7 @@ import rise.autotune
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.autotune._
 import apps.autotuning._
+import util.gen
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -26,17 +27,6 @@ class mmTuning extends test_util.Tests {
                 mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
               ))))))
 
-  val mmTuning_4096: ToBeTyped[Expr] =
-    tuningParam("v3", RangeAdd(1, 4096, 1), (v3: Nat) =>
-      tuningParam("v4", RangeAdd(1, 4096, 1), (v4: Nat) =>
-        tuningParam("v5", RangeAdd(1, 4096, 1), (v5: Nat) =>
-          tuningParam("v6", RangeAdd(1, 4096, 1), (v6: Nat) =>
-            tuningParam("v7", RangeAdd(1, 4096, 1), (v7: Nat) =>
-              tuningParam("v8", RangeAdd(1, 4096, 1), (v8: Nat) =>
-                mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
-              ))))))
-
-
   val mm: Expr =
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
@@ -45,18 +35,13 @@ class mmTuning extends test_util.Tests {
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
           ))))
 
-  val mm_4096: Expr =
-    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning_4096)
-          ))))
-
-
   // scalastyle:off
   val init: (Int, Int, Int) => String = (N, M, O) => {
     s"""
+       |
+       |#include <stdio.h>
+       |#include <stdlib.h>
+       |
        |const int N = ${N};
        |const int M = ${M};
        |const int O = ${O};
@@ -69,35 +54,107 @@ class mmTuning extends test_util.Tests {
        |
        |float* inA = hostBufferSync(ctx, inputA, N * M * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N * M ; i++) {
-       |  //inA[i] = (float)(rand());
-       |  inA[i] = (float)(i+1);
+       |  inA[i] = (float)((i % 100) + 1);
        |}
        |
        |float* inB = hostBufferSync(ctx, inputB, M * O * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < M * O; i++) {
-       |  //inB[i] = (float)(rand());
-       |  inB[i] = (float)(i+1);
+       |  inB[i] = (float)((i % 100) + 1);
        |}
+       |
+       |// init checking
+       |FILE *fptr;
+       |
+       |if ((fptr = fopen("mm_${N}_${M}_${O}.csv","r")) == NULL){
+       |  return 133;
+       |}
+       |float gold[N*O];
+       |
+       |for(int i = 0; i<N*O; i++){
+       |  fscanf(fptr, "%f,", &gold[i]);
+       |}
+       |fclose(fptr);
        |
        |""".stripMargin
   }
 
   val compute =
     s"""
-       |fun_run(ctx, &fun, outputC, M, N, O, inputA, inputB);
+       |    fun_run(ctx, &fun, outputC, M, N, O, inputA, inputB);
+       |
+       |    float* outC = hostBufferSync(ctx, outputC, N * O * sizeof(float), HOST_READ);
+       |    for(int i = 0; i < N*O; i++){
+       |      if(outC[i] != gold[i]){
+       |          return 132;
+       |      }
+       |    }
+       |
        |""".stripMargin
 
-  val finish =
+  val finish: String =
     s"""
-       |// TODO: could check output here
        |
-       |destroyBuffer(ctx, inputA);
-       |destroyBuffer(ctx, inputB);
-       |destroyBuffer(ctx, outputC);
+       |  destroyBuffer(ctx, inputA);
+       |  destroyBuffer(ctx, inputB);
+       |  destroyBuffer(ctx, outputC);
        |""".stripMargin
   // scalastyle:on
 
-  ignore("mm example config") {
+
+  test("create output file") {
+
+    val N = 1024
+
+    val A: Array[Int] = Range(0, N * N).toArray.map(i => (i % 100) + 1)
+    val B: Array[Int] = Range(0, N * N).toArray.map(i => (i % 100) + 1)
+    val C = Array.fill(N * N)(0)
+
+    for (i <- 0 until N) {
+      for (j <- 0 until N) {
+        var sum = 0
+        for (k <- 0 until N) {
+          sum += A(i * N + k) * B(k * N + j)
+        }
+        C(i * N + j) = sum
+      }
+    }
+
+    //    //
+    //    println("A: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + A(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("B: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + B(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("C: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + C(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+
+
+    // write C to file
+    val result = C.mkString(",")
+    util.writeToPath(s"autotuning/gold/mm_${N}_${N}_${N}.csv", result)
+
+  }
+
+  // use this for testing while setting up artifact
+  test("mm example config") {
     val mm: Expr =
       tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
         tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
@@ -180,168 +237,6 @@ class mmTuning extends test_util.Tests {
     assert(result2.runtime.isRight)
   }
 
-  // standard hypermapper
-  ignore("mm tuning 128") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(64, 128, 128), compute, finish),
-      inputSizes = Seq(64, 128, 128),
-      name = "rs_cot_128",
-      output = "autotuning/mm_128",
-      timeouts = Timeouts(5000, 5000, 1000),
-      configFile = None,
-      hmConstraints = false
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: " + bestSample)
-  }
-
-  ignore("mm tuning 1024 with generated config file") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
-            ))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 10,
-      name = "rs_cot_1024",
-      output = "autotuning/mm_1024",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hmConstraints = true,
-      runtimeStatistic = Minimum
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-  }
-
-  // hierarchical hypermapper
-  ignore("mm tuning 128 hierarchical") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 128, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 64, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 128, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 64, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
-            ))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(64, 128, 128), compute, finish),
-      inputSizes = Seq(64, 128, 128),
-      samples = 100,
-      name = "rs_cot_128",
-      output = "autotuning/mm_128",
-      timeouts = Timeouts(5000, 5000, 1000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = Some("autotuning/config/mm/rs_cot_128.json"),
-      hmConstraints = true
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: " + bestSample)
-    println("runtime: " + bestSample.get.runtime)
-  }
-
-  // we do not support hierarchical hypermapper
-  ignore("mm tuning 1024 with generated config file hierarchical") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
-            ))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      inputSizes = Seq(1024, 1024, 1024),
-      samples = 10,
-      name = "rs_cot_1024",
-      output = "autotuning/mm_1024",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hmConstraints = true,
-      runtimeStatistic = Minimum
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-    println("runtime: \n" + bestSample.get.runtime)
-  }
-
-  // we do not support hierarchical hypermapper
-  ignore("mm tuning 4096 with generated config file hierarchical") {
-    val mm: Expr =
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-            tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-              wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning_4096)
-            ))))
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(4096, 4096, 4096), compute, finish),
-      inputSizes = Seq(4096, 4096, 4096),
-      samples = 10,
-      name = "rs_cot_4096",
-      output = "autotuning/mm_4096",
-      timeouts = Timeouts(codegenerationTimeout = 10000, compilationTimeout = 10000, executionTimeout = 20000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None, // we don't inject usage of local memory as constraints - many configs fail
-      hmConstraints = true,
-      runtimeStatistic = Minimum
-    )
-
-    val tuningResult = autotune.search(tuner)(mm)
-
-    println("tuningResult: \n")
-    tuningResult.samples.foreach(elem => println(elem))
-
-    val bestSample = autotune.getBest(tuningResult.samples)
-    println("bestSample: \n" + bestSample)
-    println("runtime: \n" + bestSample.get.runtime)
-  }
-
-
   ignore("execute expert configuration") {
     // execute config with "expert parameter configuration"
     val mm: Expr =
@@ -403,29 +298,6 @@ class mmTuning extends test_util.Tests {
 
   }
 
-  ignore("tune mm 128") {
-    val inputSize: Int = 128
-
-    val configs = Seq(
-      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json"
-    )
-
-    runExperiment(
-      name = s"mm_${inputSize}",
-      configFiles = configs,
-      iterations = 5,
-      s"autotuning/mm_${inputSize}",
-      mm,
-      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
-      Seq(inputSize, inputSize, inputSize)
-    )
-  }
-
   test("tune mm 1024") {
     val inputSize: Int = 1024
 
@@ -477,29 +349,4 @@ class mmTuning extends test_util.Tests {
       default = Some(defaultConfiguration)
     )
   }
-
-  ignore("tune mm 4096") {
-    val inputSize: Int = 4096
-
-    val configs = Seq(
-      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
-    )
-
-    runExperiment(
-      name = s"mm_${inputSize}",
-      configFiles = configs,
-      iterations = 2,
-      s"autotuning/mm_${inputSize}",
-      mm_4096,
-      HostCode(init(inputSize, inputSize, inputSize), compute, finish),
-      Seq(inputSize, inputSize, inputSize)
-    )
-  }
-
-
 }
