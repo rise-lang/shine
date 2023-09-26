@@ -90,11 +90,22 @@ class scalTuning extends test_util.Tests {
        |
        |float* m = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
        |for (int i = 0; i < N; i++) {
-       |  // m[i] = (float)(rand()) * 10.0f;
-       |  m[i] = 1.0f;
+       |  m[i] = (float)((i % 100) + 1);
        |}
        |
-       |int alpha = 10;
+       |float alpha = 10;
+       |// init checking
+       |FILE *fptr;
+       |
+       |if ((fptr = fopen("autotuning/gold/scal_${N}.csv","r")) == NULL){
+       |  return 133;
+       |}
+       |float gold[N];
+       |
+       |for(int i = 0; i<N; i++){
+       |  fscanf(fptr, "%f,", &gold[i]);
+       |}
+       |fclose(fptr);
        |
        |// synchronize before entering timed section
        |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
@@ -106,21 +117,69 @@ class scalTuning extends test_util.Tests {
     s"""
        |fun_run(ctx, &fun, output, N, input, alpha);
        |waitFinished(ctx);
+       |
+       |float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |  for(int i = 0; i < N; i++){
+       |    if(out[i] != gold[i]){
+       |      return 132;
+       |    }
+       |}
+       |
        |""".stripMargin
 
   val finish =
     s"""
-       |// TODO: could check output here
-       |// use given gold expression?
-       |
-       |//float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-       |//for(int i = 0; i < N; i++){
-       | // printf("%f \\n", outputScal[i]);
-       |//}
        |
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
+
+  test("create output file") {
+
+    //    val N = 1024
+    val N = 1 << 25
+    println("N: " + N)
+
+    val A: Array[Int] = Range(0, N).toArray.map(i => (i % 100) + 1)
+    val alpha: Float = 10f
+    val C = Array.fill(N)(0.0f)
+
+    for (i <- 0 until N) {
+      C(i) = A(i) * alpha
+    }
+
+    //    //
+    //    println("A: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + A(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("B: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + B(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("C: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + C(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+
+
+    // write C to file
+    val result = C.mkString(",")
+    util.writeToPath(s"autotuning/gold/scal_${N}.csv", result)
+  }
 
 
   def executeStencilDefault(e: Expr) = {
