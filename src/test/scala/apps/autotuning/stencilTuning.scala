@@ -45,6 +45,17 @@ class stencilTuning extends test_util.Tests {
         )))
     ))
   }
+
+  val basicStencilSeq: Expr = {
+    depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
+      input |>
+        padCst2D(padSize)(lf32(0.0f)) |>
+        slide2D(stencilSize, 1) |>
+        mapSeq(mapSeq(fun(nbh =>
+          join(nbh) |> reduceSeq(add)(lf32(0.0f))
+        )))
+    ))
+  }
   //
   //  val partitionedStencil: Expr = {
   //    depFun((n: Nat) => fun(ArrayType(n, ArrayType(n, f32)))(input =>
@@ -97,6 +108,18 @@ class stencilTuning extends test_util.Tests {
        |for (int i = 0; i < N * N; i++) {
        |  m[i] = (float)(rand())/(float)(RAND_MAX) * 10.0f;
        |}
+       |  // init checking
+       |  FILE *fptr;
+       |
+       |  if ((fptr = fopen("autotuning/gold/stencil_${N}_${N}.csv","r")) == NULL){
+       |    return 133;
+       |  }
+       |  float gold[N*N];
+       |
+       |  for(int i = 0; i<N*N; i++){
+       |    fscanf(fptr, "%f,", &gold[i]);
+       |  }
+       |  fclose(fptr);
        |
        |// synchronize before entering timed section
        |deviceBufferSync(ctx, input, N * N * sizeof(float), DEVICE_READ);
@@ -108,6 +131,14 @@ class stencilTuning extends test_util.Tests {
     s"""
        |fun_run(ctx, &fun, output, N, input);
        |waitFinished(ctx);
+       |
+       |  float* out = hostBufferSync(ctx, output, N * N * sizeof(float), HOST_READ);
+       |  for(int i = 0; i < N*N; i++){
+       |    if(out[i] != gold[i]){
+       |      return 132;
+       |    }
+       |  }
+       |
        |""".stripMargin
 
   val finish =
@@ -118,6 +149,29 @@ class stencilTuning extends test_util.Tests {
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
+
+
+  test("create output file") {
+
+    val N = 1024
+
+
+    // apps.stencil basicstencil2D
+
+    // use default tp values to compute output of stencil
+
+    val gold_expression = function.asStringFromExpr(basicStencilSeq)
+
+    println("gold_expression: " + gold_expression)
+
+    // wrap host code around
+
+
+    // write C to file
+    //    val result = C.mkString(",")
+    //    util.writeToPath(s"stencil/gold/stencil_${N}.csv", result)
+
+  }
 
 
   def executeStencilDefault(e: Expr) = {
