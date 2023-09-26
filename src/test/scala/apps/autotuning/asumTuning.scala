@@ -215,35 +215,94 @@ class asumTuning extends test_util.Tests {
        |
        |  float* in = hostBufferSync(ctx, input, N * sizeof(float), HOST_WRITE);
        |  for (int i = 0; i < N ; i++) {
-       |    in[i] = (float)(1);
+       |    in[i] = (float)((i % 100) + 1);
        |  }
+       |
+       |  // init checking
+       |  FILE *fptr;
+       |
+       |  if ((fptr = fopen("autotuning/gold/asum_${N}.csv","r")) == NULL){
+       |    return 133;
+       |  }
+       |  float gold[N];
+       |
+       |  for(int i = 0; i<N; i++){
+       |    fscanf(fptr, "%f,", &gold[i]);
+       |  }
+       |  fclose(fptr);
        |
        |  deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
        |""".stripMargin
   }
   val compute =
     s"""
-       |    fun_init_run(ctx, output, N, input);
+       |  fun_init_run(ctx, output, N, input);
+       |
+       |
+       |
+       |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |    for(int i = 0; i < N; i++){
+       |      if(out[i] != gold[i]){
+       |        return 132;
+       |      }
+       |    }
+       |
        |""".stripMargin
 
   val finish =
     s"""
-       |  // could add error checking
-       | // deviceBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |  //float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ | DEVICE_WRITE);
-       |  //printf("N: %d \\n", N);
-       |  //for (int i = 0; i < N ; i++) {
-       |  //printf("in: %f \\n", in[i]);
-       |  //printf("out: %f \\n", out[i]);
-       | //}
-       |
-       |
-       |
        |  destroyBuffer(ctx, input);
        |  destroyBuffer(ctx, output);
        |""".stripMargin
   // scalastyle:on
 
+
+  test("create output file") {
+
+    //    val N = 1024
+    val N = 1 << 25
+
+    val input: Array[Int] = Range(0, N).toArray.map(i => (i % 100) + 1)
+
+    var sum: Int = 0
+    for (i <- 0 until N) {
+      sum += scala.math.abs(input(i))
+    }
+
+    // use map and reduce?
+
+    //    //
+    //    println("A: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + A(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("B: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + B(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+    //    println()
+    //
+    //    println("C: ")
+    //    for (i <- 0 until N) {
+    //      for (j <- 0 until N) {
+    //        print(" " + C(i * N + j) + " ")
+    //      }
+    //      println()
+    //    }
+
+    // write C to file
+    val result = Seq(sum).mkString(",")
+    util.writeToPath(s"autotuning/gold/asum_${N}.csv", result)
+
+  }
 
   ignore("print asum") {
 
