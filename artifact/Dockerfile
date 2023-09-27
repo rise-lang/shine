@@ -4,8 +4,6 @@ FROM  openjdk:11
 #ENV SCALA_VERSION 2.13.3
 #ENV SBT_VERSION 1.3.13
 
-# load opencl image e.g. AMD SDK
-
 # install opencl headers and clang
 RUN \
   apt-get update && \
@@ -41,3 +39,13 @@ RUN \
 ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
 ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
 ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
+
+# install shine
+RUN \
+    cd /home && \
+    git clone https://github.com/rise-lang/shine.git && \
+    cd shine && \
+    ./setup.sh && \
+    sbt compile
+
+# install hypermapper
