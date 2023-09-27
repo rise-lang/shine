@@ -12,7 +12,7 @@ RUN \
   apt-get install -y build-essential && \
   apt-get install -y opencl-headers && \
   apt-get install -y clang && \
-  apt-get install clinfo
+  apt-get install -y clinfo
 
 # install java and sbt
 RUN \
@@ -25,3 +25,19 @@ RUN \
   chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg && \
   apt-get update && \
   apt-get install -y sbt
+
+
+# Copy AMD APP SDK into container
+COPY AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+
+# Install OpenCL
+RUN \
+  cd /data && \
+  tar xf AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 && \
+  ./AMD-APP-SDK-v3.0.130.136-GA-linux64.sh -- -s true -a yes && \
+  export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
+  clinfo
+
+ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
+ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
