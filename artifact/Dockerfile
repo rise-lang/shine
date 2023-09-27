@@ -8,6 +8,7 @@ FROM  openjdk:11
 RUN \
   apt-get update && \
   apt-get install -y build-essential && \
+  apt-get install -y cmake && \
   apt-get install -y opencl-headers && \
   apt-get install -y clang && \
   apt-get install -y clinfo
@@ -48,4 +49,12 @@ RUN \
     ./setup.sh && \
     sbt compile
 
-# install hypermapper
+# install hypermapper \
+RUN \
+  cd /home && \
+  git clone https://github.com/baco-authors/baco.git && \
+  cd baco && \
+  apt-get install -y pip && \
+  pip install --upgrade pip && \
+  pip install -e . && \
+  sh install_baselines.sh
