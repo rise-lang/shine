@@ -4,12 +4,15 @@ FROM  openjdk:11
 #ENV SCALA_VERSION 2.13.3
 #ENV SBT_VERSION 1.3.13
 
+# load opencl image e.g. AMD SDK
+
 # install opencl headers and clang
 RUN \
   apt-get update && \
   apt-get install -y build-essential && \
   apt-get install -y opencl-headers && \
-  apt-get install -y clang
+  apt-get install -y clang && \
+  apt-get install clinfo
 
 # install java and sbt
 RUN \
