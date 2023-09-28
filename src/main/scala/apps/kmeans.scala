@@ -79,6 +79,23 @@ object kmeans {
     ))
   ))
 
+
+  val kmeansSeq: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
+    (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
+  )((features, clusters) =>
+    features |> transpose |> mapSeq(fun(feature =>
+      clusters |> reduceSeq(
+        fun(tuple => fun(cluster => {
+          val dist = zip(feature)(cluster) |>
+            reduceSeq(update)(lf32(0.0f))
+          testF(dist)(tuple)
+        }))
+      )(
+        makePair(cast(lf64(3.40282347e+38)) :: f32)(makePair(l(0))(l(0)))
+      ) |> select
+    ))
+  ))
+
   //  val kmeansOcl2: ToBeTyped[Expr] = {
   def kmeansOcl2(sp0: Nat): ToBeTyped[Expr] = {
     depFun((p: Nat, c: Nat, f: Nat) => fun(
