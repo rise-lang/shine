@@ -5,13 +5,28 @@ FROM  openjdk:11
 #ENV SBT_VERSION 1.3.13
 
 # install opencl headers and clang
+#RUN \
+#  apt-get update && \
+#  apt-get install -y build-essential && \
+#  apt-get install -y cmake && \
+#  apt-get install -y opencl-headers && \
+#  apt-get install -y clang && \
+#  apt-get install -y clinfo
+
+
 RUN \
   apt-get update && \
-  apt-get install -y build-essential && \
-  apt-get install -y cmake && \
-  apt-get install -y opencl-headers && \
-  apt-get install -y clang && \
-  apt-get install -y clinfo
+  apt-get install -y \
+	build-essential \
+	vim \
+  	cmake \
+	mpich \
+  	opencl-headers \
+	ocl-icd-libopencl1 \
+	ocl-icd-opencl-dev \
+ 	clang \
+  	clinfo
+
 
 # install java and sbt
 RUN \
@@ -37,10 +52,6 @@ RUN \
   export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
   clinfo
 
-ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
-ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
-ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
-
 # install shine
 RUN \
     cd /home && \
@@ -49,12 +60,22 @@ RUN \
     ./setup.sh && \
     sbt compile
 
-# install hypermapper \
+# install hypermapper/baco
+# warning: does not occur in built docker container?
 RUN \
   cd /home && \
   git clone https://github.com/baco-authors/baco.git && \
   cd baco && \
   apt-get install -y pip && \
   pip install --upgrade pip && \
-  pip install -e . && \
-  sh install_baselines.sh
+  pip install -e . &&
+
+ENV PYTHONPATH="/home/baco"
+
+#RUN \
+#	cd /home/baco && \
+#	bash install_baselines.sh
+
+ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
+ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
