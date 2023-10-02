@@ -283,8 +283,8 @@ package object autotuning {
         val command: String = {
           tunerConfig.tunerPython + " " +
             tunerConfig.tunerRoot + "/" +
-            tunerConfig.tunerPlot + " "
-          s"-j ${config} " +
+            tunerConfig.tunerPlot + " " +
+            s"-j ${config} " +
             "-i " +
             folders +
             "-l " +
@@ -298,7 +298,7 @@ package object autotuning {
         val commandExp: String = expertConfiguration match {
           case Some(value) =>
             tunerConfig.tunerPython + " " +
-              tunerConfig.tunerRoot + " " +
+              tunerConfig.tunerRoot + "/" +
               tunerConfig.tunerPlot + " " +
               s"-j ${config} " +
               "-i " +
@@ -318,7 +318,7 @@ package object autotuning {
         val commandDefault: String = defaultConfiguration match {
           case Some(value) =>
             tunerConfig.tunerPython + " " +
-              tunerConfig.tunerRoot + " " +
+              tunerConfig.tunerRoot + "/" +
               tunerConfig.tunerPlot + " " +
               s"-j ${config} " +
               "-i " +
