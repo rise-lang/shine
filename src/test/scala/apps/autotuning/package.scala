@@ -13,6 +13,14 @@ import scala.sys.process._
 
 package object autotuning {
 
+  object tunerConfig {
+    val tunerRoot: String = "/home/baco"
+    val tunerPath: String = "baco/run.py"
+    val tunerPlot: String = "baco/plot/plot_optimization_results.py"
+    val tunerPython: String = "python3.9"
+  }
+
+
   def runExperiment(
                      name: String,
                      configFiles: Seq[String],
@@ -216,6 +224,8 @@ package object autotuning {
                ) = {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
+    println("run: " + version)
+
     // todo pass strategy mode through
     val tuner = Tuner(
       hostCode = hostCode,
@@ -233,7 +243,7 @@ package object autotuning {
       executor = executor,
       saveToFile = true,
       disableChecking = disableCheking,
-        feasibility = feasibility
+      feasibility = feasibility
     )
 
     autotune.search(tuner)(e)
@@ -270,9 +280,11 @@ package object autotuning {
       // plot
       val commands: (String, String, String, Option[Double], Option[Double]) => Seq[String] = (config, folders, output, expertConfiguration, defaultConfiguration) => {
 
-        val command: String =
-            "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
-            s"-j ${config} " +
+        val command: String = {
+          tunerConfig.tunerPython + " " +
+            tunerConfig.tunerRoot + "/" +
+            tunerConfig.tunerPlot + " "
+          s"-j ${config} " +
             "-i " +
             folders +
             "-l " +
@@ -281,10 +293,13 @@ package object autotuning {
             "-log " +
             "--y_label \"Log Runtime(ms)\" " +
             s"--title ${name} "
+        }
 
         val commandExp: String = expertConfiguration match {
           case Some(value) =>
-             "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
+            tunerConfig.tunerPython + " " +
+              tunerConfig.tunerRoot + " " +
+              tunerConfig.tunerPlot + " " +
               s"-j ${config} " +
               "-i " +
               folders +
@@ -302,7 +317,9 @@ package object autotuning {
 
         val commandDefault: String = defaultConfiguration match {
           case Some(value) =>
-              "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
+            tunerConfig.tunerPython + " " +
+              tunerConfig.tunerRoot + " " +
+              tunerConfig.tunerPlot + " " +
               s"-j ${config} " +
               "-i " +
               folders +
