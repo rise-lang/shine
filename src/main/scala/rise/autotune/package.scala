@@ -37,9 +37,9 @@ package object autotune {
                    executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
-                   tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev",
-                   tunerPath: String = "hypermapper/hypermapper.py",
-                   tunerPython: String = "python3.8"
+                   tunerRoot: String = "/home/baco",
+                   tunerPath: String = "baco/run.py",
+                   tunerPython: String = "python3.9"
                   )
 
   // necessary host-code parts to execute the program
@@ -144,7 +144,7 @@ package object autotune {
     // generate json if necessary
     tuner.configFile match {
       case None =>
-        println("generate configuration file")
+        //        println("generate configuration file")
 
         val filePath = tuner.saveToFile match {
           case true => tuner.output + "/" + tuner.name + ".json"
@@ -161,11 +161,11 @@ package object autotune {
             new File(filePath), false))
         file.write(configFileString)
         file.close()
-      case _ => println("use given configuration file")
+      case _ => // println("use given configuration file")
     }
 
-    println("parameters: \n" + parameters)
-    println("constraints: \n" + constraints)
+    //    println("parameters: \n" + parameters)
+    //    println("constraints: \n" + constraints)
 
     // compute function value as result for hypermapper
     val computeSample: (Array[String], Array[String]) => Sample = (header, parametersValues) => {
@@ -326,20 +326,12 @@ package object autotune {
       )
     }
 
-    println("configFile: " + configFile)
-
-    // check if hypermapper is installed
-    //    ("which hypermapper" !!)
+    //    println("configFile: " + configFile)
 
     // check if config file exists
     assert(os.isFile(configFile))
 
-    //    val hypermapper2 = os.proc("python3", "/home/jo/hypermapper_dev/hypermapper/hypermapper.py", configFile)
-    //    print("hypermapper: " + hypermapper2)
-    //    val hypermapper = os.proc("python3", "/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py", configFile).spawn()
-
     val hypermapper = os.proc(tuner.tunerPython, tuner.tunerRoot + "/" + tuner.tunerPath, configFile).spawn()
-    //    val hypermapper = os.proc("python3.8", "/home/jo/development/tuning/baco/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
     // main tuning loop
@@ -349,19 +341,19 @@ package object autotune {
       hypermapper.stdout.readLine() match {
         case null =>
           done = true
-          println("End of HyperMapper -- error")
+        //          println("End of HyperMapper -- error")
         case "End of HyperMapper" =>
           done = true
-          println("End of HyperMapper -- done")
+        //          println("End of HyperMapper -- done")
         case "Best point found:" =>
           val headers = hypermapper.stdout.readLine()
           val values = hypermapper.stdout.readLine()
           hypermapper.stdout.readLine() // consume empty line
-          println(s"Best point found\nHeaders: ${headers}Values: $values")
+        //          println(s"Best point found\nHeaders: ${headers}Values: $values")
         case request if request.contains("warning") =>
           println(s"[Hypermapper] $request")
         case request if request.contains("Request") =>
-          println(s"Request: $request")
+          //          println(s"Request: $request")
           val numberOfEvalRequests = request.split(" ")(1).toInt
           // read in header
           val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
@@ -377,11 +369,11 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
-            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
+            //            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
-            println(sample.runtime)
-            println(sample)
-            println()
+            //            println(sample.runtime)
+            //            println(sample)
+            //            println()
             i += 1
             // append sample to Samples
             samples += sample
@@ -395,9 +387,6 @@ package object autotune {
                   case `-1` => "-1"
                   case IntMax => "2147483647"
                 }
-
-                //                println("parametersValues: ")
-                //                parametersValues.foreach(println)
 
                 val add = tuner.feasibility match {
                   case true => {
@@ -428,8 +417,6 @@ package object autotune {
 
                 response += add
 
-              //                println("response: \n" + response)
-              //                println("response: \n" + response)
               case Right(value) =>
 
                 // make sure to response int values
@@ -461,8 +448,6 @@ package object autotune {
                     }\n"
 
                 }
-                //                response += s"${parametersValues.map(x => x.toFloat.toInt).mkString(",")},${value.value},True\n"
-
                 response += add
             }
           }
@@ -473,8 +458,6 @@ package object autotune {
         case message => println("message: " + message)
       }
     }
-
-    println("tuning finished")
 
     val tuningResult = TuningResult(samples.toSeq, tuner)
     saveTuningResult(tuningResult)
@@ -569,7 +552,7 @@ package object autotune {
         val logfile = try {
           parseFromJson(tuner.configFile.get, "log_file")
         } catch {
-          case e: NoSuchElementException => "hypermapper_logfile.log"
+          case e: NoSuchElementException => "tuner_logfile.log"
         }
 
         // move logfile to output folder
@@ -596,7 +579,7 @@ package object autotune {
         val logfile = try {
           parseFromJson(tuner.configFile.get, "log_file")
         } catch {
-          case e: NoSuchElementException => "hypermapper_logfile.log"
+          case e: NoSuchElementException => "tuner_logfile.log"
         }
 
         ("rm " + logfile !!)
@@ -625,17 +608,6 @@ package object autotune {
     }
 
     // write header
-    //    var header = ""
-    //    tuningResult.samples.head.parameters.foreach {
-    //      case (id: NatIdentifier, _: Nat) => header += id.name + ","
-    //      case _ => throw Exception("This should not happen")
-    //    }
-    //
-    //    tuningResult.samples.head.parameters.foreach(param => {
-    //      header += param._1 + ", "
-    //    })
-
-    // write header
     var header = tuningResult.samples.head.parameters.map(elem => elem._1).mkString("", ",", ",")
 
     header += "runtime" + ","
@@ -657,8 +629,6 @@ package object autotune {
           case PermutationParameter(value) => content += value.mkString("\"(", ",", ")\"") + ","
         }
       })
-
-      //              content += param._2.eval.toString + ","
 
       // write runtime
       sample.runtime match {
@@ -713,7 +683,10 @@ package object autotune {
     }
 
     // plot results using hypermapper
-    (s"${tuner.tunerPython} ${tuner.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
+
+
+
+    (s"${tuner.tunerPython} ${tuner.tunerRoot}/${tuner.tunerPath.split("/")(0)}/plot/plot_optimization_results.py " +
       "-j " + configFile + " " +
       "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
       "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
@@ -798,13 +771,6 @@ package object autotune {
         }
         case y => value = value ++ scala.collection.Seq(y)
       }
-
-
-      //        .map { case (h, p) =>
-      //        NatIdentifier(h) -> (p.toFloat.toInt: Nat)
-      //      }.toMap
-
-      //      println("value: " + value)
 
       output = output ++ scala.collection.Seq(value.mkString(","))
     }
