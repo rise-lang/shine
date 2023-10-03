@@ -121,13 +121,13 @@ class scalTuning extends test_util.Tests {
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
+      TuningParameter("ls0") -> (256: Nat),
       TuningParameter("ls1") -> (1: Nat),
       TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("gs1") -> (1: Nat),
-      TuningParameter("s0") -> (1: Nat),
+      TuningParameter("s0") -> (512: Nat),
       TuningParameter("s1") -> (1: Nat),
-      TuningParameter("vec") -> (1: Nat)
+      TuningParameter("vec") -> (2: Nat)
     )
 
     // expert configuration
