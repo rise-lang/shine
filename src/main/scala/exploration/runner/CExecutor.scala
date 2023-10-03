@@ -36,6 +36,15 @@ case class CExecutor(
   var errorLevel: ExplorationErrorLevel = LoweringError
   var samples = 0
 
+  // logger to avoid printing of stderr
+  val logger = new ProcessLogger {
+    def out(s: => String): Unit = s
+
+    def err(s: => String): Unit = s
+
+    def buffer[T](f: => T): T = f
+  }
+
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
@@ -553,8 +562,11 @@ int main(int argc, char** argv) {
 
     // todo: make this configable using json file
     // compile
+
+    //    val logger = ProcessLogger(_, _)
     //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
-    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !! (logger)
+    //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
 
