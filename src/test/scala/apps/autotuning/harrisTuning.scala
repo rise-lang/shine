@@ -19,7 +19,7 @@ import util.ExecuteOpenCL.{includes, libDirs, libs}
 import util.gen
 import util.gen.c.function
 
-class harrisCornerDetectionTuning extends test_util.Tests {
+class harrisTuning extends test_util.Tests {
 
   // hostcode
   val init: (Int, Int) => String = (Ho, Wo) => {
