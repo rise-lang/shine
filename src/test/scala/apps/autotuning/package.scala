@@ -145,8 +145,6 @@ package object autotuning {
                 ): Option[Double] = {
 
 
-    println("config: \n" + config)
-
     val strategy_result = strategyMode.get(e, config._1, config._2)
 
     val e_replaced = strategy_result match {
