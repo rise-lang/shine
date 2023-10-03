@@ -1,5 +1,5 @@
 {
-  "application_name": "bo_cot_1024",
+  "application_name": "bolog_cot_1024",
   "optimization_objectives": [
     "runtime"
   ],
@@ -12,7 +12,7 @@
   "baco_mode": {
     "mode": "client-server"
   },
-  "log_file": "bo_cot_1024.log",
+  "log_file": "bolog_cot_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
@@ -23,7 +23,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 139,
+  "optimization_iterations": 49,
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 10,
   "lengthscale_prior": {

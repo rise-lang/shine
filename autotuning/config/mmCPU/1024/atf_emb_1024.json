@@ -16,7 +16,7 @@
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
   "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "optimization_iterations": 100,
   "input_parameters": {
     "tuned_tile51": {
       "parameter_type": "ordinal",

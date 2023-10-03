@@ -19,9 +19,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "ytopt_ccs",
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
-  "optimization_iterations": 150,
+  "optimization_iterations": 60,
   "input_parameters": {
     "tuned_sp0": {
       "parameter_type": "ordinal",

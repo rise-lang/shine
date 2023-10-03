@@ -90,7 +90,7 @@ class stencilTuning extends test_util.Tests {
       s"autotuning/config/stencil/1024/rs_cot_1024.json",
       s"autotuning/config/stencil/1024/rs_emb_1024.json",
       s"autotuning/config/stencil/1024/atf_emb_1024.json",
-      s"autotuning/config/stencil/1024/bo_cot_1024.json",
+      s"autotuning/config/stencil/1024/bolog_cot_1024.json",
       s"autotuning/config/stencil/1024/ytoptccs_1024.json"
     )
 

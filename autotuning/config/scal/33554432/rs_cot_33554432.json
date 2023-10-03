@@ -17,7 +17,7 @@
   "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 150
+    "number_of_samples": 60
   },
   "models": {
     "model": "gaussian_process"

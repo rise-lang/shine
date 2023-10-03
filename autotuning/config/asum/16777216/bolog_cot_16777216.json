@@ -30,7 +30,7 @@
     ]
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 144,
+  "optimization_iterations": 54,
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 10,
   "input_parameters": {

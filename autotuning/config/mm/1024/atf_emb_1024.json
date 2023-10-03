@@ -19,7 +19,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "optimization_iterations": 120,
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 10,
   "input_parameters": {

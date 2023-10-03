@@ -21,7 +21,7 @@
   "optimization_method": "ytopt_ccs",
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 10,
-  "optimization_iterations": 150,
+  "optimization_iterations": 100,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",
