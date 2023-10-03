@@ -105,10 +105,10 @@ case class CExecutor(
   //  override def plot(): Unit = ???
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
-    println("[Executor] : strategy length: " + solution.strategies.size)
-    solution.strategies.foreach(elem => {
-      println("strategy: " + elem)
-    })
+    //    println("[Executor] : strategy length: " + solution.strategies.size)
+    //    solution.strategies.foreach(elem => {
+    ////      println("strategy: " + elem)
+    //    })
     // initialize error level
     errorLevel = LoweringError
 
@@ -137,7 +137,7 @@ case class CExecutor(
         // execute
         try {
           errorLevel = ExecutionError
-          println("execute: " + hashProgram(solution.expression))
+          //          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
@@ -146,7 +146,7 @@ case class CExecutor(
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
                 gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
-                println("use new gold with runtime: " + best.get)
+                //                println("use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.toDouble)
           }
@@ -157,8 +157,8 @@ case class CExecutor(
 
         } catch {
           case e: Throwable =>
-            println("error handling")
-            println("e: " + e)
+            //            println("error handling")
+            //            println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
@@ -554,13 +554,13 @@ int main(int argc, char** argv) {
     // todo: make this configable using json file
     // compile
     //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
-          s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
 
     //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
-//    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -O3 -lm -fopenmp" !!
     //    s"clang $src -o $bin -O3 -lm -fopenmp" !!
