@@ -17,7 +17,7 @@
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 139,
+  "optimization_iterations": 109,
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 5,
   "lengthscale_prior": {
