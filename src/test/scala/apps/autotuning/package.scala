@@ -159,16 +159,20 @@ package object autotuning {
       case Right(value) => Some(value)
     }
 
-
     // create output directory
     (s"mkdir -p ${output}/manual_configs" !!)
 
     // write result into file
     val path = output + "/manual_configs/" + file + ".csv"
-    util.writeToPath(path, configResult.get.toString)
+
+    configResult match {
+      case Some(value) =>
+        util.writeToPath(path, value.toString)
+      case None =>
+        util.writeToPath(path, "2147483647") // intmax
+    }
 
     configResult
-
   }
 
   def runConfig(
@@ -202,7 +206,14 @@ package object autotuning {
 
     // write result into file
     val path = output + "/manual_configs/" + file + ".csv"
-    util.writeToPath(path, configResult.get.toString)
+
+    configResult match {
+      case Some(value) =>
+        util.writeToPath(path, value.toString)
+      case None =>
+        util.writeToPath(path, "2147483647") // intmax
+    }
+
 
     // todo print config as well
 
