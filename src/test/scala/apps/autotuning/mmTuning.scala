@@ -116,7 +116,7 @@ class mmTuning extends test_util.Tests {
       name = s"MM_GPU",
       configFiles = configs,
       iterations = 30,
-      output = s"artifact/results/MM_GPU",
+      output = s"artifact/results/rise/MM_GPU",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),

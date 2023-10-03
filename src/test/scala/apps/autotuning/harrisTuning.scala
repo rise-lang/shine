@@ -111,7 +111,7 @@ class harrisTuning extends test_util.Tests {
       name = "Harris_GPU",
       configFiles = configs,
       iterations = 30,
-      output = "artifact/results/Harris_GPU",
+      output = "artifact/results/rise/Harris_GPU",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),

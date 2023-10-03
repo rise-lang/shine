@@ -153,7 +153,7 @@ class scalTuning extends test_util.Tests {
       name = s"Scal_GPU",
       configFiles = configs,
       iterations = 30,
-      output = s"artifact/results/Scal_GPU",
+      output = s"artifact/results/rise/Scal_GPU",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),
