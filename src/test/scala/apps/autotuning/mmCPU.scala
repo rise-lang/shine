@@ -135,7 +135,7 @@ class mmCPU extends test_util.Tests {
 
     val strategyTail: Strategy[Rise] = reordering match {
       case List(1, 2, 3, 4, 5, 6) =>
-        println("list ist id don't vectorize")
+        //        println("list ist id don't vectorize")
         elevate.core.strategies.basic.id[Rise]
       case _ =>
         (vectorize(vec) `@` innermost(isFullyAppliedMap))
@@ -147,12 +147,10 @@ class mmCPU extends test_util.Tests {
       strategy.apply(e)
     } catch {
       case e: Throwable => {
-        println("e: " + e)
+        //                println("e: " + e)
         Failure(strategy)
       }
     }
-
-    println("hallo hilfe!")
 
     result match {
       case Success(expression) => Right(expression)
@@ -168,12 +166,6 @@ class mmCPU extends test_util.Tests {
     val split = tuningParameterMap.get("tuned_split100").get
     val reordering = permutationMap.get("tuned_reorder").get.map(x => x + 1)
     val vec = tuningParameterMap.get("tuned_vec101").get
-
-    println("tileX: " + tileX)
-    println("tileY: " + tileY)
-    println("split: " + split)
-    println("reordering: " + reordering.mkString(", "))
-    println("vec: " + vec)
 
     //    val tileX = 32
     //    val tileY = 32
@@ -276,15 +268,15 @@ class mmCPU extends test_util.Tests {
 
     val rewrittenMM = strategy.apply(mm).get
 
-    println("rewrittenMM: " + rewrittenMM)
+    //    println("rewrittenMM: " + rewrittenMM)
 
     val params = autotune.constraints.collectParameters(rewrittenMM)
     val constraints = autotune.constraints.collectConstraints(rewrittenMM, params)
-
-    println("params:")
-    params.foreach(println)
-    println("constraints:")
-    constraints.foreach(println)
+    //
+    //    println("params:")
+    //    params.foreach(println)
+    //    println("constraints:")
+    //    constraints.foreach(println)
 
     val tuner = Tuner(
       inputSizes = Seq(1024),
@@ -294,7 +286,7 @@ class mmCPU extends test_util.Tests {
 
     val configFile = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
 
-    println("configFile: \n" + configFile)
+    //    println("configFile: \n" + configFile)
 
 
   }
