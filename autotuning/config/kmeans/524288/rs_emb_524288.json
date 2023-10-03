@@ -23,8 +23,6 @@
     "model": "gaussian_process"
   },
   "optimization_iterations": 0,
-  "multistart_hyperparameter_optimization": true,
-  "hyperparameter_optimization_iterations": 10,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
