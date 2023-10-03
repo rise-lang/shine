@@ -21,9 +21,11 @@ RUN \
 	vim \
   	cmake \
 	mpich \
+    ruby \
+    pkg-config \
   	opencl-headers \
-	ocl-icd-libopencl1 \
-	ocl-icd-opencl-dev \
+#	ocl-icd-libopencl1 \
+#	ocl-icd-opencl-dev \
  	clang \
   	clinfo
 
@@ -52,6 +54,10 @@ RUN \
   export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
   clinfo
 
+ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
+ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
+
 # install shine
 RUN \
     cd /home && \
@@ -61,21 +67,18 @@ RUN \
     sbt compile
 
 # install hypermapper/baco
-# warning: does not occur in built docker container?
+
 RUN \
   cd /home && \
   git clone https://github.com/baco-authors/baco.git && \
   cd baco && \
   apt-get install -y pip && \
   pip install --upgrade pip && \
-  pip install -e . &&
+  pip install -e .
 
+RUN export PYTHONPATH="/home/baco"
 ENV PYTHONPATH="/home/baco"
 
 #RUN \
 #	cd /home/baco && \
 #	bash install_baselines.sh
-
-ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
-ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
-ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
