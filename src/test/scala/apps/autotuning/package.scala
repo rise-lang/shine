@@ -106,7 +106,7 @@ package object autotuning {
               runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor, disableChecking, feasibility)
             } catch {
               case e: Throwable => println("tuning failed for configFile: " + configFile)
-                println("e: " + e)
+              //                println("e: " + e)
             }
           )
 
