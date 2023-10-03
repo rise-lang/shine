@@ -66,62 +66,6 @@ class stencilTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-
-  ignore("execute acoustic stencil") {
-
-    val O: Int = 1024
-    val N: Int = 1024
-    val M: Int = 64
-
-    val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(stencilMSS)
-
-    val result = rise.autotune.execution.execute(
-      expression = eOcl,
-      hostCode = HostCode(init(O, N, M), compute, finish),
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
-    )
-
-    println("result: \n" + result)
-  }
-
-  ignore("run acoustic stencil experiment") {
-
-    val expertConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (8: Nat),
-      TuningParameter("gs0") -> (256: Nat),
-      TuningParameter("gs1") -> (128: Nat),
-    )
-
-    val defaultConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("ls1") -> (1: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-    )
-
-    // todo add configs here
-    val configs = Seq(
-      s"autotuning/config/acoustic/128_64_32/rs_cot_128_64_32.json"
-    )
-
-    runExperiment(
-      name = s"acoustic_128_64_32",
-      configFiles = configs,
-      iterations = 10,
-      output = s"experiment/results/acoustic_128_64_32",
-      e = acoustic,
-      hostCode = HostCode(init(O, N, M), compute, finish),
-      inputSizes = Seq(O, N, M), // check whether this is replaced
-      plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration)
-    )
-  }
-
   test("run acoustic stencil experiment 1024") {
 
     val O: Int = 1024
