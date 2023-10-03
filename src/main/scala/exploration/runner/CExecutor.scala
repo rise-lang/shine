@@ -151,7 +151,7 @@ case class CExecutor(
             case _ => best = Some(returnValue.toDouble)
           }
 
-          println("result: " + returnValue)
+          //          println("result: " + returnValue)
           performanceValue = Some(returnValue.toDouble)
           errorLevel = ExecutionSuccess
 
@@ -162,37 +162,37 @@ case class CExecutor(
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
-                println("timeout")
+                //                println("timeout")
                 errorLevel = ExecutionTimeout
                 performanceValue = None
               case 11 =>
-                println("execution crashed")
+                //                println("execution crashed")
                 System.exit(-1)
                 errorLevel = ExecutionError
                 performanceValue = None
               case 255 =>
-                println("execution failed")
+                //                println("execution failed")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                println("execution failed with segmentation fault")
+                //                println("execution failed with segmentation fault")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case _ =>
-                println("execution failed with unknown error")
+                //                println("execution failed with unknown error")
                 errorLevel = ExecutionFail
                 performanceValue = None
             }
         }
       } catch {
         case e: Throwable =>
-          println("compiling error: " + e)
+        //          println("compiling error: " + e)
       }
 
     } catch {
       case e: Throwable =>
-        println("code gen error")
-        println("e: " + e)
+        //        println("code gen error")
+        //        println("e: " + e)
         code = "code generation error "
     }
 
