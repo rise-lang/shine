@@ -4,16 +4,7 @@ FROM  openjdk:11
 #ENV SCALA_VERSION 2.13.3
 #ENV SBT_VERSION 1.3.13
 
-# install opencl headers and clang
-#RUN \
-#  apt-get update && \
-#  apt-get install -y build-essential && \
-#  apt-get install -y cmake && \
-#  apt-get install -y opencl-headers && \
-#  apt-get install -y clang && \
-#  apt-get install -y clinfo
-
-
+# install prerequisites
 RUN \
   apt-get update && \
   apt-get install -y \
@@ -24,11 +15,8 @@ RUN \
     ruby \
     pkg-config \
   	opencl-headers \
-#	ocl-icd-libopencl1 \
-#	ocl-icd-opencl-dev \
  	clang \
   	clinfo
-
 
 # install java and sbt
 RUN \
@@ -41,7 +29,6 @@ RUN \
   chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg && \
   apt-get update && \
   apt-get install -y sbt
-
 
 # Copy AMD APP SDK into container
 COPY AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
@@ -58,16 +45,7 @@ ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_
 ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
 ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
 
-# install shine
-RUN \
-    cd /home && \
-    git clone https://github.com/rise-lang/shine.git && \
-    cd shine && \
-    ./setup.sh && \
-    sbt compile
-
-# install hypermapper/baco
-
+# install baco
 RUN \
   cd /home && \
   git clone https://github.com/baco-authors/baco.git && \
@@ -76,9 +54,22 @@ RUN \
   pip install --upgrade pip && \
   pip install -e .
 
-RUN export PYTHONPATH="/home/baco"
-ENV PYTHONPATH="/home/baco"
+# install baselines
+RUN \
+	cd /home/baco && \
+	bash install_baselines.sh
 
-#RUN \
-#	cd /home/baco && \
-#	bash install_baselines.sh
+# set environment variables
+ENV PYTHONPATH="/home/baco:/home/baco/extra_packages/CCS/bindings/python/"
+ENV LD_LIBRARY_PATH="/usr/local/lib":${LD_LIBRARY_PATH}
+
+# install shine
+RUN \
+    cd /home && \
+    git clone https://github.com/rise-lang/shine.git && \
+    cd shine && \
+    ./setup.sh && \
+    sbt compile && \
+    git checkout autotuning_benchmarks_artifact && \
+    ./setup.sh
+

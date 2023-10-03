@@ -48,7 +48,8 @@ RUN \
 #  export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
 #  clinfo
 
-# install hypermapper/baco - does not occur in docker? 
+
+# install baco
 RUN \
   cd /home && \
   git clone https://github.com/baco-authors/baco.git && \
@@ -57,11 +58,13 @@ RUN \
   pip install --upgrade pip && \
   pip install -e .
 
+# install baselines
 RUN \
 	cd /home/baco && \
 	bash install_baselines.sh
 
-ENV PYTHONPATH="=/home/baco:/home/baco/extra_packages/CCS/bindings/python/
+# set environment variables
+ENV PYTHONPATH="/home/baco:/home/baco/extra_packages/CCS/bindings/python/"
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
 RUN \
@@ -74,7 +77,9 @@ RUN \
     git clone https://github.com/rise-lang/shine.git && \
     cd shine && \
     ./setup.sh && \
-    sbt compile
+    sbt compile && \
+    git checkout autotuning_benchmarks_artifact && \
+    ./setup.sh
 
 # warning: Command fails - Solution:(ssh vs. https)
 # build transform ... fails 
