@@ -3,7 +3,7 @@
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "rs_emb_1024.log",
