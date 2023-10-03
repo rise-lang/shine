@@ -1,5 +1,5 @@
 {
-  "application_name": "rs_emb_16777216",
+  "application_name": "rs_emb",
   "optimization_objectives": [
     "runtime"
   ],

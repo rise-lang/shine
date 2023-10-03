@@ -233,8 +233,6 @@ package object autotuning {
                ) = {
     val version = rise.autotune.configFileGeneration.parseFromJson(configFile, "application_name")
 
-    println("run: " + version)
-
     // todo pass strategy mode through
     val tuner = Tuner(
       hostCode = hostCode,

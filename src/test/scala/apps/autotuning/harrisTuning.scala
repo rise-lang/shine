@@ -108,10 +108,10 @@ class harrisTuning extends test_util.Tests {
     )
 
     runExperiment(
-      name = "harris_1024",
+      name = "Harris_GPU",
       configFiles = configs,
       iterations = 30,
-      output = "experiment/results/paper/harris_1024",
+      output = "artifact/results/Harris_GPU",
       harrisOCLTuning,
       HostCode(init(1024, 1024), compute, finish),
       inputSizes = Seq(1024, 1024),

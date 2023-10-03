@@ -250,10 +250,10 @@ class mmCPU extends test_util.Tests {
     )
 
     runExperiment(
-      name = s"mmCPU_${inputSize}",
+      name = s"MM_CPU",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/mmCPU_${inputSize}",
+      output = s"artifact/results/MM_CPU",
       mm,
       HostCode("", "", ""), // ignore this (we execute manually)
       Seq(inputSize, inputSize, inputSize),

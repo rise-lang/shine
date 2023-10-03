@@ -150,10 +150,10 @@ class asumTuning extends test_util.Tests {
     )
 
     runExperiment(
-      name = s"asum_${inputSize}",
+      name = s"Asum_GPU",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/asum_${inputSize}",
+      output = s"artifact/results/Asum_GPU",
       asum,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),

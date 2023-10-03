@@ -150,10 +150,10 @@ class scalTuning extends test_util.Tests {
     )
 
     runExperiment(
-      name = s"scal_${inputSize}",
+      name = s"Scal_GPU",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/scal_${inputSize}",
+      output = s"artifact/results/Scal_GPU",
       e = scalOcl,
       hostCode = HostCode(init(inputSize2), compute, finish),
       inputSizes = Seq(inputSize2),

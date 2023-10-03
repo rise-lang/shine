@@ -113,10 +113,10 @@ class mmTuning extends test_util.Tests {
     )
 
     runExperiment(
-      name = s"mm_${inputSize}",
+      name = s"MM_GPU",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/mm_${inputSize}",
+      output = s"artifact/results/MM_GPU",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),
