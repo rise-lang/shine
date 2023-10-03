@@ -57,8 +57,16 @@ RUN \
   pip install --upgrade pip && \
   pip install -e .
 
-# export pythonpath with baco
-ENV PYTHONPATH="/home/baco"
+RUN \
+	cd /home/baco && \
+	bash install_baselines.sh
+
+ENV PYTHONPATH="=/home/baco:/home/baco/extra_packages/CCS/bindings/python/
+ENV LD_LIBRARY_PATH="/usr/local/lib"
+
+RUN \
+    export PYTHONPATH=/home/baco:/home/baco/extra_packages/CCS/bindings/python && \
+    export LD_LIBRARY_PATH=/usr/local/lib
 
 # install shine
 RUN \
@@ -68,12 +76,8 @@ RUN \
     ./setup.sh && \
     sbt compile
 
-
-# warning: Command fails - Solution:(ssh vs. https) 
+# warning: Command fails - Solution:(ssh vs. https)
 # build transform ... fails 
-#RUN \
-	#cd /home/baco && \
-	#bash install_baselines.sh
 
 #ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
 #ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
