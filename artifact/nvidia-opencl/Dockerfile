@@ -37,18 +37,6 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-# Copy AMD APP SDK into container
-#COPY AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-
-# Install OpenCL
-#RUN \
-#  cd /data && \
-#  tar xf AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 && \
-#  ./AMD-APP-SDK-v3.0.130.136-GA-linux64.sh -- -s true -a yes && \
-#  export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
-#  clinfo
-
-
 # install baco
 RUN \
   cd /home && \
@@ -67,10 +55,6 @@ RUN \
 ENV PYTHONPATH="/home/baco:/home/baco/extra_packages/CCS/bindings/python/"
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
-RUN \
-    export PYTHONPATH=/home/baco:/home/baco/extra_packages/CCS/bindings/python && \
-    export LD_LIBRARY_PATH=/usr/local/lib
-
 # install shine
 RUN \
     cd /home && \
@@ -80,28 +64,3 @@ RUN \
     sbt compile && \
     git checkout autotuning_benchmarks_artifact && \
     ./setup.sh
-
-# warning: Command fails - Solution:(ssh vs. https)
-# build transform ... fails 
-
-#ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
-#ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
-#ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
-#   37  apt install pkg-config
-#   40  apt install pkg
-#   41  apt install pkgconf
-#   48  apt install pkg-config
-#   50  apt install pkg-config
-#   55  pkg-config --exists --print-errors physfs ruby-2.1
-#   56  pkg-config --exists --print-errors physfs ruby-2.7
-#   57  pkg-config --exists --print-errors ruby-2.7
-#   64  pkg-config --exists --print-errors ruby-2.7
-#   71  pkg-config --exists --print-errors ruby-2.7
-#   72  pkg-config --exists --print-errors ruby-2.7
-#   74  gem install pkg-config
-#   78  apt install ruby-pkg-config
-#   81  gem install ruby-pkg-conifg
-#   82  gem install ruby-pkg-config
-#   83  pkg-config --version
-#   84  pkg-config
-#  115  history | grep 'pkg'
