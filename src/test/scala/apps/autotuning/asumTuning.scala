@@ -85,7 +85,7 @@ class asumTuning extends test_util.Tests {
           ))))
   }
 
-  val asum_0: Expr = {
+  val asum: Expr = {
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
         wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(nvidiaDerived1)))
@@ -120,9 +120,8 @@ class asumTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  test("tune asum 0") {
+  test("tune asum") {
     val inputSize: Int = 2 << 23
-    val asum: String = "asum_0"
 
     // expert configuration
     val expertConfiguration: Map[Nat, Nat] = Map(
@@ -143,19 +142,19 @@ class asumTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      s"autotuning/config/${asum}/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
+      s"autotuning/config/asum/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      s"autotuning/config/asum/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      s"autotuning/config/asum/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
+      s"autotuning/config/asum/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      s"autotuning/config/asum/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
     )
 
     runExperiment(
-      name = s"${asum}_${inputSize}",
+      name = s"asum_${inputSize}",
       configFiles = configs,
       iterations = 30,
-      output = s"experiment/results/paper/${asum}_${inputSize}",
-      asum_0,
+      output = s"experiment/results/paper/asum_${inputSize}",
+      asum,
       HostCode(init(inputSize), compute, finish),
       Seq(inputSize),
       plotOnly = false,

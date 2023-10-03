@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "rs_emb_1024.log",
@@ -19,13 +19,12 @@
     "doe_type": "embedding random sampling",
     "number_of_samples": 150
   },
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_iterations": 0,
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
+  "multistart_hyperparameter_optimization": true,
+  "hyperparameter_optimization_iterations": 10,
   "input_parameters": {
     "tuned_v3": {
       "parameter_type": "ordinal",

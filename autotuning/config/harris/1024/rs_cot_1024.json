@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "rs_cot_1024.log",
@@ -19,7 +19,6 @@
     "doe_type": "random sampling",
     "number_of_samples": 150
   },
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },

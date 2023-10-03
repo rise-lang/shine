@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "bolog_cot_524288.log",
@@ -19,14 +19,13 @@
     "doe_type": "random sampling",
     "number_of_samples": 5
   },
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 145,
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
+  "multistart_hyperparameter_optimization": true,
+  "hyperparameter_optimization_iterations": 10,
   "lengthscale_prior": {
     "name": "gamma",
     "parameters": [

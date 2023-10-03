@@ -58,38 +58,6 @@ class harrisCornerDetectionTuning extends test_util.Tests {
   def lowerOCL(e: ToBeTyped[Expr]): Expr =
     rewrite.ocl.unrollDots(util.printTime("infer", e.toExpr)).get
 
-  ignore("execute harris") {
-    // expression
-    val tileX = 8
-    val tileY = 8
-
-    val harris =
-      lowerOCL(
-        ocl.harrisTileShiftInwardsPar(tileX, tileY, mapGlobal(_),
-          ocl.harrisVecUnaligned2(4, _ => mapSeq, toPrivate)))
-    println("harris: \n " + harris)
-
-    // generate opencl kernel for executor
-    val kernel = gen.opencl.kernel("harris").fromExpr(harris)
-    println("kernel: \n" + translationToString(kernel))
-
-    // generate code using hostcode-generation
-    val harrisOCL = wrapOclRun(LocalSize(1, 1), GlobalSize(16, 16))(harris)
-    val kernelHosted = gen.opencl.hosted.fromExpr(harrisOCL)
-    println("kernelHosted: \n" + translateToString(kernelHosted))
-
-    // execute kernel
-    val result = autotune.execution.execute(
-      expression = harrisOCL,
-      hostCode = HostCode(init(128, 256), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      execution = Median
-    )
-    println("result: " + result)
-  }
-
   test("run harris autotuning mapLocal/mapWorkGroup 1024") {
 
     val harrisTuning =
