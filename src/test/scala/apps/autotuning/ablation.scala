@@ -167,8 +167,8 @@ class ablation extends test_util.Tests {
     )
 
     val configs2 = Seq(
-      s"autotuning/config/ablation/mm/mm_feas.json",
-      s"autotuning/config/ablation/mm/mm_feas0.json",
+      s"autotuning/config/ablation/mm/mm_faes.json",
+      s"autotuning/config/ablation/mm/mm_faes0.json",
     )
 
     runExperiment(
