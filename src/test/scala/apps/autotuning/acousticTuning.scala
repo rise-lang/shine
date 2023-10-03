@@ -60,9 +60,6 @@ class acousticTuning extends test_util.Tests {
 
   val finish =
     s"""
-       |// TODO: could check output here
-       |// use given gold expression?
-       |
        |destroyBuffer(ctx, mat1);
        |destroyBuffer(ctx, mat2);
        |destroyBuffer(ctx, output);

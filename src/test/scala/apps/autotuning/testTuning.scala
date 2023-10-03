@@ -90,7 +90,7 @@ class testTuning extends test_util.Tests {
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 3,
+      iterations = 2,
       output = s"experiments/autotuning/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),

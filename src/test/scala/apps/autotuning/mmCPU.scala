@@ -31,9 +31,7 @@ class mmCPU extends test_util.Tests {
 
   // tvm gemm
   val N = 1024
-  //  val N = 512
 
-  // todo check input vars, maybe dep fun
   val mm: Expr = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
@@ -80,14 +78,6 @@ class mmCPU extends test_util.Tests {
     val vec = tuningParameterMap("tuned_vec8362")
     val arrayPackingSplit = tuningParameterMap("tuned_arrayPackingSplit8359")
     val arrayPackingVec = tuningParameterMap("tuned_arrayPackingVec8360")
-    //
-    //    println("tileX: " + tileX)
-    //    println("tileY: " + tileY)
-    //    println("blockedReduce: " + blockedReduce)
-    //    println("reordering: " + reordering.mkString(", "))
-    //    println("vec: " + vec)
-    //    println("arrayPackingSplit: " + arrayPackingSplit)
-    //    println("arrayPackingVec: " + arrayPackingVec)
 
     //    val tileX = 32
     //    val tileY = 32
@@ -108,22 +98,13 @@ class mmCPU extends test_util.Tests {
       case 1 =>
         rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
           permuteB
-          //            `;;` (parallel() `@` outermost(isApplied(isMap)))
         ) `@` inLambda
       case _ =>
         rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
           permuteB `;;`
             (vectorize(arrayPackingVec) `@` innermost(isFullyAppliedMap)) // `;;`
-          //            `;;` (parallel() `@` outermost(isApplied(isMap)))
         ) `@` inLambda
     }
-    //
-    //    val packB: Strategy[Rise] =
-    //      rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
-    //        permuteB `;;`
-    //          (vectorize(arrayPackingVec) `@` innermost(isFullyAppliedMap)) // `;;`
-    //        //          (parallel() `@` outermost(isApplied(isMap)))
-    //      ) `@` inLambda
 
     val strategyHead: Strategy[Rise] = packB `;;`
       baseline `;`
@@ -135,7 +116,6 @@ class mmCPU extends test_util.Tests {
 
     val strategyTail: Strategy[Rise] = reordering match {
       case List(1, 2, 3, 4, 5, 6) =>
-        //        println("list ist id don't vectorize")
         elevate.core.strategies.basic.id[Rise]
       case _ =>
         (vectorize(vec) `@` innermost(isFullyAppliedMap))
@@ -147,7 +127,6 @@ class mmCPU extends test_util.Tests {
       strategy.apply(e)
     } catch {
       case e: Throwable => {
-        //                println("e: " + e)
         Failure(strategy)
       }
     }
@@ -233,124 +212,6 @@ class mmCPU extends test_util.Tests {
       Some(codegenTime),
       Some(compilationTime),
       Some(executionTime))
-  }
-
-  ignore("get constraints array packing mmCPU") {
-    // rewrite by hand with tunable
-    // derive constraints from that automatically
-
-    val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
-    val permuteB: Strategy[Rise] =
-      tunable("arrayPackingSplit", splitJoin2) `;` DFNF() `;` argument(idAfter) `;`
-        topDown(liftId()) `;` topDown(createTransposePair) `;` RNF() `;`
-        argument(argument(idAfter)) `;` elevate.core.strategies.basic.normalize.apply(liftId()) `;`
-        topDown(idToCopy)
-
-    def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-      isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
-
-    val packB: Strategy[Rise] =
-      rise.elevate.strategies.lowering.storeInMemory(isTransposedB,
-        permuteB `;;`
-          (tunable("arrayPackingVec", vectorize) `@` innermost(isFullyAppliedMap)) `;;`
-          (parallel() `@` outermost(isApplied(isMap)))
-      ) `@` inLambda
-
-    val strategy: Strategy[Rise] = packB `;;`
-      baseline `;`
-      (tile() `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (tunable("blockedReduce", splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1, 2, 5, 3, 6, 4)) `;;`
-      //      reorder(List(1, 2, 3, 4, 5, 6)) `;;`
-      (tunable("vec", vectorize) `@` innermost(isFullyAppliedMap))
-
-
-    val rewrittenMM = strategy.apply(mm).get
-
-    //    println("rewrittenMM: " + rewrittenMM)
-
-    val params = autotune.constraints.collectParameters(rewrittenMM)
-    val constraints = autotune.constraints.collectConstraints(rewrittenMM, params)
-    //
-    //    println("params:")
-    //    params.foreach(println)
-    //    println("constraints:")
-    //    constraints.foreach(println)
-
-    val tuner = Tuner(
-      inputSizes = Seq(1024),
-      hostCode = HostCode("", "", ""),
-      hmConstraints = true
-    )
-
-    val configFile = autotune.configFileGeneration.generateJSON(params, constraints, tuner)
-
-    //    println("configFile: \n" + configFile)
-
-
-  }
-
-  ignore("run experiment mmCPU 2") {
-    val inputSize: Int = N
-
-
-    val expertConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
-      Map(
-        "tuned_tile8575" -> 128,
-        "tuned_tile8576" -> 16,
-        "tuned_blockedReduce8361" -> 512,
-        "tuned_vec8362" -> 16,
-        "tuned_arrayPackingSplit8359" -> 8,
-        "tuned_arrayPackingVec8360" -> 4
-      ),
-      Map(
-        "tuned_reorder" -> List(0, 4, 1, 5, 2, 3)
-      )
-    )
-
-    val defaultConfiugration: (Map[String, Int], Map[String, List[Int]]) = (
-      Map(
-        "tuned_tile8575" -> 32,
-        "tuned_tile8576" -> 32,
-        "tuned_blockedReduce8361" -> 4,
-        "tuned_vec8362" -> 32,
-        "tuned_arrayPackingSplit8359" -> 32,
-        "tuned_arrayPackingVec8360" -> 32
-      ),
-      Map(
-        "tuned_reorder" -> List(0, 1, 4, 5, 2, 3)
-      )
-    )
-    //
-    val configs = Seq(
-      s"autotuning/config/mmCPU2/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU2/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU2/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU2/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU2/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mmCPU2/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-    )
-
-    runExperiment(
-      name = s"mmCPU2_${inputSize}",
-      configFiles = configs,
-      iterations = 10,
-      output = s"experiment/results/paper/mmCPU2_${inputSize}",
-      mm,
-      HostCode("", "", ""), // ignore this
-      Seq(inputSize, inputSize, inputSize),
-      strategyMode = Some(inject2),
-      executor = Some(execute),
-      //      plotOnly = true,
-      plotOnly = false,
-      expert = None,
-      default = None,
-      //      expert2 = None,
-      //      default2 = None
-      expert2 = Some(expertConfiugration),
-      default2 = Some(defaultConfiugration)
-    )
   }
 
   test("run experiment mmCPU") {

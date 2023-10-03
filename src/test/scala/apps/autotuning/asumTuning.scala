@@ -55,8 +55,7 @@ import scala.sys.process._
 
 class asumTuning extends test_util.Tests {
 
-  //  val inputSize: Int = 2 << 25
-  val inputSize: Int = 2 << 9
+  val inputSize: Int = 2 << 25
 
   def inputT(n: Nat) = ArrayType(n, f32)
 
@@ -64,59 +63,6 @@ class asumTuning extends test_util.Tests {
     depFun((t: DataType) => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs = abs(f32)
   val add = fun(x => fun(a => x + a))
-
-  val high_level = depFun((n: Nat) =>
-    fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(lf32(0.0f)))
-  )
-
-  // *g >> reduce f init -> reduce (acc, x => f acc (g x)) init
-
-  val fused = (fuseReduceMap `@` topDown[Rise]).apply(high_level).get
-  val fused_ocl = reduceOCL().apply(fused).get
-
-  val kernel = gen.opencl.kernel.asStringFromExpr(fused_ocl)
-
-  val ocl2 = simpleStrategiesGPU.lowering.apply(high_level).get
-  val kernel2 = gen.opencl.kernel.asStringFromExpr(ocl2)
-
-  //  println("high_elvel: \n" + high_level)
-  //  println("fused: \n" + fused)
-  //  println("fused_ocl: \n" + fused_ocl)
-  //  println("kernel: \n" + kernel)
-  //
-  //  println("ocl2: \n" + ocl2)
-  //  println("kernel2: \n" + kernel2)
-
-  //  System.exit(0)
-
-  val asum_default = depFun((n: Nat) =>
-    fun(inputT(n))(input => input |> oclReduceSeq(AddressSpace.Private)(fun((x, y) => add(x, fabs(y))))(lf32(0.0f)))
-  )
-
-  //
-  //  val abs =
-  //    depFun((t: DataType) => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
-  //  val fabs = abs(f32)
-  //  val add = fun(x => fun(a => x + a))
-  //
-  //  val high_level = depFun((n: Nat) =>
-  //    fun(inputT(n))(input => input |> map(fabs) |> reduceSeq(add)(lf32(0.0f)))
-  //  )
-  //
-  //  test("High level asum type inference works") {
-  //    val typed = high_level.toExpr
-  //
-  //    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type, _ <: Kind.Identifier]].x
-  //    assertResult(DepFunType(NatKind, N, FunType(inputT(N), f32))) {
-  //      typed.t
-  //    }
-  //  }
-  //
-  //
-  //  //
-  //  // /tmp/code-4521009941088777169.c:24:67: error: use of undeclared identifier 'n329'
-  //  // const KernelArg args[6] = (const KernelArg[6]){KARG(b0), KARG(n329), KARG(n326), KARG(n328), KARG(n327), KARG(b5)};
-  //
 
   val nvidiaDerived1: ToBeTyped[Expr] = {
     tuningParam("sp0", RangeMul(1, inputSize, 2), (sp0: Nat) =>
@@ -139,70 +85,10 @@ class asumTuning extends test_util.Tests {
           ))))
   }
 
-  val amdDerived1: ToBeTyped[Expr] = {
-    tuningParam("sp0", RangeMul(1, inputSize, 2), (sp0: Nat) =>
-      tuningParam("sp1", RangeMul(1, inputSize, 2), (sp1: Nat) =>
-        tuningParam("stride", RangeMul(1, inputSize, 2), (stride: Nat) =>
-          tuningParam("vec0", RangeMul(1, 32, 2), (vec0: Nat) =>
-            depFun((n: Nat) =>
-              fun(inputT(n))(input =>
-                input |>
-                  split(sp0) |>
-                  mapWorkGroup(
-                    asVectorAligned(vec0) >>
-                      reorderWithStride(stride) >>
-                      split(sp1) >>
-                      mapLocal(
-                        oclReduceSeq(AddressSpace.Private)(
-                          fun(a => fun(x => abs(vec(vec0, f32))(x) + a))
-                        )(vectorFromScalar(lf32(0.0f)))
-                      ) >> asScalar
-                  ) |> join
-              )
-            )))))
-  }
-
-  val amdNvidiaDerived2: ToBeTyped[Expr] = {
-    tuningParam("sp0", RangeMul(1, inputSize, 2), (sp0: Nat) =>
-      tuningParam("sp1", RangeMul(1, inputSize, 2), (sp1: Nat) =>
-        tuningParam("sp2", RangeMul(1, inputSize, 2), (sp2: Nat) =>
-          tuningParam("it", RangeAdd(1, 1024, 1), (it: Nat) =>
-            depFun((n: Nat) =>
-              fun(inputT(n))(input =>
-                input |>
-                  split(sp0) |>
-                  mapWorkGroup(
-                    split(sp1) >>
-                      toLocalFun(
-                        mapLocal(oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f)))
-                      ) >>
-                      toLocalFun(
-                        oclIterate(AddressSpace.Local)(it)(
-                          depFun((_: Nat) =>
-                            split(sp2) >> mapLocal(
-                              oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
-                            )
-                          )
-                        )
-                      ) >> mapLocal(fun(x => x))
-                  ) |> join
-              ))))))
-  }
-
-
   val asum_0: Expr = {
     tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
       tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
         wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(nvidiaDerived1)))
-  }
-
-  val asum_1: Expr = {
-    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-            wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(amdDerived1)))
-      ))
   }
 
   // scalastyle:off
@@ -218,34 +104,12 @@ class asumTuning extends test_util.Tests {
        |    in[i] = (float)((i % 100) + 1);
        |  }
        |
-       |  // init checking
-       |  FILE *fptr;
-       |
-       |  if ((fptr = fopen("autotuning/gold/asum_${N}.csv","r")) == NULL){
-       |    return 133;
-       |  }
-       |  float gold[N];
-       |
-       |  for(int i = 0; i<N; i++){
-       |    fscanf(fptr, "%f,", &gold[i]);
-       |  }
-       |  fclose(fptr);
-       |
        |  deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
        |""".stripMargin
   }
   val compute =
     s"""
        |  fun_init_run(ctx, output, N, input);
-       |
-       |
-       |
-       |  float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-       |    for(int i = 0; i < N; i++){
-       |      if(out[i] != gold[i]){
-       |        return 132;
-       |      }
-       |    }
        |
        |""".stripMargin
 
@@ -256,184 +120,6 @@ class asumTuning extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-
-  test("create output file") {
-
-    //    val N = 1024
-    val N = 1 << 25
-
-    val input: Array[Int] = Range(0, N).toArray.map(i => (i % 100) + 1)
-
-    var sum: Int = 0
-    for (i <- 0 until N) {
-      sum += scala.math.abs(input(i))
-    }
-
-    // use map and reduce?
-
-    //    //
-    //    println("A: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + A(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-    //    println()
-    //
-    //    println("B: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + B(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-    //    println()
-    //
-    //    println("C: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + C(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-
-    // write C to file
-    val result = Seq(sum).mkString(",")
-    util.writeToPath(s"autotuning/gold/asum_${N}.csv", result)
-
-  }
-
-  ignore("print asum") {
-
-    println("inputSize: " + inputSize)
-
-    println("nvidia derived: \n" + nvidiaDerived1)
-    //
-    //     opencl
-    val asum: Expr = {
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(asum_default)))
-    }
-
-    println("asum: \n" + asum)
-
-    // generate code
-    val params: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (1: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      //      TuningParameter("sp0") -> (2048 * 128: Nat),
-      //      TuningParameter("sp1") -> (128: Nat),
-      //      TuningParameter("stride") -> (2048: Nat),
-    )
-
-    val eSub = rise.core.substitute.natsInExpr(params, asum)
-    //    val eSub2 = rise.core.substitute.natsInExpr(params, nvidiaDerived1)
-
-    // generate code
-    //    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
-    //    println("kernel: \n" + kernel)
-
-    //    val tp_params = autotune.constraints.collectParameters(asum)
-    //    val constraints = autotune.constraints.collectConstraints(asum, tp_params)
-
-    //    println("Params: ")
-    //    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
-    //    println("Constraints: ")
-    //    constraints.foreach(println)
-
-    println("asum sub: \n" + eSub)
-
-    val result = autotune.execution.execute(
-      expression = eSub,
-      hostCode = HostCode(init(inputSize), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 1000,
-      speedupFactor = 1000,
-      execution = Minimum
-    )
-    println("result: " + result.runtime)
-
-  }
-
-
-  ignore("print asum 3") {
-
-    println("inputSize: " + inputSize)
-
-    //    println("nvidia derived: \n" + nvidiaDerived1)
-    //
-    //     opencl
-    val asum: Expr = {
-      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(amdNvidiaDerived2)))
-    }
-
-    println("asum: \n" + asum)
-
-    // generate code
-    val params: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (128: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("sp0") -> (8192: Nat),
-      TuningParameter("sp1") -> (128: Nat),
-      TuningParameter("sp2") -> (2: Nat),
-      TuningParameter("it") -> (6: Nat),
-    )
-
-    val eSub = rise.core.substitute.natsInExpr(params, asum)
-    val eSub2 = rise.core.substitute.natsInExpr(params, amdNvidiaDerived2)
-
-    // generate code
-    val kernel = util.gen.opencl.kernel.asStringFromExpr(eSub2)
-    println("kernel: \n" + kernel)
-
-    val tp_params = autotune.constraints.collectParameters(asum)
-    val constraints = autotune.constraints.collectConstraints(asum, tp_params)
-
-    println("Params: ")
-    tp_params.foreach(elem => println(s"""${elem.name} - ${elem.range}"""))
-    println("Constraints: ")
-    constraints.foreach(println)
-
-    // cannot execute
-    // one kernel argument to much
-    val result = autotune.execution.execute(
-      expression = eSub,
-      hostCode = HostCode(init(inputSize), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 1000,
-      speedupFactor = 1000,
-      execution = Minimum
-    )
-    println("result: " + result.runtime)
-
-
-    // cannot tune
-    // hm fails before comming up with first sample
-    val tuner = Tuner(
-      hostCode = HostCode(init(inputSize), compute, finish),
-      inputSizes = Seq(inputSize),
-      hmConstraints = true,
-      samples = 50,
-      saveToFile = true,
-      name = "asum",
-      output = "autotuning/asum",
-      disableChecking = true
-    )
-
-    //    val configFile = autotune.configFileGeneration.generateJSON(tp_params, constraints, tuner)
-    //    println("configFile: \n" + configFile)
-
-
-    val tuning_result = autotune.search(tuner)(asum)
-
-  }
-
-  // todo check result of that experiment!
-  // check warning about " [...] % 1/4" - what is "%0"?
   test("tune asum 0") {
     val inputSize: Int = 2 << 23
     val asum: String = "asum_0"
@@ -475,65 +161,6 @@ class asumTuning extends test_util.Tests {
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)
-    )
-  }
-
-  ignore("tune asum 1") {
-    val inputSize: Int = 2 << 25
-    val asum: String = "asum_1"
-
-    // expert configuration
-    val expertConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (128: Nat),
-      TuningParameter("ls1") -> (128: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-      TuningParameter("sp0") -> ((4096 * 128): Nat),
-      TuningParameter("sp1") -> (2048: Nat),
-      TuningParameter("stride") -> (64: Nat),
-      TuningParameter("vec0") -> (2: Nat)
-    )
-
-    // todo adjust this
-    val defaultConfiguration: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (128: Nat),
-      TuningParameter("ls1") -> (128: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-      TuningParameter("sp0") -> ((4096 * 128): Nat),
-      TuningParameter("sp1") -> (2048: Nat),
-      TuningParameter("stride") -> (64: Nat),
-      TuningParameter("vec0") -> (2: Nat)
-    )
-
-    val configs = Seq(
-      //      s"autotuning/config/${asum}/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/${asum}/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/${asum}/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/${asum}/${inputSize.toString}/bo_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/${asum}/${inputSize.toString}/ytopt_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/ls_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/exhaustive_${inputSize.toString}.json"
-      //      s"autotuning/config/mm/${inputSize.toString}/bogplog_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/bogplsp_cot_${inputSize.toString}.json",
-      //      s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-    )
-
-    runExperiment(
-      name = s"${asum}_${inputSize}",
-      configFiles = configs,
-      iterations = 3,
-      //      output = s"/home/jo/development/experiments/tuning/results/${asum}_${inputSize}",
-      output = s"experiment/results/${asum}_${inputSize}",
-      asum_1,
-      HostCode(init(inputSize), compute, finish),
-      Seq(inputSize),
-      plotOnly = false,
-      expert = Some(expertConfiguration),
-      default = Some(defaultConfiguration),
-      disableChecking = true
     )
   }
 }

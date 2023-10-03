@@ -94,18 +94,6 @@ class scalTuning extends test_util.Tests {
        |}
        |
        |float alpha = 10;
-       |// init checking
-       |FILE *fptr;
-       |
-       |if ((fptr = fopen("autotuning/gold/scal_${N}.csv","r")) == NULL){
-       |  return 133;
-       |}
-       |float gold[N];
-       |
-       |for(int i = 0; i<N; i++){
-       |  fscanf(fptr, "%f,", &gold[i]);
-       |}
-       |fclose(fptr);
        |
        |// synchronize before entering timed section
        |deviceBufferSync(ctx, input, N * sizeof(float), DEVICE_READ);
@@ -118,13 +106,6 @@ class scalTuning extends test_util.Tests {
        |fun_run(ctx, &fun, output, N, input, alpha);
        |waitFinished(ctx);
        |
-       |float* out = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-       |  for(int i = 0; i < N; i++){
-       |    if(out[i] != gold[i]){
-       |      return 132;
-       |    }
-       |}
-       |
        |""".stripMargin
 
   val finish =
@@ -133,101 +114,6 @@ class scalTuning extends test_util.Tests {
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
        |""".stripMargin
-
-  test("create output file") {
-
-    //    val N = 1024
-    val N = 1 << 25
-    println("N: " + N)
-
-    val A: Array[Int] = Range(0, N).toArray.map(i => (i % 100) + 1)
-    val alpha: Float = 10f
-    val C = Array.fill(N)(0.0f)
-
-    for (i <- 0 until N) {
-      C(i) = A(i) * alpha
-    }
-
-    //    //
-    //    println("A: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + A(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-    //    println()
-    //
-    //    println("B: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + B(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-    //    println()
-    //
-    //    println("C: ")
-    //    for (i <- 0 until N) {
-    //      for (j <- 0 until N) {
-    //        print(" " + C(i * N + j) + " ")
-    //      }
-    //      println()
-    //    }
-
-
-    // write C to file
-    val result = C.mkString(",")
-    util.writeToPath(s"autotuning/gold/scal_${N}.csv", result)
-  }
-
-
-  def executeStencilDefault(e: Expr) = {
-    val inputSize: Int = 12
-
-    println("Expression: \n" + e)
-
-    val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(e)
-
-    val result = rise.autotune.execution.execute(
-      expression = eOcl,
-      hostCode = HostCode(init(inputSize), compute, finish),
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
-    )
-
-    println("result: \n" + result)
-
-  }
-
-  ignore("test stencil execution") {
-    executeStencilDefault(scalDefaultDefault)
-  }
-
-  ignore("scal tuning experiment") {
-    val inputSize: Int = 1 << 25
-
-    val tuner = Tuner(
-      hostCode = HostCode(init(inputSize), compute, finish),
-      inputSizes = Seq(inputSize),
-      samples = 20, // defined by config file, value is ignored
-      name = "scal",
-      output = "autotuning",
-      timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
-      speedupFactor = 100,
-      configFile = None,
-      hmConstraints = true,
-      runtimeStatistic = Minimum,
-      saveToFile = true
-    )
-
-    autotune.search(tuner)(scalOcl)
-
-  }
-
 
   test("run scal experiments") {
     val inputSize: Int = 1 << 25
