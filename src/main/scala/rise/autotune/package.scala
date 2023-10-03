@@ -136,7 +136,7 @@ package object autotune {
       .map(constraint => constraint.substitute(inputMap.asInstanceOf[Map[ArithExpr, ArithExpr]]))
 
     if (tuner.saveToFile) {
-      //      ("mkdir -p " + tuner.output + "/" + tuner.name !!)
+      ("mkdir -p " + tuner.output !!)
       //      ("mkdir -p " + tuner.output + "/" + tuner.name + "_hm" !!)
       //      ("mkdir -p " + tuner.output + "/" + "log" !!)
     }
@@ -527,7 +527,7 @@ package object autotune {
     if (tuner.saveToFile) {
 
       // get unique filepath
-      val path = tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv"
+      val path = tuner.output + "/" + tuner.name + ".csv"
       val file = new File(path)
       val timeAppendix = if (file.exists()) {
         "_" + System.currentTimeMillis().toString
@@ -547,7 +547,7 @@ package object autotune {
 
       // save hm output file
       ("mv " + tuner.name + "_output_samples.csv" + " " +
-        tuner.output + "/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
+        tuner.output + "/" + tuner.name + timeAppendix + ".csv" !!)
 
       // save logfile and configfile
       if (tuner.configFile.isDefined) {
