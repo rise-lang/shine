@@ -13,6 +13,7 @@ RUN \
   	cmake \
 	mpich \
     ruby \
+    pkg-config \
   	opencl-headers \
 	ocl-icd-libopencl1 \
 	ocl-icd-opencl-dev \
@@ -77,3 +78,21 @@ RUN \
 #ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
 #ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
 #ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
+#   37  apt install pkg-config
+#   40  apt install pkg
+#   41  apt install pkgconf
+#   48  apt install pkg-config
+#   50  apt install pkg-config
+#   55  pkg-config --exists --print-errors physfs ruby-2.1
+#   56  pkg-config --exists --print-errors physfs ruby-2.7
+#   57  pkg-config --exists --print-errors ruby-2.7
+#   64  pkg-config --exists --print-errors ruby-2.7
+#   71  pkg-config --exists --print-errors ruby-2.7
+#   72  pkg-config --exists --print-errors ruby-2.7
+#   74  gem install pkg-config
+#   78  apt install ruby-pkg-config
+#   81  gem install ruby-pkg-conifg
+#   82  gem install ruby-pkg-config
+#   83  pkg-config --version
+#   84  pkg-config
+#  115  history | grep 'pkg'
