@@ -1146,7 +1146,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Mod(a, n) =>
         if (arithexpr.arithmetic.ArithExpr.mightBeNegative(a)) {
-          println(s"WARNING: $a % $n might operate on negative values")
+          //          println(s"WARNING: $a % $n might operate on negative values")
         }
         genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
 
