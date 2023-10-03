@@ -69,7 +69,7 @@ package object autotuning {
               case None => defaultConfiguration // do nothing
             }
 
-            plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
+            //            plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
           }
           case false => println("experiment's output does not exist - ignore plotting")
         }
@@ -112,8 +112,8 @@ package object autotuning {
           configFiles.size match {
             case 0 => // ignore
             case _ =>
-              // plot experiments after each iteration of all configs
-              plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
+            // plot experiments after each iteration of all configs
+            //              plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
           }
         }
     }
