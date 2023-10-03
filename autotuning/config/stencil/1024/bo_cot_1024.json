@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "bo_cot_1024.log",
@@ -19,14 +19,13 @@
     "doe_type": "random sampling",
     "number_of_samples": 11
   },
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 139,
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 5,
+  "multistart_hyperparameter_optimization": true,
+  "hyperparameter_optimization_iterations": 10,
   "lengthscale_prior": {
     "name": "gamma",
     "parameters": [
@@ -34,8 +33,8 @@
       0.1
     ]
   },
-  "input_parameters" : {
-    "tuned_gs0" : {
+  "input_parameters": {
+    "tuned_gs0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -56,9 +55,9 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_gs1" : {
+    "tuned_gs1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -79,9 +78,9 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_ls0" : {
+    "tuned_ls0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -102,9 +101,9 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "transform" : "log"
+      "transform": "log"
     },
-    "tuned_ls1" : {
+    "tuned_ls1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -121,7 +120,7 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "transform" : "log"
+      "transform": "log"
     }
   }
 }

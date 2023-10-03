@@ -9,22 +9,19 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "ytoptccs_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
   "optimization_method": "ytopt_ccs",
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
   "optimization_iterations": 150,
-  "input_parameters" : {
-    "tuned_gs0" : {
+  "input_parameters": {
+    "tuned_gs0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -45,10 +42,10 @@
       "dependencies": [
         "tuned_ls0"
       ],
-      "parameter_default" : 1,
-      "transform" : "log"
+      "parameter_default": 1,
+      "transform": "log"
     },
-    "tuned_gs1" : {
+    "tuned_gs1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -69,10 +66,10 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "parameter_default" : 1,
-      "transform" : "log"
+      "parameter_default": 1,
+      "transform": "log"
     },
-    "tuned_ls0" : {
+    "tuned_ls0": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -93,10 +90,10 @@
       "dependencies": [
         "tuned_ls1"
       ],
-      "parameter_default" : 1,
-      "transform" : "log"
+      "parameter_default": 1,
+      "transform": "log"
     },
-    "tuned_ls1" : {
+    "tuned_ls1": {
       "parameter_type": "ordinal",
       "values": [
         1,
@@ -113,8 +110,8 @@
       ],
       "constraints": [],
       "dependencies": [],
-      "parameter_default" : 1,
-      "transform" : "log"
+      "parameter_default": 1,
+      "transform": "log"
     }
   }
 }
