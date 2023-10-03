@@ -22,11 +22,10 @@ RUN \
   	cmake \
 	mpich \
   	opencl-headers \
-	ocl-icd-libopencl1 \
-	ocl-icd-opencl-dev \
+	#ocl-icd-libopencl1 \
+	#ocl-icd-opencl-dev \
  	clang \
   	clinfo
-
 
 # install java and sbt
 RUN \
@@ -52,6 +51,10 @@ RUN \
   export LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH" && \
   clinfo
 
+ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
+ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
+
 # install shine
 RUN \
     cd /home && \
@@ -68,7 +71,7 @@ RUN \
   cd baco && \
   apt-get install -y pip && \
   pip install --upgrade pip && \
-  pip install -e . &&
+  pip install -e . 
 
 ENV PYTHONPATH="/home/baco"
 
@@ -76,6 +79,3 @@ ENV PYTHONPATH="/home/baco"
 #	cd /home/baco && \
 #	bash install_baselines.sh
 
-ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
-ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
-ENV CPATH="/opt/AMDAPPSDK-3.0/include/"
