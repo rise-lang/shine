@@ -12,6 +12,7 @@ RUN \
 	vim \
   	cmake \
 	mpich \
+    ruby \
   	opencl-headers \
 	ocl-icd-libopencl1 \
 	ocl-icd-opencl-dev \
@@ -53,10 +54,9 @@ RUN \
   cd baco && \
   apt-get install -y pip && \
   pip install --upgrade pip && \
-  pip install -e . 
+  pip install -e .
 
-
-# export pythonpath with baco 
+# export pythonpath with baco
 ENV PYTHONPATH="/home/baco"
 
 # install shine
@@ -70,9 +70,9 @@ RUN \
 
 # warning: Command fails - Solution:(ssh vs. https) 
 # build transform ... fails 
-RUN \
-	cd /home/baco && \
-	bash install_baselines.sh
+#RUN \
+	#cd /home/baco && \
+	#bash install_baselines.sh
 
 #ENV LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LIBRARY_PATH"
 #ENV LD_LIBRARY_PATH="/opt/AMDAPPSDK-3.0/lib/x86_64/sdk/:/opt/AMDAPPSDK-3.0/lib/x86_64/:$LD_LIBRARY_PATH"
