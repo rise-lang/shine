@@ -152,7 +152,7 @@ class asumTuning extends test_util.Tests {
     runExperiment(
       name = s"Asum_GPU",
       configFiles = configs,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/rise/Asum_GPU",
       asum,
       HostCode(init(inputSize), compute, finish),

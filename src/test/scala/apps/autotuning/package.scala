@@ -1,6 +1,7 @@
 package apps
 
 import exploration.explorationUtil.jsonParser.readFile
+import scala.io.Source
 import rise.autotune
 import rise.autotune.{AutoTuningError, HostCode, Median, Minimum, Timeouts, Tuner}
 import rise.core.DSL.Type.Nat
@@ -20,6 +21,9 @@ package object autotuning {
     val tunerPython: String = "python3.9"
   }
 
+  def getIterations(): Int = {
+    Source.fromFile(".iterations").mkString.toInt
+  }
 
   def runExperiment(
                      name: String,
