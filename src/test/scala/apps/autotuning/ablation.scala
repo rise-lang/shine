@@ -155,7 +155,7 @@ class ablation extends test_util.Tests {
     runExperiment(
       name = s"mm",
       configFiles = configs,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/ablation/rise",
       e = mm,
       hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
@@ -174,7 +174,7 @@ class ablation extends test_util.Tests {
     runExperiment(
       name = s"mm",
       configFiles = configs2,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/ablation/rise",
       e = mm,
       hostCode = HostCode(mm_host_code.init(inputSize, inputSize, inputSize), mm_host_code.compute, mm_host_code.finish),
