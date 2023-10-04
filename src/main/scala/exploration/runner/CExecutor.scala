@@ -36,6 +36,15 @@ case class CExecutor(
   var errorLevel: ExplorationErrorLevel = LoweringError
   var samples = 0
 
+  // logger to avoid printing of stderr
+  val logger = new ProcessLogger {
+    def out(s: => String): Unit = s
+
+    def err(s: => String): Unit = s
+
+    def buffer[T](f: => T): T = f
+  }
+
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
@@ -105,10 +114,10 @@ case class CExecutor(
   //  override def plot(): Unit = ???
 
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
-    println("[Executor] : strategy length: " + solution.strategies.size)
-    solution.strategies.foreach(elem => {
-      println("strategy: " + elem)
-    })
+    //    println("[Executor] : strategy length: " + solution.strategies.size)
+    //    solution.strategies.foreach(elem => {
+    ////      println("strategy: " + elem)
+    //    })
     // initialize error level
     errorLevel = LoweringError
 
@@ -137,7 +146,7 @@ case class CExecutor(
         // execute
         try {
           errorLevel = ExecutionError
-          println("execute: " + hashProgram(solution.expression))
+          //          println("execute: " + hashProgram(solution.expression))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
@@ -146,53 +155,53 @@ case class CExecutor(
               if (returnValue.toDouble < value) {
                 best = Some(returnValue.toDouble)
                 gold = gen.openmp.function("compute_gold").fromExpr(lowered.get)
-                println("use new gold with runtime: " + best.get)
+                //                println("use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.toDouble)
           }
 
-          println("result: " + returnValue)
+          //          println("result: " + returnValue)
           performanceValue = Some(returnValue.toDouble)
           errorLevel = ExecutionSuccess
 
         } catch {
           case e: Throwable =>
-            println("error handling")
-            println("e: " + e)
+            //            println("error handling")
+            //            println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
-                println("timeout")
+                //                println("timeout")
                 errorLevel = ExecutionTimeout
                 performanceValue = None
               case 11 =>
-                println("execution crashed")
+                //                println("execution crashed")
                 System.exit(-1)
                 errorLevel = ExecutionError
                 performanceValue = None
               case 255 =>
-                println("execution failed")
+                //                println("execution failed")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                println("execution failed with segmentation fault")
+                //                println("execution failed with segmentation fault")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case _ =>
-                println("execution failed with unknown error")
+                //                println("execution failed with unknown error")
                 errorLevel = ExecutionFail
                 performanceValue = None
             }
         }
       } catch {
         case e: Throwable =>
-          println("compiling error: " + e)
+        //          println("compiling error: " + e)
       }
 
     } catch {
       case e: Throwable =>
-        println("code gen error")
-        println("e: " + e)
+        //        println("code gen error")
+        //        println("e: " + e)
         code = "code generation error "
     }
 
@@ -553,14 +562,17 @@ int main(int argc, char** argv) {
 
     // todo: make this configable using json file
     // compile
+
+    //    val logger = ProcessLogger(_, _)
     //        s"clang -O2 $src -o $bin -lm -fopenmp" !!
-          s"gcc -O2 $src -o $bin -lm -fopenmp" !!
+    s"gcc -O2 $src -o $bin -lm -fopenmp" !! (logger)
+    //      s"gcc -O2 $src -o $bin -lm -fopenmp" !!
 
     //    s"clang $src -o $bin -Ofast -ffast-math -fopenmp" !!
 
     //    s"clang $src -o $bin -lm -fopenmp" !!
     //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
-//    s"clang -O2 $src -o $bin -lm -fopenmp" !!
+    //    s"clang -O2 $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -lm -fopenmp" !!
     //    s"gcc $src -o $bin -O3 -lm -fopenmp" !!
     //    s"clang $src -o $bin -O3 -lm -fopenmp" !!

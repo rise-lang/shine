@@ -1,5 +1,5 @@
 {
-  "application_name": "bolog_cot_1024",
+  "application_name": "bolog_cot",
   "optimization_objectives": [
     "runtime"
   ],
@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "bolog_cot_1024.log",
@@ -19,7 +19,6 @@
     "doe_type": "random sampling",
     "number_of_samples": 9
   },
-  "scalarization_method": "linear",
   "models": {
     "model": "gaussian_process"
   },
@@ -31,9 +30,9 @@
     ]
   },
   "optimization_method": "bayesian_optimization",
-  "optimization_iterations": 141,
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 5,
+  "optimization_iterations": 91,
+  "multistart_hyperparameter_optimization": true,
+  "hyperparameter_optimization_iterations": 10,
   "input_parameters": {
     "tuned_ls1": {
       "parameter_type": "ordinal",

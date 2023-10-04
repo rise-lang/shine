@@ -1,21 +1,26 @@
 {
-  "application_name": "rs_cot_1024",
+  "application_name": "rs_cot",
   "optimization_objectives": [
     "runtime"
   ],
-  "hypermapper_mode": {
-    "mode": "client-server"
-  },
-  "log_file": "rs_cot_1024.log",
   "feasible_output": {
     "enable_feasible_predictor": true,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
+  "baco_mode": {
+    "mode": "client-server"
+  },
+  "log_file": "rs_cot_1024.log",
+  "log_transform_output": true,
+  "epsilon_greedy_threshold": 0,
   "design_of_experiment": {
     "doe_type": "random sampling",
-    "number_of_samples": 150
+    "number_of_samples": 60
+  },
+  "models": {
+    "model": "gaussian_process"
   },
   "optimization_iterations": 0,
   "input_parameters": {
@@ -35,7 +40,6 @@
         1024
       ],
       "constraints": [
-        "tuned_gs0 >= 0",
         "tuned_gs0 % tuned_ls0 == 0"
       ],
       "dependencies": [
@@ -59,7 +63,6 @@
         1024
       ],
       "constraints": [
-        "tuned_gs1 >= 0",
         "tuned_gs1 % tuned_ls1 == 0"
       ],
       "dependencies": [
@@ -82,8 +85,12 @@
         512,
         1024
       ],
-      "constraints": [],
-      "dependencies": [],
+      "constraints": [
+        "tuned_ls0 * tuned_ls1 <= 1024"
+      ],
+      "dependencies": [
+        "tuned_ls1"
+      ],
       "transform": "log"
     },
     "tuned_ls1": {
@@ -101,13 +108,10 @@
         512,
         1024
       ],
-      "constraints": [
-        "tuned_ls0 * tuned_ls1 <= 1024"
-      ],
-      "dependencies": [
-        "tuned_ls0"
-      ],
+      "constraints": [],
+      "dependencies": [],
       "transform": "log"
     }
   }
 }
+

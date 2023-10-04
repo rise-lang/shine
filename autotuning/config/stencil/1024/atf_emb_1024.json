@@ -1,5 +1,5 @@
 {
-  "application_name": "atf_emb_1024",
+  "application_name": "opentuner",
   "optimization_objectives": [
     "runtime"
   ],
@@ -9,15 +9,14 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "atf_emb_1024.log",
   "log_transform_output": true,
   "epsilon_greedy_threshold": 0,
-  "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 150,
+  "optimization_iterations": 60,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
@@ -35,7 +34,6 @@
         1024
       ],
       "constraints": [
-        "tuned_gs0 >= 0",
         "tuned_gs0 % tuned_ls0 == 0"
       ],
       "dependencies": [
@@ -59,7 +57,6 @@
         1024
       ],
       "constraints": [
-        "tuned_gs1 >= 0",
         "tuned_gs1 % tuned_ls1 == 0"
       ],
       "dependencies": [
@@ -82,8 +79,12 @@
         512,
         1024
       ],
-      "constraints": [],
-      "dependencies": [],
+      "constraints": [
+        "tuned_ls0 * tuned_ls1 <= 1024"
+      ],
+      "dependencies": [
+        "tuned_ls1"
+      ],
       "transform": "log"
     },
     "tuned_ls1": {
@@ -101,13 +102,10 @@
         512,
         1024
       ],
-      "constraints": [
-        "tuned_ls0 * tuned_ls1 <= 1024"
-      ],
-      "dependencies": [
-        "tuned_ls0"
-      ],
+      "constraints": [],
+      "dependencies": [],
       "transform": "log"
     }
   }
 }
+

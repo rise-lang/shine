@@ -1,6 +1,7 @@
 package apps
 
 import exploration.explorationUtil.jsonParser.readFile
+import scala.io.Source
 import rise.autotune
 import rise.autotune.{AutoTuningError, HostCode, Median, Minimum, Timeouts, Tuner}
 import rise.core.DSL.Type.Nat
@@ -20,6 +21,16 @@ package object autotuning {
     val tunerPython: String = "python3.9"
   }
 
+  def getIterations(): Int = {
+    // read in iterations
+    val iterations = Source.fromFile(".iterations").getLines().mkString("\n").toInt
+
+    // check valid range, default to one
+    iterations <= 30 && iterations > 0 match {
+      case true => iterations
+      case false => 1
+    }
+  }
 
   def runExperiment(
                      name: String,
@@ -69,7 +80,7 @@ package object autotuning {
               case None => defaultConfiguration // do nothing
             }
 
-            plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
+            //            plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
           }
           case false => println("experiment's output does not exist - ignore plotting")
         }
@@ -100,20 +111,23 @@ package object autotuning {
         }
 
         // run tuning
+        println("run: " + name)
+        println("repetitions: " + iterations)
         for (i <- 1 to iterations) {
           configFiles.foreach(configFile =>
             try {
               runTuning(configFile, output, e, hostCode, inputSizes, strategyMode, executor, disableChecking, feasibility)
             } catch {
               case e: Throwable => println("tuning failed for configFile: " + configFile)
+              //                println("e: " + e)
             }
           )
 
           configFiles.size match {
             case 0 => // ignore
             case _ =>
-              // plot experiments after each iteration of all configs
-              plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
+            // plot experiments after each iteration of all configs
+            //              plotExperiment(name, configFiles, output, expertConfiguration, defaultConfiguration)
           }
         }
     }
@@ -145,8 +159,6 @@ package object autotuning {
                 ): Option[Double] = {
 
 
-    println("config: \n" + config)
-
     val strategy_result = strategyMode.get(e, config._1, config._2)
 
     val e_replaced = strategy_result match {
@@ -161,16 +173,20 @@ package object autotuning {
       case Right(value) => Some(value)
     }
 
-
     // create output directory
     (s"mkdir -p ${output}/manual_configs" !!)
 
     // write result into file
     val path = output + "/manual_configs/" + file + ".csv"
-    util.writeToPath(path, configResult.get.toString)
+
+    configResult match {
+      case Some(value) =>
+        util.writeToPath(path, value.toString)
+      case None =>
+        util.writeToPath(path, "2147483647") // intmax
+    }
 
     configResult
-
   }
 
   def runConfig(
@@ -204,7 +220,14 @@ package object autotuning {
 
     // write result into file
     val path = output + "/manual_configs/" + file + ".csv"
-    util.writeToPath(path, configResult.get.toString)
+
+    configResult match {
+      case Some(value) =>
+        util.writeToPath(path, value.toString)
+      case None =>
+        util.writeToPath(path, "2147483647") // intmax
+    }
+
 
     // todo print config as well
 

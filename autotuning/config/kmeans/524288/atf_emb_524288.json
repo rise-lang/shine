@@ -1,5 +1,5 @@
 {
-  "application_name": "atf_emb_524288",
+  "application_name": "opentuner",
   "optimization_objectives": [
     "runtime"
   ],
@@ -9,7 +9,7 @@
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "atf_emb_524288.log",
@@ -18,11 +18,8 @@
   "models": {
     "model": "gaussian_process"
   },
-  "scalarization_method": "linear",
   "optimization_method": "opentuner",
-  "optimization_iterations": 150,
-  "multistart_hyperparameter_optimization_initial_points": 50,
-  "multistart_hyperparameter_optimization_iterations": 10,
+  "optimization_iterations": 60,
   "input_parameters": {
     "tuned_gs0": {
       "parameter_type": "ordinal",
