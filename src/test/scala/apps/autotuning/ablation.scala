@@ -198,7 +198,7 @@ class ablation extends test_util.Tests {
     runExperiment(
       name = s"scal",
       configFiles = configs,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/ablation/rise",
       e = scalOcl,
       hostCode = HostCode(scal_host_code.init(inputSize2), scal_host_code.compute, scal_host_code.finish),
@@ -217,7 +217,7 @@ class ablation extends test_util.Tests {
     runExperiment(
       name = s"scal",
       configFiles = configs2,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/ablation/rise",
       e = scalOcl,
       hostCode = HostCode(scal_host_code.init(inputSize2), scal_host_code.compute, scal_host_code.finish),

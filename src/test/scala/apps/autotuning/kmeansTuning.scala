@@ -89,7 +89,7 @@ class kmeansTuning extends test_util.Tests {
     runExperiment(
       name = s"K-means_GPU",
       configFiles = configs,
-      iterations = 30,
+      iterations = getIterations(),
       output = "artifact/results/rise/K-means_GPU",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),

@@ -252,7 +252,7 @@ class mmCPU extends test_util.Tests {
     runExperiment(
       name = s"MM_CPU",
       configFiles = configs,
-      iterations = 30,
+      iterations = getIterations(),
       output = s"artifact/results/rise/MM_CPU",
       mm,
       HostCode("", "", ""), // ignore this (we execute manually)
