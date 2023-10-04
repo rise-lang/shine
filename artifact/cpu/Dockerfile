@@ -31,7 +31,8 @@ RUN \
   apt-get install -y sbt
 
 # Copy AMD APP SDK into container
-COPY AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+ADD https://github.com/michel-steuwer/docker-scala-opencl/blob/master/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+#COPY AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
 
 # Install OpenCL
 RUN \
