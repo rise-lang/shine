@@ -12,8 +12,8 @@ RUN \
 	vim \
   	cmake \
 	mpich \
-    	ruby \
-    	pkg-config \
+    ruby \
+    pkg-config \
   	opencl-headers \
 	#ocl-icd-libopencl1 \
 	#ocl-icd-opencl-dev \
@@ -33,7 +33,7 @@ RUN \
   apt-get install -y sbt
 
 # Copy AMD APP SDK into container
-COPY ../../lib/docker-scala-opencl/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+COPY docker-scala-opencl/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 /data/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
 
 # Install OpenCL
 RUN \
