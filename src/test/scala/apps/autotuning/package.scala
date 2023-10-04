@@ -22,7 +22,14 @@ package object autotuning {
   }
 
   def getIterations(): Int = {
-    Source.fromFile(".iterations").getLines().mkString("\n").toInt
+    // read in iterations
+    val iterations = Source.fromFile(".iterations").getLines().mkString("\n").toInt
+
+    // check valid range, default to one
+    iterations <= 30 && iterations > 0 match {
+      case true => iterations
+      case false => 1
+    }
   }
 
   def runExperiment(
