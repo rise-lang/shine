@@ -22,7 +22,7 @@ package object autotuning {
   }
 
   def getIterations(): Int = {
-    Source.fromFile(".iterations").mkString.toInt
+    Source.fromFile(".iterations").getLines().mkString("\n").toInt
   }
 
   def runExperiment(
