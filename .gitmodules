@@ -13,3 +13,6 @@
 [submodule "lib/clap"]
 	path = lib/clap
 	url = https://github.com/michel-steuwer/clap.git
+[submodule "lib/docker-scala-opencl"]
+	path = lib/docker-scala-opencl
+	url = https://github.com/michel-steuwer/docker-scala-opencl
