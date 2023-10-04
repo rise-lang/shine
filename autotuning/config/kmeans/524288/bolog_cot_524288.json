@@ -24,6 +24,7 @@
   },
   "optimization_method": "bayesian_optimization",
   "optimization_iterations": 55,
+  "GP_model": "gpy",
   "multistart_hyperparameter_optimization": true,
   "hyperparameter_optimization_iterations": 10,
   "lengthscale_prior": {
