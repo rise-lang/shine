@@ -61,7 +61,7 @@ RUN \
 
 # set environment variables
 ENV PYTHONPATH="/home/baco:/home/baco/extra_packages/CCS/bindings/python/"
-ENV LD_LIBRARY_PATH="/usr/local/lib":${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
 
 # install shine
 RUN \
