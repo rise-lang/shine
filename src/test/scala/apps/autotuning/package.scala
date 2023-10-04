@@ -104,6 +104,8 @@ package object autotuning {
         }
 
         // run tuning
+        println("run: " + name)
+        println("repetitions: " + iterations)
         for (i <- 1 to iterations) {
           configFiles.foreach(configFile =>
             try {
