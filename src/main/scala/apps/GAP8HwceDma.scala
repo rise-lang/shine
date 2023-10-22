@@ -1,15 +1,19 @@
 package apps
 
 import arithexpr.arithmetic.NamedVar
+import elevate.core.Strategy
 import rise.GAP8.DSL.gap8Run
-import rise.GAP8.primitives.{allocL1, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3}
+import rise.GAP8.primitives.{allocL1, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3, gap8hwConv5x5}
 import rise.core.DSL.HighLevelConstructs.{padCst2D, zipND}
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.DSL.{ToBeTyped, depFun, foreignFun, fun, letf, li16}
 import rise.core.primitives._
-import rise.core.types.DataType.{ArrayType, i16, u8}
+import rise.core.types.DataType.{ArrayType, i16, int, u8}
 import rise.core.types.Nat
 import rise.elevate.Rise
+import rise.elevate.strategies.traversal.everywhere
+import rise.elevate.strategies.traversal.AtHelper
+import rise.elevate.rules.lowering.`map -> mapPar`
 import rise.openMP.primitives.mapPar
 import shine.GAP8.Module.translateToString
 
@@ -267,13 +271,48 @@ object GAP8HwceDma {
                         )
                       )
                     )
-                  //(17*14).318.i16
+                  //
+
                 )) |> join
             )
           )
         )
       )
-    println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwceNoPadding)))
+    //println(translateToString(util.gen.gap8.hosted("tiledConv").fromExpr(tiledFixSizeDmaHwceNoPadding)))
+    val ww: Nat = 320
+    val hh: Nat = 244
+    val tiledFixSizeDmaHwceNoPadding_Gaussian: ToBeTyped[Rise] =
+      fun(
+        ArrayType(hh, ArrayType(ww, i16)) ->:
+          ArrayType(5, ArrayType(5, i16)) ->:
+          ArrayType(hh - 4, ArrayType(ww - 4, i16)))((pic, filter) =>
+        gap8Run(8)(
+          filter |> copyToL1 |> allocL1 |> letf(l1filter =>
+            // pic: 240.320.i16
+            pic |> slide(16)(12) |>
+              // step * n + size = 240
+              // 17.16.320.i16
+              mapSeq(fun(stripe =>
+                //stripe 16.320.i16
+                stripe |> copyToL1 |> allocL1 |>
+                  letf(l1stripe =>
+                    // convresult (12.316.i16)
+                    gap8hwConv5x5(0)(l1stripe, l1filter) |> allocL1 |> copyToL2
+                  )
+              )) |> join
+          )
+        )
+      )
+    println(translateToString(util.gen.gap8.hosted("GaussianBlur").fromExpr(tiledFixSizeDmaHwceNoPadding_Gaussian)))
+
+    /*val strategy: Strategy[Rise] =
+      `map -> mapPar` `@` everywhere
+    val ex_mapfor: ToBeTyped[Rise] = depFun((n: Nat) =>
+      fun(ArrayType(n, int) ->: ArrayType(n, int))(input =>
+        input |> map(fun(x => x))
+      )
+    )
+    println(util.gen.openmp.function("ex_mapfor").asStringFromExpr(strategy(ex_mapfor).get))*/
 
     val simpleNoSlide: ToBeTyped[Rise] =
       fun(
