@@ -223,6 +223,18 @@ class AcceleratorCodeGenerator(override val decls: C.Compilation.CodeGenerator.D
                                       offsetX: Int, offsetY: Int): Stmt = {
     val firstVar = freshName("dma2d_")
     val secondVar = freshName("dma2d_")
+
+    /*C.AST.FunDecl(
+      name="ex_mapfor",
+      returnType = C.AST.Type.void,
+      params = Seq(
+        C.AST.ParamDecl("output", C.AST.PointerType(C.AST.Type.int)),
+        C.AST.ParamDecl("n446", C.AST.Type.int),
+        C.AST.ParamDecl("e447", C.AST.PointerType(C.AST.Type.int))
+      ),
+      body = C.AST.Stmts(C.AST.Code("asdf"), C.AST.ForLoop(???, ???, ???, ???))
+    )*/
+
     C.AST.ForLoop(
       init = C.AST.DeclStmt(C.AST.VarDecl(firstVar, C.AST.Type.int, None)),
       cond = C.AST.BinaryExpr(C.AST.Literal(firstVar), C.AST.BinaryOperator.<, C.AST.Literal(width.toString)),
