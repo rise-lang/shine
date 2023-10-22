@@ -568,6 +568,10 @@ object algorithmic {
       Success((preserveType(in) |> transpose |> map(sum) |> sum) !: e.t)
   }
 
+  /*@rule def colapseOpenMPfor: Strategy[Rise] = {
+    ???
+  }*/
+
   /**
     * TODO: A couple of things to think about:
     *   1.This is extremely specific. Is there a way to make it more general in any way?
