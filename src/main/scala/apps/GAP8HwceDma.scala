@@ -3,8 +3,8 @@ package apps
 import arithexpr.arithmetic.NamedVar
 import elevate.core.Strategy
 import rise.GAP8.DSL.gap8Run
-import rise.GAP8.primitives.{allocL1, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3, gap8hwConv5x5}
-import rise.core.DSL.HighLevelConstructs.{padCst2D, zipND}
+import rise.GAP8.primitives.{allocL1, allocL2, copy2DOffsetToL1, copyToL1, copyToL2, gap8hwConv3x3, gap8hwConv5x5}
+import rise.core.DSL.HighLevelConstructs.{padCst2D, slide2D, zipND}
 import rise.core.DSL.Type.TypeConstructors
 import rise.core.DSL.{ToBeTyped, depFun, foreignFun, fun, letf, li16}
 import rise.core.primitives._
@@ -20,6 +20,7 @@ import shine.GAP8.Module.translateToString
 // scalastyle: off
 object GAP8HwceDma {
   def main(args: Array[String]): Unit = {
+    //24.10.2023. If Type is i16 -> i16, one should be 1u << 14
     val gapSqrt = foreignFun("gap_sqrt",
       Seq("a_nInput"),
       """
@@ -304,6 +305,32 @@ object GAP8HwceDma {
         )
       )
     println(translateToString(util.gen.gap8.hosted("GaussianBlur").fromExpr(tiledFixSizeDmaHwceNoPadding_Gaussian)))
+
+    val gaussianNoPadHWCE: ToBeTyped[Rise] = fun(
+      ArrayType(hh, ArrayType(ww, i16)) ->:
+        ArrayType(5, ArrayType(5, i16)) ->:
+        ArrayType(hh - 4, ArrayType(ww - 4, i16))
+    )((pic, filter) =>
+      gap8Run(8)(
+        gap8hwConv5x5(0)(pic, filter)
+      )
+    )
+    println(translateToString(util.gen.gap8.hosted("GaussianBlur_HWCE").fromExpr(gaussianNoPadHWCE)))
+
+    val gaussianBlurPlain: ToBeTyped[Rise] = fun(
+      ArrayType(hh, ArrayType(ww, i16)) ->:
+        ArrayType(5, ArrayType(5, i16)) ->:
+        ArrayType(hh - 4, ArrayType(ww - 4, i16))
+    )((pic, filter) =>
+      gap8Run(8)(
+        pic |>
+          slide2D(sz = 5, st = 1) |>
+          mapPar(mapPar(fun(submat =>
+            zip(submat |> join)(filter |> join) |> map(fun(e => fst(e) * snd(e))) |> reduceSeqUnroll(add)(li16(0))
+          )))
+      )
+    )
+    println(translateToString(util.gen.gap8.hosted("GaussianBlur_Plain").fromExpr(gaussianBlurPlain)))
 
     /*val strategy: Strategy[Rise] =
       `map -> mapPar` `@` everywhere
