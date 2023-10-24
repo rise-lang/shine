@@ -30,6 +30,10 @@ case class HostCodeGenerator(
                             ) extends CodeGenerator(decls, ranges){
   override def name: String = "GAP8 Host"
 
+  override def updatedRanges(key: String,
+                             value: arithexpr.arithmetic.Range): HostCodeGenerator =
+    new HostCodeGenerator(decls, ranges.updated(key, value), acceleratorFunctions)
+
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case k@KernelCallCmd(kernelName, numCores, numArgs) =>
       val calledKernel = acceleratorFunctions
@@ -172,6 +176,11 @@ case class HostCodeGenerator(
 
   private def managedTyp(dt: DataType): C.AST.Type = dt match {
     case ArrayType(_, elemType) => C.AST.PointerType(typ(elemType))
+    //TODO: Rethink
+    case PairType(dt1, dt2) => C.AST.StructType(
+      "Tuple_" + dt1.toString + "_" + dt2.toString,
+      Seq((typ(dt1), "_fst"), (typ(dt2), "_snd"))
+    )
     case _ => throw new Exception(s"did not expect $dt")
   }
 
