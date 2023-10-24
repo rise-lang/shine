@@ -2,7 +2,7 @@ package apps
 
 import elevate.core._
 import rise.GAP8.DSL.gap8Run
-import rise.GAP8.primitives.{copyToL1, copyToL2, gap8hwConv3x3}
+import rise.GAP8.primitives.{allocL2, copyToL1, copyToL2, gap8hwConv3x3}
 import rise.core.DSL.HighLevelConstructs.{slide2D, zipND}
 import rise.core.DSL.Type._
 import rise.core.DSL._
@@ -55,23 +55,48 @@ object tester {
     val sobelWithoutPad: ToBeTyped[Rise] =
       fun(
         ArrayType(h, ArrayType(w, u8)) ->:
-          ArrayType(3, ArrayType(3, u8)) ->:
-          ArrayType(3, ArrayType(3, u8)) ->:
+          ArrayType(3, ArrayType(3, int)) ->:
+          ArrayType(3, ArrayType(3, int)) ->:
           ArrayType(h - 2, ArrayType(w - 2, u8))
       )((pic, hf, vf) =>
         gap8Run(8)(
         pic |>
           slide2D(sz = 3, st = 1) |>
-          mapSeq(mapSeq(fun(submat =>
-            zip(submat |> join)(hf |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(h =>
-              zip(submat |> join)(vf |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> reduceSeq(add)(cast(l(0)) :: u32) |> letf(v =>
+          mapPar(mapPar(fun(submat =>
+            zip(submat |> join)(hf |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> rise.core.primitives.reduceSeqUnroll(add)(cast(l(0)) :: u32) |> letf(h =>
+              zip(submat |> join)(vf |> join) |> map(fun(x => (cast(fst(x)) :: u32) * cast(snd(x)) :: u32)) |> rise.core.primitives.reduceSeqUnroll(add)(cast(l(0)) :: u32) |> letf(v =>
                 cast(gapSqrt(h * h + v * v)) :: u8
               )
             )
           ))))
       )
 
-    println(translateToString(util.gen.gap8.hosted("SobelWOutPad").fromExpr(sobelWithoutPad)))
+    //println(translateToString(util.gen.gap8.hosted("SobelWOutPad").fromExpr(sobelWithoutPad)))
+
+    val sobelWithoutPadHWCE: ToBeTyped[Rise] = {
+      fun(
+        ArrayType(h, ArrayType(w, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(3, ArrayType(3, i16)) ->:
+          ArrayType(h - 2, ArrayType(w - 2, i16))
+      )((pic, hf, vf) =>
+        gap8Run(8)(
+          pic |>
+            gap8hwConv3x3(0)(pic, hf) |> allocL2 |> letf(hconvres =>
+              gap8hwConv3x3(0)(pic, vf) |> allocL2 |> letf(vconvres =>
+                zipND(2)(hconvres)(vconvres) |> mapPar(mapPar(fun(elems =>
+                  cast(gapSqrt(
+                    cast(add
+                      (mul(fst(elems))(fst(elems)))
+                      (mul(snd(elems))(snd(elems)))) :: u32
+                  )) :: i16
+                )))
+              )
+          )
+        )
+      )
+    }
+    println(translateToString(util.gen.gap8.hosted("SobelWOutPadHWCE").fromExpr(sobelWithoutPadHWCE)))
 
     //2D Zip
     //Merge mapPar
