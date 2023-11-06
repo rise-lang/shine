@@ -1,14 +1,15 @@
-package apps.autotuning
+package apps.autotuning.fair_embedding_evaluation
 
+import apps.stencil.acoustic3D.stencilMSS
 import arithexpr.arithmetic.RangeMul
+import apps.autotuning._
+import rise.autotune._
 import rise.core.DSL._
 import rise.core.Expr
-import shine.OpenCL.{GlobalSize, LocalSize}
-import apps.stencil.acoustic3D.stencilMSS
-import rise.autotune._
 import rise.core.types.{Nat, TuningParameter}
+import shine.OpenCL.{GlobalSize, LocalSize}
 
-class stencilTuning extends test_util.Tests {
+class stencilEmbedding extends test_util.Tests {
 
   private val N = 128
   private val M = 64
@@ -87,18 +88,17 @@ class stencilTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/stencil/1024/rs_cot_1024.json",
-      s"autotuning/config/stencil/1024/rs_emb_1024.json",
-      s"autotuning/config/stencil/1024/atf_emb_1024.json",
-      s"autotuning/config/stencil/1024/bolog_cot_1024.json",
-      s"autotuning/config/stencil/1024/ytoptccs_1024.json"
+      s"autotuning/fair_embedding_evaluation/stencil/opentuner.json",
+      s"autotuning/fair_embedding_evaluation/stencil/opentuner_biased.json",
+      s"autotuning/fair_embedding_evaluation/stencil/embedding_random_sampling.json",
+      s"autotuning/fair_embedding_evaluation/stencil/embedding_random_sampling_biased.json"
     )
 
     runExperiment(
-      name = s"Stencil_GPU",
+      name = s"stencil",
       configFiles = configs,
-      iterations = getIterations(),
-      output = s"artifact/results/rise/Stencil_GPU",
+      iterations = config.Iterations,
+      output = s"${config.OutputRoot}/stencil",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
       inputSizes = Seq(O, N, M), // check whether this is replaced

@@ -75,67 +75,6 @@ class mmEmbedding extends test_util.Tests {
        |""".stripMargin
   // scalastyle:on
 
-  ignore("execute expert configuration") {
-    // execute config with "expert parameter configuration"
-    val mm: Expr =
-      tuningParam("ls0", (ls0: Nat) => tuningParam("ls1", (ls1: Nat) =>
-        tuningParam("gs0", (gs0: Nat) => tuningParam("gs1", (gs1: Nat) =>
-          wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)))))
-
-    // expert config for 128x64 * 128x128
-    val params0: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (32: Nat),
-      TuningParameter("ls1") -> (8: Nat),
-      TuningParameter("gs0") -> (256: Nat),
-      TuningParameter("gs1") -> (128: Nat),
-      TuningParameter("v3") -> (4: Nat),
-      TuningParameter("v4") -> (8: Nat),
-      TuningParameter("v5") -> (64: Nat), // tile-width A
-      TuningParameter("v6") -> (128: Nat), // divides v8 x v5
-      TuningParameter("v7") -> (128: Nat), // tile-width B
-      TuningParameter("v8") -> (16: Nat) // tile-height A,B
-    )
-
-    val mm0 = rise.core.substitute.natsInExpr(params0, mm)
-    val result0 = autotune.execution.execute(
-      expression = mm0,
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
-    )
-    println("result0: " + result0.runtime)
-    //    assert(result0.runtime.isRight)
-
-    // expert config for 128x64 * 128x128
-    val params1: Map[Nat, Nat] = Map(
-      TuningParameter("ls0") -> (16: Nat),
-      TuningParameter("ls1") -> (16: Nat),
-      TuningParameter("gs0") -> (1024: Nat),
-      TuningParameter("gs1") -> (1024: Nat),
-      TuningParameter("v3") -> (1: Nat),
-      TuningParameter("v4") -> (1: Nat),
-      TuningParameter("v5") -> (32: Nat), // tile-width A
-      TuningParameter("v6") -> (32: Nat), // divides v8 x v5
-      TuningParameter("v7") -> (32: Nat), // tile-width B
-      TuningParameter("v8") -> (32: Nat) // tile-height A,B
-    )
-
-    val mm1 = rise.core.substitute.natsInExpr(params1, mm)
-    val result1 = autotune.execution.execute(
-      expression = mm1,
-      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
-      timeouts = Timeouts(5000, 5000, 5000),
-      executionIterations = 100,
-      speedupFactor = 100,
-      execution = Median
-    )
-    println("result1: " + result1.runtime)
-    assert(result1.runtime.isRight)
-
-  }
-
   test("tune mm 1024") {
     val inputSize: Int = 1024
 
@@ -176,8 +115,8 @@ class mmEmbedding extends test_util.Tests {
     runExperiment(
       name = s"mm",
       configFiles = configs,
-      iterations = 2,
-      output = s"experiments/autotuning/dodekajo/fair_embedding_evaluation/mm",
+      iterations = config.Iterations,
+      output = s"${config.OutputRoot}/mm",
       e = mm,
       hostCode = HostCode(init(inputSize, inputSize, inputSize), compute, finish),
       inputSizes = Seq(inputSize, inputSize, inputSize),

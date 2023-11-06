@@ -12,6 +12,10 @@ import scala.language.postfixOps
 import scala.sys.process._
 
 package object autotuning {
+  object config {
+    val OutputRoot: String = "fair_embedding_experiments"
+    val Iterations: Int = 30
+  }
 
   def runExperiment(
                      name: String,

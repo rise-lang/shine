@@ -87,8 +87,8 @@ class kmeansEmbedding extends test_util.Tests {
     runExperiment(
       name = s"kmeans_${inputSize}",
       configFiles = configs,
-      iterations = 2,
-      output = s"experiments/autotuning/dodekajo/fair_embedding_evaluation/kmeans",
+      iterations = config.Iterations,
+      output = s"${config.OutputRoot}/kmeans_${inputSize}",
       e = kmeans,
       hostCode = HostCode(init(inputSize, 10, 34), compute, finish),
       inputSizes = Seq(inputSize, 10, 34),
