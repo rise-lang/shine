@@ -97,8 +97,8 @@ class stencilTuning extends test_util.Tests {
     runExperiment(
       name = s"Stencil_GPU",
       configFiles = configs,
-      iterations = getIterations(),
-      output = s"artifact/results/rise/Stencil_GPU",
+      iterations = config.Iterations,
+      output = s"${config.OutputRoot}/stencil",
       e = acoustic,
       hostCode = HostCode(init(O, N, M), compute, finish),
       inputSizes = Seq(O, N, M), // check whether this is replaced
