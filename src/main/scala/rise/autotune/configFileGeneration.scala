@@ -37,7 +37,7 @@ object configFileGeneration {
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
-         | "hypermapper_mode" : {
+         | "${tuner.tunerVersion}_mode" : {
          |   "mode" : "client-server"
          | },
          | "log_file" : "${tuner.name}.log",
@@ -59,7 +59,7 @@ object configFileGeneration {
       s"""{
          | "application_name" : "${tuner.name}",
          | "optimization_objectives" : ["runtime"],
-         | "hypermapper_mode" : {
+         | "${tuner.tunerVersion}_mode" : {
          |   "mode" : "client-server"
          | },
          | "log_file" : "${tuner.name}.log",
@@ -362,7 +362,7 @@ object configFileGeneration {
           parametersInConstraint.foreach(candidate => {
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
             parametersWDC.filter(
-              paramWDC => !(paramWDC._1.name.equals(candidate.name)))
+                paramWDC => !(paramWDC._1.name.equals(candidate.name)))
               .exists(paramWDC => {
                 paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))
               }) match {

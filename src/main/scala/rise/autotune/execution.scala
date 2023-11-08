@@ -26,6 +26,9 @@ case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                            codegenTime: Option[TimeSpan[Time.ms]],
                            compilationTime: Option[TimeSpan[Time.ms]],
                            executionTime: Option[TimeSpan[Time.ms]],
+                           minimum: Option[TimeSpan[Time.ms]],
+                           maximum: Option[TimeSpan[Time.ms]],
+                           standardDeviation: Option[Double]
                           )
 
 object execution {
@@ -130,14 +133,21 @@ object execution {
           runtime = result._1,
           codegenTime = Some(codegenTime),
           compilationTime = result._2,
-          executionTime = result._3)
+          executionTime = result._3,
+          minimum = result._4,
+          maximum = result._5,
+          standardDeviation = result._6,
+        )
       }
       case Left(error) =>
         ExecutionResult(
           runtime = Left(error),
           codegenTime = Some(codegenTime),
           compilationTime = None,
-          executionTime = None
+          executionTime = None,
+          minimum = None,
+          maximum = None,
+          standardDeviation = None
         )
     }
   }
@@ -152,7 +162,10 @@ object execution {
   : (
     Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
       Option[TimeSpan[Time.ms]], // compilation time
-      Option[TimeSpan[Time.ms]] // execution time
+      Option[TimeSpan[Time.ms]], // execution time
+      Option[TimeSpan[Time.ms]], // min
+      Option[TimeSpan[Time.ms]], // max
+      Option[Double] // std
     ) = {
 
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
@@ -188,25 +201,41 @@ object execution {
       val result = (s"timeout " +
         s"${(executionTimeout * 1).toDouble / 1000.toDouble}s " +
         s"runtime/clap_wrapper.sh $bin 1" !! (logger))
-      val runtimes = getRuntimeFromClap(result)
+      val initialRun = getRuntimeFromClap(result)
 
       // check if speedup condition is met or current best is not initialized
       val repeat = best match {
-        case Some(bestValue) => runtimes(0).value < bestValue * speedupFactor
+        case Some(bestValue) => initialRun(0).value < bestValue * speedupFactor
         case None => true
       }
 
       // repeat execution with execution iterations
-      val runtime = repeat match {
+      val (runtime, minimum, maximum, std) = repeat match {
         case true => {
 
           // repeat execution with execution iterations
           val result = (s"timeout " +
             s"${(executionTimeout * executionIterations).toDouble / 1000.toDouble}s " +
-            s"runtime/clap_wrapper.sh $bin $executionIterations" !! (logger))
-          val runtimes = getRuntimeFromClap(result)
+            s"runtime/clap_wrapper.sh $bin ${executionIterations - 1}" !! (logger))
+          val runtimes = initialRun ++ getRuntimeFromClap(result)
 
-          execution match {
+          // min max value
+          val minimum: Option[TimeSpan[Time.ms]] = Some(runtimes.sorted.apply(0))
+          val maximum: Option[TimeSpan[Time.ms]] = Some(runtimes.sorted.last)
+
+          // standard deviation
+          val runtimesDoubles: Seq[Double] = runtimes.map(elem => elem.value)
+
+          val std = runtimesDoubles.length <= 1 match {
+            case true => None
+            case false => {
+              val mean = runtimesDoubles.sum / runtimesDoubles.length
+              val variance = runtimesDoubles.map(x => math.pow(x - mean, 2)).sum / runtimesDoubles.length
+              Some(scala.math.sqrt(variance))
+            }
+          }
+
+          val resultingRuntime = execution match {
             case Median =>
               executionIterations match {
                 case 1 => runtimes.apply(0)
@@ -214,9 +243,13 @@ object execution {
               }
             case Minimum => runtimes.min
           }
+
+          (resultingRuntime, minimum, maximum, std)
         }
-        case false => runtimes(0)
+
+        case false => (initialRun(0), Some(initialRun(0)), Some(initialRun(0)), None)
       }
+
 
       // update or init global best
       best = best match {
@@ -234,7 +267,10 @@ object execution {
       (
         Right(runtime),
         Some(compilationTime),
-        Some(executionTime)
+        Some(executionTime),
+        minimum,
+        maximum,
+        std
       )
     } catch {
       // todo check error codes here
@@ -248,7 +284,10 @@ object execution {
             Some(e.toString)
           )),
           Some(compilationTime),
-          Some(executionTime)
+          Some(executionTime),
+          None,
+          None,
+          None
         )
       }
     }

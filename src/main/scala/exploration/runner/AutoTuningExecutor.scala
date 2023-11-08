@@ -22,6 +22,8 @@ import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
 
+import exploration.tunerConfiguration
+
 case class AutoTuningExecutor(lowering: Strategy[Rise],
                               goldExpression: Rise,
                               hostCode: Option[HostCode],
@@ -94,7 +96,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         "true_value" : "True",
         "false_value" : "False"
       },
-      "hypermapper_mode" : {
+      "${exploration.tunerConfiguration.tunerVersion}_mode" : {
         "mode" : "client-server"
       },
       "design_of_experiment": {
@@ -136,21 +138,22 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // performance evolution plot
     try {
       // call plot
-      val command = s"python3 ${exploration.configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration "
-      val command2 = s"python3 ${exploration.configuration.tunerRoot}/hypermapper/plot_optimization_results.py -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration "
+      val command = s"${exploration.tunerConfiguration.pythonVersion} ${exploration.tunerConfiguration.tunerRoot}/${exploration.tunerConfiguration.plotter} -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot.pdf --y_label 'Log Runtime(ms)' --title exploration "
+      val command2 = s"${exploration.tunerConfiguration.pythonVersion} ${exploration.tunerConfiguration.tunerRoot}/${exploration.tunerConfiguration.plotter} -j ${configFilePath} -i ${output}/hm -l exploration -o ${output}/plot_log.pdf --plot_log --y_label 'Log Runtime(ms)' --title exploration "
       println("plot: " + command)
       (command !!)
       println("plotlog: " + command2)
       (command2 !!)
     } catch {
       case e: Throwable => // ignore
+        println("ignore for now")
     }
 
 
     // scatter plot
     try {
-      val command = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
-      val command_log = s"python exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
+      val command = s"${exploration.tunerConfiguration.pythonVersion} exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter.pdf"
+      val command_log = s"${exploration.tunerConfiguration.pythonVersion} exploration/plotting/plot.py --plot scatter --src ${output}/hm --title exploration --output ${output}/scatter_log.pdf --log"
 
       println("scatter: " + command)
       (command !!)
@@ -159,6 +162,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     } catch {
       case e: Throwable => // ignore
+        println("ignore for now")
     }
 
   }
@@ -249,7 +253,12 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       hmConstraints = true,
       executor = Some(executeInternal),
       //      hmConstraints = false,
-      saveToFile = false
+      saveToFile = false,
+      tunerRoot = tunerConfiguration.tunerRoot,
+      tunerPath = tunerConfiguration.tuner,
+      tunerPlot = tunerConfiguration.plotter,
+      tunerPython = tunerConfiguration.pythonVersion,
+      tunerVersion = tunerConfiguration.tunerVersion
     )
 
     // lower expression
@@ -300,7 +309,10 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
               durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
               samples = samples,
               executions = tuner.executionIterations * samples,
-              runtime
+              runtime,
+              //              None,
+              //              None,
+              //              None,
             )
           )
         } catch {
@@ -324,7 +336,10 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                 durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
                 samples = 0,
                 executions = 0,
-                None
+                None,
+                //                None,
+                //                None,
+                //                None
               )
             )
         }
@@ -353,7 +368,10 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
             durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
             samples = 0,
             executions = 0,
-            None
+            None,
+            //            None,
+            //            None,
+            //            None
           )
         )
     }
@@ -406,14 +424,14 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       name = "mm",
       output = "exploration",
       timeouts = Timeouts(10000, 10000, 10000),
-      executionIterations = 10,
+      executionIterations = iterations,
       speedupFactor = 100,
       //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
       configFile = None,
       hmConstraints = true,
       executor = None,
       saveToFile = true,
-      tunerRoot = exploration.configuration.tunerRoot
+      tunerRoot = exploration.tunerConfiguration.tunerRoot
     )
 
     // lower expression
@@ -459,7 +477,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
             writeValues(
               path = output + "/" + "executor.csv",
-              result = (solution, lowered.get, performanceValue, errorLevel),
+              result = (solution, lowered.get, sample.parameters, performanceValue, errorLevel, sample.statistics),
               statistics = None,
               solution.rewrites(),
               "executor"
@@ -469,6 +487,23 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           val best = getBest(result.samples)
           //          println("best: " + best)
           //          println("lowered: " + lowered)
+
+          val min: Option[TimeSpan[Time.ms]] = result.samples.map(elem => elem.runtime match {
+            case Right(value) => Some(value)
+            case Left(error) => None
+          }).reduceLeft((A, B) => {
+            (A, B) match {
+              case (Some(runtimeA), Some(runtimeB)) => {
+                runtimeA.value <= runtimeB.value match {
+                  case true => Some(runtimeA)
+                  case false => Some(runtimeB)
+                }
+              }
+              case (None, None) => None
+              case (Some(runtimeA), None) => Some(runtimeA)
+              case (None, Some(runtimeB)) => Some(runtimeB)
+            }
+          })
 
           val runtime = best match {
             case Some(_) =>
@@ -493,7 +528,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
               durationLowering = TimeSpan.inMilliseconds(loweringDuration.toDouble),
               samples = samples,
               executions = tuner.executionIterations * samples,
-              runtime
+              runtime,
+
             )
           )
         } catch {
@@ -654,7 +690,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
 
   def writeValues(path: String,
-                  result: (Solution[Rise], Rise, Option[Double], Option[AutoTuningErrorLevel]),
+                  result: (Solution[Rise], Rise, Map[String, rise.autotune.TuningParameterValues], Option[Double], Option[AutoTuningErrorLevel], rise.autotune.SampleStatistics),
                   statistics: Option[ExecutionStatistics],
                   rewrite: Seq[RewriteIdentifier[Rise]],
                   name: String): Unit = {
@@ -673,22 +709,37 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       hashSolution(result._1) + "," +
       hashProgram(result._2) + "," +
       rewrite.mkString("\"[", ",", "]\"") + "," +
-      result._4.toString + ","
+      result._3.map(config => s"${config._1}=${config._2.value}").mkString("\"[", ",", "]\"") + "," + // parameter configuration here
+      result._5.toString + ","
 
-    result._3 match {
+    result._4 match {
       case Some(value) => string += value.toString + ","
       case _ => string += "-1,"
     }
 
-    statistics match {
-      case Some(stats) => // print statistics
-        string += s"${stats.min},${stats.max},${stats.std},${iterations}\n"
-      case None =>
-        string += s"None,None,None,${iterations}\n"
+    val minimumString = result._6.minimum match {
+      case Some(value) => s"$value"
+      case None => "None"
     }
 
+    string += minimumString + ","
 
-    val stringHmAppendix = result._3 match {
+    val maximumString = result._6.maximum match {
+      case Some(value) => s"$value"
+      case None => "None"
+    }
+
+    string += maximumString + ","
+
+    val stdString = result._6.standardDeviation match {
+      case Some(value) => String.format("%.4f", value)
+      case None => "None"
+    }
+
+    string += stdString + ","
+    string += s"${iterations}\n"
+
+    val stringHmAppendix = result._4 match {
       case Some(value) => value.toString + "," + "True" + "," + System.currentTimeMillis().toString + "\n"
       case None => "-1" + "," + "False" + "," + System.currentTimeMillis().toString + "\n"
     }
@@ -707,7 +758,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     //      case _ =>
     //    }
 
-
     file.close()
     fileHM.close()
   }
@@ -724,7 +774,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // create string to write to file
     val string = "iteration,runner,timestamp,high-level hash," +
-      "low-level hash,rewrite,error-level,runtime,min,max,std,executions \n"
+      "low-level hash,rewrite,parameter-configuration,error-level,runtime,min,max,std,executions \n"
 
     val stringHM = "index,runtime,Valid,Timestamp" + "\n"
 

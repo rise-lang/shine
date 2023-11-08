@@ -14,11 +14,12 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 package object exploration {
 
-  object configuration {
+  object tunerConfiguration {
     val pythonVersion: String = "python3.8"
-    //    val tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev"
-    val tunerRoot: String = "/home/jo/development/tuning/baco"
-    val tuner: String = "hypermapper/hypermapper.py"
+    val tunerRoot: String = "/home/jo/development/rise-lang/baco"
+    val plotter: String = "baco/plot/plot_optimization_results.py"
+    val tuner: String = "baco/run.py"
+    val tunerVersion: String = "baco"
   }
 
 
@@ -67,6 +68,8 @@ package object exploration {
 
     println("Check Installation")
 
+    //    (s"export PYTHONPATH=${tunerConfiguration.tunerRoot}" !!)
+
     // check compiler?
 
     // check clap?
@@ -76,7 +79,7 @@ package object exploration {
       s"""{
          | "application_name" : "checkTuner",
          | "optimization_objectives" : ["runtime"],
-         | "hypermapper_mode" : {
+         | "${tunerConfiguration.tunerVersion}_mode" : {
          |   "mode" : "client-server"
          | },
          | "log_file" : "checkTuner.log",
@@ -112,7 +115,7 @@ package object exploration {
     file.write(configFile)
     file.close()
 
-    val hypermapper = os.proc(configuration.pythonVersion, configuration.tunerRoot + "/" + configuration.tuner, filePath).spawn()
+    val hypermapper = os.proc(tunerConfiguration.pythonVersion, tunerConfiguration.tunerRoot + "/" + tunerConfiguration.tuner, filePath).spawn()
 
     var done: Boolean = false
     var hypermapperError: Boolean = false
@@ -120,7 +123,7 @@ package object exploration {
       hypermapper.stdout.readLine() match {
         case null =>
           done = false
-          println("error!1" + hypermapperError)
+          println("error! " + hypermapperError)
         //          hypermapperError = false
         case "End of HyperMapper" =>
           done = true
@@ -144,7 +147,7 @@ package object exploration {
           }).mkString(",")
           response += "," + "0.0\n"
 
-          // send response to hypermapper
+          // send response to tuner
           hypermapper.stdin.write(response)
           hypermapper.stdin.flush()
         case message => println("message: " + message)
@@ -225,12 +228,12 @@ package object exploration {
             // directory uniqueFilename_full
             // plot
             val plot = explorer.expert match {
-              case Some(value) => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-              case None => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+              case Some(value) => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+              case None => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
             }
             val plot_log = explorer.expert match {
-              case Some(value) => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-              case None => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+              case Some(value) => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+              case None => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${config.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
             }
 
             (plot !!)
@@ -342,16 +345,21 @@ package object exploration {
               // directory uniqueFilename_full
               // plot
               val plot = explorer.expert match {
-                case Some(value) => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
-                case None => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
+                case Some(value) => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log --exp ${value}"
+                case None => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --plot_log"
               }
               val plot_log = explorer.expert match {
-                case Some(value) => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
-                case None => s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
+                case Some(value) => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} --exp ${value}"
+                case None => s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} -j ${uniqueFilename_full}/tuningStatistics.json -i ${uniqueFilename_full}/hm -l ${metaheuristic.reverse.last.heuristic} -o ${uniqueFilename_full}/${explorer.name}_log.pdf --y_label 'Runtime(ms)' --title ${explorer.name} "
               }
 
-              (plot !!)
-              (plot_log !!)
+              try {
+                (plot !!)
+                (plot_log !!)
+              } catch {
+                case e: Throwable => // ignore
+                  println("ignore for now ")
+              }
 
             })
 
@@ -384,11 +392,16 @@ package object exploration {
   }
 
   def plot_experiment2(uniqueFilenameRoot: String, explorer: Explorer) = {
-    val command = s"${configuration.pythonVersion} experiment/plot_experiment2.py ${uniqueFilenameRoot}"
+    val command = s"${tunerConfiguration.pythonVersion} experiment/plot_experiment2.py ${uniqueFilenameRoot}"
 
     println("command: " + command)
 
-    command !!
+    try {
+      command !!
+    } catch {
+      case e: Throwable => // ignore
+        println("ignore for now")
+    }
 
   }
 
@@ -409,7 +422,7 @@ package object exploration {
     }
 
     val plot_command =
-      s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
+      s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} " +
         s"-j ${configFile} " +
         "-i " +
         folders +
@@ -421,7 +434,7 @@ package object exploration {
         s"--title ${explorer.name} "
 
     val plot_log_command =
-      s"${configuration.pythonVersion} ${configuration.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
+      s"${tunerConfiguration.pythonVersion} ${tunerConfiguration.tunerRoot}/${tunerConfiguration.plotter} " +
         s"-j ${configFile} " +
         "-i " +
         folders +
@@ -434,10 +447,20 @@ package object exploration {
         s"--title ${explorer.name} "
 
     println("command: " + plot_command)
-    plot_command !!
+    try {
+      plot_command !!
+    } catch {
+      case e: Throwable => // ignore
+        println("ignore for now")
+    }
 
     println("command: " + plot_log_command)
-    plot_log_command !!
+    try {
+      plot_log_command !!
+    } catch {
+      case e: Throwable => // ignore
+        println("ignore for now")
+    }
 
   }
 

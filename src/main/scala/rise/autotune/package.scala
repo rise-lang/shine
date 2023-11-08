@@ -37,9 +37,11 @@ package object autotune {
                    executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
-                   tunerRoot: String = "/home/jo/development/tuning/hypermapper_dev",
-                   tunerPath: String = "hypermapper/hypermapper.py",
-                   tunerPython: String = "python3.8"
+                   tunerRoot: String = "/home/jo/development/rise-lang/baco",
+                   tunerPath: String = "baco/run.py",
+                   tunerPlot: String = "baco/plot/plot_optimization_results.py",
+                   tunerPython: String = "python3.8",
+                   tunerVersion: String = "baco"
                   )
 
   // necessary host-code parts to execute the program
@@ -72,7 +74,8 @@ package object autotune {
   case class Sample(parameters: Map[String, TuningParameterValues], // specific parameter configuration
                     runtime: Either[AutoTuningError, TimeSpan[Time.ms]], // runtime or error
                     timestamp: Long, // timestamp of sample
-                    tuningTimes: TuningTimes // durations of sub-parts
+                    tuningTimes: TuningTimes, // durations of sub-parts
+                    statistics: SampleStatistics
                    )
 
   // just example code here
@@ -87,7 +90,9 @@ package object autotune {
   })
 
   // workaround to support permutation variables
-  trait TuningParameterValues
+  trait TuningParameterValues {
+    val value: Any
+  }
 
   case class ClassicParameter(
                                value: Int
@@ -103,6 +108,12 @@ package object autotune {
                          compilation: Option[TimeSpan[Time.ms]], // duration of compilation part
                          execution: Option[TimeSpan[Time.ms]] // duration of execution part
                         )
+
+  case class SampleStatistics(
+                               minimum: Option[TimeSpan[Time.ms]],
+                               maximum: Option[TimeSpan[Time.ms]],
+                               standardDeviation: Option[Double]
+                             )
 
   case class TuningStatistics(
                                name: String,
@@ -164,6 +175,13 @@ package object autotune {
       case _ => println("use given configuration file")
     }
 
+    val doe: Int = parameters.size + 1
+    val optimization_iterations = parameters.size match {
+      case 0 => 0
+      case _ => tuner.samples
+    }
+    val evalRequests: Int = doe + optimization_iterations
+
     println("parameters: \n" + parameters)
     println("constraints: \n" + constraints)
 
@@ -210,7 +228,12 @@ package object autotune {
                     runtime = Right(TimeSpan.inMilliseconds(value)),
                     timestamp = System.currentTimeMillis() - start,
                     tuningTimes = TuningTimes(
-                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                    statistics = SampleStatistics(
+                      None,
+                      None,
+                      None
+                    )
                   )
 
                 case Left(error) =>
@@ -220,7 +243,12 @@ package object autotune {
                     runtime = Left(error),
                     timestamp = System.currentTimeMillis() - start,
                     tuningTimes = TuningTimes(
-                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                    statistics = SampleStatistics(
+                      None,
+                      None,
+                      None
+                    )
                   )
               }
             case Left(error) =>
@@ -230,7 +258,12 @@ package object autotune {
                 parameters = tuningParameterValues,
                 runtime = Left(AutoTuningError(SUBSTITUTION_ERROR, Some(error))),
                 timestamp = System.currentTimeMillis() - start,
-                tuningTimes = TuningTimes(totalTime, None, None, None)
+                tuningTimes = TuningTimes(totalTime, None, None, None),
+                statistics = SampleStatistics(
+                  None,
+                  None,
+                  None
+                )
               )
           }
         case None =>
@@ -264,7 +297,12 @@ package object autotune {
                       runtime = Right(TimeSpan.inMilliseconds(value)),
                       timestamp = System.currentTimeMillis() - start,
                       tuningTimes = TuningTimes(
-                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                      statistics = SampleStatistics(
+                        None,
+                        None,
+                        None
+                      )
                     )
 
                   case Left(error) =>
@@ -274,7 +312,8 @@ package object autotune {
                       runtime = Left(error),
                       timestamp = System.currentTimeMillis() - start,
                       tuningTimes = TuningTimes(
-                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get)))
+                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                      statistics = SampleStatistics(None, None, None)
                     )
                 }
 
@@ -297,7 +336,12 @@ package object autotune {
                   runtime = result.runtime,
                   timestamp = System.currentTimeMillis() - start,
                   tuningTimes = TuningTimes(
-                    totalTime, result.codegenTime, result.compilationTime, result.executionTime)
+                    totalTime, result.codegenTime, result.compilationTime, result.executionTime),
+                  statistics = SampleStatistics(
+                    result.minimum,
+                    result.maximum,
+                    result.standardDeviation
+                  )
                 )
             }
           } else {
@@ -306,7 +350,12 @@ package object autotune {
               parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
               runtime = Left(AutoTuningError(CONSTRAINTS_ERROR, None)),
               timestamp = System.currentTimeMillis() - start,
-              tuningTimes = TuningTimes(totalTime, None, None, None)
+              tuningTimes = TuningTimes(totalTime, None, None, None),
+              statistics = SampleStatistics(
+                None,
+                None,
+                None
+              )
             )
           }
       }
@@ -338,6 +387,8 @@ package object autotune {
     //    print("hypermapper: " + hypermapper2)
     //    val hypermapper = os.proc("python3", "/home/jo/development/tuning/hypermapper_dev/hypermapper/optimizer.py", configFile).spawn()
 
+    //    println("is the problem here?")
+
     val hypermapper = os.proc(tuner.tunerPython, tuner.tunerRoot + "/" + tuner.tunerPath, configFile).spawn()
     //    val hypermapper = os.proc("python3.8", "/home/jo/development/tuning/baco/hypermapper/hypermapper.py", configFile).spawn()
 
@@ -361,7 +412,7 @@ package object autotune {
         case request if request.contains("warning") =>
           println(s"[Hypermapper] $request")
         case request if request.contains("Request") =>
-          println(s"Request: $request")
+          //          println(s"Request: $request")
           val numberOfEvalRequests = request.split(" ")(1).toInt
           // read in header
           val header = hypermapper.stdout.readLine().split(",").map(x => x.trim())
@@ -377,11 +428,11 @@ package object autotune {
             // read in parameters values
             val parametersValues = hypermapper.stdout.readLine().split(",").map(x => x.trim())
             // compute sample (including function value aka runtime)
-            print("[" + i.toString + "/" + numberOfEvalRequests + "] : ")
+            print("[" + i.toString + "/" + evalRequests + "] : ")
             val sample = computeSample(header, parametersValues)
-            println(sample.runtime)
-            println(sample)
-            println()
+            println(s"${sample.runtime} - ${sample}")
+            //            println(sample)
+            //            println()
             i += 1
             // append sample to Samples
             samples += sample
@@ -478,6 +529,8 @@ package object autotune {
 
     val tuningResult = TuningResult(samples.toSeq, tuner)
     saveTuningResult(tuningResult)
+
+    println("saved tuning Result ")
 
     tuningResult
   }
@@ -712,12 +765,19 @@ package object autotune {
       case None => tuner.output + "/" + tuner.name + ".json"
     }
 
-    // plot results using hypermapper
-    (s"${tuner.tunerPython} ${tuner.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
-      "-j " + configFile + " " +
-      "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
-      "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
-      "-log --y_label \"Log Runtime(ms)\"" !!)
+    try {
+
+      // plot results using hypermapper
+      (s"${tuner.tunerPython} ${tuner.tunerRoot}/hypermapper/plot/plot_optimization_results.py " +
+        "-j " + configFile + " " +
+        "-i " + tuner.output + "/" + tuner.name + "_hm" + " " +
+        "-o" + tuner.output + "/" + tuner.name + ".pdf" + " " +
+        "-log --y_label \"Log Runtime(ms)\"" !!)
+
+    } catch {
+      case e: Throwable => // ignore
+        println("ignore for now ")
+    }
   }
 
   // todo finish implementation
