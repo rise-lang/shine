@@ -174,6 +174,7 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
+               |       "parameter_default": 1,
                |       "values" : ${values.mkString("[", ", ", "]")},
                |       "constraints" : ${constraints},
                |       "dependencies" : ${dependencies}
@@ -247,7 +248,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-    println("file: " + file)
+    //    println("file: " + file)
 
     file
   }

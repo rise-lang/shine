@@ -189,6 +189,23 @@ class mmGPU_exploration extends test_util.Tests {
     scala.collection.immutable.Seq(
       //      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
       fuseReduceMap, // fusion
+      splitJoinRule, // split join
+      rise.elevate.rules.lowering.mapGlobal(0),
+      rise.elevate.rules.lowering.mapGlobal(1),
+      rise.elevate.rules.lowering.mapWorkGroup(0),
+      rise.elevate.rules.lowering.mapWorkGroup(1),
+      rise.elevate.rules.lowering.mapLocal(0),
+      rise.elevate.rules.lowering.mapLocal(1),
+      rise.elevate.rules.lowering.mapSeqCompute(),
+    )
+  }
+
+
+  // reverse rules
+  val rules_reverse: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      //      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
+      fuseReduceMap, // fusion
       reduceMapFission(), // fission
       splitJoinRule, // split join
       joinSplit, // split join reverse
@@ -353,9 +370,9 @@ class mmGPU_exploration extends test_util.Tests {
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
-        depth = 30, // is this ignored?
-        samples = 30, // does not scale well
-        repeat = 5
+        depth = 30, // I think this is used for the output csv file
+        samples = 20, // does not scale well, why?
+        repeat = 3
       )
     )
 
@@ -380,9 +397,9 @@ class mmGPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
-        depth = 7, // is this ignored? -> maybe not for tree window slide
-        samples = 30,
-        repeat = 5
+        depth = 30, // is this ignored? -> maybe not for tree window slide
+        samples = 3, // 7 hours for 1000 samples
+        repeat = 1
       )
     )
 
@@ -390,9 +407,9 @@ class mmGPU_exploration extends test_util.Tests {
     val localSearchGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "LocalSearchGraph",
-        depth = 10, // seems to be ignored
+        depth = 30, // seems to be ignored
         samples = 100, // not ignored
-        repeat = 5
+        repeat = 1
       )
     )
 
@@ -400,19 +417,19 @@ class mmGPU_exploration extends test_util.Tests {
       //      random,
       //      tabuSearchPlain,
       //      simulatedAnnealingPlain,
-      //      exhaustive,
       exhaustive,
+      //      exhaustive, // breadth first search -> 2000 rewrites -> 16.5 hours
       //      localSearchGraph,
-      randomGraph
-      //       random?
+      //      randomGraph
+      //             random?
       // tabu search? -> something more advanced
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 5,
+      iterations = 6,
       threshold = 10,
-      samples = 10
+      samples = 5
     )
 
     val experiment = scala.collection.immutable.Seq(
@@ -446,6 +463,7 @@ class mmGPU_exploration extends test_util.Tests {
       normalForm = None,
       importExport = None,
       expert = Some(0.009632),
+      default = Some(10.000),
       overwrite = false
     )
 

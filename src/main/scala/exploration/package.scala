@@ -40,6 +40,7 @@ package object exploration {
                        normalForm: Option[Strategy[Rise]] = None, // apply normal form after each rewrite
                        importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None, // how to import/export a solution
                        expert: Option[Double] = None,
+                       default: Option[Double] = None,
                        overwrite: Boolean = false,
                        //                       repeat: Int = 1
                      )
@@ -392,12 +393,27 @@ package object exploration {
   }
 
   def plot_experiment2(uniqueFilenameRoot: String, explorer: Explorer) = {
-    val command = s"${tunerConfiguration.pythonVersion} experiment/plot_experiment2.py ${uniqueFilenameRoot}"
 
-    println("command: " + command)
+
+    val command = s"${tunerConfiguration.pythonVersion} lib/exploration_plotting/exploration_plotting.py -p performance_evolution -i ${uniqueFilenameRoot} --log"
+
+    val expert_appendix = explorer.expert match {
+      case None => ""
+      case Some(value) => s" --expert ${value}"
+    }
+
+    val default_appendx = explorer.default match {
+      case None => ""
+      case Some(value) => s" --default ${value}"
+    }
+
+    val full_command = command + expert_appendix + default_appendx
+
+
+    println("command: " + full_command)
 
     try {
-      command !!
+      full_command !!
     } catch {
       case e: Throwable => // ignore
         println("ignore for now")

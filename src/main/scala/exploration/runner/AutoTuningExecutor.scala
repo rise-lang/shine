@@ -235,8 +235,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // todo work with gold expression
 
-    println("solution: " + solution)
-    println(hashProgram(solution.expression()))
+    //    println("solution: " + solution)
+    println("solution: " + hashProgram(solution.expression()))
 
     // create tuner
     val tuner = Tuner(
@@ -414,8 +414,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // todo work with gold expression
 
-    println("solution: " + solution)
-    println(hashProgram(solution.expression()))
+    //    println("solution: " + solution)
+    println("solution: " + hashProgram(solution.expression()))
 
     // todo adjust this for autotuning benchmarks
     val tuner = Tuner(
@@ -708,7 +708,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     var string = s"$counterTotal,$name,${System.currentTimeMillis().toString}," +
       hashSolution(result._1) + "," +
       hashProgram(result._2) + "," +
-      rewrite.mkString("\"[", ",", "]\"") + "," +
+      rewrite.filter(elem => elem.strategy != elevate.core.strategies.basic.id[Rise]).mkString("\"[", ",", "]\"") + "," +
       result._3.map(config => s"${config._1}=${config._2.value}").mkString("\"[", ",", "]\"") + "," + // parameter configuration here
       result._5.toString + ","
 
