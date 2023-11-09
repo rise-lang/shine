@@ -13,3 +13,6 @@
 [submodule "lib/clap"]
 	path = lib/clap
 	url = https://github.com/michel-steuwer/clap.git
+[submodule "lib/exploration_plotting"]
+	path = lib/exploration_plotting
+	url = git@github.com:johanneslenfers/exploration_plotting.git
