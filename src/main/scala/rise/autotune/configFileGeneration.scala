@@ -20,16 +20,10 @@ object configFileGeneration {
 
     val parametersWDCImmutable = distributeConstraints(p, c)
 
-    // number of samples for design of experiment phase
-    //    val doe = p.size * 10
-    //    val optimization_iterations = tuner.samples
-
-    val doe = p.size + 1
-    //    val optimization_iterations = tuner.samples
-
-    val optimization_iterations = p.size match {
-      case 0 => 0
-      case _ => tuner.samples
+    // determine doe and optimization iterations from number of samples configured
+    val (doe: Int, optimization_iterations: Int) = (p.size + 1) < tuner.samples match {
+      case true => (p.size + 1, tuner.samples - (p.size + 1))
+      case false => (tuner.samples, 0)
     }
 
     // create header for hypermapper configuration file
