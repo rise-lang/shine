@@ -112,7 +112,8 @@ package object autotune {
   case class SampleStatistics(
                                minimum: Option[TimeSpan[Time.ms]],
                                maximum: Option[TimeSpan[Time.ms]],
-                               standardDeviation: Option[Double]
+                               standardDeviation: Option[Double],
+                               iterations: Int
                              )
 
   case class TuningStatistics(
@@ -175,11 +176,12 @@ package object autotune {
       case _ => println("use given configuration file")
     }
 
-    val doe: Int = parameters.size + 1
-    val optimization_iterations = parameters.size match {
-      case 0 => 0
-      case _ => tuner.samples
+    // determine doe and optimization iterations from number of samples configured
+    val (doe: Int, optimization_iterations: Int) = (parameters.size + 1) < tuner.samples match {
+      case true => (parameters.size + 1, tuner.samples - (parameters.size + 1))
+      case false => (tuner.samples, 0)
     }
+
     val evalRequests: Int = doe + optimization_iterations
 
     println("parameters: \n" + parameters)
@@ -232,7 +234,8 @@ package object autotune {
                     statistics = SampleStatistics(
                       None,
                       None,
-                      None
+                      None,
+                      1
                     )
                   )
 
@@ -247,7 +250,8 @@ package object autotune {
                     statistics = SampleStatistics(
                       None,
                       None,
-                      None
+                      None,
+                      1
                     )
                   )
               }
@@ -262,7 +266,8 @@ package object autotune {
                 statistics = SampleStatistics(
                   None,
                   None,
-                  None
+                  None,
+                  1
                 )
               )
           }
@@ -301,7 +306,8 @@ package object autotune {
                       statistics = SampleStatistics(
                         None,
                         None,
-                        None
+                        None,
+                        1
                       )
                     )
 
@@ -313,7 +319,7 @@ package object autotune {
                       timestamp = System.currentTimeMillis() - start,
                       tuningTimes = TuningTimes(
                         totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
-                      statistics = SampleStatistics(None, None, None)
+                      statistics = SampleStatistics(None, None, None, 1)
                     )
                 }
 
@@ -340,7 +346,8 @@ package object autotune {
                   statistics = SampleStatistics(
                     result.minimum,
                     result.maximum,
-                    result.standardDeviation
+                    result.standardDeviation,
+                    result.iterations
                   )
                 )
             }
@@ -354,7 +361,8 @@ package object autotune {
               statistics = SampleStatistics(
                 None,
                 None,
-                None
+                None,
+                1
               )
             )
           }
