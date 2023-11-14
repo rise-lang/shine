@@ -1,7 +1,7 @@
 package rise.autotune
 
 import rise.core.Expr
-import util.ExecuteOpenCL.{includes, libDirs, libs, platformPath}
+import util.ExecuteOpenCL.{executorHeadersPath, includes, libDirs, libs, platformPath}
 import util.{Time, TimeSpan, createTempFile, gen, writeToTempFile}
 
 import java.util.concurrent.ExecutionException
@@ -28,7 +28,8 @@ case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                            executionTime: Option[TimeSpan[Time.ms]],
                            minimum: Option[TimeSpan[Time.ms]],
                            maximum: Option[TimeSpan[Time.ms]],
-                           standardDeviation: Option[Double]
+                           standardDeviation: Option[Double],
+                           iterations: Int,
                           )
 
 object execution {
@@ -137,6 +138,7 @@ object execution {
           minimum = result._4,
           maximum = result._5,
           standardDeviation = result._6,
+          iterations = result._7
         )
       }
       case Left(error) =>
@@ -147,7 +149,8 @@ object execution {
           executionTime = None,
           minimum = None,
           maximum = None,
-          standardDeviation = None
+          standardDeviation = None,
+          iterations = 1
         )
     }
   }
@@ -165,7 +168,8 @@ object execution {
       Option[TimeSpan[Time.ms]], // execution time
       Option[TimeSpan[Time.ms]], // min
       Option[TimeSpan[Time.ms]], // max
-      Option[Double] // std
+      Option[Double], // std
+      Int // iterations
     ) = {
 
     val src = writeToTempFile("code-", ".c", code).getAbsolutePath
@@ -210,12 +214,12 @@ object execution {
       }
 
       // repeat execution with execution iterations
-      val (runtime, minimum, maximum, std) = repeat match {
+      val (runtime, minimum, maximum, std, iterations) = repeat match {
         case true => {
 
           // repeat execution with execution iterations
           val result = (s"timeout " +
-            s"${(executionTimeout * executionIterations).toDouble / 1000.toDouble}s " +
+            s"${(executionTimeout * (executionIterations - 1)).toDouble / 1000.toDouble}s " +
             s"runtime/clap_wrapper.sh $bin ${executionIterations - 1}" !! (logger))
           val runtimes = initialRun ++ getRuntimeFromClap(result)
 
@@ -244,10 +248,10 @@ object execution {
             case Minimum => runtimes.min
           }
 
-          (resultingRuntime, minimum, maximum, std)
+          (resultingRuntime, minimum, maximum, std, executionIterations)
         }
 
-        case false => (initialRun(0), Some(initialRun(0)), Some(initialRun(0)), None)
+        case false => (initialRun(0), Some(initialRun(0)), Some(initialRun(0)), None, 1)
       }
 
 
@@ -270,7 +274,8 @@ object execution {
         Some(executionTime),
         minimum,
         maximum,
-        std
+        std,
+        iterations
       )
     } catch {
       // todo check error codes here
@@ -287,7 +292,8 @@ object execution {
           Some(executionTime),
           None,
           None,
-          None
+          None,
+          1
         )
       }
     }

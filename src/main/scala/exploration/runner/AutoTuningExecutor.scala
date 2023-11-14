@@ -423,7 +423,11 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       samples = samples,
       name = "mm",
       output = "exploration",
-      timeouts = Timeouts(10000, 10000, 10000),
+      timeouts = Timeouts(
+        codegenerationTimeout = 10000,
+        compilationTimeout = 10000,
+        executionTimeout = 500
+      ),
       executionIterations = iterations,
       speedupFactor = 100,
       //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
@@ -737,7 +741,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     }
 
     string += stdString + ","
-    string += s"${iterations}\n"
+    string += s"${result._6.iterations}\n"
 
     val stringHmAppendix = result._4 match {
       case Some(value) => value.toString + "," + "True" + "," + System.currentTimeMillis().toString + "\n"
