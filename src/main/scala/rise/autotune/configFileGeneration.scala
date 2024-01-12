@@ -41,6 +41,7 @@ object configFileGeneration {
          |   "true_value" : "True",
          |   "false_value" : "False"
          | },
+         | "time_budget_cot" : ${tuner.tunerTimeBudgetCot},
          | "design_of_experiment" : {
          |   "doe_type" : "random sampling",
          |   "number_of_samples" : ${doe}
@@ -63,6 +64,7 @@ object configFileGeneration {
          |   "true_value" : "True",
          |   "false_value" : "False"
          | },
+         | "time_budget_cot" : ${tuner.tunerTimeBudgetCot},
          | "scalarization_method": "linear",
          | "optimization_method": "opentuner",
          | "optimization_iterations" : ${optimization_iterations},

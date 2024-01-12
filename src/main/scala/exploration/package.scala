@@ -15,8 +15,8 @@ import java.io.{File, FileOutputStream, PrintWriter}
 package object exploration {
 
   object tunerConfiguration {
-    val pythonVersion: String = "python3.8"
-    val tunerRoot: String = "/home/jo/development/rise-lang/baco"
+    val pythonVersion: String = "/home/jo/development/rise-lang/baco_paper_version/.venv/bin/python"
+    val tunerRoot: String = "/home/jo/development/rise-lang/baco_paper_version"
     val plotter: String = "baco/plot/plot_optimization_results.py"
     val tuner: String = "baco/run.py"
     val tunerVersion: String = "baco"
@@ -116,7 +116,23 @@ package object exploration {
     file.write(configFile)
     file.close()
 
-    val hypermapper = os.proc(tunerConfiguration.pythonVersion, tunerConfiguration.tunerRoot + "/" + tunerConfiguration.tuner, filePath).spawn()
+    val hypermapper = os.proc(
+      tunerConfiguration.pythonVersion,
+      tunerConfiguration.tunerRoot + "/" + tunerConfiguration.tuner,
+      filePath
+    ).spawn(
+      env = Map.apply("PYTHONPATH" -> tunerConfiguration.tunerRoot)
+    )
+
+    //    def call(cwd: Path = null,
+    //             env: Map[String, String] = null,
+    //             stdin: ProcessInput = Pipe,
+    //             stdout: ProcessOutput = Pipe,
+    //             stderr: ProcessOutput = os.Inherit,
+    //             mergeErrIntoOut: Boolean = false,
+    //             timeout: Long = -1,
+    //             check: Boolean = true,
+    //             propagateEnv: Boolean = true)
 
     var done: Boolean = false
     var hypermapperError: Boolean = false
