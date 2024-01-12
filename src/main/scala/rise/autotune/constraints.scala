@@ -34,9 +34,11 @@ object constraints {
         throw new Exception(s"no support for checking $this")
     }
   }
+
   case class PredicateConstraint(n: BoolExpr) extends Constraint {
     override def toString: String = n.toString
   }
+
   case class RangeConstraint(n: Nat, r: arithexpr.arithmetic.Range) extends Constraint {
     override def toString: String = s"($n) in $r"
   }
@@ -70,6 +72,7 @@ object constraints {
         case _ => inputs
       }
     }
+
     iter(e, Set.empty)
   }
 
@@ -109,7 +112,7 @@ object constraints {
               cs += RangeConstraint(gs, RangeAdd(0, PosInf, ls))
             }
             // todo change hard-coded 1024 to CL_DEVICE_MAX_WORK_GROUP_SIZE
-            addPredicate(ArithPredicate(ls0*ls1*ls2, 1024, ArithPredicate.Operator.<=))
+            addPredicate(ArithPredicate(ls0 * ls1 * ls2, 1024, ArithPredicate.Operator.<=))
           case _ =>
         }
         super.expr(e)
@@ -128,30 +131,32 @@ object constraints {
 
       override def nat: Nat => monads.Pure[Nat] = n =>
         return_(n.visitAndRebuild { m =>
-          if (m.varList.forall(v => paramOrInput(v.name))) { m match {
-            case Prod(parts) =>
-              var (num, denum) = parts.partition {
-                case Pow(_, Cst(-1)) => false
-                case _ => true
-              }
-              denum = denum.map { case Pow(b, Cst(-1)) => b }
-              if (denum.nonEmpty) { // num /^ denum
-                val aNum = num.fold(1: ArithExpr)(_ * _)
-                val aDenum = denum.fold(1: ArithExpr)(_ * _)
-                if (aNum % aDenum != Cst(0)) {
-                  cs += RangeConstraint(aNum, RangeAdd(0, PosInf, aDenum))
+          if (m.varList.forall(v => paramOrInput(v.name))) {
+            m match {
+              case Prod(parts) =>
+                var (num, denum) = parts.partition {
+                  case Pow(_, Cst(-1)) => false
+                  case _ => true
                 }
-              }
-            case Mod(x, _) =>
-              addPredicate(ArithPredicate(x, 0, ArithPredicate.Operator.>=))
-            case _ => ()
-          }}
+                denum = denum.map { case Pow(b, Cst(-1)) => b }
+                if (denum.nonEmpty) { // num /^ denum
+                  val aNum = num.fold(1: ArithExpr)(_ * _)
+                  val aDenum = denum.fold(1: ArithExpr)(_ * _)
+                  if (aNum % aDenum != Cst(0)) {
+                    cs += RangeConstraint(aNum, RangeAdd(0, PosInf, aDenum))
+                  }
+                }
+              case Mod(x, _) =>
+                addPredicate(ArithPredicate(x, 0, ArithPredicate.Operator.>=))
+              case _ => ()
+            }
+          }
           m
         })
     })
 
     // todo add additional constraints here -> e.g. local memory usage, hardware-analysis
 
-    cs.toSet
+    cs.toSet.filterNot(c => c.isSatisfied())
   }
 }

@@ -129,10 +129,11 @@ object configFileGeneration {
 
         // todo implement this
         // hard coded hacky solution
-        case _ => println("not yet implemented")
+        case _ =>
+          println("hard-coded, use default values: [1, 1024]")
 
-          println("name: " + param.name)
-          println("range: " + param.range)
+          //          println("name: " + param.name)
+          //          println("range: " + param.range)
 
           val values = List.range(1, 1024)
           //          filterList(p, param._2._1, values, param._1)
@@ -267,11 +268,15 @@ object configFileGeneration {
               // (already catched by the range of parameter)
               stop match {
                 case PosInf => {
-                  val startConstraint = n.toString + " >= " + start
-                  val stepConstraint = n.toString + " % " + step + " == 0"
-
-                  startConstraint + " and " + stepConstraint
-                  ListBuffer[String](startConstraint, stepConstraint)
+                  start.eval match {
+                    case 0 =>
+                      val stepConstraint = n.toString + " % " + step + " == 0"
+                      ListBuffer[String](stepConstraint)
+                    case _ =>
+                      val startConstraint = n.toString + " >= " + start
+                      val stepConstraint = n.toString + " % " + step + " == 0"
+                      ListBuffer[String](startConstraint, stepConstraint)
+                  }
                 }
                 case _ => {
                   val startConstraint = n.toString + " >= " + start
@@ -443,6 +448,7 @@ object configFileGeneration {
         }
       })
     })
+
     (valuesFiltered, constraintsFiltered.toSet)
   }
 
