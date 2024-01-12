@@ -37,11 +37,12 @@ package object autotune {
                    executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
-                   tunerRoot: String = "/home/jo/development/rise-lang/baco",
+                   tunerRoot: String = "/home/jo/development/rise-lang/baco_paper_version",
                    tunerPath: String = "baco/run.py",
                    tunerPlot: String = "baco/plot/plot_optimization_results.py",
                    tunerPython: String = "python3.8",
-                   tunerVersion: String = "baco"
+                   tunerVersion: String = "baco",
+                   tunerTimeBudgetCot: Int = -1
                   )
 
   // necessary host-code parts to execute the program
@@ -397,7 +398,19 @@ package object autotune {
 
     //    println("is the problem here?")
 
-    val hypermapper = os.proc(tuner.tunerPython, tuner.tunerRoot + "/" + tuner.tunerPath, configFile).spawn()
+    // timeout for first reaction
+
+    //    println("Export pythonpath: " + tuner.tunerRoot)
+
+    //    val hypermapper = os.proc("timeout", "10s", tuner.tunerPython, tuner.tunerRoot + "/" + tuner.tunerPath, configFile).spawn()
+    val hypermapper = os.proc(
+      tuner.tunerPython,
+      tuner.tunerRoot + "/" + tuner.tunerPath,
+      configFile
+    ).spawn(
+      env = Map.apply("PYTHONPATH" -> tuner.tunerRoot)
+    )
+
     //    val hypermapper = os.proc("python3.8", "/home/jo/development/tuning/baco/hypermapper/hypermapper.py", configFile).spawn()
 
     var i = 1
