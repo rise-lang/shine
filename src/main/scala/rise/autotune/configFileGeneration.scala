@@ -164,6 +164,11 @@ object configFileGeneration {
 
       // todo think about why order can change
 
+      val parameter_default = param.default match {
+        case Some(default) => s""""parameter_default" : ${default}, """
+        case None => ""
+      }
+
       // check if we have to generate constraints
       val parameterEntry = tuner.hmConstraints match {
         case true => {
@@ -171,14 +176,15 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "parameter_default": 1,
+               |       ${parameter_default}
                |       "values" : ${values.mkString("[", ", ", "]")},
                |       "constraints" : ${constraints},
                |       "dependencies" : ${dependencies}
                |   },
                |""".stripMargin
 
-          parameterEntry
+          // remove empty line
+          "\n" + parameterEntry.split("\n").filterNot(_.isBlank).mkString("\n")
         }
         case false => {
           // don't use constraints
@@ -236,7 +242,7 @@ object configFileGeneration {
     }
 
     // remove last comma
-    val parameterSection = parameter.dropRight(2) + "\n"
+    val parameterSection = parameter.drop(1).dropRight(1) + "\n"
 
     val foot =
       """ }

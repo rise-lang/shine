@@ -51,6 +51,18 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                          samples: ListBuffer[TuningResultStatistic]
                        )
 
+
+  trait OpenCLWrapping
+
+  case object sequential_1 extends OpenCLWrapping
+
+  case object parallel_10 extends OpenCLWrapping
+
+  case object parallel_01 extends OpenCLWrapping
+
+  case object parallel_11 extends OpenCLWrapping
+
+
   case class ExecutionStatistics(
                                   performanceValue: Double,
                                   min: Double,
@@ -401,6 +413,86 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     }
   }
 
+  private def countMapGlobal(dimension: Int)(solution: Solution[Rise]): Int = {
+    solution.solutionSteps.count(step =>
+      step.strategy.equals(rise.elevate.rules.lowering.mapGlobal(dimension))
+    )
+  }
+
+  private def countMapWorkGroup(dimension: Int)(solution: Solution[Rise]): Int = {
+    solution.solutionSteps.count(step =>
+      step.strategy.equals(rise.elevate.rules.lowering.mapWorkGroup(dimension))
+    )
+  }
+
+  private def countMapLocal(dimension: Int)(solution: Solution[Rise]): Int = {
+    solution.solutionSteps.count(step =>
+      step.strategy.equals(rise.elevate.rules.lowering.mapLocal(dimension))
+    )
+  }
+
+
+  private def getOclDimensions(solution: Solution[Rise]): OpenCLWrapping = {
+
+    // count applications of parallel patterns
+    val mg0 = countMapGlobal(0)(solution)
+    val mg1 = countMapGlobal(1)(solution)
+
+    val mwg0 = countMapWorkGroup(0)(solution)
+    val mwg1 = countMapWorkGroup(1)(solution)
+
+    val ml0 = countMapLocal(0)(solution)
+    val ml1 = countMapLocal(1)(solution)
+
+    mg0 + mwg0 + ml0 match {
+      case 0 =>
+        mg1 + mwg1 + ml1 match {
+          case 0 => sequential_1
+          case _ => parallel_01
+        }
+      case _ =>
+        mg1 + mwg1 + ml1 match {
+          case 0 => parallel_10
+          case _ => parallel_11
+        }
+    }
+  }
+
+  private def wrapOCLDimensions(dimensions: OpenCLWrapping, e: Expr): Expr = {
+
+    dimensions match {
+
+      case _: sequential_1.type =>
+        tuningParam("ls0", RangeMul(1, 1024, 2), 1, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), 1, (gs0: Nat) =>
+            wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
+          ))
+
+      case _: parallel_10.type =>
+
+        tuningParam("ls0", RangeMul(1, 1024, 2), 32, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
+            wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
+          ))
+
+      case _: parallel_01.type =>
+
+        tuningParam("ls1", RangeMul(1, 1024, 2), 32, (ls1: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
+            wrapOclRun(LocalSize(1, ls1), GlobalSize(1, gs1))(e)
+          ))
+
+      case _: parallel_11.type =>
+
+        tuningParam("ls0", RangeMul(1, 1024, 2), 32, (ls0: Nat) =>
+          tuningParam("ls1", RangeMul(1, 1024, 2), 32, (ls1: Nat) =>
+            tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
+              tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
+                wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)
+              ))))
+    }
+  }
+
   def executeOpenCL(solution: Solution[Rise]): ExplorationResult[Rise] = {
     val totalDurationStart = System.currentTimeMillis()
 
@@ -435,7 +527,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       hmConstraints = true,
       executor = None,
       saveToFile = true,
-      tunerRoot = exploration.tunerConfiguration.tunerRoot
+      tunerRoot = exploration.tunerConfiguration.tunerRoot,
+      tunerTimeBudgetCot = exploration.tunerConfiguration.tunerTimeBudgetCot
     )
 
     // lower expression
@@ -444,16 +537,11 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val loweringDuration = System.currentTimeMillis() - loweringDurationStart
 
     val (result, statistic) = lowered match {
-      case Success(p) => {
+      case Success(e) => {
 
-        // now wrap ocl
-        val eTuning: Expr =
-          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-              tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-                tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-                  wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered.get)
-                ))))
+        // get case of parallelism to define default values for auto-tuning
+        val oclDimensions: OpenCLWrapping = getOclDimensions(solution)
+        val eTuning: Expr = wrapOCLDimensions(oclDimensions, e)
 
         // run tuning
         val tuningDurationStart = System.currentTimeMillis()

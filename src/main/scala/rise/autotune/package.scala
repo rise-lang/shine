@@ -132,10 +132,16 @@ package object autotune {
   // should we allow tuning params to be substituted during type inference?
   // this could allow to restrict the search space at compile time
   def tuningParam[A](name: String, w: NatFunctionWrapper[A]): A =
-    w.f(TuningParameter(name, RangeUnknown))
+    w.f(TuningParameter(name = name, range = RangeUnknown))
+
+  def tuningParam[A](name: String, default: Int, w: NatFunctionWrapper[A]): A =
+    w.f(TuningParameter(name = name, range = RangeUnknown, default = default))
 
   def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, w: NatFunctionWrapper[A]): A =
-    w.f(TuningParameter(name, r))
+    w.f(TuningParameter(name = name, range = r))
+
+  def tuningParam[A](name: String, r: arithexpr.arithmetic.Range, default: Int, w: NatFunctionWrapper[A]): A =
+    w.f(TuningParameter(name = name, range = r, default = default))
 
   def search(tuner: Tuner)(e: Expr): TuningResult = {
 

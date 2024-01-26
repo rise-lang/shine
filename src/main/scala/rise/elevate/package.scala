@@ -35,17 +35,17 @@ package object elevate {
   // wrapper to create strategies with tuning parameters
   def tunable[T](f: Nat => T): T = {
     //    rise.core.freshName.reset()
-    tuningParam(rise.core.freshName.apply("tp"), RangeUnknown, f)
+    tuningParam(rise.core.freshName.apply("tp"), RangeUnknown, 1, f)
   }
 
   def tunable[T](name: String, f: Nat => T): T = {
     //    rise.core.freshName.reset()
-    tuningParam(rise.core.freshName.apply(name), RangeUnknown, f)
+    tuningParam(rise.core.freshName.apply(name), RangeUnknown, 1, f)
   }
 
   def tunable[T](name: String, range: arithexpr.arithmetic.Range, f: Nat => T): T = {
     //    rise.core.freshName.reset()
-    tuningParam(rise.core.freshName.apply(name), range, f)
+    tuningParam(rise.core.freshName.apply(name), range, 1, f)
   }
 
 }

@@ -48,6 +48,7 @@ object constraints {
     constraints.forall(c => c.substitute(map).isSatisfied())
   }
 
+
   def collectParameters(e: Expr): Parameters = {
     var params = scala.collection.mutable.Set[NatIdentifier]()
     traverse.traverse(e, new traverse.PureTraversal {
