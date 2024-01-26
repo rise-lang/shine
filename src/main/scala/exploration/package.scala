@@ -20,6 +20,7 @@ package object exploration {
     val plotter: String = "baco/plot/plot_optimization_results.py"
     val tuner: String = "baco/run.py"
     val tunerVersion: String = "baco"
+    val tunerTimeBudgetCot: Int = 60
   }
 
 
