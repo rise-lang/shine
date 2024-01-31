@@ -4,12 +4,12 @@
     "runtime"
   ],
   "feasible_output": {
-    "enable_feasible_predictor": true,
+    "enable_feasible_predictor": false,
     "name": "Valid",
     "true_value": "True",
     "false_value": "False"
   },
-  "hypermapper_mode": {
+  "baco_mode": {
     "mode": "client-server"
   },
   "log_file": "embedding_random_sampling_biased.log",
@@ -22,7 +22,6 @@
   "models": {
     "model": "gaussian_process"
   },
-  "scalarization_method": "linear",
   "optimization_method": "embedding_random_sampling_biased",
   "optimization_iterations": 1000000,
   "time_budget": 1440,
