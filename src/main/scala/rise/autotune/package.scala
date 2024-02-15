@@ -34,7 +34,8 @@ package object autotune {
                    saveToFile: Boolean = false,
                    failureMode: FailureMode = IntMax,
                    strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
-                   executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
+                   //                   executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
+                   executor: Option[Expr => ExecutionResult] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
                    tunerRoot: String = "/home/jo/development/rise-lang/baco_paper_version",
@@ -229,20 +230,21 @@ package object autotune {
                 (System.currentTimeMillis() - totalStart).toDouble)
               )
 
-              result._1 match {
+              result.runtime match {
                 case Right(value) =>
 
                   Sample(
                     parameters = tuningParameterValues,
-                    runtime = Right(TimeSpan.inMilliseconds(value)),
+                    runtime = Right(value),
                     timestamp = System.currentTimeMillis() - start,
                     tuningTimes = TuningTimes(
-                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                      totalTime, result.codegenTime, result.compilationTime, result.executionTime
+                    ),
                     statistics = SampleStatistics(
-                      None,
-                      None,
-                      None,
-                      1
+                      minimum = result.minimum,
+                      maximum = result.maximum,
+                      standardDeviation = result.standardDeviation,
+                      iterations = result.iterations
                     )
                   )
 
@@ -253,12 +255,13 @@ package object autotune {
                     runtime = Left(error),
                     timestamp = System.currentTimeMillis() - start,
                     tuningTimes = TuningTimes(
-                      totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                      totalTime, result.codegenTime, result.compilationTime, result.executionTime
+                    ),
                     statistics = SampleStatistics(
-                      None,
-                      None,
-                      None,
-                      1
+                      minimum = result.minimum,
+                      maximum = result.maximum,
+                      standardDeviation = result.standardDeviation,
+                      iterations = result.iterations
                     )
                   )
               }
@@ -301,20 +304,21 @@ package object autotune {
                   (System.currentTimeMillis() - totalStart).toDouble)
                 )
 
-                result._1 match {
+                result.runtime match {
                   case Right(value) =>
 
                     Sample(
                       parameters = parametersValuesMap.map(elem => (elem._1.toString, ClassicParameter(toInt(elem._2)))),
-                      runtime = Right(TimeSpan.inMilliseconds(value)),
+                      runtime = Right(value),
                       timestamp = System.currentTimeMillis() - start,
                       tuningTimes = TuningTimes(
-                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
+                        totalTime, result.codegenTime, result.compilationTime, result.executionTime
+                      ),
                       statistics = SampleStatistics(
-                        None,
-                        None,
-                        None,
-                        1
+                        minimum = result.minimum,
+                        maximum = result.maximum,
+                        standardDeviation = result.standardDeviation,
+                        iterations = result.iterations
                       )
                     )
 
@@ -325,8 +329,14 @@ package object autotune {
                       runtime = Left(error),
                       timestamp = System.currentTimeMillis() - start,
                       tuningTimes = TuningTimes(
-                        totalTime, Some(TimeSpan.inMilliseconds(result._2.get)), Some(TimeSpan.inMilliseconds(result._3.get)), Some(TimeSpan.inMilliseconds(result._4.get))),
-                      statistics = SampleStatistics(None, None, None, 1)
+                        totalTime, result.codegenTime, result.compilationTime, result.executionTime
+                      ),
+                      statistics = SampleStatistics(
+                        minimum = result.minimum,
+                        maximum = result.maximum,
+                        standardDeviation = result.standardDeviation,
+                        iterations = result.iterations
+                      )
                     )
                 }
 

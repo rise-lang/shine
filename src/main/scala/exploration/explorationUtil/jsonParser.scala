@@ -23,13 +23,13 @@ object jsonParser {
     (JsPath \ "name").read[String] and
       (JsPath \ "iterations").read[Int] and
       (JsPath \ "threshold").read[Double]
-    ) (ParseExecutor.apply _)
+    )(ParseExecutor.apply _)
 
   implicit val metaheuristicReads: Reads[ParseMetaheuristic] = (
     (JsPath \ "heuristic").read[String] and
       (JsPath \ "depth").read[Int] and
       (JsPath \ "iterations").read[Int]
-    ) (ParseMetaheuristic.apply _)
+    )(ParseMetaheuristic.apply _)
 
   //      (JsPath \ "strategies").read[String] and
   implicit val explorationReads: Reads[ParseExploration] = (
@@ -38,7 +38,7 @@ object jsonParser {
       (JsPath \ "inputSize").read[Int] and
       (JsPath \ "metaheuristic").read[Seq[ParseMetaheuristic]] and
       (JsPath \ "executor").read[ParseExecutor]
-    ) (ParseExploration.apply _)
+    )(ParseExploration.apply _)
 
   def parse(filePath: String): ParseExploration = {
 
@@ -72,9 +72,9 @@ object jsonParser {
       //      case "autotuner" => new AutotunerSearch[Rise]
       //      case "cot" => new AutotunerSearch2[Rise]
       //      case "cot2" => new AutotunerSearch3[Rise]
-      case _ => new Exception("not a supported heuristic option")
+      case _ => throw new Exception("not a supported heuristic option")
     }
-    heuristic.asInstanceOf[Heuristic[Rise]]
+    heuristic
   }
 
   def readFile(filePath: String): String = {

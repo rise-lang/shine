@@ -12,7 +12,7 @@ import rise.eqsat.Rewrite
 import shine.OpenCL.{GlobalSize, LocalSize}
 import util.{Time, TimeSpan}
 import elevate.heuristic_search._
-import exploration.{C_Backend, ExecutionBackend, OpenCL_Backend}
+import exploration.{C_Backend, ExecutionBackend, OpenCL_Backend, explore, tunerConfiguration}
 import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
 
 import java.io.{File, FileOutputStream, PrintWriter}
@@ -21,8 +21,6 @@ import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.sys.process._
-
-import exploration.tunerConfiguration
 
 case class AutoTuningExecutor(lowering: Strategy[Rise],
                               goldExpression: Rise,
@@ -199,7 +197,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val executor = CExecutor(
       lowering = lowering,
       goldExpression = goldExpression,
-      iterations = 5, // check this
+      iterations = iterations, // check this
       inputSize = 128, // check this
       threshold = 100,
       output = output,
@@ -207,32 +205,13 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     )
 
     // define execution function
-    val executeInternal: Expr => (
-      Either[AutoTuningError, Double],
-        Option[Double],
-        Option[Double],
-        Option[Double]
-      ) = s => {
+    val executeInternal: Expr => rise.autotune.ExecutionResult = s => {
 
       val executionStart = System.currentTimeMillis()
 
-      val result = executor.execute(s)
+      val result = executor.executeTuning(s)
 
-      // todo move to other thing
-      val runtime: Either[AutoTuningError, Double] = result match {
-        case Some(value) => Right(value)
-        case None => Left(AutoTuningError(EXECUTION_ERROR, None))
-      }
-
-      // todo measure these properly
-      val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
-      val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
-      val executionTime = (System.currentTimeMillis() - executionStart).toDouble
-
-      (runtime,
-        Some(codegenTime),
-        Some(compilationTime),
-        Some(executionTime))
+      result
     }
 
     val totalDurationStart = System.currentTimeMillis()
@@ -252,25 +231,28 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // create tuner
     val tuner = Tuner(
-      hostCode = HostCode("", "", ""), // we don't need that
-      samples = iterations,
+      hostCode = HostCode("", "", ""), // we don't need that here
+      executor = Some(executeInternal), // we use this as executor
+      samples = samples,
       name = "mm",
-      output = "exploration/",
-      timeouts = Timeouts(100000, 100000, 100000), // we might want to adjust this
-      executionIterations = 10,
+      output = "exploration",
+      timeouts = Timeouts(
+        codegenerationTimeout = 100000,
+        compilationTimeout = 100000,
+        executionTimeout = 100000
+      ),
+      executionIterations = iterations,
       speedupFactor = threshold,
       runtimeStatistic = Median,
       configFile = None,
-      //      Some("/home/jo/development/rise-lang/shine/autotuning/scal/scal.json"),
       hmConstraints = true,
-      executor = Some(executeInternal),
-      //      hmConstraints = false,
-      saveToFile = false,
-      tunerRoot = tunerConfiguration.tunerRoot,
-      tunerPath = tunerConfiguration.tuner,
-      tunerPlot = tunerConfiguration.plotter,
-      tunerPython = tunerConfiguration.pythonVersion,
-      tunerVersion = tunerConfiguration.tunerVersion
+      saveToFile = true,
+      tunerRoot = exploration.tunerConfiguration.tunerRoot,
+      tunerPath = exploration.tunerConfiguration.tuner,
+      tunerPlot = exploration.tunerConfiguration.plotter,
+      tunerPython = exploration.tunerConfiguration.pythonVersion,
+      tunerVersion = exploration.tunerConfiguration.tunerVersion,
+      tunerTimeBudgetCot = exploration.tunerConfiguration.tunerTimeBudgetCot
     )
 
     // lower expression
@@ -293,6 +275,24 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           result.samples.foreach(println)
 
           //          println("samples: " + samples)
+          counterExpressions += result.samples.size // why?
+
+          result.samples.foreach(sample => {
+
+            val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
+              case Left(error) => (None, Some(error.errorLevel))
+              case Right(runtime) => (Some(runtime.value), None)
+            }
+
+            writeValues(
+              path = output + "/" + "executor.csv",
+              result = (solution, lowered.get, sample.parameters, performanceValue, errorLevel, sample.statistics),
+              statistics = None,
+              solution.rewrites(),
+              "executor"
+            )
+          })
+
 
           val best = getBest(result.samples)
           //          println("best: " + best)
@@ -332,6 +332,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
             println("tuning is brorken! mey friend")
             println("e: " + e)
+
+            System.exit(0)
 
 
             val tuningDuration = System.currentTimeMillis() - tuningDurationStart
@@ -403,7 +405,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       None
     )
   }
-
 
   // wrapper for different backends
   def execute(solution: Solution[Rise]): ExplorationResult[Rise] = {
@@ -516,9 +517,9 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       name = "mm",
       output = "exploration",
       timeouts = Timeouts(
-        codegenerationTimeout = 10000,
-        compilationTimeout = 10000,
-        executionTimeout = 500
+        codegenerationTimeout = 30000,
+        compilationTimeout = 30000,
+        executionTimeout = 30000
       ),
       executionIterations = iterations,
       speedupFactor = 100,

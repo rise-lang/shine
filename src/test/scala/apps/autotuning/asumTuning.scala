@@ -410,9 +410,9 @@ class asumTuning extends test_util.Tests {
       configFiles = configs,
       iterations = 30,
       output = s"experiment/results/paper/${asum}_${inputSize}",
-      asum_0,
-      HostCode(init(inputSize), compute, finish),
-      Seq(inputSize),
+      e = asum_0,
+      hostCode = HostCode(init(inputSize), compute, finish),
+      inputSizes = Seq(inputSize),
       plotOnly = false,
       expert = Some(expertConfiguration),
       default = Some(defaultConfiguration)

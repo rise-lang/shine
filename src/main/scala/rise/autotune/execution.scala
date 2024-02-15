@@ -33,7 +33,7 @@ case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                           )
 
 object execution {
-  var best: Option[Double] = None
+  var best: Option[Double] = Some(5000)
 
   // logger to avoid printing of stderr
   val logger = new ProcessLogger {
@@ -66,7 +66,6 @@ object execution {
   : ExecutionResult = {
 
     val codegenStart = System.currentTimeMillis()
-
 
     val codegenResult = try {
 

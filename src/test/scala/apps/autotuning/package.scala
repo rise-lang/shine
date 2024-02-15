@@ -6,6 +6,7 @@ import rise.autotune.{AutoTuningError, HostCode, Median, Minimum, Timeouts, Tune
 import rise.core.DSL.Type.Nat
 import rise.core.Expr
 import rise.core.types.Nat
+import rise.autotune.ExecutionResult
 
 import java.io.File
 import scala.language.postfixOps
@@ -22,7 +23,7 @@ package object autotuning {
                      hostCode: HostCode,
                      inputSizes: Seq[Nat],
                      strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]] = None, // enable strategy mode
-                     executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])] = None, // todo change this to exeuction result
+                     executor: Option[Expr => ExecutionResult] = None,
                      plotOnly: Boolean = false,
                      disableChecking: Boolean = false,
                      feasibility: Boolean = true,
@@ -131,7 +132,7 @@ package object autotuning {
                   config: (Map[String, Int], Map[String, List[Int]]),
                   e: Expr,
                   strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]], // enable strategy mode
-                  executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])], // todo change this to exeuction result
+                  executor: Option[Expr => ExecutionResult],
                   output: String,
                   file: String
                 ): Option[Double] = {
@@ -146,7 +147,7 @@ package object autotuning {
       case Left(error) => throw new Exception("default or expert configuration should be valid!")
     }
 
-    val result = executor.get(e_replaced)._1
+    val result = executor.get(e_replaced).runtime
 
     val configResult = result match {
       case Left(_) => None
@@ -161,8 +162,10 @@ package object autotuning {
     val path = output + "/manual_configs/" + file + ".csv"
     util.writeToPath(path, configResult.get.toString)
 
-    configResult
-
+    configResult match {
+      case Some(value) => Some(value.value)
+      case None => None
+    }
   }
 
   def runConfig(
@@ -210,7 +213,7 @@ package object autotuning {
                  hostCode: HostCode,
                  inputSizes: Seq[Nat],
                  strategyMode: Option[(Expr, Map[String, Int], Map[String, List[Int]]) => Either[String, Expr]],
-                 executor: Option[Expr => (Either[AutoTuningError, Double], Option[Double], Option[Double], Option[Double])],
+                 executor: Option[Expr => ExecutionResult],
                  disableCheking: Boolean,
                  feasibility: Boolean
                ) = {
@@ -233,7 +236,7 @@ package object autotuning {
       executor = executor,
       saveToFile = true,
       disableChecking = disableCheking,
-        feasibility = feasibility
+      feasibility = feasibility
     )
 
     autotune.search(tuner)(e)
@@ -271,7 +274,7 @@ package object autotuning {
       val commands: (String, String, String, Option[Double], Option[Double]) => Seq[String] = (config, folders, output, expertConfiguration, defaultConfiguration) => {
 
         val command: String =
-            "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
+          "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
             s"-j ${config} " +
             "-i " +
             folders +
@@ -284,7 +287,7 @@ package object autotuning {
 
         val commandExp: String = expertConfiguration match {
           case Some(value) =>
-             "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
+            "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
               s"-j ${config} " +
               "-i " +
               folders +
@@ -302,7 +305,7 @@ package object autotuning {
 
         val commandDefault: String = defaultConfiguration match {
           case Some(value) =>
-              "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
+            "python3 /home/jo/hypermapper_dev/hypermapper/plot/plot_optimization_results.py " +
               s"-j ${config} " +
               "-i " +
               folders +

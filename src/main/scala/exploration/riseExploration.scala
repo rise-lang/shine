@@ -37,6 +37,7 @@ object riseExploration {
             rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
             afterRewrite: Option[Strategy[Rise]] = None,
             importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,
+            executionBackend: ExecutionBackend = OpenCL_Backend,
             expert: Option[Double] = None
            )
   : ExplorationResult[Rise] = {
@@ -54,6 +55,7 @@ object riseExploration {
       strategies,
       filePath,
       hostCode,
+      executionBackend = executionBackend,
       rewriteFunction = rewriteFunction,
       afterRewrite = afterRewrite,
       importExport = importExport,
@@ -89,6 +91,7 @@ object riseExploration {
                          strategies: scala.collection.immutable.Seq[Strategy[Rise]],
                          filePath: String,
                          hostCode: Option[HostCode],
+                         executionBackend: ExecutionBackend,
                          rewriteFunction: Option[Solution[Rise] => scala.collection.immutable.Seq[Solution[Rise]]] = None,
                          afterRewrite: Option[Strategy[Rise]],
                          importExport: Option[(String => Solution[Rise], (Solution[Rise], String) => Unit)] = None,

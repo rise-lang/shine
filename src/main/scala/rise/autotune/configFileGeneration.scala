@@ -215,10 +215,10 @@ object configFileGeneration {
             val parameterEntry =
               s"""   "None" : {
                  |       "parameter_type" : "integer",
-                 |       "values" : [0, 10],
+                 |       "values" : [0, 100],
                  |       "constraints" : [],
                  |       "dependencies" : []
-                 |   },
+                 |   }
                  |""".stripMargin
 
             parameterEntry
@@ -229,7 +229,7 @@ object configFileGeneration {
               s"""   "None" : {
                  |       "parameter_type" : "ordinal",
                  |       "values" : [0],
-                 |   },
+                 |   }
                  |""".stripMargin
 
             parameterEntry

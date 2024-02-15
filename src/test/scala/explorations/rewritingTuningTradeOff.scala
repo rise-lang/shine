@@ -93,32 +93,11 @@ class rewritingTuningTradeOff extends test_util.Tests {
     saveToDisk = false
   )
 
-  val execute: Expr => (
-    Either[AutoTuningError, Double],
-      Option[Double],
-      Option[Double],
-      Option[Double]
-    ) = e => {
+  val execute: Expr => ExecutionResult = e => {
 
     val executionStart = System.currentTimeMillis()
-
-    val result = executor.execute(e)
-
-    // todo move to other thing
-    val runtime: Either[AutoTuningError, Double] = result match {
-      case Some(value) => Right(value)
-      case None => Left(AutoTuningError(EXECUTION_ERROR, None))
-    }
-
-    // todo measure these properly
-    val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
-    val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
-    val executionTime = (System.currentTimeMillis() - executionStart).toDouble
-
-    (runtime,
-      Some(codegenTime),
-      Some(compilationTime),
-      Some(executionTime))
+    val result = executor.executeTuning(e)
+    result
   }
 
   // test to execute all of them

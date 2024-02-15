@@ -40,6 +40,7 @@ import rise.elevate.strategies.predicate._
 import rise.elevate.strategies.tiling._
 import rise.elevate.strategies.traversal
 import rise.elevate.strategies.traversal._
+import rise.autotune.ExecutionResult
 
 class mmCPU_exploration extends test_util.Tests {
 
@@ -628,46 +629,13 @@ class mmCPU_exploration extends test_util.Tests {
       saveToDisk = false
     )
 
-    val execute: Expr => (
-      Either[AutoTuningError, Double],
-        Option[Double],
-        Option[Double],
-        Option[Double]
-      ) = e => {
 
-      //      val strategies = immutable.Seq.empty[Strategy[Rise]]
+    val execute: Expr => ExecutionResult = e => {
 
       val executionStart = System.currentTimeMillis()
-
-      //      val sol = Solution[Rise](
-      //        solutionSteps = scala.collection.immutable.Seq(
-      //          SolutionStep[Rise](
-      //            expression = e,
-      //            strategy = null,
-      //            location = -1
-      //          )
-      //        )
-      //      )
-
-      val result = executor.execute(e)
-
-      // todo move to other thing
-      val runtime: Either[AutoTuningError, Double] = result match {
-        case Some(value) => Right(value)
-        case None => Left(AutoTuningError(EXECUTION_ERROR, None))
-      }
-
-      // todo measure these properly
-      val codegenTime = (System.currentTimeMillis() - executionStart).toDouble
-      val compilationTime = (System.currentTimeMillis() - executionStart).toDouble
-      val executionTime = (System.currentTimeMillis() - executionStart).toDouble
-
-      (runtime,
-        Some(codegenTime),
-        Some(compilationTime),
-        Some(executionTime))
+      val result = executor.executeTuning(e)
+      result
     }
-
 
     val tuner = rise.autotune.Tuner(
       hostCode = HostCode("", "", ""),
@@ -715,74 +683,20 @@ class mmCPU_exploration extends test_util.Tests {
 
   }
 
-  test("mmCPU - parallel_fine_light") {
+  test("mmCPU - exploration") {
 
     val e = mm
     //    val e = (fuseReduceMap `@` topDown[Rise]).apply(mm).get
-
-    val ii = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 5,
-        samples = 1000
-      )
-    )
-
-    val localSearch = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "localSearch",
-        depth = 5,
-        samples = 1000
-      )
-    )
-
-    val annealing = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "annealing",
-        depth = 5,
-        samples = 3000,
-        repeat = 1
-      )
-    )
-
-    val tabuSearch = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "tabuSearch",
-        depth = 5,
-        samples = 10000
-      )
-    )
-
-    val tabuSearchPlain = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "tabuSearchPlain",
-        depth = 5,
-        samples = 100
-      )
-    )
 
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
         depth = 5,
-        samples = 100,
-        repeat = 1
+        samples = 30,
+        repeat = 5
       )
     )
 
-    val random_ii = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "Random",
-        depth = 5,
-        samples = 100,
-        repeat = 1
-      ),
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 5,
-        samples = 1000
-      )
-    )
 
     val autotuner = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -795,75 +709,45 @@ class mmCPU_exploration extends test_util.Tests {
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "exhaustive",
-        depth = 4,
-        samples = 10000,
-      )
-    )
-
-    val simulatedAnnealingPlain = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "simulatedAnnealingPlain",
-        depth = 5, // ignored?
-        samples = 500, // ignored?
+        heuristic = "Exhaustive",
+        depth = 5,
+        samples = 30,
       )
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //      annealing,
-      //      tabuSearch,
-      //      autotuner
-      //      tabuSearch
-      //      random_ii
       //      exhaustive,
-      //      ii,
       random
-      //      localSearch,
-      //      tabuSearchPlain
-      //      simulatedAnnealingPlain
-    )
-
-    val executor2 = ExecutorConfig(
-      name = "C",
-      iterations = 11,
-      threshold = 10
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
       iterations = 20,
-      threshold = 10
+      threshold = 10,
+      samples = 50,
+      executionBackend = C_Backend
     )
-
-    // define neighborhood style
-    val nTreeChildren = NeighborhoodConfig(
-      neighborhood = NTreeChildrenChoice
-    )
-
-    val nTreeLeafsDistance = NeighborhoodConfig(
-      neighborhood = NTreeLeafsDistanceChoice
-    )
-
-    val neighborhood = nTreeChildren
 
     // setup explorer config
     val explorer = exploration.Explorer(
-      name = "mmCPU_fine_light",
-      output = "/home/jo/development/experiments/exploration/densium4jo/parallel_fine_light",
+      name = "mmCPU",
+      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/mmCPU",
       inputSize = N,
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
       strategies = fine_light,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)), // maybe call neighborhood deep
-      neighborhoodConfig = neighborhood, // what about window (mabye add a config here as well)
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice), // what about window (mabye add a config here as well)
       // todo check whether this can be removed
-      rewriteFunction = Some(
-        exploration.rewriter.everywhere.neighbourhoodWide(
-          strategies = parallel_fine_light,
-          slideWindow = 20
-        )
-      ),
+      rewriteFunction = None,
+
+      //      Some(
+      //        exploration.rewriter.everywhere.neighbourhoodWide(
+      //          strategies = parallel_fine_light,
+      //          slideWindow = 20
+      //        )
+      //      ),
       checkExpression = Some(
         checkExpressionC(
           exploration.strategies.blockingExploration.lowering

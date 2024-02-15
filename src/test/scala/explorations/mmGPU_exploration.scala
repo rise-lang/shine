@@ -10,7 +10,6 @@ import elevate.macros.RuleMacro.rule
 import exploration.neighborhoods._
 import exploration.runner.{AutoTuningExecutor, CExecutor}
 import exploration.{ExecutorConfig, MetaheuristicConfig, NeighborhoodConfig}
-import rise.autotune
 import rise.autotune.{HostCode, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL.{fun, lf32}
 import rise.core.primitives._
@@ -35,13 +34,14 @@ import rise.core.types.DataType._
 import rise.openCL.DSL._
 import rise.openCL.primitives.oclReduceSeq
 import shine.OpenCL.{GlobalSize, LocalSize}
-
 import scala.collection.mutable.ListBuffer
+
 
 class mmGPU_exploration extends test_util.Tests {
 
   // define expression
-  val N = 128
+  //  val N = 128
+  val N = 1024
   //  val N = 4
 
   val mm: Rise = //infer(
@@ -184,6 +184,10 @@ class mmGPU_exploration extends test_util.Tests {
   // @rule broken here? why?
   @rule def splitJoinRule: Strategy[Rise] = tunable(splitJoin)
 
+  //  @rule def mapGlobalRule: Strategy[Rise] = tunable(rise.elevate.rules.lowering.mapGlobal)
+
+  @rule def vectorizeRule: Strategy[Rise] = tunable(rise.elevate.rules.lowering.vectorize)
+
   // reverse rules
   val rules: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
@@ -197,9 +201,38 @@ class mmGPU_exploration extends test_util.Tests {
       rise.elevate.rules.lowering.mapLocal(0),
       rise.elevate.rules.lowering.mapLocal(1),
       rise.elevate.rules.lowering.mapSeqCompute(),
+
     )
   }
 
+  @rule def tiling4: Strategy[Rise] = rise.elevate.strategies.tiling.tile()
+
+  // reverse rules
+  val rules_extended: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+      //      elevate.core.strategies.basic.id[Rise], // id by default (allow expression itself to be in neighborhood)
+      fuseReduceMap, // fusion
+      splitJoinRule, // split join
+      vectorizeRule,
+      rise.elevate.rules.lowering.mapGlobal(0),
+      rise.elevate.rules.lowering.mapGlobal(1),
+      rise.elevate.rules.lowering.mapWorkGroup(0),
+      rise.elevate.rules.lowering.mapWorkGroup(1),
+      rise.elevate.rules.lowering.mapLocal(0),
+      rise.elevate.rules.lowering.mapLocal(1),
+      rise.elevate.rules.lowering.mapSeqCompute(),
+      //      rise.elevate.rules.lowering.storeTempAsVectors,
+      //      rise.elevate.rules.lowering.storeTempsAsScalars,
+      //      rise.elevate.rules.lowering.unroll,
+      //      rise.elevate.rules.lowering.ocl.circularBufferLoadFusion,
+      //      rise.elevate.rules.lowering.reduceSeqUnroll,
+      //      //      rise.elevate.strategies.tiling.tile,
+      //      rise.elevate.strategies.algorithmic.mapFirstFission,
+      //      rise.elevate.strategies.algorithmic.mapFullFission,
+      //      rise.elevate.strategies.tiling.loopInterchange,
+      //      tiling4
+    )
+  }
 
   // reverse rules
   val rules_reverse: scala.collection.immutable.Seq[Strategy[Rise]] = {
@@ -220,10 +253,11 @@ class mmGPU_exploration extends test_util.Tests {
       rise.elevate.rules.lowering.mapLocalReverse,
       rise.elevate.rules.lowering.mapSeqCompute(),
       rise.elevate.rules.lowering.mapSeqReverse,
+      tiling4
     )
   }
 
-  test("test lowering") {
+  ignore("test lowering") {
 
     val lowered = lowering.apply(mm).get
     println("lowered: \n" + lowered)
@@ -233,20 +267,21 @@ class mmGPU_exploration extends test_util.Tests {
       inputSizes = scala.collection.immutable.Seq(N, N, N),
       samples = 20,
       hmConstraints = true,
+      timeouts = rise.autotune.Timeouts(100000, 100000, 100000), // timeouts for codegen, compilation and execution
       name = "test",
       output = "autotuning",
       saveToFile = true
     )
 
     val ocl: Rise =
-      tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-        tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-          tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-            tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+      tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
+        tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
+          tuningParam("ls0", RangeMul(1, 1024, 2), 1, (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), 1, (ls1: Nat) =>
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered)
             ))))
 
-    val result = autotune.search(tuner)(ocl)
+    val result = rise.autotune.search(tuner)(ocl)
 
     result.samples.foreach(elem => {
       println(elem.parameters)
@@ -255,7 +290,15 @@ class mmGPU_exploration extends test_util.Tests {
     )
   }
 
-  test("tune expert") {
+  ignore("Test counting of MapGlobal") {
+
+    //    rise.elevate.rules.lowering.mapGlobalReverse,
+
+
+  }
+
+
+  ignore("tune expert") {
 
     val lowering: Strategy[Rise] =
       lowering0 `;` // add copies if necessary
@@ -278,15 +321,16 @@ class mmGPU_exploration extends test_util.Tests {
       saveToFile = true
     )
 
-    val ocl: Rise =
+    val ocl: Rise = {
       tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
         tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
           tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
             tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered)
             ))))
+    }
 
-    val result = autotune.search(tuner)(ocl)
+    val result = rise.autotune.search(tuner)(ocl)
 
     result.samples.foreach(elem => {
       println(elem.parameters)
@@ -294,15 +338,16 @@ class mmGPU_exploration extends test_util.Tests {
     }
     )
 
-    val best = autotune.getBest(result.samples)
+    val best = rise.autotune.getBest(result.samples)
     println("best: " + best)
   }
 
-  test("create output file") {
+  ignore("create output file") {
     // compute mm result
     //    val N = 4
-    val N = 128
-    //    val N = 1024
+    //    val N = 128
+    //    val N = 102
+    //    4
 
     //    Array.
     val A: Array[Int] = Range(0, N * N).toArray.map(i => (i % 100) + 1)
@@ -370,9 +415,9 @@ class mmGPU_exploration extends test_util.Tests {
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
-        depth = 30, // I think this is used for the output csv file
-        samples = 20, // does not scale well, why?
-        repeat = 3
+        depth = 7,
+        samples = 500,
+        repeat = 5
       )
     )
 
@@ -397,8 +442,8 @@ class mmGPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
-        depth = 30, // is this ignored? -> maybe not for tree window slide
-        samples = 3, // 7 hours for 1000 samples
+        depth = 100, // is this ignored? -> maybe not for tree window slide
+        samples = 1000, // 7 hours for 1000 samples // 18 hours 5000
         repeat = 1
       )
     )
@@ -407,9 +452,9 @@ class mmGPU_exploration extends test_util.Tests {
     val localSearchGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "LocalSearchGraph",
-        depth = 30, // seems to be ignored
-        samples = 100, // not ignored
-        repeat = 1
+        depth = 50, // seems to be ignored
+        samples = 1000, // not ignored
+        repeat = 2
       )
     )
 
@@ -417,9 +462,9 @@ class mmGPU_exploration extends test_util.Tests {
       //      random,
       //      tabuSearchPlain,
       //      simulatedAnnealingPlain,
-      exhaustive,
+      //      exhaustive,
       //      exhaustive, // breadth first search -> 2000 rewrites -> 16.5 hours
-      //      localSearchGraph,
+      localSearchGraph,
       //      randomGraph
       //             random?
       // tabu search? -> something more advanced
@@ -427,9 +472,9 @@ class mmGPU_exploration extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 6,
+      iterations = 51,
       threshold = 10,
-      samples = 5
+      samples = 20
     )
 
     val experiment = scala.collection.immutable.Seq(
@@ -447,7 +492,7 @@ class mmGPU_exploration extends test_util.Tests {
       metaheuristics = Right(localSearchExp),
       executor = executor,
       lowering = lowering,
-      strategies = rules, // is this ignored here?
+      strategies = rules_extended, // is this ignored here?
       hostCode = Some(HostCode(init(N, N, N), compute, finish(N, N, N))),
       //      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeLeafsWindowChoice),
       neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
@@ -462,8 +507,9 @@ class mmGPU_exploration extends test_util.Tests {
       //      normalForm = Some(DFNF()),
       normalForm = None,
       importExport = None,
-      expert = Some(0.009632),
-      default = Some(10.000),
+      //      expert = Some(0.009632),
+      expert = Some(2.3),
+      default = Some(21500.000),
       overwrite = false
     )
 

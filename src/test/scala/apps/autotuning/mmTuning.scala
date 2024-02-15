@@ -1,6 +1,6 @@
 package apps.autotuning
 
-import apps.mm.mmNVIDIAWithParams
+import apps.mm.{mmAMDWithParams, mmNVIDIAWithParams}
 import arithexpr.arithmetic.{RangeAdd, RangeMul}
 import rise.core._
 import rise.core.types._
@@ -16,15 +16,24 @@ import scala.sys.process._
 
 class mmTuning extends test_util.Tests {
 
+  //  val mmNVIDIA = mmNVIDIAWithParams(v3 = 4, v4 = 8, v5 = 64, v6 = 128, v7 = 128, v8 = 16)
+
   val mmTuning: ToBeTyped[Expr] =
-    tuningParam("v3", RangeAdd(1, 1024, 1), (v3: Nat) =>
-      tuningParam("v4", RangeAdd(1, 1024, 1), (v4: Nat) =>
-        tuningParam("v5", RangeAdd(1, 1024, 1), (v5: Nat) =>
-          tuningParam("v6", RangeAdd(1, 1024, 1), (v6: Nat) =>
-            tuningParam("v7", RangeAdd(1, 1024, 1), (v7: Nat) =>
-              tuningParam("v8", RangeAdd(1, 1024, 1), (v8: Nat) =>
+    tuningParam("v3", RangeAdd(1, 1024, 1), default = 4, (v3: Nat) =>
+      tuningParam("v4", RangeAdd(1, 1024, 1), default = 8, (v4: Nat) =>
+        tuningParam("v5", RangeAdd(1, 1024, 1), default = 64, (v5: Nat) =>
+          tuningParam("v6", RangeAdd(1, 1024, 1), default = 128, (v6: Nat) =>
+            tuningParam("v7", RangeAdd(1, 1024, 1), default = 128, (v7: Nat) =>
+              tuningParam("v8", RangeAdd(1, 1024, 1), default = 16, (v8: Nat) =>
                 mmNVIDIAWithParams(v3, v4, v5, v6, v7, v8)
               ))))))
+
+  val mmAMDTuning: ToBeTyped[Expr] =
+    tuningParam("v3", RangeAdd(1, 1024, 1), default = 4, (v3: Nat) =>
+      tuningParam("v4", RangeAdd(1, 1024, 1), default = 8, (v4: Nat) =>
+        tuningParam("vw", RangeAdd(1, 1024, 1), default = 4, (vw: Nat) =>
+          mmAMDWithParams(v3, v4, vw)
+        )))
 
   val mmTuning_4096: ToBeTyped[Expr] =
     tuningParam("v3", RangeAdd(1, 4096, 1), (v3: Nat) =>
@@ -38,11 +47,19 @@ class mmTuning extends test_util.Tests {
 
 
   val mm: Expr =
-    tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-      tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-        tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-          tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+    tuningParam("ls0", RangeMul(1, 1024, 2), default = 1024, (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), default = 1024, (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), default = 32, (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), default = 32, (gs1: Nat) =>
             wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmTuning)
+          ))))
+
+  val mmAMD: Expr =
+    tuningParam("ls0", RangeMul(1, 1024, 2), default = 1024, (ls0: Nat) =>
+      tuningParam("ls1", RangeMul(1, 1024, 2), default = 1024, (ls1: Nat) =>
+        tuningParam("gs0", RangeMul(1, 1024, 2), default = 32, (gs0: Nat) =>
+          tuningParam("gs1", RangeMul(1, 1024, 2), default = 32, (gs1: Nat) =>
+            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(mmAMDTuning)
           ))))
 
   val mm_4096: Expr =
@@ -96,6 +113,85 @@ class mmTuning extends test_util.Tests {
        |destroyBuffer(ctx, outputC);
        |""".stripMargin
   // scalastyle:on
+
+  test("Execute AMD fast") {
+    val params = autotune.constraints.collectParameters(mmAMD)
+    val constraints = autotune.constraints.collectConstraints(mmAMD, params)
+
+
+    val params_replaced: Map[Nat, Nat] = Map(
+      TuningParameter("ls0") -> (32: Nat),
+      TuningParameter("ls1") -> (32: Nat),
+      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("gs1") -> (1024: Nat),
+      TuningParameter("v3") -> (4: Nat),
+      TuningParameter("v4") -> (8: Nat),
+      TuningParameter("vw") -> (4: Nat),
+    )
+
+    val mmAMD_replaced = rise.core.substitute.natsInExpr(params_replaced, mmAMD)
+    val code = util.gen.opencl.hosted("fun").fromExpr(mmAMD_replaced)
+
+    println(s"${shine.OpenCL.Module.translateToString(code)}")
+    //    println(s"code ${shine.opencl.module.translatetostring(code)}")
+
+    val result = autotune.execution.execute(
+      expression = mmAMD_replaced,
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      timeouts = Timeouts(5000, 5000, 5000),
+      executionIterations = 100,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
+
+  }
+
+
+  test("tune mm AMD fast") {
+
+    val params = autotune.constraints.collectParameters(mmAMD)
+    val constraints = autotune.constraints.collectConstraints(mmAMD, params)
+
+    params.foreach(println)
+    constraints.foreach(println)
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      name = "mm",
+      output = "autotuning/mm_amd",
+      timeouts = Timeouts(5000, 5000, 5000),
+      configFile = Some("mm_amd.json"),
+      hmConstraints = true,
+      disableChecking = true,
+      tunerRoot = exploration.tunerConfiguration.tunerRoot,
+    )
+
+    //    autotune.configFileGeneration.generateJSON(params, constraints, tuner)
+
+    val result = autotune.search(tuner)(mmAMD)
+
+  }
+
+
+  test("tune mm 1024 fast") {
+
+    val tuner = Tuner(
+      hostCode = HostCode(init(1024, 1024, 1024), compute, finish),
+      inputSizes = Seq(1024, 1024, 1024),
+      name = "mm",
+      output = "autotuning/mm_fast",
+      timeouts = Timeouts(5000, 5000, 5000),
+      configFile = Some("mm_1024.json"),
+      hmConstraints = true,
+      tunerRoot = exploration.tunerConfiguration.tunerRoot,
+    )
+
+    val result = autotune.search(tuner)(mm)
+
+  }
 
   ignore("mm example config") {
     val mm: Expr =
@@ -457,11 +553,11 @@ class mmTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/mm/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
+      //      s"autotuning/config/mm/${inputSize.toString}/ytoptccs_${inputSize.toString}.json",
     )
 
     runExperiment(

@@ -20,7 +20,7 @@ object mm {
   // the first matrix input is transposed
 
   val mmHighLevel: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
-    (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+    (o `.` n `.` f32) ->: (o `.` m `.` f32) ->: (n `.` m `.` f32)
   )((at, b) =>
     transpose(at) |> map(fun(aRow =>
       transpose(b) |> map(fun(bCol =>
@@ -30,7 +30,7 @@ object mm {
   ))
 
   val mmSequential: ToBeTyped[Expr] = depFun((n: Nat, m: Nat, o: Nat) => fun(
-    (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+    (o `.` n `.` f32) ->: (o `.` m `.` f32) ->: (n `.` m `.` f32)
   )((at, b) =>
     transpose(at) |> mapSeq(fun(aRow =>
       transpose(b) |> mapSeq(fun(bCol =>
@@ -49,40 +49,43 @@ object mm {
     util.gen.opencl.LocalAndGlobalSize(LocalSize((32, 8)), GlobalSize((m /^ 4, n /^ 8)))
   })
 
-  val mmAMD: ToBeTyped[Expr] = {
-    val v3 = 4
-    val v4 = 8
-    val vw = 4
+
+  val mmAMD = mmAMDWithParams(v3 = 4, v4 = 8, vw = 4)
+
+  def mmAMDWithParams(v3: Nat, v4: Nat, vw: Nat): ToBeTyped[Expr] = {
+    //    val v3 = 4
+    //    val v4 = 8
+    //    val vw = 4
 
     depFun((n: Nat, m: Nat, o: Nat) => fun(
-      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+      (o `.` n `.` f32) ->: (o `.` m `.` f32) ->: (n `.` m `.` f32)
     )((at, b) =>
       split(v4)(transpose(at)) |> // Mo.Mi.o.f
-      mapGlobal(1)(fun(v4`.`o`.`f32)(p3 =>
-        split(v3)(transpose(b)) |> // No.Ni.o.f
-        mapGlobal(0)(fun(v3`.`o`.`f32)(p4 =>
-          zip(transpose(p3))(transpose(p4)) |> // o.(Mi.f x Ni.f)
-          oclReduceSeq(AddressSpace.Private)(fun((p6, p7) =>
-            let (toPrivate(makePair(mapSeq(id)(p7._1))(
-              asScalar o mapSeq(id) o asVectorAligned(vw) $ p7._2)))
-            be (x =>
-              mapSeq(fun(p8 =>
-                mapSeq(fun(p9 =>
-                  p9._1 + (p8._2 * p9._2)
-                ))(zip(p8._1)(x._2))
-              ))(zip(p6)(x._1))
-            )
-          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
-            mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
-            transpose // v3.v4.f
-        )) |> join |> transpose
-      )) |> join
+        mapGlobal(1)(fun(v4 `.` o `.` f32)(p3 =>
+          split(v3)(transpose(b)) |> // No.Ni.o.f
+            mapGlobal(0)(fun(v3 `.` o `.` f32)(p4 =>
+              zip(transpose(p3))(transpose(p4)) |> // o.(Mi.f x Ni.f)
+                oclReduceSeq(AddressSpace.Private)(fun((p6, p7) =>
+                  let(toPrivate(makePair(mapSeq(id)(p7._1))(
+                    asScalar o mapSeq(id) o asVectorAligned(vw) $ p7._2)))
+                    be (x =>
+                    mapSeq(fun(p8 =>
+                      mapSeq(fun(p9 =>
+                        p9._1 + (p8._2 * p9._2)
+                      ))(zip(p8._1)(x._2))
+                    ))(zip(p6)(x._1))
+                    )
+                ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4 `.` v3 `.` f32)) |> //
+                mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
+                transpose // v3.v4.f
+            )) |> join |> transpose
+        )) |> join
     ))
   }
 
   val mmNVIDIAKnownSizes = mmAMDKnownSizes
 
-  val mmNVIDIA = mmNVIDIAWithParams(4, 8, 64, 128, 128, 16)
+  val mmNVIDIA = mmNVIDIAWithParams(v3 = 4, v4 = 8, v5 = 64, v6 = 128, v7 = 128, v8 = 16)
 
   def mmNVIDIAWithParams(v3: Nat, v4: Nat, v5: Nat, v6: Nat, v7: Nat, v8: Nat): ToBeTyped[Expr] = {
 
@@ -95,7 +98,7 @@ object mm {
     //    v8 // tile-height A,B
 
     depFun((n: Nat, m: Nat, o: Nat) => fun(
-      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
+      (o `.` n `.` f32) ->: (o `.` m `.` f32) ->: (n `.` m `.` f32)
     )((at, b) =>
       at |>
         map(split(v5)) |> split(v8) |> // O'.v8.N'.v5.f
@@ -108,9 +111,9 @@ object mm {
               zip(p2)(p3) |> // O'.(v8.v5.f x v8.v7.f)
                 // FIXME: there seems to be a bug in AdjustArraySizesForAllocations
                 oclReduceSeq(AddressSpace.Private)(fun((p13, p14) =>
-//                  oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
+                  //                  oclReduceSeq(AddressSpace.Local)(fun((p13, p14) =>
                   // (v5/^v4).(v7/^v3).v4.v3.f x (v8.v5.f x v8.v7.f)
-                  let (toLocal(makePair(
+                  let(toLocal(makePair(
                     p14._1 |> join |> split(v6) |> // ((v8 x v5) /^ v6).v6.f
                       mapLocal(1)(asScalar o mapLocal(0)(id) o asVectorAligned(4)) |>
                       join |> split(v5)
@@ -126,7 +129,7 @@ object mm {
                             zip(transpose(p16._2))(transpose(p17._2)) |> // v8.(v4.f x v3.f)
                               oclReduceSeq(AddressSpace.Private)(fun((p19, p20) =>
                                 // v4.v3.f x (v4.f x v3.f)
-                                let (toPrivate(makePair(mapSeq(id)(p20._1))(mapSeq(id)(p20._2))))
+                                let(toPrivate(makePair(mapSeq(id)(p20._1))(mapSeq(id)(p20._2))))
                                   be (p21 =>
                                   zip(p19)(p21._1) |> // v4.(v3.f x f)
                                     mapSeq(fun(p22 =>
@@ -144,7 +147,7 @@ object mm {
                     )
                 ))(
                   generate(fun(_ =>
-                    generate(fun( _ =>
+                    generate(fun(_ =>
                       generate(fun(_ =>
                         generate(fun(_ => lf32(0.0f))))))))) |>
                     mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(id))))
@@ -162,8 +165,8 @@ object mm {
     val output = Array.ofDim[Float](n, m)
 
     // init output
-    for(i <- 0 until n){
-      for(j <- 0 until m){
+    for (i <- 0 until n) {
+      for (j <- 0 until m) {
         output(i)(j) = 0
       }
     }

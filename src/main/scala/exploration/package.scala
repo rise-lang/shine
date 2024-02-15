@@ -58,7 +58,8 @@ package object exploration {
                              name: String,
                              iterations: Int,
                              threshold: Double,
-                             samples: Int = 5
+                             samples: Int = 5,
+                             executionBackend: ExecutionBackend = OpenCL_Backend
                            )
 
   case class NeighborhoodConfig(
@@ -573,6 +574,7 @@ package object exploration {
         samples = explorer.executor.samples,
         inputSize = explorer.inputSize,
         threshold = explorer.executor.threshold,
+        executionBackend = explorer.executor.executionBackend,
         output = executorOutput
       )
       case "Debug" => new DebugExecutor(
