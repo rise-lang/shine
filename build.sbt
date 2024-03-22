@@ -104,5 +104,32 @@ clap := {
   "echo y" #| (baseDirectory.value + "/lib/clap/buildClap.sh") !
 }
 
-
+lazy val float_safe_optimizer = (project in file("float-safe-optimizer"))
+  .dependsOn(riseAndShine)
+  .enablePlugins(AssemblyPlugin)
+  .settings(
+    excludeDependencies ++= Seq(
+      ExclusionRule("org.scala-lang.modules", s"scala-xml_${scalaBinaryVersion.value}"),
+      ExclusionRule("junit", "junit"),
+      ExclusionRule("com.novocode", "junit-interface"),
+      ExclusionRule("org.scalacheck", "scalacheck"),
+      ExclusionRule("org.scalatest", "scalatest"),
+      ExclusionRule("com.lihaoyi", s"os-lib_${scalaBinaryVersion.value}"),
+      ExclusionRule("com.typesafe.play", s"play-json_${scalaBinaryVersion.value}"),
+      ExclusionRule("org.rise-lang", s"opencl-executor_${scalaBinaryVersion.value}"),
+      ExclusionRule("org.rise-lang", "CUexecutor"),
+      ExclusionRule("org.elevate-lang", s"cuda-executor_${scalaBinaryVersion.value}"),
+      ExclusionRule("org.elevate-lang", s"meta_${scalaBinaryVersion.value}"),
+    ),
+    name := "float-safe-optimizer",
+    javaOptions ++= Seq("-Xss20m", "-Xms512m", "-Xmx4G"),
+    assemblyOutputPath in assembly := file("float-safe-optimizer.jar"),
+    assemblyMergeStrategy in assembly := {
+      case PathList("fasterxml", xs @ _*) =>
+        MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  )
 

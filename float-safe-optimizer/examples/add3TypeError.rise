@@ -1,0 +1,3 @@
+depFun((n: Nat) => fun((n`.`i32) ->: (n`.`f32))(in =>
+  map(add(li32(3)))(in)
+))
