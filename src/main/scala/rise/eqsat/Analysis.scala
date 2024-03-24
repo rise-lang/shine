@@ -687,7 +687,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
       case App(f, e) =>
         val fInT = egraph(egraph.get(f).t) match {
           case FunType(inT, _) => inT
-          case _ => throw new Exception("this should not happen")
+          case _ => throw new Exception("app expected fun type")
         }
         val eT = egraph.get(e).t
 
@@ -713,7 +713,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                   }
                 }
               }
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("app expected fun type")
           }
         }
         newBeams
@@ -748,7 +748,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(NatFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("natApp expected NatFunType")
           }
         }
       case DataApp(f, _) =>
@@ -762,7 +762,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(DataFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("dataApp expected DataFunType")
           }
         }
       case AddrApp(f, _) =>
@@ -776,7 +776,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(AddrFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("addrApp expected AddrFunType")
           }
         }
       case NatLambda(e) =>
@@ -923,6 +923,9 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
               }
             }
             Seq(rec(n))
+          case rp.id() =>
+            // FIXME: only supports non-functional values
+            Seq(read ->: read, write ->: write)
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((

@@ -13,7 +13,9 @@ object Main {
     val exprSource = util.readFile(exprSourcePath)
     val untypedExpr = parseExpr(prefixImports(exprSource))
     val typedExpr = untypedExpr.toExpr
-    val code = gen.openmp.function.asStringFromExpr(typedExpr)
+    val optimizedExpr = Optimize(typedExpr)
+    println(optimizedExpr)
+    val code = gen.openmp.function.asStringFromExpr(optimizedExpr)
     util.writeToPath(outputPath, code)
   }
 

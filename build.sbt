@@ -124,12 +124,5 @@ lazy val float_safe_optimizer = (project in file("float-safe-optimizer"))
     name := "float-safe-optimizer",
     javaOptions ++= Seq("-Xss20m", "-Xms512m", "-Xmx4G"),
     assemblyOutputPath in assembly := file("float-safe-optimizer.jar"),
-    assemblyMergeStrategy in assembly := {
-      case PathList("fasterxml", xs @ _*) =>
-        MergeStrategy.discard
-      case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
-        oldStrategy(x)
-    }
   )
 
