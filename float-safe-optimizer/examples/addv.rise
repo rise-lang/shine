@@ -1,0 +1,4 @@
+depFun((n: Nat) => depFun((m: Nat) => depFun((o: Nat) =>
+  fun(((n+o)`.`i32) ->: ((m+o)`.`i32) ->: (o`.`i32))((a, b) =>
+  zip(take(o)(a))(take(o)(b)) |> map(fun(x => fst(x) + snd(x)))
+))))

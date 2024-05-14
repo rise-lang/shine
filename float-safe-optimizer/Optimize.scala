@@ -10,19 +10,32 @@ object Optimize {
     val rules = {
       import rise.eqsat.rules._
       Seq(
-        mapFusion,
+        // implementation choices:
         reduceSeq,
         mapSeq,
+        // satisfying read/write annotations:
         mapSeqArray,
+        // simplifications:
+        mapFusion,
+        reduceSeqMapFusion,
         removeTransposePair,
         fstReduction,
         sndReduction,
       /* maybe:
         omp.mapPar --> need heuristic vs mapSeq
-        toMemAfterMapSeq
+        toMemAfterMapSeq / storeToMem
         storeToMem
         reduceSeqMapFusion
-        reduceSeqUnroll --> need heuristic
+        mapSeqUnroll/reduceSeqUnroll --> need heuristic
+        eliminateMapIdentity
+
+        is it worth the cost?:
+        betaExtract
+        betaNatExtract
+        eta
+
+        not generic enough, use Elevate passes or custom applier?:
+        idxReduction_i_n
       */
       )
     }
