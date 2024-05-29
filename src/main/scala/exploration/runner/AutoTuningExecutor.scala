@@ -30,6 +30,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                               threshold: Double,
                               output: String,
                               samples: Int = 5,
+                              global_size_limit: Int = 1024,
                               executionBackend: ExecutionBackend = OpenCL_Backend
                              ) extends Runner[Rise] {
 
@@ -246,6 +247,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       runtimeStatistic = Median,
       configFile = None,
       hmConstraints = true,
+      disableChecking = true,
       saveToFile = true,
       tunerRoot = exploration.tunerConfiguration.tunerRoot,
       tunerPath = exploration.tunerConfiguration.tuner,
@@ -270,13 +272,16 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
           // meta information
           //          val duration = getDuration(result)
+          println("tuning finished here")
           val samples = getSamples(result)
 
+          println("print samples")
           result.samples.foreach(println)
 
           //          println("samples: " + samples)
           counterExpressions += result.samples.size // why?
 
+          println("write values ")
           result.samples.foreach(sample => {
 
             val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
@@ -293,9 +298,9 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
             )
           })
 
-
+          println("get best")
           val best = getBest(result.samples)
-          //          println("best: " + best)
+          println("best: " + best)
           //          println("lowered: " + lowered)
 
           val runtime = best match {
@@ -329,12 +334,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           )
         } catch {
           case e: Throwable =>
-
-            println("tuning is brorken! mey friend")
-            println("e: " + e)
-
-            System.exit(0)
-
+            println("tuning finished with error: " + e)
 
             val tuningDuration = System.currentTimeMillis() - tuningDurationStart
             val totalDuration = System.currentTimeMillis() - totalDurationStart
@@ -351,9 +351,6 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                 samples = 0,
                 executions = 0,
                 None,
-                //                None,
-                //                None,
-                //                None
               )
             )
         }
@@ -464,31 +461,31 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     dimensions match {
 
       case _: sequential_1.type =>
-        tuningParam("ls0", RangeMul(1, 1024, 2), 1, (ls0: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), 1, (gs0: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 1, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_10.type =>
 
-        tuningParam("ls0", RangeMul(1, 1024, 2), 32, (ls0: Nat) =>
-          tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_01.type =>
 
-        tuningParam("ls1", RangeMul(1, 1024, 2), 32, (ls1: Nat) =>
-          tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
+        tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
+          tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
             wrapOclRun(LocalSize(1, ls1), GlobalSize(1, gs1))(e)
           ))
 
       case _: parallel_11.type =>
 
-        tuningParam("ls0", RangeMul(1, 1024, 2), 32, (ls0: Nat) =>
-          tuningParam("ls1", RangeMul(1, 1024, 2), 32, (ls1: Nat) =>
-            tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
-              tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
+          tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
+            tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
+              tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
                 wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)
               ))))
     }

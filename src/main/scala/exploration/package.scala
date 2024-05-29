@@ -20,7 +20,7 @@ package object exploration {
     val plotter: String = "baco/plot/plot_optimization_results.py"
     val tuner: String = "baco/run.py"
     val tunerVersion: String = "baco"
-    val tunerTimeBudgetCot: Int = 60
+    val tunerTimeBudgetCot: Int = 10
   }
 
 
@@ -59,6 +59,7 @@ package object exploration {
                              iterations: Int,
                              threshold: Double,
                              samples: Int = 5,
+                             global_size_limit: Int = 1024,
                              executionBackend: ExecutionBackend = OpenCL_Backend
                            )
 
@@ -574,6 +575,7 @@ package object exploration {
         samples = explorer.executor.samples,
         inputSize = explorer.inputSize,
         threshold = explorer.executor.threshold,
+        global_size_limit = explorer.executor.global_size_limit,
         executionBackend = explorer.executor.executionBackend,
         output = executorOutput
       )

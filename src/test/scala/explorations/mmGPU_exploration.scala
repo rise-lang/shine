@@ -257,10 +257,14 @@ class mmGPU_exploration extends test_util.Tests {
     )
   }
 
-  ignore("test lowering") {
+  test("test lowering") {
 
-    val lowered = lowering.apply(mm).get
+    val mg0 = (rise.elevate.rules.lowering.mapGlobal(0) `@` topDown[Rise]).apply(mm).get
+    val mg1 = (rise.elevate.rules.lowering.mapGlobal(1) `@` topDown[Rise]).apply(mg0).get
+
+    val lowered = lowering.apply(mg1).get
     println("lowered: \n" + lowered)
+
 
     val tuner = Tuner(
       hostCode = HostCode(init(N, N, N), compute, finish(N, N, N)),
@@ -274,10 +278,10 @@ class mmGPU_exploration extends test_util.Tests {
     )
 
     val ocl: Rise =
-      tuningParam("gs0", RangeMul(1, 1024, 2), 1024, (gs0: Nat) =>
-        tuningParam("gs1", RangeMul(1, 1024, 2), 1024, (gs1: Nat) =>
-          tuningParam("ls0", RangeMul(1, 1024, 2), 1, (ls0: Nat) =>
-            tuningParam("ls1", RangeMul(1, 1024, 2), 1, (ls1: Nat) =>
+      tuningParam("gs0", RangeMul(1, 16834, 2), default = 1024, (gs0: Nat) =>
+        tuningParam("gs1", RangeMul(1, 16384, 2), default = 1024, (gs1: Nat) =>
+          tuningParam("ls0", RangeMul(1, 1024, 2), default = 32, (ls0: Nat) =>
+            tuningParam("ls1", RangeMul(1, 1024, 2), default = 32, (ls1: Nat) =>
               wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(lowered)
             ))))
 
@@ -399,43 +403,24 @@ class mmGPU_exploration extends test_util.Tests {
 
   }
 
-  test("mmGPU - explore maps") {
-
+  test("explore parallelism -- mm -- gpu") {
     //    val e = arrayPacking.apply(mm).get
-
-    val ii = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "IterativeImprovement",
-        depth = 10,
-        //        samples = 50,
-        //        repeat = 1
-      )
-    )
 
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
         depth = 7,
-        samples = 500,
+        samples = 10,
         repeat = 5
       )
     )
 
-    val tabuSearchPlain = scala.collection.immutable.Seq(
+    val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
-        heuristic = "TabuSearchPlain",
-        depth = 7, // is this ignored?
-        samples = 100,
-        repeat = 3
-      )
-    )
-
-    val simulatedAnnealingPlain = scala.collection.immutable.Seq(
-      MetaheuristicConfig(
-        heuristic = "SimulatedAnnealingPlain",
-        depth = 7, // is this ignored?
-        samples = 100,
-        repeat = 3
+        heuristic = "Random",
+        depth = 7,
+        samples = 10,
+        repeat = 5
       )
     )
 
@@ -443,7 +428,7 @@ class mmGPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Exhaustive",
         depth = 100, // is this ignored? -> maybe not for tree window slide
-        samples = 1000, // 7 hours for 1000 samples // 18 hours 5000
+        samples = 10, // 7 hours for 1000 samples // 18 hours 5000
         repeat = 1
       )
     )
@@ -458,56 +443,34 @@ class mmGPU_exploration extends test_util.Tests {
       )
     )
 
-    val localSearchExp = scala.collection.immutable.Seq(
-      //      random,
-      //      tabuSearchPlain,
-      //      simulatedAnnealingPlain,
-      //      exhaustive,
-      //      exhaustive, // breadth first search -> 2000 rewrites -> 16.5 hours
-      localSearchGraph,
-      //      randomGraph
-      //             random?
-      // tabu search? -> something more advanced
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+      random,
+      randomGraph,
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 51,
-      threshold = 10,
-      samples = 20
-    )
-
-    val experiment = scala.collection.immutable.Seq(
-      //      randomGraph,
-      //      localSearchGraph,
-      //      ii
-      //            exhaustive
+      iterations = 1, // execution iterations
+      threshold = 10, // speedup to cut iterations
+      samples = 20, // samples per tuning run
+      global_size_limit = 16384,
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mmGPU_maps",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/mmGPU",
+      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/explore_parallelism/gpu/mm",
       inputSize = N,
-      metaheuristics = Right(localSearchExp),
+      metaheuristics = Right(experiment),
       executor = executor,
       lowering = lowering,
       strategies = rules_extended, // is this ignored here?
       hostCode = Some(HostCode(init(N, N, N), compute, finish(N, N, N))),
-      //      neighborhoodConfig = NeighborhoodConfig(neighborhood = NTreeLeafsWindowChoice),
       neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
       rewriteFunction = None,
-      //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(rules)),
-      //      rewriteFunction = Some(
-      //        exploration.rewriter.everywhere.neighbourhoodWide(
-      //          strategies = parallel_fine_light,
-      //          slideWindow = 20
-      //        )
-      //      )
-      //      normalForm = Some(DFNF()),
       normalForm = None,
       importExport = None,
-      //      expert = Some(0.009632),
       expert = Some(2.3),
       default = Some(21500.000),
       overwrite = false
@@ -516,6 +479,5 @@ class mmGPU_exploration extends test_util.Tests {
     val result = exploration.explore(explorer)(mm)
 
   }
-
 
 }

@@ -517,7 +517,6 @@ package object autotune {
                 response += add
 
               //                println("response: \n" + response)
-              //                println("response: \n" + response)
               case Right(value) =>
 
                 // make sure to response int values
@@ -562,12 +561,8 @@ package object autotune {
       }
     }
 
-    println("tuning finished")
-
     val tuningResult = TuningResult(samples.toSeq, tuner)
     saveTuningResult(tuningResult)
-
-    println("saved tuning Result ")
 
     tuningResult
   }
@@ -628,79 +623,87 @@ package object autotune {
   }
 
   def saveTuningResult(tuningResult: TuningResult) = {
-    val tuner = tuningResult.tuner
 
-    // save results to file
-    if (tuner.saveToFile) {
+    tuningResult.samples.size match {
+      case 0 => throw new Exception("tuning finished without a sample")
+      case _ =>
 
-      // get unique filepath
-      val path = tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv"
-      val file = new File(path)
-      val timeAppendix = if (file.exists()) {
-        "_" + System.currentTimeMillis().toString
-      } else {
-        ""
-      }
 
-      // save samples to file
-      saveSamples(
-        tuner.output + "/" + tuner.name + "/" + tuner.name + timeAppendix + ".csv",
-        tuningResult
-      )
 
-      // save hm output file
-      ("mv " + tuner.name + "_output_samples.csv" + " " +
-        tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
+        val tuner = tuningResult.tuner
 
-      // save logfile and configfile
-      if (tuner.configFile.isDefined) {
+        // save results to file
+        if (tuner.saveToFile) {
 
-        // parse logfile name from json or use default name
-        val logfile = try {
-          parseFromJson(tuner.configFile.get, "log_file")
-        } catch {
-          case e: NoSuchElementException => "hypermapper_logfile.log"
+          // get unique filepath
+          val path = tuner.output + "/" + tuner.name + "/" + tuner.name + ".csv"
+          val file = new File(path)
+          val timeAppendix = if (file.exists()) {
+            "_" + System.currentTimeMillis().toString
+          } else {
+            ""
+          }
+
+          // save samples to file
+          saveSamples(
+            tuner.output + "/" + tuner.name + "/" + tuner.name + timeAppendix + ".csv",
+            tuningResult
+          )
+
+          // save hm output file
+          ("mv " + tuner.name + "_output_samples.csv" + " " +
+            tuner.output + "/" + tuner.name + "_hm/" + tuner.name + timeAppendix + "_hm" + ".csv" !!)
+
+          // save logfile and configfile
+          if (tuner.configFile.isDefined) {
+
+            // parse logfile name from json or use default name
+            val logfile = try {
+              parseFromJson(tuner.configFile.get, "log_file")
+            } catch {
+              case e: NoSuchElementException => "hypermapper_logfile.log"
+            }
+
+            // move logfile to output folder
+            ("mv " + logfile + " " +
+              tuner.output + "/log/" + logfile.substring(0, logfile.length - 4) + timeAppendix + ".log" !!)
+
+            // copy config file to output folder
+            ("cp " + tuner.configFile.get + " " + tuner.output !!)
+          } else {
+
+            // move logfile to output folder
+            ("mv " + tuner.name + ".log" + " " +
+              tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
+
+          }
+
+          // create plots
+          plotTuning(tuner)
+
+        } else {
+          // remove logfile and generated config file
+          if (tuner.configFile.isDefined) {
+
+            val logfile = try {
+              parseFromJson(tuner.configFile.get, "log_file")
+            } catch {
+              case e: NoSuchElementException => "hypermapper_logfile.log"
+            }
+
+            ("rm " + logfile !!)
+
+          } else {
+
+            ("rm " + tuner.name + ".log" !!)
+            ("rm " + "/tmp/" + tuner.name + ".json" !!)
+
+          }
         }
 
-        // move logfile to output folder
-        ("mv " + logfile + " " +
-          tuner.output + "/log/" + logfile.substring(0, logfile.length - 4) + timeAppendix + ".log" !!)
+      // todo save meta
 
-        // copy config file to output folder
-        ("cp " + tuner.configFile.get + " " + tuner.output !!)
-      } else {
-
-        // move logfile to output folder
-        ("mv " + tuner.name + ".log" + " " +
-          tuner.output + "/log/" + tuner.name + timeAppendix + ".log" !!) // get unique filename
-
-      }
-
-      // create plots
-      plotTuning(tuner)
-
-    } else {
-      // remove logfile and generated config file
-      if (tuner.configFile.isDefined) {
-
-        val logfile = try {
-          parseFromJson(tuner.configFile.get, "log_file")
-        } catch {
-          case e: NoSuchElementException => "hypermapper_logfile.log"
-        }
-
-        ("rm " + logfile !!)
-
-      } else {
-
-        ("rm " + tuner.name + ".log" !!)
-        ("rm " + "/tmp/" + tuner.name + ".json" !!)
-
-      }
     }
-
-    // todo save meta
-
   }
 
   // write tuning results into csv file

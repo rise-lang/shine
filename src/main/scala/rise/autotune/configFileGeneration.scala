@@ -251,7 +251,7 @@ object configFileGeneration {
 
     val file = header + parameterSection + foot
 
-    //    println("file: " + file)
+    println("file: " + file)
 
     file
   }
@@ -345,9 +345,36 @@ object configFileGeneration {
       parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
     })
 
+    // add range constraints
+    constraints.toSeq.sortBy(_.toString).foreach(constraint => {
+      constraint match {
+        case RangeConstraint(n, r) => {
+          r match {
+            case RangeAdd(_, _, step) => {
+
+              // TODO: catch RangeAdd constraints of different shape
+
+              val parameter = parameters.toSeq.find(elem => step.varList(0).name.equals(elem.name)).get
+              val dependency = parameters.toSeq.find(elem => n.varList(0).name.equals(elem.name)).get
+
+              // get current
+              val elem = parametersWDC(parameter)
+              parametersWDC(parameter) = (
+                elem._1 + constraint,
+                elem._2 ++ Seq(dependency)
+              )
+            }
+            case _ =>
+          }
+        }
+        case _ =>
+      }
+    })
+
     // get parameters from constraint
     // check for given parameters in the given constraint
     constraints.toSeq.sortBy(_.toString).foreach(constraint => {
+
       val parametersInConstraint = getParametersFromConstraint(parameters, constraint)
 
       parametersInConstraint.size match {
@@ -369,7 +396,10 @@ object configFileGeneration {
           // we do not stop if candidate is found!
           parametersInConstraint.foreach(candidate => {
             // check if pointer occurs in other parameters' dependencies  (avoid cycles)
-            parametersWDC.filter(
+            parametersWDC.filter(paramWDC => {
+                // only look at parameters from current constraint
+                parametersInConstraint.exists(elem => elem.name.equals(paramWDC._1.name))
+              }).filter(
                 paramWDC => !(paramWDC._1.name.equals(candidate.name)))
               .exists(paramWDC => {
                 paramWDC._2._2.exists(dependency => candidate.name.equals(dependency.name))

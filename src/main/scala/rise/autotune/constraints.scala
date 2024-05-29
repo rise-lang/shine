@@ -114,6 +114,7 @@ object constraints {
             }
             // todo change hard-coded 1024 to CL_DEVICE_MAX_WORK_GROUP_SIZE
             addPredicate(ArithPredicate(ls0 * ls1 * ls2, 1024, ArithPredicate.Operator.<=))
+            addPredicate(ArithPredicate(gs0 * gs1 * gs2, 67108864, ArithPredicate.Operator.<=))
           case _ =>
         }
         super.expr(e)
