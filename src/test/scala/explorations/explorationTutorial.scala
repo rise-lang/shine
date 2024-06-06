@@ -79,7 +79,7 @@ object explorationTutorial {
     val explorer = exploration.Explorer(
       name = "mm_example_autotuner",
       output = "/home/jo/development/experiments/exploration/thinkjo/",
-      inputSize = 512,
+      inputSizes = Seq(512),
       metaheuristics = Left(random),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,

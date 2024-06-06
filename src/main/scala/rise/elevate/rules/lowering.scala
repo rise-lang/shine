@@ -117,6 +117,30 @@ object lowering {
     case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
   }
 
+  @rule def oclReduceSeqPrivate: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
+  }
+
+  @rule def oclReduceSeqLocal: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Local) !: e.t)
+  }
+
+  @rule def oclReduceSeqGlobal: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Global) !: e.t)
+  }
+
+  @rule def oclReduceSeqUnrollPrivate: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeqUnroll(AddressSpace.Private) !: e.t)
+  }
+
+  @rule def oclReduceSeqUnrollLocal: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeqUnroll(AddressSpace.Local) !: e.t)
+  }
+
+  @rule def oclReduceSeqUnrollGlobal: Strategy[Rise] = {
+    case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeqUnroll(AddressSpace.Global) !: e.t)
+  }
+
   def `reduce -> reduceSeqUnroll`: Strategy[Rise] = reduceSeqUnroll
 
   @rule def reduceSeqUnroll: Strategy[Rise] = {
@@ -419,6 +443,13 @@ object lowering {
       case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
         Success(
           oclRotateValues(a)(n)(eraseType(write))
+            !: e.t)
+    }
+
+    @rule def rotateValues2: Strategy[Rise] = {
+      case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
+        Success(
+          oclRotateValues(AddressSpace.Private)(n)
             !: e.t)
     }
   }

@@ -18,7 +18,9 @@ object configFileGeneration {
                    tuner: Tuner
                   ): String = {
 
+    println("distribute constraints")
     val parametersWDCImmutable = distributeConstraints(p, c)
+    println("finished")
 
     // determine doe and optimization iterations from number of samples configured
     val (doe: Int, optimization_iterations: Int) = (p.size + 1) < tuner.samples match {
@@ -345,31 +347,59 @@ object configFileGeneration {
       parametersWDC(param) = (Set.empty[Constraint], Set.empty[NatIdentifier])
     })
 
+    println("constraints: ")
+    constraints.foreach(println)
+
     // add range constraints
     constraints.toSeq.sortBy(_.toString).foreach(constraint => {
       constraint match {
         case RangeConstraint(n, r) => {
-          r match {
-            case RangeAdd(_, _, step) => {
+          n.varList.size != 0 match {
+            case true =>
+              r match {
+                case RangeAdd(start, stop, step) => {
 
-              // TODO: catch RangeAdd constraints of different shape
+                  // TODO: catch RangeAdd constraints of different shape
 
-              val parameter = parameters.toSeq.find(elem => step.varList(0).name.equals(elem.name)).get
-              val dependency = parameters.toSeq.find(elem => n.varList(0).name.equals(elem.name)).get
+                  println("n: " + n)
+                  println("r: " + r)
+                  println("Range: " + start + ", " + stop + ", " + step)
 
-              // get current
-              val elem = parametersWDC(parameter)
-              parametersWDC(parameter) = (
-                elem._1 + constraint,
-                elem._2 ++ Seq(dependency)
-              )
-            }
-            case _ =>
+                  // check if we could evaluate the step already?
+                  // constant step?
+                  // step.eval?
+
+                  step.varList.size == 0 || n.varList.size == 0 match {
+                    case true => // skip - for now
+                    case false =>
+
+                      n.varList.size > 1 match {
+                        case true => // skip - for now
+                        case false =>
+
+                          val parameter = parameters.toSeq.find(elem => step.varList(0).name.equals(elem.name)).get
+                          val dependency = parameters.toSeq.find(elem => n.varList(0).name.equals(elem.name)).get
+
+                          // get current
+                          val elem = parametersWDC(parameter)
+                          parametersWDC(parameter) = (
+                            elem._1 + constraint,
+                            elem._2 ++ Seq(dependency)
+                          )
+                      }
+
+                  }
+                }
+                case _ =>
+              }
+            case false =>
           }
         }
         case _ =>
       }
     })
+
+    parametersWDC.foreach(println)
 
     // get parameters from constraint
     // check for given parameters in the given constraint
@@ -421,7 +451,10 @@ object configFileGeneration {
         }
       }
     })
-    parametersWDC.toMap
+
+    parametersWDC.map(elem =>
+      elem._1 -> (elem._2._1, elem._2._2.filter(x => !x.name.equals(elem._1.name)))
+    ).toMap
   }
 
   // helper function to collect occurring parameters from a constraint

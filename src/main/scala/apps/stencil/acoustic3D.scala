@@ -99,11 +99,29 @@ object acoustic3D {
       mapGlobal(0)(
         mapGlobal(1)(
           iterateStream(acoustic) o
-          oclRotateValues(AddressSpace.Private)(sz)(
-            mapSeqUnroll(mapSeqUnroll(id))
-          ) o transpose o map(transpose)
+            oclRotateValues(AddressSpace.Private)(sz)(
+              mapSeqUnroll(mapSeqUnroll(id))
+            ) o transpose o map(transpose)
         )
       ) o transpose o slide2D(sz, 1) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
   ))
+
+  val stencilMSS_high_level: ToBeTyped[Expr] = depFun((o: Nat, n: Nat, m: Nat) => fun(
+    ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+      ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+      (o `.` n `.` m `.` f32)
+  )((mat1, mat2) =>
+    transpose o map(transpose) o transpose o
+      map(
+        map(
+          iterateStream(acoustic) o
+            rotateValues(sz)(
+              map(map(id))
+            ) o transpose o map(transpose)
+        )
+      ) o transpose o slide2D(sz, 1) o map(transpose) o transpose
+      $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
+  ))
+
 }

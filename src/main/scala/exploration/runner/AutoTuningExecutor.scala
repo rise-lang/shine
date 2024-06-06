@@ -1,6 +1,9 @@
 package exploration.runner
 
 import arithexpr.arithmetic.RangeMul
+import arithexpr.arithmetic.RangeAdd
+import arithexpr.arithmetic.Range
+
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.heuristic_search.Runner
 import elevate.heuristic_search.util.{RewriteIdentifier, Solution, SolutionStep, hashProgram, hashSolution}
@@ -26,7 +29,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
                               goldExpression: Rise,
                               hostCode: Option[HostCode],
                               iterations: Int,
-                              inputSize: Int,
+                              inputSizes: Seq[Nat],
                               threshold: Double,
                               output: String,
                               samples: Int = 5,
@@ -387,7 +390,22 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         )
     }
 
-    saveTuningResults(statistic, solution, lowered.get)
+
+    // save results
+    lowered match {
+      case Success(s) =>
+        saveTuningResults(
+          tuningResultStatistic = statistic,
+          solution = solution,
+          lowered = Some(s)
+        )
+      case Failure(s) =>
+        saveTuningResults(
+          tuningResultStatistic = statistic,
+          solution = solution,
+          lowered = None
+        )
+    }
 
     // convert from Option[TimeSpan] to Double
     val resultingRuntime = result._2 match {
@@ -461,31 +479,31 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     dimensions match {
 
       case _: sequential_1.type =>
-        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 1, (ls0: Nat) =>
-          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1, (gs0: Nat) =>
+        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 1, (ls0: Nat) =>
+          tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_10.type =>
 
-        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
-          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
+        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 32, (ls0: Nat) =>
+          tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_01.type =>
 
-        tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
-          tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
+        tuningParam("ls1", RangeAdd(1, global_size_limit, 1), 32, (ls1: Nat) =>
+          tuningParam("gs1", RangeAdd(1, global_size_limit, 1), 1024, (gs1: Nat) =>
             wrapOclRun(LocalSize(1, ls1), GlobalSize(1, gs1))(e)
           ))
 
       case _: parallel_11.type =>
 
-        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
-          tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
-            tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
-              tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
+        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 32, (ls0: Nat) =>
+          tuningParam("ls1", RangeAdd(1, global_size_limit, 1), 32, (ls1: Nat) =>
+            tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
+              tuningParam("gs1", RangeAdd(1, global_size_limit, 1), 1024, (gs1: Nat) =>
                 wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)
               ))))
     }
@@ -510,8 +528,9 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     // todo adjust this for autotuning benchmarks
     val tuner = Tuner(
       hostCode = hostCode.get, // we don't need that, yes we do!
+      inputSizes = inputSizes, // pass through input sizes
       samples = samples,
-      name = "mm",
+      name = "mm", // adjust name here
       output = "exploration",
       timeouts = Timeouts(
         codegenerationTimeout = 30000,
@@ -538,7 +557,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       case Success(e) => {
 
         // get case of parallelism to define default values for auto-tuning
-        val oclDimensions: OpenCLWrapping = getOclDimensions(solution)
+        val oclDimensions: OpenCLWrapping = getOclDimensions(solution) // get from solution or lowered solution?
         val eTuning: Expr = wrapOCLDimensions(oclDimensions, e)
 
         // run tuning
@@ -677,7 +696,21 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         )
     }
 
-    saveTuningResults(statistic, solution, lowered.get)
+    // save results
+    lowered match {
+      case Success(s) =>
+        saveTuningResults(
+          tuningResultStatistic = statistic,
+          solution = solution,
+          lowered = Some(s)
+        )
+      case Failure(s) =>
+        saveTuningResults(
+          tuningResultStatistic = statistic,
+          solution = solution,
+          lowered = None
+        )
+    }
 
     // convert from Option[TimeSpan] to Double
     val resultingRuntime = result._2 match {
@@ -696,7 +729,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
   def saveTuningResults(
                          tuningResultStatistic: TuningResultStatistic,
                          solution: Solution[Rise],
-                         lowered: Rise
+                         lowered: Option[Rise]
                        ) = {
 
     val filePath = output + "/" + "tuning_executor.csv"
@@ -732,13 +765,18 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       case None => "-1"
     }
 
+    val lowered_hash = lowered match {
+      case Some(lowered_expression) => hashProgram(lowered_expression)
+      case None => ""
+    }
+
     // write line
     val line =
       tuningResultStatistic.number.toString + "," + // iteration
         "executor" + "," + // runner
         tuningResultStatistic.timestamp.toString + "," + // timestamp
         hashSolution(solution) + "," + // high-level hash
-        hashProgram(lowered) + "," + // low-level hash
+        lowered_hash + "," + // low-level hash
         solution.rewrites().mkString("\"[", ",", "]\"") + "," + // rewrite
         "no error reports for tuning" + "," + // error level
         runtime + "," + // runtime

@@ -169,6 +169,7 @@ case class CExecutor(
 
     // do we need all the error levels?
 
+    counter += 1
 
     // initialize error level
     errorLevel = LoweringError
@@ -212,7 +213,7 @@ case class CExecutor(
               if (returnValue.performanceValue < value) {
                 best = Some(returnValue.performanceValue)
                 gold = gen.openmp.function("compute_gold").fromExpr(expression)
-                println(s"[${counter}] use new gold with runtime: " + best.get)
+                //                println(s"[${counter}] use new gold with runtime: " + best.get)
               }
             case _ => best = Some(returnValue.performanceValue)
           }
@@ -222,36 +223,36 @@ case class CExecutor(
 
         } catch {
           case e: Throwable =>
-            println("e: " + e)
+            //            println("e: " + e)
             // handle different execution errors
             e.getMessage.substring(20).toInt match {
               case 124 =>
-                println(s"[${counter}] timeout")
+                //                println(s"[${counter}] timeout")
                 errorMessage = Some("124 - Timeout")
                 errorLevel = ExecutionTimeout
                 performanceValue = None
               case 11 =>
-                println(s"[${counter}] execution crashed")
+                //                println(s"[${counter}] execution crashed")
                 System.exit(1)
                 errorLevel = ExecutionError
                 performanceValue = None
               case 255 =>
-                println(s"[${counter}] execution failed")
+                //                println(s"[${counter}] execution failed")
                 errorMessage = Some("255 - execution failed")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 134 =>
-                println(s"[${counter}] execution failed")
+                //                println(s"[${counter}] execution failed")
                 errorMessage = Some("invalid pointer\ntimeout: the monitored command dumped core")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case 139 =>
-                println(s"[${counter}] execution failed with segmentation fault")
+                //                println(s"[${counter}] execution failed with segmentation fault")
                 errorMessage = Some("Segmentation fault")
                 errorLevel = ExecutionFail
                 performanceValue = None
               case _ =>
-                println(s"[${counter}] execution failed with unknown error")
+                //                println(s"[${counter}] execution failed with unknown error")
                 errorMessage = Some("Unknown error")
                 errorLevel = ExecutionFail
                 performanceValue = None
@@ -260,13 +261,13 @@ case class CExecutor(
       } catch {
         case e: Throwable =>
           errorMessage = Some("compiling error: \n" + e.toString)
-          println(s"[${counter}] compiling error")
+        //          println(s"[${counter}] compiling error")
       }
 
     } catch {
       case e: Throwable =>
-        println(s"[${counter}] code-generation error")
-        println(e)
+        //        println(s"[${counter}] code-generation error")
+        //        println(e)
 
         errorMessage = Some("code generation error")
         code = e.toString

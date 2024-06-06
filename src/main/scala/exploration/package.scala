@@ -1,3 +1,4 @@
+import arithexpr.arithmetic.ArithExpr.toInt
 import elevate.heuristic_search.util.{Solution, SolutionStep}
 import rise.elevate.Rise
 import rise.core._
@@ -6,6 +7,7 @@ import rise.autotune.{HostCode, search}
 import elevate.heuristic_search._
 import exploration.runner._
 import exploration.neighborhoods._
+import rise.core.types._
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
@@ -27,7 +29,7 @@ package object exploration {
   case class Explorer(
                        name: String = "exploration",
                        output: String = "exploration",
-                       inputSize: Int = 1024,
+                       inputSizes: Seq[Nat] = Seq(1024),
                        metaheuristics: Either[Seq[MetaheuristicConfig], Seq[Seq[MetaheuristicConfig]]] = null,
                        executor: ExecutorConfig = null,
                        lowering: Strategy[Rise] = null,
@@ -561,7 +563,7 @@ package object exploration {
         explorer.lowering,
         gold,
         explorer.executor.iterations,
-        explorer.inputSize,
+        toInt(explorer.inputSizes(0)),
         explorer.executor.threshold,
         executorOutput,
         printEvery = explorer.printEvery,
@@ -573,7 +575,7 @@ package object exploration {
         hostCode = explorer.hostCode,
         iterations = explorer.executor.iterations,
         samples = explorer.executor.samples,
-        inputSize = explorer.inputSize,
+        inputSizes = explorer.inputSizes,
         threshold = explorer.executor.threshold,
         global_size_limit = explorer.executor.global_size_limit,
         executionBackend = explorer.executor.executionBackend,
@@ -583,7 +585,7 @@ package object exploration {
         lowering = explorer.lowering,
         goldExpression = gold,
         iterations = explorer.executor.iterations,
-        inputSize = explorer.inputSize,
+        inputSize = toInt(explorer.inputSizes(0)),
         threshold = explorer.executor.threshold,
         output = executorOutput
       )

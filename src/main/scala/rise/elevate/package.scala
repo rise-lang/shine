@@ -6,7 +6,7 @@ import _root_.rise.core.types.{ExprType, Nat}
 import rise.elevate.strategies.normalForm.DFNF
 import _root_.elevate.core.Strategy
 import _root_.elevate.core.strategies.Traversable
-import arithexpr.arithmetic.{RangeMul, RangeUnknown}
+import arithexpr.arithmetic.{RangeMul, RangeUnknown, RangeAdd}
 import rise.autotune.tuningParam
 
 package object elevate {

@@ -4,7 +4,6 @@ import apps.tvmGemm
 import apps.tvmGemm.{innermost, outermost}
 import exploration.runner.DebugExecutor
 import exploration.strategies.blockingExploration
-import exploration.strategies.blockingExploration.tiling2
 import rise.autotune.{AutoTuningError, EXECUTION_ERROR, HostCode, Timeouts}
 import rise.core.Expr
 import rise.core.types.{Nat, TuningParameter}
@@ -182,7 +181,6 @@ class mmCPU_exploration extends test_util.Tests {
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1, 2, 5, 3, 6, 4))
 
-
   val parallel_lowering: scala.collection.immutable.Seq[Strategy[Rise]] = {
     scala.collection.immutable.Seq(
       rise.elevate.rules.lowering.mapParCompute()
@@ -228,7 +226,7 @@ class mmCPU_exploration extends test_util.Tests {
     scala.collection.immutable.Seq(
       fuseReduceMap, // tiling block
       //      tile(32, 32),
-      tiling2,
+      //      tiling2,
       reduceMapFission(),
       reorderTiling,
     )
@@ -259,12 +257,6 @@ class mmCPU_exploration extends test_util.Tests {
     )
   }
 
-  val tile_only: scala.collection.immutable.Seq[Strategy[Rise]] = {
-    scala.collection.immutable.Seq(
-      fuseReduceMap,
-      blockingExploration.tiling2
-    )
-  }
 
   test("test unfused lowering") {
 
@@ -483,7 +475,7 @@ class mmCPU_exploration extends test_util.Tests {
   test("replace parameters and execute") {
 
     // use tile rule and everywhere thing
-    val tiling = blockingExploration.tiling2
+    //    val tiling = blockingExploration.tiling2
     val e = (fuseReduceMap `@` everywhere).apply(mm).get
     println("e: \n" + e)
 
@@ -532,12 +524,12 @@ class mmCPU_exploration extends test_util.Tests {
       saveToDisk = false
     )
 
-    val result = executor.execute(replacedByHand)
-
-    val tiled = blockingExploration.lowering.apply(
-      (blockingExploration.tiling `@` topDown[Rise]).apply(e).get
-    ).get
-    val result2 = executor.execute(tiled)
+    //    val result = executor.execute(replacedByHand)
+    //
+    //    val tiled = blockingExploration.lowering.apply(
+    //      (blockingExploration.tiling `@` topDown[Rise]).apply(e).get
+    //    ).get
+    //    val result2 = executor.execute(tiled)
 
     //
     //    val execute: Expr => (
@@ -600,7 +592,7 @@ class mmCPU_exploration extends test_util.Tests {
   test("test parameters and everywhere") {
 
     // use tile rule and everywhere thing
-    val tiling = blockingExploration.tiling2
+    //    val tiling = blockingExploration.tiling2
     val e = (fuseReduceMap `@` everywhere).apply(mm).get
     println("e: \n" + e)
 
@@ -710,21 +702,21 @@ class mmCPU_exploration extends test_util.Tests {
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
-        depth = 5,
-        samples = 30,
+        depth = 15,
+        samples = 3000,
       )
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //      exhaustive,
-      random
+      exhaustive,
+      //      random
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
       iterations = 20,
       threshold = 10,
-      samples = 50,
+      samples = 10,
       executionBackend = C_Backend
     )
 
@@ -732,11 +724,11 @@ class mmCPU_exploration extends test_util.Tests {
     val explorer = exploration.Explorer(
       name = "mmCPU",
       output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/mmCPU",
-      inputSize = N,
+      inputSizes = scala.collection.immutable.Seq(N),
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = exploration.strategies.blockingExploration.lowering,
-      strategies = fine_light,
+      strategies = exploration.strategies.blockingExploration.icfp,
       //      rewriteFunction = Some(exploration.rewriter.everywhere.rewriteFunction(parallel_fine_light)), // maybe call neighborhood deep
       neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice), // what about window (mabye add a config here as well)
       // todo check whether this can be removed

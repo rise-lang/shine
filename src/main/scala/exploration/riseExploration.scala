@@ -17,14 +17,14 @@ import rise.elevate.Rise
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
-
 import exploration.explorationUtil.jsonParser._
 import exploration.runner._
-
 import elevate.heuristic_search._
+import rise.core.DSL.Type.NatFunctionWrapper
 
 import scala.sys.process._
 import scala.language.postfixOps
+import rise.core.types.Nat
 
 object riseExploration {
 
@@ -168,7 +168,18 @@ object riseExploration {
           executorOutput,
           expert = expert
         )
-      case "AutoTuning" => new AutoTuningExecutor(lowering, gold, hostCode, result.executor.iterations, inputSize, result.executor.threshold, executorOutput, executionBackend = OpenCL_Backend)
+      case "AutoTuning" =>
+        var inputSizes: Nat = inputSize
+
+        new AutoTuningExecutor(
+          lowering = lowering,
+          goldExpression = gold,
+          hostCode = hostCode,
+          iterations = result.executor.iterations,
+          inputSizes = scala.collection.immutable.Seq(inputSizes),
+          threshold = result.executor.threshold,
+          output = executorOutput,
+          executionBackend = OpenCL_Backend)
       case "Debug" => new DebugExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")

@@ -79,7 +79,9 @@ object blockingExploration {
   @rule def blocking_step3: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) `;` DFNF() // splitStrategy
 
   // vectorization
-  @rule def vectorization_step0: Strategy[Rise] = (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
+  //  @rule def vectorization_step0: Strategy[Rise] = (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
+
+  @rule def vectorization: Strategy[Rise] = tunable(vectorize)
 
   // loop permutation
   @rule def loopPerm_step0: Strategy[Rise] = (tile(32, 32) `@` outermost(mapNest(2))) `;` DFNF() // blocking0
@@ -143,48 +145,22 @@ object blockingExploration {
     //    loopPerm_step4
   )
 
+  @rule def tileTuning: Strategy[Rise] = tile()
 
-  @rule def splitStrategos: Strategy[Rise] = (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
+  @rule def reorder_tiling: Strategy[Rise] = tunable(splitStrategy) `;` reorder(List(1, 2, 5, 6, 3, 4))
 
-  @rule def splitStrategos2: Strategy[Rise] = (tunable(splitStrategy) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
+  @rule def reorder_loop_perm: Strategy[Rise] = tunable(splitStrategy) `;` reorder(List(1, 2, 5, 3, 6, 4))
+
+  //  @rule def splitStrategos: Strategy[Rise] = tunable(splitStrategy)
 
 
-  @rule def tiling: Strategy[Rise] = tile(32, 32)
-
-  @rule def tiling2: Strategy[Rise] = tile()
-
-  val rules: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
+  val icfp: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
     fuseReduceMap,
-    tiling,
+    tileTuning,
     reduceMapFission(),
-    //    splitStrategy(4),
-    splitStrategos
-    //    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
-    //    reorder(List(1, 2, 5, 6, 3, 4)),
-    //    vectorize(32)
+    reorder_tiling,
+    reorder_loop_perm,
+    vectorization,
   )
-
-  val rules2: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
-    fuseReduceMap,
-    tile(32, 32),
-    reduceMapFission(),
-    splitStrategy(4),
-    reorder(List(1, 2, 5, 6, 3, 4)),
-  )
-
-
-  val rules3: scala.collection.immutable.Seq[Strategy[Rise]] = scala.collection.immutable.Seq(
-    fuseReduceMap,
-    tile(),
-    reduceMapFission(),
-    //    splitStrategy(4),
-    splitStrategos2
-    //    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;` reorder(List(1, 2, 5, 6, 3, 4)) // splitStrategy
-    //    reorder(List(1, 2, 5, 6, 3, 4)),
-    //    vectorize(32)
-  )
-
-
-  //  val lowering = lowerToC
 
 }

@@ -177,8 +177,8 @@ class mmGPU_exploration extends test_util.Tests {
     lowering0 `;` // add copies if necessary
       lowering1 `;` // reduce -> reduceSeq
       lowering2 `;` // reduceSeq -> reduceOcl
-      //      lowering3 `;` // map -> map global 0 (topdown/outermost)
-      //      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
+      lowering3 `;` // map -> map global 0 (topdown/outermost)
+      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
       lowering5 // map (compute) -> mapSeq
 
   // @rule broken here? why?
@@ -202,6 +202,74 @@ class mmGPU_exploration extends test_util.Tests {
       rise.elevate.rules.lowering.mapLocal(1),
       rise.elevate.rules.lowering.mapSeqCompute(),
 
+    )
+  }
+
+  //  // movement rules
+  //  val algo: scala.collection.immutable.Seq[Strategy[Rise]] = {
+  //    scala.collection.immutable.Seq(
+  //      rise.elevate.rules.algorithmic.
+  //
+  //    )}
+
+
+  // movement rules
+  val movement: scala.collection.immutable.Seq[Strategy[Rise]] = {
+    scala.collection.immutable.Seq(
+
+      //      // fusion
+      //      fuseReduceMap,
+      //
+      //      // split join
+      //      splitJoinRule,
+      //
+      //      // ocl lowering
+      //      rise.elevate.rules.lowering.mapGlobal(0),
+      //      rise.elevate.rules.lowering.mapGlobal(1),
+      //      rise.elevate.rules.lowering.mapWorkGroup(0),
+      //      rise.elevate.rules.lowering.mapWorkGroup(1),
+      //      rise.elevate.rules.lowering.mapLocal(0),
+      //      rise.elevate.rules.lowering.mapLocal(1),
+      //      rise.elevate.rules.lowering.mapSeqCompute(),
+      //
+      // movement
+      rise.elevate.rules.movement.mapFstBeforeMapSnd,
+      rise.elevate.rules.movement.transposeBeforeMapMapF,
+      rise.elevate.rules.movement.slideBeforeMapMapF,
+      rise.elevate.rules.movement.slideBeforeMap,
+      rise.elevate.rules.movement.splitBeforeMap,
+      rise.elevate.rules.movement.joinBeforeMapF,
+      rise.elevate.rules.movement.mapMapFBeforeJoin,
+      rise.elevate.rules.movement.dropBeforeMap,
+      rise.elevate.rules.movement.takeBeforeMap,
+      rise.elevate.rules.movement.takeAfterMap,
+      rise.elevate.rules.movement.takeInZip,
+      rise.elevate.rules.movement.takeOutisdeZip,
+      rise.elevate.rules.movement.takeOutsidePair,
+      rise.elevate.rules.movement.dropInZip,
+      rise.elevate.rules.movement.takeInSelect,
+      rise.elevate.rules.movement.dropInSelect,
+      rise.elevate.rules.movement.dropBeforeTake,
+      rise.elevate.rules.movement.takeBeforeDrop,
+      rise.elevate.rules.movement.takeBeforeSlide,
+      rise.elevate.rules.movement.dropBeforeSlide,
+      rise.elevate.rules.movement.padEmptyBeforeSlide,
+      rise.elevate.rules.movement.padEmptyBeforeMap,
+      rise.elevate.rules.movement.padEmptyBeforeTranspose,
+      rise.elevate.rules.movement.padEmptyInsideZip,
+      rise.elevate.rules.movement.padEmptyBeforeZip,
+      rise.elevate.rules.movement.transposeBeforeSlide,
+      rise.elevate.rules.movement.transposeBeforeMapSlide,
+      rise.elevate.rules.movement.mapSlideBeforeTranspose,
+      rise.elevate.rules.movement.joinBeforeTranspose,
+      rise.elevate.rules.movement.transposeBeforeMapJoin,
+      rise.elevate.rules.movement.mapTransposeBeforeJoin,
+      rise.elevate.rules.movement.mapJoinBeforeTranspose,
+      rise.elevate.rules.movement.joinBeforeJoin,
+      rise.elevate.rules.movement.mapJoinBeforeJoin,
+      rise.elevate.rules.movement.slideBeforeSplit,
+      rise.elevate.rules.movement.slideBeforeSlide,
+      rise.elevate.rules.movement.mapFstBeforeMapSnd,
     )
   }
 
@@ -257,7 +325,7 @@ class mmGPU_exploration extends test_util.Tests {
     )
   }
 
-  test("test lowering") {
+  ignore("test lowering") {
 
     val mg0 = (rise.elevate.rules.lowering.mapGlobal(0) `@` topDown[Rise]).apply(mm).get
     val mg1 = (rise.elevate.rules.lowering.mapGlobal(1) `@` topDown[Rise]).apply(mg0).get
@@ -403,14 +471,63 @@ class mmGPU_exploration extends test_util.Tests {
 
   }
 
+
+  test("explore split join and more ") {
+
+
+    val exhaustive = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "Exhaustive",
+        depth = 100, // is this ignored? -> maybe not for tree window slide
+        samples = 1000, // 7 hours for 1000 samples // 18 hours 5000
+        repeat = 1
+      )
+    )
+
+    val experiment = scala.collection.immutable.Seq(
+      exhaustive,
+    )
+
+    val executor = ExecutorConfig(
+      name = "AutoTuning",
+      iterations = 3, // execution iterations
+      threshold = 10, // speedup to cut iterations
+      samples = 20, // samples per tuning run
+      global_size_limit = 1024,
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "mmGPU_sp",
+      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/explore_sp/gpu/mm",
+      inputSizes = scala.collection.immutable.Seq(N),
+      metaheuristics = Right(experiment),
+      executor = executor,
+      lowering = lowering,
+      strategies = rules, // is this ignored here?
+      hostCode = Some(HostCode(init(N, N, N), compute, finish(N, N, N))),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
+      rewriteFunction = None,
+      normalForm = None,
+      importExport = None,
+      expert = Some(2.3),
+      default = Some(21500.000),
+      overwrite = false
+    )
+
+    val result = exploration.explore(explorer)(mm)
+
+  }
+
+
   test("explore parallelism -- mm -- gpu") {
     //    val e = arrayPacking.apply(mm).get
 
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
-        depth = 7,
-        samples = 10,
+        depth = 10,
+        samples = 1000,
         repeat = 5
       )
     )
@@ -418,8 +535,8 @@ class mmGPU_exploration extends test_util.Tests {
     val random = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Random",
-        depth = 7,
-        samples = 10,
+        depth = 10,
+        samples = 1000,
         repeat = 5
       )
     )
@@ -428,7 +545,7 @@ class mmGPU_exploration extends test_util.Tests {
       MetaheuristicConfig(
         heuristic = "Exhaustive",
         depth = 100, // is this ignored? -> maybe not for tree window slide
-        samples = 10, // 7 hours for 1000 samples // 18 hours 5000
+        samples = 1000, // 7 hours for 1000 samples // 18 hours 5000
         repeat = 1
       )
     )
@@ -451,9 +568,9 @@ class mmGPU_exploration extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 1, // execution iterations
+      iterations = 21, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 20, // samples per tuning run
+      samples = 5, // samples per tuning run
       global_size_limit = 16384,
     )
 
@@ -461,7 +578,7 @@ class mmGPU_exploration extends test_util.Tests {
     val explorer = exploration.Explorer(
       name = "mmGPU_maps",
       output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/explore_parallelism/gpu/mm",
-      inputSize = N,
+      inputSizes = scala.collection.immutable.Seq(N),
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = lowering,
