@@ -193,12 +193,12 @@ object configFileGeneration {
           val parameterEntry =
             s"""   "${param.name}" : {
                |       "parameter_type" : "ordinal",
-               |       "values" : ${values.mkString("[", ", ", "]")},
-               |       "parameter_default" : 1
+               |       ${parameter_default}
+               |       "values" : ${values.mkString("[", ", ", "]")}
                |   },
                |""".stripMargin
 
-          parameterEntry
+          "\n" + parameterEntry.split("\n").filterNot(_.isBlank).mkString("\n")
         }
       }
       parameter += parameterEntry

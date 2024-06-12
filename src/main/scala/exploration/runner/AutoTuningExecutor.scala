@@ -479,31 +479,31 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     dimensions match {
 
       case _: sequential_1.type =>
-        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 1, (ls0: Nat) =>
-          tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 1, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_10.type =>
 
-        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 32, (ls0: Nat) =>
-          tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
+          tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
             wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(e)
           ))
 
       case _: parallel_01.type =>
 
-        tuningParam("ls1", RangeAdd(1, global_size_limit, 1), 32, (ls1: Nat) =>
-          tuningParam("gs1", RangeAdd(1, global_size_limit, 1), 1024, (gs1: Nat) =>
+        tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
+          tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
             wrapOclRun(LocalSize(1, ls1), GlobalSize(1, gs1))(e)
           ))
 
       case _: parallel_11.type =>
 
-        tuningParam("ls0", RangeAdd(1, global_size_limit, 1), 32, (ls0: Nat) =>
-          tuningParam("ls1", RangeAdd(1, global_size_limit, 1), 32, (ls1: Nat) =>
-            tuningParam("gs0", RangeAdd(1, global_size_limit, 1), 1024, (gs0: Nat) =>
-              tuningParam("gs1", RangeAdd(1, global_size_limit, 1), 1024, (gs1: Nat) =>
+        tuningParam("ls0", RangeMul(1, global_size_limit, 2), 32, (ls0: Nat) =>
+          tuningParam("ls1", RangeMul(1, global_size_limit, 2), 32, (ls1: Nat) =>
+            tuningParam("gs0", RangeMul(1, global_size_limit, 2), 1024, (gs0: Nat) =>
+              tuningParam("gs1", RangeMul(1, global_size_limit, 2), 1024, (gs1: Nat) =>
                 wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(e)
               ))))
     }
