@@ -446,11 +446,23 @@ object lowering {
             !: e.t)
     }
 
-    @rule def rotateValues2: Strategy[Rise] = {
-      case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
-        Success(
-          oclRotateValues(AddressSpace.Private)(n)
-            !: e.t)
+    @rule def oclRotateValuesPrivate: Strategy[Rise] = {
+      case e@p.rotateValues() => Success(oclRotateValues(AddressSpace.Private) !: e.t)
     }
+
+    @rule def oclRotateValuesLocal: Strategy[Rise] = {
+      case e@p.rotateValues() => Success(oclRotateValues(AddressSpace.Local) !: e.t)
+    }
+
+    @rule def oclRotateValuesGlobal: Strategy[Rise] = {
+      case e@p.rotateValues() => Success(oclRotateValues(AddressSpace.Global) !: e.t)
+    }
+
+    //    @rule def rotateValues2(): Strategy[Rise] = {
+    //      case e@DepApp(NatKind, DepApp(NatKind, slide(), n: Nat), Cst(1)) =>
+    //        Success(
+    //          oclRotateValues(AddressSpace.Private)(n)(fun(x => x))
+    //            !: e.t)
+    //    }
   }
 }

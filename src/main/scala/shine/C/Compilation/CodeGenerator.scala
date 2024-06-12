@@ -25,10 +25,15 @@ import scala.language.implicitConversions
 
 object CodeGenerator {
   sealed trait PathExpr
+
   sealed trait PairAccess extends PathExpr
+
   final case object FstMember extends PairAccess
+
   final case object SndMember extends PairAccess
+
   final case class CIntExpr(num: Nat) extends PathExpr
+
   final case object DPairSnd extends PathExpr
 
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
@@ -60,7 +65,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
   def addDeclaration(decl: Decl): Unit = {
     if (decls.exists(_.name == decl.name)) {
-      println(s"warning: declaration with name ${decl.name} already defined")
+      // disable this warning for exploration and tuning experiments
+      // println(s"warning: declaration with name ${decl.name} already defined")
     } else {
       decls += decl
     }
@@ -151,11 +157,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           // Create a fresh nat identifier, this will be bound to the "actual nat value"
           val fstId = NatIdentifier(freshName("fstId"))
           val sndT = substituteNatInType(fstId, x, inT)
-          val sndId = Identifier[ExpType](freshName("sndId"),  ExpType(sndT, `read`))
+          val sndId = Identifier[ExpType](freshName("sndId"), ExpType(sndT, `read`))
           val (sndCType, initT) = typ(sndT) match {
-              case array:C.AST.ArrayType => (C.AST.PointerType(getBaseType(array)), (x:C.AST.Expr) => x)
-              case t => (t, (x:C.AST.Expr) => C.AST.UnaryExpr(C.AST.UnaryOperator.*, x))
-            }
+            case array: C.AST.ArrayType => (C.AST.PointerType(getBaseType(array)), (x: C.AST.Expr) => x)
+            case t => (t, (x: C.AST.Expr) => C.AST.UnaryExpr(C.AST.UnaryOperator.*, x))
+          }
           // Read off the first uint32_t as a nat
           C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(
@@ -165,7 +171,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             C.AST.DeclStmt(
               C.AST.VarDecl(sndId.name, sndCType,
                 Some(initT(C.AST.Cast(sndCType, C.AST.BinaryExpr(input, C.AST.BinaryOperator.+, C.AST.Literal("4")))))
-            )),
+              )),
             f(fstId)(sndId) |> cmd(env.updatedIdentEnv((sndId, C.AST.DeclRef(sndId.name))))
           ))
         })
@@ -174,7 +180,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         genNat(fst, env, fst => {
           a |> acc(env, List(), expr => C.AST.ExprStmt(C.AST.Assignment(
             C.AST.ArraySubscript(C.AST.Cast(C.AST.PointerType(C.AST.Type.u32), expr), C.AST.Literal("0")
-            ) , fst)))
+            ), fst)))
         })
       case Apply(_, _) | DepApply(_, _, _) |
            _: CommandPrimitive =>
@@ -220,7 +226,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           snd |> acc(env, Nil, { case C.AST.StructMemberAccess(a2, _) =>
             assert(a1 == a2)
             cont(a1)
-          })})
+          })
+        })
       case _ => error(s"did not expect $path")
     }
 
@@ -528,7 +535,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
-    def typeToStructNameComponent(t:DataType):String = {
+    def typeToStructNameComponent(t: DataType): String = {
       t match {
         case IndexType(n) => s"idx$n"
         case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
@@ -563,7 +570,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         a.fdt match {
           case NatToDataLambda(_, body) =>
             C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
-          case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
+          case _: NatToDataIdentifier => throw new Exception("This should not happen")
         }
       case r: rise.core.types.DataType.PairType =>
         C.AST.StructType("Record_" + typeToStructNameComponent(r.dt1) + "_" + typeToStructNameComponent(r.dt2),
@@ -611,7 +618,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             generateAccess(sndT,
               C.AST.Cast(C.AST.PointerType(C.AST.Type.getBaseType(typ(sndT))),
                 C.AST.BinaryExpr(expr, C.AST.BinaryOperator.+, C.AST.Literal("sizeof(uint32_t)"))
-            ), ps, env, cont)
+              ), ps, env, cont)
 
           case other => throw new Exception(s"Expected a Dependent Pair but $other found instead")
         }
@@ -620,11 +627,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  private def generateLetNat[T <: PhraseType](binder:LetNatIdentifier,
-                             defn:Phrase[T],
-                             env:Environment,
-                             cont:(CodeGenerator, Environment) => Stmt):Stmt = {
-    cont(this, env updatedNatEnv((binder, defn.asInstanceOf[Phrase[PhraseType]])))
+  private def generateLetNat[T <: PhraseType](binder: LetNatIdentifier,
+                                              defn: Phrase[T],
+                                              env: Environment,
+                                              cont: (CodeGenerator, Environment) => Stmt): Stmt = {
+    cont(this, env updatedNatEnv ((binder, defn.asInstanceOf[Phrase[PhraseType]])))
   }
 
   /* Take a phrase representing a function (may have multiple level of lambas/DepLambda[NatKind, _]),
@@ -633,11 +640,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
      in the phrase
    */
   def generateInlinedCall[T <: PhraseType](phrase: Phrase[T],
-                                           env:Environment,
-                                           args:Iterable[Either[Phrase[ExpType], Nat]],
-                                           cont:Expr => Stmt):Stmt = {
+                                           env: Environment,
+                                           args: Iterable[Either[Phrase[ExpType], Nat]],
+                                           cont: Expr => Stmt): Stmt = {
 
-    def error(s:String) = throw new Exception(s + " in deferred function generation")
+    def error(s: String) = throw new Exception(s + " in deferred function generation")
+
     phrase match {
       case l: Lambda[ExpType, _]@unchecked => args.headOption match {
         case Some(Right(_)) => error("Nat argument passed but phrase type arg expected")
@@ -661,10 +669,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   /**
     * This function takes a phrase with a nat dependent free variable `for`, and it generates a block
     * where `for` is bound to the arithmetic expression at.
-    * @param `for` The free nat variable to substitute
+    *
+    * @param `for`  The free nat variable to substitute
     * @param phrase The phrase to generate
-    * @param at The arithmetic expression we are generating phrase at
-    * @param env Up-to-date environment
+    * @param at     The arithmetic expression we are generating phrase at
+    * @param env    Up-to-date environment
     * @return
     */
   protected def generateNatDependentBody(`for`: NatIdentifier,
@@ -695,7 +704,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       C.AST.Block(immutable.Seq(
         C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
         Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
-            updatedIdentEnv (va -> vC))))
+          updatedIdentEnv (va -> vC))))
     }
 
     def codeGenNewDoubleBuffer(dt: ArrayType,
@@ -748,40 +757,41 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenFor(n: Nat,
                    i: Identifier[ExpType],
                    p: Phrase[CommType],
-                   unroll:Boolean,
+                   unroll: Boolean,
                    env: Environment): Stmt = {
       assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
 
-       applySubstitutions(n, env.identEnv) |> (n => {
+      applySubstitutions(n, env.identEnv) |> (n => {
 
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+        range.numVals match {
+          // iteration count is 0 => skip body; no code to be emitted
+          case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
 
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            p |> updatedGen.cmd(env updatedIdentEnv (i -> cI)))
+          // iteration count is 1 => no loop
+          case Cst(1) =>
+            C.AST.Stmts(C.AST.Stmts(
+              C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              p |> updatedGen.cmd(env updatedIdentEnv (i -> cI)))
 
-        case _ =>
-          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
+          case _ =>
+            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-            C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env updatedIdentEnv (i -> cI)))))
-      }})
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env updatedIdentEnv (i -> cI)))))
+        }
+      })
     }
 
     def codeGenForNat(n: Nat,
                       i: NatIdentifier,
                       p: Phrase[CommType],
-                      unroll:Boolean,
+                      unroll: Boolean,
                       env: Environment): Stmt = {
       assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
@@ -790,26 +800,27 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+        range.numVals match {
+          // iteration count is 0 => skip body; no code to be emitted
+          case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
 
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            p |> updatedGen.cmd(env))
+          // iteration count is 1 => no loop
+          case Cst(1) =>
+            C.AST.Stmts(C.AST.Stmts(
+              C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              p |> updatedGen.cmd(env))
 
-        case _ =>
-          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
+          case _ =>
+            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-            updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
-          )
-      }})
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
+            )
+        }
+      })
     }
 
     def codeGenIdxAcc(i: Phrase[ExpType],
@@ -821,7 +832,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case C.AST.Literal(text) => a |> acc(env, CIntExpr(Cst(text.toInt)) :: ps, cont)
         case C.AST.DeclRef(name) => a |> acc(env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
         case C.AST.ArithmeticExpr(ae) => a |> acc(env, CIntExpr(ae) :: ps, cont)
-        case cExpr:C.AST.Expr =>
+        case cExpr: C.AST.Expr =>
           val arithVar = NamedVar(freshName("idxAcc"))
           C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
@@ -832,8 +843,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenLiteral(d: Data): Expr = {
       d match {
-        case NatData(n)       => C.AST.ArithmeticExpr(n)
-        case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
+        case NatData(n) => C.AST.ArithmeticExpr(n)
+        case IndexData(i, _) => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case NatAsIntData(n) =>
@@ -861,7 +872,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       i |> exp(env, Nil, {
         case C.AST.DeclRef(name) => e |> exp(env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
         case C.AST.ArithmeticExpr(ae) => e |> exp(env, CIntExpr(ae) :: ps, cont)
-        case cExpr:C.AST.Expr =>
+        case cExpr: C.AST.Expr =>
           val arithVar = NamedVar(freshName("idx"))
           C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
@@ -875,8 +886,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                    outT: DataType,
                                    args: collection.Seq[Phrase[ExpType]],
                                    env: Environment,
-                                   cont: Expr => Stmt): Stmt =
-    {
+                                   cont: Expr => Stmt): Stmt = {
       funDecl.definition match {
         case Some(funDef) =>
           addDeclaration(
@@ -896,8 +906,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                            args: collection.Seq[Phrase[ExpType]],
                            env: Environment,
                            args_ps: Path,
-                           cont: Expr => Stmt): Stmt =
-    {
+                           cont: Expr => Stmt): Stmt = {
       def iter(args: collection.Seq[Phrase[ExpType]], res: VectorBuilder[Expr]): Stmt = {
         //noinspection VariablePatternShadow
         args match {
@@ -944,44 +953,44 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
 
-    def flattenIndices(dataType: DataType, indicies:List[Nat]): Nat = {
+    def flattenIndices(dataType: DataType, indicies: List[Nat]): Nat = {
       (dataType, indicies) match {
-        case (array:ArrayType, index::rest) =>
+        case (array: ArrayType, index :: rest) =>
           numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
-        case (array:DepArrayType, index::rest) =>
+        case (array: DepArrayType, index :: rest) =>
           array.fdt match {
             case NatToDataLambda(_, body) =>
               numberOfElementsUntil(array, index) + flattenIndices(body, rest)
             case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
           }
-        case (_,  Nil) => 0
+        case (_, Nil) => 0
         case t => throw new Exception(s"This should not happen, pair $t")
       }
     }
 
     //Computes the total number of element in an array at a given offset
-    def numberOfElementsUntil(dt:ArrayType, at:Nat): Nat = {
-      types.DataTypeOps.getTotalNumberOfElements(dt.elemType)*at
+    def numberOfElementsUntil(dt: ArrayType, at: Nat): Nat = {
+      types.DataTypeOps.getTotalNumberOfElements(dt.elemType) * at
     }
 
-    def numberOfElementsUntil(dt:DepArrayType, at:Nat): Nat = {
+    def numberOfElementsUntil(dt: DepArrayType, at: Nat): Nat = {
       dt.fdt match {
         case NatToDataLambda(x, body) =>
-          BigSum(from=0, upTo = at-1, `for`=x, types.DataTypeOps.getTotalNumberOfElements(body))
+          BigSum(from = 0, upTo = at - 1, `for` = x, types.DataTypeOps.getTotalNumberOfElements(body))
         case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
       }
     }
 
-    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
+    private def getIndexVariablesScopes(dt: DataType): List[Option[NatIdentifier]] = {
       dt match {
-        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
-        case DepArrayType(_, NatToDataLambda(i, et)) => Some(i)::getIndexVariablesScopes(et)
+        case ArrayType(_, et) => None :: getIndexVariablesScopes(et)
+        case DepArrayType(_, NatToDataLambda(i, et)) => Some(i) :: getIndexVariablesScopes(et)
         case _ => Nil
       }
     }
 
     private def buildSubMap(dt: DataType,
-                            indices: immutable.Seq[Nat]): Predef.Map[Nat, Nat]  = {
+                            indices: immutable.Seq[Nat]): Predef.Map[Nat, Nat] = {
       val bindings = getIndexVariablesScopes(dt)
       bindings.zip(indices).map({
         case (Some(binder), index) => Some((binder, index))
@@ -1032,7 +1041,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
 
-  private def visitAndGenerateNat(node:Stmt, env:Environment):Stmt = {
+  private def visitAndGenerateNat(node: Stmt, env: Environment): Stmt = {
     C.AST.Nodes.VisitAndGenerateStmt(node, new C.AST.Nodes.VisitAndGenerateStmt.Visitor() {
       override def onExpr(e: Expr, cont: Expr => Stmt): Stmt = e match {
         case C.AST.ArithmeticExpr(ae) => genNat(ae, env, cont)
@@ -1041,8 +1050,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     })
   }
 
-  override def genNat(n:Nat, env:Environment, cont:Expr => Stmt):Stmt = {
-    def boolExp(b:BoolExpr, env:Environment, cont:Expr => Stmt):Stmt= b match {
+  override def genNat(n: Nat, env: Environment, cont: Expr => Stmt): Stmt = {
+    def boolExp(b: BoolExpr, env: Environment, cont: Expr => Stmt): Stmt = b match {
       case BoolExpr.True => cont(C.AST.Literal("true"))
       case BoolExpr.False => cont(C.AST.Literal("false"))
       case BoolExpr.ArithPredicate(lhs, rhs, op) =>
@@ -1054,19 +1063,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
           case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
         }
-        genNat(lhs, env, lhs => genNat(rhs, env, rhs => cont( C.AST.BinaryExpr(lhs, cOp, rhs))))
+        genNat(lhs, env, lhs => genNat(rhs, env, rhs => cont(C.AST.BinaryExpr(lhs, cOp, rhs))))
     }
 
     /**
       * General form of expression generation algorithm from a series of nats,
       * Used by sum and product
       *
-      *
-      * @param nats The series of nats from which the expression is generated
-      * @param op The binary operator used
+      * @param nats    The series of nats from which the expression is generated
+      * @param op      The binary operator used
       * @param default In case the nat list is empty, we shall return this value
-      * @param cont The cont of the generation
-      * @param accum Internal accumulator used across iterations
+      * @param cont    The cont of the generation
+      * @param accum   Internal accumulator used across iterations
       * @return
       */
     def genBinopFold(nats: Iterable[Nat],
@@ -1084,139 +1092,140 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
       }
     }
-       n match {
-         case Cst(c) => cont(AST.Literal(c.toString))
-         case Pow(b, ex) =>
-           ex match {
-             case Cst(-1) =>
-               if (Cst(1) % b != Cst(0)) {
-                 println(s"WARNING: 1 /^ $b might have a fractional part")
-               }
-               genNat(b, env, b =>
-                 cont(C.AST.BinaryExpr(AST.Literal("1"), C.AST.BinaryOperator./, b)))
-             case Cst(2) =>
-               genNat(b, env, b => cont(AST.BinaryExpr(b,AST.BinaryOperator.*, b)))
-             case _ =>
-               // FIXME: this often generates functionally incorrect code
-               genNat(b, env, b =>
-                 genNat(ex, env, ex =>
-                   cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
-                     AST.Cast(AST.Type.float, b), AST.Cast(AST.Type.float, ex))))
-                   )
-                 )
-               )
-           }
-         case Log(b, x) =>
-           genNat(b, env, b =>
-             genNat(x, env, x =>
-               cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
-                 AST.Cast(AST.Type.float, x))
-               )))
-             )
-           )
 
-         case Prod(es) =>
-           var (num, denum) = es.partition({
-             case Pow(_, Cst(-1)) => false
-             case _ => true
-           })
-           denum = denum.map({ case Pow(b, Cst(-1)) => b })
-           if (denum.nonEmpty) { // num /^ denum
-             val aNum = num.fold(1: ArithExpr)(_*_)
-             val aDenum = denum.fold(1: ArithExpr)(_*_)
-             if (aNum % aDenum != Cst(0)) {
-               println(s"WARNING: $aNum /^ $aDenum might have a fractional part")
-             }
-             genBinopFold(num, AST.BinaryOperator.*, AST.Literal("0"), lhs =>
-               genBinopFold(denum, AST.BinaryOperator.*, AST.Literal("0"), rhs =>
-                 cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
-           } else {
-             genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
-           }
+    n match {
+      case Cst(c) => cont(AST.Literal(c.toString))
+      case Pow(b, ex) =>
+        ex match {
+          case Cst(-1) =>
+            if (Cst(1) % b != Cst(0)) {
+              println(s"WARNING: 1 /^ $b might have a fractional part")
+            }
+            genNat(b, env, b =>
+              cont(C.AST.BinaryExpr(AST.Literal("1"), C.AST.BinaryOperator./, b)))
+          case Cst(2) =>
+            genNat(b, env, b => cont(AST.BinaryExpr(b, AST.BinaryOperator.*, b)))
+          case _ =>
+            // FIXME: this often generates functionally incorrect code
+            genNat(b, env, b =>
+              genNat(ex, env, ex =>
+                cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
+                  AST.Cast(AST.Type.float, b), AST.Cast(AST.Type.float, ex))))
+                )
+              )
+            )
+        }
+      case Log(b, x) =>
+        genNat(b, env, b =>
+          genNat(x, env, x =>
+            cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+              AST.Cast(AST.Type.float, x))
+            )))
+          )
+        )
 
-         case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
+      case Prod(es) =>
+        var (num, denum) = es.partition({
+          case Pow(_, Cst(-1)) => false
+          case _ => true
+        })
+        denum = denum.map({ case Pow(b, Cst(-1)) => b })
+        if (denum.nonEmpty) { // num /^ denum
+          val aNum = num.fold(1: ArithExpr)(_ * _)
+          val aDenum = denum.fold(1: ArithExpr)(_ * _)
+          if (aNum % aDenum != Cst(0)) {
+            println(s"WARNING: $aNum /^ $aDenum might have a fractional part")
+          }
+          genBinopFold(num, AST.BinaryOperator.*, AST.Literal("0"), lhs =>
+            genBinopFold(denum, AST.BinaryOperator.*, AST.Literal("0"), rhs =>
+              cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
+        } else {
+          genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
+        }
 
-         case Mod(a, n) =>
-           if (arithexpr.arithmetic.ArithExpr.mightBeNegative(a)) {
-             println(s"WARNING: $a % $n might operate on negative values")
-           }
-           genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
+      case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
 
-         case v:Var => cont(C.AST.DeclRef(v.toString))
+      case Mod(a, n) =>
+        if (arithexpr.arithmetic.ArithExpr.mightBeNegative(a)) {
+          println(s"WARNING: $a % $n might operate on negative values")
+        }
+        genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
 
-         case IntDiv(n, d) =>
-           genNat(n, env, n => genNat(d, env, d => cont(AST.BinaryExpr(n, AST.BinaryOperator./, d))))
+      case v: Var => cont(C.AST.DeclRef(v.toString))
 
-         case LShift(a, b) =>
-           genNat(a, env, a => genNat(b, env, b => cont(AST.BinaryExpr(a, AST.BinaryOperator.<<, b))))
+      case IntDiv(n, d) =>
+        genNat(n, env, n => genNat(d, env, d => cont(AST.BinaryExpr(n, AST.BinaryOperator./, d))))
 
-         case lu:Lookup =>
-           cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
+      case LShift(a, b) =>
+        genNat(a, env, a => genNat(b, env, b => cont(AST.BinaryExpr(a, AST.BinaryOperator.<<, b))))
 
-         case arithexpr.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
-           boolExp(cond, env,
-             cond => genNat(trueBranch, env,
-               trueBranch => genNat(falseBranch, env,
-                 falseBranch => cont(AST.TernaryExpr(cond, trueBranch, falseBranch)))))
+      case lu: Lookup =>
+        cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
 
-
-         case natFunCall: NatFunCall =>
-           val phrase = env.letNatEnv(natFunCall.fun)
-
-           val args = natFunCall.args.map({
-             case NatArg(argN) => Right(argN)
-             case LetNatIdArg(ident) =>
-               val argPhrase = env.letNatEnv(ident)
-               if(!argPhrase.t.isInstanceOf[ExpType]) {
-                 throw new Exception("Cannot use non-expression let nat arguments in natFunCall")
-               }
-               Left(argPhrase.asInstanceOf[Phrase[ExpType]])
-           })
-
-           visitAndGenerateNat(generateInlinedCall(phrase, env, args, cont), env)
-
-         case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
-
-         case BigSum(variable, body) =>
-             println(s"Generating for loop for big sum $n")
-             genNat(variable.from, env, from => {
-               genNat(variable.upTo, env, upTo => {
-                 genNat(body, env, bodyE => {
-                   val loopVar = C.AST.DeclRef(variable.toString)
-
-                   val init = C.AST.DeclStmt(C.AST.VarDecl(loopVar.name, C.AST.Type.int, init = Some(from)))
-                   val cond = C.AST.BinaryExpr(loopVar, C.AST.BinaryOperator.<, upTo)
-                   val increment =
-                     C.AST.Assignment(loopVar, C.AST.ArithmeticExpr(NamedVar(loopVar.name, variable.range) + 1))
-
-                   val accumVar = C.AST.VarDecl(freshName("accum_"), C.AST.Type.int, Some(AST.Literal("0")))
+      case arithexpr.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
+        boolExp(cond, env,
+          cond => genNat(trueBranch, env,
+            trueBranch => genNat(falseBranch, env,
+              falseBranch => cont(AST.TernaryExpr(cond, trueBranch, falseBranch)))))
 
 
-                   val forLoop = C.AST.ForLoop(init,
-                     cond,
-                     increment,
-                     Block(
-                       immutable.Seq(
-                         C.AST.ExprStmt(C.AST.Assignment(
-                           C.AST.DeclRef(accumVar.name),
-                           C.AST.BinaryExpr(C.AST.DeclRef(accumVar.name), C.AST.BinaryOperator.+, bodyE)
-                         ))
-                       )
-                     )
-                   )
+      case natFunCall: NatFunCall =>
+        val phrase = env.letNatEnv(natFunCall.fun)
 
-                   C.AST.Stmts(
-                     C.AST.Stmts(
-                        C.AST.DeclStmt(accumVar),
-                        forLoop
-                     ),
-                     cont(C.AST.DeclRef(accumVar.name))
-                   )
-                 })
-               })
-             })
-         case otherwise => throw new Exception(s"Don't know how to print $otherwise")
-       }
+        val args = natFunCall.args.map({
+          case NatArg(argN) => Right(argN)
+          case LetNatIdArg(ident) =>
+            val argPhrase = env.letNatEnv(ident)
+            if (!argPhrase.t.isInstanceOf[ExpType]) {
+              throw new Exception("Cannot use non-expression let nat arguments in natFunCall")
+            }
+            Left(argPhrase.asInstanceOf[Phrase[ExpType]])
+        })
+
+        visitAndGenerateNat(generateInlinedCall(phrase, env, args, cont), env)
+
+      case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
+
+      case BigSum(variable, body) =>
+        println(s"Generating for loop for big sum $n")
+        genNat(variable.from, env, from => {
+          genNat(variable.upTo, env, upTo => {
+            genNat(body, env, bodyE => {
+              val loopVar = C.AST.DeclRef(variable.toString)
+
+              val init = C.AST.DeclStmt(C.AST.VarDecl(loopVar.name, C.AST.Type.int, init = Some(from)))
+              val cond = C.AST.BinaryExpr(loopVar, C.AST.BinaryOperator.<, upTo)
+              val increment =
+                C.AST.Assignment(loopVar, C.AST.ArithmeticExpr(NamedVar(loopVar.name, variable.range) + 1))
+
+              val accumVar = C.AST.VarDecl(freshName("accum_"), C.AST.Type.int, Some(AST.Literal("0")))
+
+
+              val forLoop = C.AST.ForLoop(init,
+                cond,
+                increment,
+                Block(
+                  immutable.Seq(
+                    C.AST.ExprStmt(C.AST.Assignment(
+                      C.AST.DeclRef(accumVar.name),
+                      C.AST.BinaryExpr(C.AST.DeclRef(accumVar.name), C.AST.BinaryOperator.+, bodyE)
+                    ))
+                  )
+                )
+              )
+
+              C.AST.Stmts(
+                C.AST.Stmts(
+                  C.AST.DeclStmt(accumVar),
+                  forLoop
+                ),
+                cont(C.AST.DeclRef(accumVar.name))
+              )
+            })
+          })
+        })
+      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+    }
   }
 
   protected def genPad(n: Nat, l: Nat, r: Nat,
@@ -1228,15 +1237,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     // FIXME: we should know that (i - l) is in [0; n[ here
     array |> exp(env, CIntExpr(i - l) :: ps, arrayExpr => {
 
-      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+      def cOperator(op: ArithPredicate.Operator.Value): C.AST.BinaryOperator.Value = op match {
         case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
         case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
         case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
         case _ => null
       }
 
-      def genBranch(lhs:ArithExpr, rhs:ArithExpr,
-                    operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr): Expr = {
+      def genBranch(lhs: ArithExpr, rhs: ArithExpr,
+                    operator: ArithPredicate.Operator.Value, taken: Expr, notTaken: Expr): Expr = {
         import BoolExpr._
         arithPredicate(lhs, rhs, operator) match {
           case True => taken
@@ -1246,6 +1255,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             taken, notTaken)
         }
       }
+
       cont(
         genBranch(i, l, ArithPredicate.Operator.<, left,
           genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
