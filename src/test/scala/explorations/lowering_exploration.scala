@@ -39,12 +39,25 @@ import scala.collection.mutable.ListBuffer
 
 class lowering_exploration extends test_util.Tests {
 
+
+  // @rule broken here? why?
+  @rule def splitJoinRule: Strategy[Rise] = tunable(splitJoin)
+
+  //  @rule def mapGlobalRule: Strategy[Rise] = tunable(rise.elevate.rules.lowering.mapGlobal)
+
+  @rule def vectorizeRule: Strategy[Rise] = tunable(rise.elevate.rules.lowering.vectorize)
+
+
   // define rules
   val rules: scala.collection.immutable.Seq[Strategy[Rise]] = {
 
     scala.collection.immutable.Seq(
       // fusion
       fuseReduceMap,
+
+      // split join, vectorize
+      splitJoinRule,
+      vectorizeRule,
 
       // map
       rise.elevate.rules.lowering.mapGlobal(0),
@@ -55,25 +68,28 @@ class lowering_exploration extends test_util.Tests {
       rise.elevate.rules.lowering.mapLocal(1),
       rise.elevate.rules.lowering.mapSeqCompute(),
       rise.elevate.rules.lowering.mapSeq,
-      rise.elevate.rules.lowering.mapSeqUnroll,
+      //      rise.elevate.rules.lowering.mapSeqUnroll,
 
       // reduce
-      rise.elevate.rules.lowering.reduceSeq,
-      rise.elevate.rules.lowering.reduceSeqUnroll,
+      //      rise.elevate.rules.lowering.reduceSeq,
+      //      rise.elevate.rules.lowering.reduceSeqUnroll,
       rise.elevate.rules.lowering.oclReduceSeqPrivate,
-      rise.elevate.rules.lowering.oclReduceSeqLocal,
-      rise.elevate.rules.lowering.oclReduceSeqGlobal,
-      rise.elevate.rules.lowering.oclReduceSeqUnrollPrivate,
-      rise.elevate.rules.lowering.oclReduceSeqUnrollLocal,
-      rise.elevate.rules.lowering.oclReduceSeqUnrollGlobal,
+      //      rise.elevate.rules.lowering.oclReduceSeqLocal,
+      //      rise.elevate.rules.lowering.oclReduceSeqGlobal,
+      //      rise.elevate.rules.lowering.oclReduceSeqUnrollPrivate,
+      //      rise.elevate.rules.lowering.oclReduceSeqUnrollLocal,
+      //      rise.elevate.rules.lowering.oclReduceSeqUnrollGlobal,
 
-      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Private),
-      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Local),
-      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Global),
+      //      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Private),
+      //      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Local),
+      //      rise.elevate.rules.lowering.ocl.circularBuffer(AddressSpace.Global),
 
-      rise.elevate.rules.lowering.ocl.rotateValues2,
+      //      rise.elevate.rules.lowering.ocl.rotateValues2,
+      rise.elevate.rules.lowering.ocl.oclRotateValuesPrivate,
+      rise.elevate.rules.lowering.ocl.oclRotateValuesLocal,
+      rise.elevate.rules.lowering.ocl.oclRotateValuesGlobal,
       // unroll
-      rise.elevate.rules.lowering.unroll,
+      //      rise.elevate.rules.lowering.unroll,
 
     )
 
@@ -98,23 +114,26 @@ class lowering_exploration extends test_util.Tests {
   val lowering5: Strategy[Rise] =
     rise.elevate.rules.lowering.mapSeqCompute() `@` normalize[Rise]
 
+  val lowering6: Strategy[Rise] = rise.elevate.rules.lowering.ocl.oclRotateValuesPrivate `@` normalize[Rise]
+
   val lowering: Strategy[Rise] =
     lowering0 `;` // add copies if necessary
       lowering1 `;` // reduce -> reduceSeq
       lowering2 `;` // reduceSeq -> reduceOcl
-      lowering3 `;` // map -> map global 0 (topdown/outermost)
-      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
-      lowering5 // map (compute) -> mapSeq
+      //      lowering3 `;` // map -> map global 0 (topdown/outermost)
+      //      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
+      lowering5 `;` // map (compute) -> mapSeq
+      lowering6
 
 
   //  define mm experiment here
-  test("mm") {
+  ignore("mm") {
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
         depth = 1000, // is this ignored? -> maybe not for tree window slide
-        samples = 2000, // 7 hours for 1000 samples // 18 hours 5000
+        samples = 100, // 7 hours for 1000 samples // 18 hours 5000
         repeat = 1
       )
     )
@@ -127,7 +146,7 @@ class lowering_exploration extends test_util.Tests {
       name = "AutoTuning",
       iterations = 11, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 15, // samples per tuning run
+      samples = 25, // samples per tuning run
       global_size_limit = 1024,
     )
 
@@ -157,15 +176,13 @@ class lowering_exploration extends test_util.Tests {
   }
 
   // define acoustic stencil experiment here
-  ignore("acoustic stencil") {
-
-    // check default lowering first
+  test("acoustic stencil") {
 
     val exhaustive = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "Exhaustive",
         depth = 100, // is this ignored? -> maybe not for tree window slide
-        samples = 100, // 7 hours for 1000 samples // 18 hours 5000
+        samples = 10000, // 7 hours for 1000 samples // 18 hours 5000
         repeat = 1
       )
     )
@@ -176,9 +193,9 @@ class lowering_exploration extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 3, // execution iterations
+      iterations = 11, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 5, // samples per tuning run
+      samples = 25, // samples per tuning run
       global_size_limit = 1024,
     )
 
@@ -186,7 +203,7 @@ class lowering_exploration extends test_util.Tests {
     val explorer = exploration.Explorer(
       name = "acoustic",
       output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/lowering_exploration/acoustic",
-      inputSizes = scala.collection.immutable.Seq(acoustic.N), // check how this is used
+      inputSizes = scala.collection.immutable.Seq(acoustic.N, acoustic.M, acoustic.O), // check how this is used
       metaheuristics = Right(experiment),
       executor = executor,
       lowering = lowering,
