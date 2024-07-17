@@ -69,6 +69,7 @@ object jsonParser {
       case "LocalSearch" => new LocalSearch[Rise]
       case "LocalSearchGraph" => new LocalSearchGraph[Rise]
       case "SimulatedAnnealingPlain" => new SimulatedAnnealingPlain[Rise]
+      case "MCTS" => new MCTS[Rise]
       //      case "autotuner" => new AutotunerSearch[Rise]
       //      case "cot" => new AutotunerSearch2[Rise]
       //      case "cot2" => new AutotunerSearch3[Rise]
