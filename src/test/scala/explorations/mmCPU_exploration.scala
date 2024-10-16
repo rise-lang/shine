@@ -14,7 +14,7 @@ import scala.collection.immutable.Map
 //import exploration.{ExecutorConfig, MetaheuristicConfig, runner, uniqueFilename}
 import elevate.heuristic_search.ExplorationResult
 import exploration._
-import explorations.explorationTutorial.mm
+//import explorations.explorationTutorial.mm
 import rise.elevate.strategies.normalForm.DFNF
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -81,13 +81,6 @@ class mmCPU_exploration extends test_util.Tests {
   // -- BLOCKING ---------------------------------------------------------------
 
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
-
-  @rule def blocking: Strategy[Rise] =
-    baseline `;`
-      (tile(32, 32) `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder(List(1, 2, 5, 6, 3, 4))
 
   val blockingPartial1: Strategy[Rise] =
     baseline `;`

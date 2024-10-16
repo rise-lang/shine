@@ -30,7 +30,28 @@ case class ExecutionResult(runtime: Either[AutoTuningError, TimeSpan[Time.ms]],
                            maximum: Option[TimeSpan[Time.ms]],
                            standardDeviation: Option[Double],
                            iterations: Int,
-                          )
+                          ) {
+
+  override def toString: String = {
+
+    val runtime_string: String = runtime match {
+      case Right(value) => s"Runtime: ${value}"
+      case Left(error) => s"${error.errorLevel}: ${error.message}"
+    }
+
+    s"""ExecutionResult:
+      $runtime_string
+      codegenTime: ${if (codegenTime.isDefined) codegenTime.get else "-"}
+      compilationTime: ${if (compilationTime.isDefined) s"${compilationTime.get}" else "-"}
+      executionTime: ${if (executionTime.isDefined) s"${executionTime.get}" else "-"}
+      minimum: ${if (minimum.isDefined) s"${minimum.get}" else "-"}
+      maximum: ${if (maximum.isDefined) s"${maximum.get}" else "-"}
+      standardDeviation: ${if (standardDeviation.isDefined) s"${standardDeviation.get}" else "-"}
+      iterations: $iterations
+    """.stripMargin
+  }
+}
+
 
 object execution {
   var best: Option[Double] = Some(5000)
@@ -115,6 +136,8 @@ object execution {
              |""".stripMargin
 
         //        println("program: \n" + program)
+
+        //        System.exit(0)
 
         assert(executionIterations > 0)
 

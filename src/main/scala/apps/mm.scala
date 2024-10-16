@@ -50,6 +50,37 @@ object mm {
   })
 
 
+  def mmAMDWithParamsHighLevel(v3: Nat, v4: Nat, vw: Nat): ToBeTyped[Expr] = {
+    //    val v3 = 4
+    //    val v4 = 8
+    //    val vw = 4
+
+    depFun((n: Nat, m: Nat, o: Nat) => fun(
+      (o `.` n `.` f32) ->: (o `.` m `.` f32) ->: (n `.` m `.` f32)
+    )((at, b) =>
+      split(v4)(transpose(at)) |> // Mo.Mi.o.f
+        mapGlobal(0)(fun(v4 `.` o `.` f32)(p3 =>
+          split(v3)(transpose(b)) |> // No.Ni.o.f
+            mapGlobal(1)(fun(v3 `.` o `.` f32)(p4 =>
+              zip(transpose(p3))(transpose(p4)) |> // o.(Mi.f x Ni.f)
+                oclReduceSeq(AddressSpace.Private)(fun((p6, p7) =>
+                  let(toPrivate(makePair(mapSeq(id)(p7._1))(
+                    asScalar o mapSeq(id) o asVectorAligned(vw) $ p7._2)))
+                    be (x =>
+                    mapSeq(fun(p8 =>
+                      mapSeq(fun(p9 =>
+                        p9._1 + (p8._2 * p9._2)
+                      ))(zip(p8._1)(x._2))
+                    ))(zip(p6)(x._1))
+                    )
+                ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => lf32(0.0f)))))) :: (v4 `.` v3 `.` f32)) |> //
+                mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
+                transpose // v3.v4.f
+            )) |> join |> transpose
+        )) |> join
+    ))
+  }
+
   val mmAMD = mmAMDWithParams(v3 = 4, v4 = 8, vw = 4)
 
   def mmAMDWithParams(v3: Nat, v4: Nat, vw: Nat): ToBeTyped[Expr] = {

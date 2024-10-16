@@ -1,13 +1,13 @@
 package apps.autotuning
 
-import arithexpr.arithmetic.RangeMul
+import arithexpr.arithmetic.{RangeMul, RangeAdd}
 import rise.autotune
 import rise.autotune._
 import rise.core.DSL.HighLevelConstructs.{padCst2D, slide2D}
 import rise.core.DSL.Type._
 import rise.core.DSL._
 import rise.core.Expr
-import rise.core.primitives.{add, asScalar, asVectorAligned, join, mapSeq, split, vectorFromScalar}
+import rise.core.primitives.{add, asScalar, asVectorAligned, join, mapSeq, mapSeqUnroll, split, vectorFromScalar}
 import rise.core.types.DataType.{ArrayType, f32}
 import rise.core.types.{AddressSpace, Nat, TuningParameter}
 import rise.openCL.DSL.mapGlobal
@@ -40,10 +40,15 @@ class scalTuning extends test_util.Tests {
       input |>
         split(1024) |>
         mapWorkGroup(
-          split(4) >>
-            mapLocal(mapSeq(fun(x => alpha * x))) >>
+          split(32) >>
+            mapLocal(mapSeqUnroll(fun(x => alpha * x))) >>
             join
         ) |> join
+    )))
+
+  val scalSeq =
+    depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
+      input |> mapSeq(fun(x => alpha * x))
     )))
 
 
@@ -53,9 +58,25 @@ class scalTuning extends test_util.Tests {
     )))
 
 
+  // check what happens if we use mapGlobal twice
+  // add result checking here!
+  val scalVecManual =
+  depFun((n: Nat) => fun(n `.` f32)(input => fun(f32)(alpha =>
+    input |>
+      split(512) |>
+      mapWorkGroup(
+        asVectorAligned(4) >>
+          split(1) >>
+          mapLocal(mapSeqUnroll(fun(x => vectorFromScalar(alpha) * x))) >>
+          join >> asScalar
+      ) |>
+      join
+  )))
+
+
   val scalVec =
-    tuningParam("s0", RangeMul(1, inputSize, 2), (s0: Nat) =>
-      tuningParam("s1", RangeMul(1, inputSize, 2), (s1: Nat) =>
+    tuningParam("s0", RangeMul(1, 1024, 2), (s0: Nat) =>
+      tuningParam("s1", RangeMul(1, 1024, 2), (s1: Nat) =>
         tuningParam("vec", RangeMul(1, 1024, 2), (vec: Nat) =>
           depFun((n: Nat) => fun(n `.` f32)(input => fun(f32)(alpha =>
             input |>
@@ -72,11 +93,13 @@ class scalTuning extends test_util.Tests {
 
   val scalOcl: Expr =
     tuningParam("gs0", RangeMul(1, 1024, 2), (gs0: Nat) =>
-      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
-        tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
-          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
-            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(scalVec)
-          ))))
+      //      tuningParam("gs1", RangeMul(1, 1024, 2), (gs1: Nat) =>
+      tuningParam("ls0", RangeMul(1, 1024, 2), (ls0: Nat) =>
+        //          tuningParam("ls1", RangeMul(1, 1024, 2), (ls1: Nat) =>
+        //            wrapOclRun(LocalSize(ls0, ls1), GlobalSize(gs0, gs1))(scalVec)
+        wrapOclRun(LocalSize(ls0), GlobalSize(gs0))(scalVec)
+      ))
+  //          ))
 
   // hostcode
   val init: Int => String = N => {
@@ -113,10 +136,12 @@ class scalTuning extends test_util.Tests {
        |// TODO: could check output here
        |// use given gold expression?
        |
-       |//float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
-       |//for(int i = 0; i < N; i++){
-       | // printf("%f \\n", outputScal[i]);
-       |//}
+       |float* outputScal = hostBufferSync(ctx, output, N * sizeof(float), HOST_READ);
+       |for(int i = 0; i < N; i++){
+       |  if(outputScal[i] != 10){
+       |    return 1;
+       |  }
+       |}
        |
        |destroyBuffer(ctx, input);
        |destroyBuffer(ctx, output);
@@ -124,11 +149,13 @@ class scalTuning extends test_util.Tests {
 
 
   def executeStencilDefault(e: Expr) = {
-    val inputSize: Int = 12
+    //    val inputSize: Int = 12
+    val inputSize = 1 << 28
+    //    val inputSize = 1024
 
     println("Expression: \n" + e)
 
-    val eOcl = wrapOclRun(LocalSize(1), GlobalSize(1024))(e)
+    val eOcl = wrapOclRun(LocalSize(512), GlobalSize(1024 * 1024))(e)
 
     val result = rise.autotune.execution.execute(
       expression = eOcl,
@@ -138,29 +165,41 @@ class scalTuning extends test_util.Tests {
       speedupFactor = 100,
       execution = Median
     )
+    println(result)
 
-    println("result: \n" + result)
 
   }
 
-  ignore("test stencil execution") {
+
+  test("test stencil execution") {
+    //    executeStencilDefault(scalSeq)
+
+    // fast and easy to find
     executeStencilDefault(scalDefaultDefault)
+    //        executeStencilDefault(scalDefault)
+    // actually faster but harder to find, because we need
+    // split join
+    // split join
+    // vectorize
+    // mapWorkgroup
+    // mapLocal
+    executeStencilDefault(scalVecManual)
   }
 
-  ignore("scal tuning experiment") {
+  test("scal tuning experiment") {
     val inputSize: Int = 1 << 25
 
     val tuner = Tuner(
       hostCode = HostCode(init(inputSize), compute, finish),
       inputSizes = Seq(inputSize),
-      samples = 20, // defined by config file, value is ignored
+      samples = 5000, // defined by config file, value is ignored
       name = "scal",
       output = "autotuning",
       timeouts = Timeouts(10000, 10000, 10000),
       executionIterations = 10,
       speedupFactor = 100,
       configFile = None,
-      hmConstraints = true,
+      hmConstraints = false,
       runtimeStatistic = Minimum,
       saveToFile = true
     )
@@ -197,11 +236,11 @@ class scalTuning extends test_util.Tests {
     )
 
     val configs = Seq(
-      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/rs_cot_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/rs_emb_${inputSize.toString}.json",
+      //      s"autotuning/config/scal/${inputSize.toString}/bolog_cot_${inputSize.toString}.json",
       s"autotuning/config/scal/${inputSize.toString}/atf_emb_${inputSize.toString}.json",
-      s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json"
+      //      s"autotuning/config/scal/${inputSize.toString}/ytoptccs_${inputSize.toString}.json"
     )
 
     runExperiment(

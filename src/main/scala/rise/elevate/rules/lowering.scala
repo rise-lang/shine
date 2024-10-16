@@ -20,7 +20,7 @@ import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate.{isVectorArray, _}
 import rise.elevate.strategies.traversal._
 import rise.openCL.DSL.{toGlobal, toPrivate}
-import rise.openCL.primitives.{mapGlobal, mapLocal, mapWorkGroup}
+import rise.openCL.primitives.{mapGlobal, mapLocal, mapWorkGroup, oclReduceSeq}
 import rise.openMP.primitives.mapPar
 import rise.openMP.{primitives => omp}
 
@@ -115,6 +115,26 @@ object lowering {
 
   @rule def oclReduceSeq: Strategy[Rise] = {
     case e@p.reduceSeq() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
+  }
+
+  @rule def oclReduceSeqReverse: Strategy[Rise] = {
+    case m@rise.openCL.primitives.oclReduceSeq() => Success(rise.core.primitives.reduceSeq !: m.t)
+  }
+
+  @rule def oclReduceReverse: Strategy[Rise] = {
+    case m@rise.openCL.primitives.oclReduceSeq() => Success(rise.core.primitives.reduce !: m.t)
+  }
+
+  @rule def oclReducePrivate: Strategy[Rise] = {
+    case e@p.reduce() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Private) !: e.t)
+  }
+
+  @rule def oclReduceLocal: Strategy[Rise] = {
+    case e@p.reduce() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Local) !: e.t)
+  }
+
+  @rule def oclReduceGlobal: Strategy[Rise] = {
+    case e@p.reduce() => Success(rise.openCL.primitives.oclReduceSeq(AddressSpace.Global) !: e.t)
   }
 
   @rule def oclReduceSeqPrivate: Strategy[Rise] = {

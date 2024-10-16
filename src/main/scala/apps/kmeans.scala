@@ -63,6 +63,7 @@ object kmeans {
     util.gen.opencl.LocalAndGlobalSize(LocalSize(256), GlobalSize(p))
   })
 
+
   val kmeansOcl: Expr = depFun((p: Nat, c: Nat, f: Nat) => fun(
     (f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int)
   )((features, clusters) =>

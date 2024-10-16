@@ -67,7 +67,6 @@ object configFileGeneration {
          |   "false_value" : "False"
          | },
          | "time_budget_cot" : ${tuner.tunerTimeBudgetCot},
-         | "scalarization_method": "linear",
          | "optimization_method": "opentuner",
          | "optimization_iterations" : ${optimization_iterations},
          | "input_parameters" : {

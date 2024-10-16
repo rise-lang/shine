@@ -1,5 +1,5 @@
 import arithexpr.arithmetic.ArithExpr.toInt
-import elevate.heuristic_search.util.{Solution, SolutionStep}
+import elevate.heuristic_search.util.{Solution, SolutionStep, RewriteIdentifier}
 import rise.elevate.Rise
 import rise.core._
 import elevate.core.Strategy
@@ -8,6 +8,7 @@ import elevate.heuristic_search._
 import exploration.runner._
 import exploration.neighborhoods._
 import rise.core.types._
+import exploration.rewriter.everywhere._
 
 import java.nio.file.{Files, Paths}
 import scala.sys.process._
@@ -69,6 +70,12 @@ package object exploration {
                                  neighborhood: NeighborhoodChoice = NTreeChildrenChoice,
                                  slideWindow: Int = 10 // size? // distance?
                                )
+
+
+  //  case class RewriteSequence(
+  //                            Seq[]
+  //
+  //  )
 
   def checkInstallation(): Boolean = {
 
@@ -501,6 +508,92 @@ package object exploration {
 
   }
 
+
+  //  def parse_rewrite_sequence()
+
+  // generate solution out of that?
+  // make this part of the heuristic search at the elevate level
+
+  // create_solution(start_solution, rewrites): solution
+  // panel.f(solution)
+  // this could probably instanciated in from a test in the rise repository
+
+  // create solution out of that?
+  def rewrite(expression: Rise, rewrites: Seq[RewriteIdentifier[Rise]]): Rise = {
+
+    //    var end_expression = exression
+    //    val test = rewrites.fold(expression: Rise)((e: Rise, rewrite: RewriteIdentifier[Rise]) => everywhere(rewrite.strategy).apply(e)(rewrite.location))
+    //    val test: Rise = rewrites.fold(expression)((e, rewrite) => everywhere(rewrite.strategy).apply(e)(rewrite.location))
+
+    rewrites.foldLeft(expression) { (currentResult, rewrite) =>
+      everywhere(rewrite.strategy).apply(currentResult)(rewrite.location)
+    }
+  }
+
+  private def rewrite_solution(expression: Rise, rewrites: Seq[RewriteIdentifier[Rise]]): Option[Solution[Rise]] = {
+
+    // TODO make this more elegant
+    var intermediate_expression = expression
+
+    val solution_steps = rewrites.map(rewrite => {
+
+      // try to apply rewrite
+      try {
+        intermediate_expression = everywhere(rewrite.strategy).apply(intermediate_expression)(rewrite.location)
+      } catch {
+        case e: Exception =>
+          return None
+      }
+
+      // create solution step
+      SolutionStep(
+        expression = intermediate_expression,
+        strategy = rewrite.strategy,
+        location = rewrite.location
+      )
+    })
+
+    return Some(Solution(solutionSteps = solution_steps))
+  }
+
+  // TODO
+  // make an interface for parameters as well
+
+  // function pointer?
+  def rewrite_and_execute(expression: Rise, rewrites: Seq[RewriteIdentifier[Rise]], explorer: Explorer) = {
+
+    // create solution out of expression
+    val solution = rewrite_solution(expression, rewrites)
+
+    println(s"Solution: \n${solution}")
+
+    solution match {
+
+      case Some(sol) =>
+
+        // check gold
+        val gold = explorer.lowering(expression).get
+
+        // create auto-tuning executor
+        val executor: AutoTuningExecutor = AutoTuningExecutor(
+          lowering = explorer.lowering,
+          goldExpression = gold,
+          hostCode = explorer.hostCode,
+          iterations = explorer.executor.iterations,
+          samples = explorer.executor.samples,
+          inputSizes = explorer.inputSizes,
+          threshold = explorer.executor.threshold,
+          global_size_limit = explorer.executor.global_size_limit,
+          executionBackend = explorer.executor.executionBackend,
+          output = explorer.output
+        )
+
+        executor.execute(sol)
+
+      case None =>
+      // rewrite failed, no execution
+    }
+  }
 
   // todo cleanup
   def prepareExploration(

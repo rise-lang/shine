@@ -56,6 +56,7 @@ object everywhere {
 
   // todo improve performance of this
   def everywhere(s: Strategy[Rise]): ExpandStrategy = { p =>
+
     counter += 1
     //    println(s"everywhere: [${counter}]")
     import rise.core.types._

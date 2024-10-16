@@ -553,6 +553,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val lowered = lowering.apply(solution.expression())
     val loweringDuration = System.currentTimeMillis() - loweringDurationStart
 
+    //    println("lowered: \n" + lowered)
+
     val (result, statistic) = lowered match {
       case Success(e) => {
 
