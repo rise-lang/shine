@@ -130,8 +130,8 @@ package object explorations {
 
   object scal {
 
-    //    val inputSize = 1 << 25
-    val inputSize = 1 << 20
+    val inputSize = 1 << 25
+    //    val inputSize = 1 << 20
 
     val expression: Expr =
       depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
