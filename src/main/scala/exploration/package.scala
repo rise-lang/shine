@@ -18,7 +18,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 package object exploration {
 
   object tunerConfiguration {
-    val pythonVersion: String = "/home/jo/baco_paper_version/baco_venv/bin"
+    val pythonVersion: String = "/home/jo/baco_paper_version/.venv/bin"
     val tunerRoot: String = "/home/jo/baco_paper_version"
     val plotter: String = "baco/plot/plot_optimization_results.py"
     val tuner: String = "baco/run.py"
