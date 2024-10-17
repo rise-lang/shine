@@ -16,7 +16,6 @@ import rise.elevate.{Rise, tunable}
 
 class rq_1 extends test_util.Tests {
 
-
   // @rule broken here? why?
   @rule def splitJoinRule: Strategy[Rise] = tunable(splitJoin)
 
@@ -207,9 +206,9 @@ class rq_1 extends test_util.Tests {
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "MCTS",
-        depth = 5,
-        samples = 100,
-        repeat = 1
+        depth = 6,
+        samples = 1000,
+        repeat = 5
       )
     )
 
@@ -242,23 +241,23 @@ class rq_1 extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 5, // execution iterations
+      iterations = 51, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 25, // samples per tuning run
+      samples = 50, // samples per tuning run
       global_size_limit = 1024,
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //      randomGraph,
-      //      localSearch,
-      //      exhaustive,
+      exhaustive,
+      randomGraph,
+      localSearch,
       mcts,
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "scal",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/rq1",
+      output = "/home/jo/shine/experiments/exploration/gcloud/rq1",
       inputSizes = scala.collection.immutable.Seq(scal.inputSize),
       metaheuristics = Right(experiment),
       executor = executor,
@@ -283,9 +282,9 @@ class rq_1 extends test_util.Tests {
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "MCTS",
-        depth = 5,
-        samples = 100,
-        repeat = 1
+        depth = 6,
+        samples = 1000,
+        repeat = 5
       )
     )
 
@@ -317,23 +316,23 @@ class rq_1 extends test_util.Tests {
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 5, // execution iterations
+      iterations = 51, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 25, // samples per tuning run
+      samples = 50, // samples per tuning run
       global_size_limit = 1024,
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //            exhaustive,
-      //      //      randomGraph,
-      //            localSearch,
+      exhaustive,
+      //      randomGraph,
+      localSearch,
       mcts
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "kmeans",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/rq1",
+      output = "/home/jo/shine/experiments/exploration/gcloud/rq1",
       inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
       metaheuristics = Right(experiment),
       executor = executor,
@@ -355,6 +354,15 @@ class rq_1 extends test_util.Tests {
 
 
   test("mm") {
+
+    val mcts = scala.collection.immutable.Seq(
+      MetaheuristicConfig(
+        heuristic = "MCTS",
+        depth = 6,
+        samples = 1000,
+        repeat = 5
+      )
+    )
 
     val localSearch = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -385,7 +393,8 @@ class rq_1 extends test_util.Tests {
     val experiment = scala.collection.immutable.Seq(
       exhaustive,
       randomGraph,
-      localSearch
+      localSearch,
+      mcts,
     )
 
     val executor = ExecutorConfig(
@@ -399,7 +408,7 @@ class rq_1 extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mm",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/rq1",
+      output = "/home/jo/shine/experiments/exploration/gcloud/rq1",
       inputSizes = scala.collection.immutable.Seq(mm.N),
       metaheuristics = Right(experiment),
       executor = executor,
@@ -425,9 +434,9 @@ class rq_1 extends test_util.Tests {
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "MCTS",
-        depth = 3,
-        samples = 100,
-        repeat = 1
+        depth = 6,
+        samples = 1000,
+        repeat = 5
       )
     )
 
@@ -458,24 +467,24 @@ class rq_1 extends test_util.Tests {
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //      exhaustive,
-      //      randomGraph,
-      //      localSearch,
+      exhaustive,
+      randomGraph,
+      localSearch,
       mcts,
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 5, // execution iterations
+      iterations = 51, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 10, // samples per tuning run
+      samples = 50, // samples per tuning run
       global_size_limit = 1024,
     )
 
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "asum",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/rq1",
+      output = "/home/jo/shine/experiments/exploration/gcloud/rq1",
       inputSizes = scala.collection.immutable.Seq(asum.inputSize),
       metaheuristics = Right(experiment),
       executor = executor,
@@ -501,12 +510,11 @@ class rq_1 extends test_util.Tests {
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "MCTS",
-        depth = 5,
-        samples = 100,
-        repeat = 1
+        depth = 6,
+        samples = 1000,
+        repeat = 5
       )
     )
-
 
     val localSearch = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -516,6 +524,7 @@ class rq_1 extends test_util.Tests {
         repeat = 5
       )
     )
+
     val randomGraph = scala.collection.immutable.Seq(
       MetaheuristicConfig(
         heuristic = "RandomGraph",
@@ -535,9 +544,9 @@ class rq_1 extends test_util.Tests {
     )
 
     val experiment = scala.collection.immutable.Seq(
-      //      exhaustive,
-      //      randomGraph,
-      //      localSearch,
+      exhaustive,
+      randomGraph,
+      localSearch,
       mcts,
     )
 
@@ -552,7 +561,7 @@ class rq_1 extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "acoustic",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/rq1",
+      output = "/home/jo/shine/experiments/exploration/gcloud/rq1",
       inputSizes = scala.collection.immutable.Seq(acoustic.N, acoustic.M, acoustic.O), // check how this is used
       metaheuristics = Right(experiment),
       executor = executor,

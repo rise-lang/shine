@@ -38,7 +38,7 @@ package object autotune {
                    executor: Option[Expr => ExecutionResult] = None, // todo change this to exeuction result
                    disableChecking: Boolean = false,
                    feasibility: Boolean = true,
-                   tunerRoot: String = "/home/jo/development/rise-lang/baco_paper_version",
+                   tunerRoot: String = "/home/jo/baco_paper_version",
                    tunerPath: String = "baco/run.py",
                    tunerPlot: String = "baco/plot/plot_optimization_results.py",
                    tunerPython: String = "python3.8",
