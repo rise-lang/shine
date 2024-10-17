@@ -201,7 +201,7 @@ class rq_1 extends test_util.Tests {
       lowering6
   }
 
-  test("scal") {
+  def run_scal() = {
 
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -277,7 +277,7 @@ class rq_1 extends test_util.Tests {
   }
 
 
-  test("kmeans") {
+  def run_kmeans() = {
 
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -353,7 +353,7 @@ class rq_1 extends test_util.Tests {
   }
 
 
-  test("mm") {
+  def run_mm() = {
 
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -428,8 +428,7 @@ class rq_1 extends test_util.Tests {
   }
 
 
-  test("asum lowering exploration") {
-
+  def run_asum() = {
 
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -505,7 +504,7 @@ class rq_1 extends test_util.Tests {
   }
 
   // define acoustic stencil experiment here
-  test("acoustic stencil") {
+  def run_acoustic() = {
 
     val mcts = scala.collection.immutable.Seq(
       MetaheuristicConfig(
@@ -578,6 +577,22 @@ class rq_1 extends test_util.Tests {
     )
 
     val result = exploration.explore(explorer)(acoustic.expression)
+  }
+
+  test("acoustic") {
+    run_acoustic()
+  }
+  test("asum") {
+    run_asum()
+  }
+  test("kmeans") {
+    run_kmeans()
+  }
+  test("mm") {
+    run_mm()
+  }
+  test("scal") {
+    run_scal()
   }
 
 }
