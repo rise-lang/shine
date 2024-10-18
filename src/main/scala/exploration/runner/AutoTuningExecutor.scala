@@ -538,7 +538,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
         executionTimeout = 30000
       ),
       executionIterations = iterations,
-      speedupFactor = 100,
+      speedupFactor = threshold,
       //      configFile = Some("autotuning/config/mmCPU/rs_cot_1024.json"),
       configFile = None,
       hmConstraints = true,
