@@ -287,14 +287,14 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
           println("write values ")
           result.samples.foreach(sample => {
 
-            val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
-              case Left(error) => (None, Some(error.errorLevel))
+            val (performanceValue, error): (Option[Double], Option[AutoTuningError]) = sample.runtime match {
+              case Left(error) => (None, Some(error))
               case Right(runtime) => (Some(runtime.value), None)
             }
 
             writeValues(
               path = output + "/" + "executor.csv",
-              result = (solution, lowered.get, sample.parameters, performanceValue, errorLevel, sample.statistics),
+              result = (solution, lowered.get, sample.parameters, performanceValue, error, sample.statistics),
               statistics = None,
               solution.rewrites(),
               "executor"
@@ -581,14 +581,15 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
           result.samples.foreach(sample => {
 
-            val (performanceValue, errorLevel): (Option[Double], Option[AutoTuningErrorLevel]) = sample.runtime match {
-              case Left(error) => (None, Some(error.errorLevel))
+            val (performanceValue, error): (Option[Double], Option[AutoTuningError]) = sample.runtime match {
+              //              case Left(error) => (None, Some(error.errorLevel))
+              case Left(error) => (None, Some(error))
               case Right(runtime) => (Some(runtime.value), None)
             }
 
             writeValues(
               path = output + "/" + "executor.csv",
-              result = (solution, lowered.get, sample.parameters, performanceValue, errorLevel, sample.statistics),
+              result = (solution, lowered.get, sample.parameters, performanceValue, error, sample.statistics),
               statistics = None,
               solution.rewrites(),
               "executor"
@@ -820,7 +821,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
 
   def writeValues(path: String,
-                  result: (Solution[Rise], Rise, Map[String, rise.autotune.TuningParameterValues], Option[Double], Option[AutoTuningErrorLevel], rise.autotune.SampleStatistics),
+                  result: (Solution[Rise], Rise, Map[String, rise.autotune.TuningParameterValues], Option[Double], Option[AutoTuningError], rise.autotune.SampleStatistics),
                   statistics: Option[ExecutionStatistics],
                   rewrite: Seq[RewriteIdentifier[Rise]],
                   name: String): Unit = {
@@ -834,13 +835,24 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     val fileHM = new PrintWriter(
       new FileOutputStream(new File(path.substring(0, path.size - 4) + "_hm.csv"), true))
 
+    val error_string: String = result._5 match {
+      case None => "None,"
+      case Some(error) =>
+        error.message match {
+          case Some(message) =>
+            error.errorLevel.toString + "," + message.split("\n")(0)
+          case None =>
+            error.errorLevel.toString + ","
+        }
+    }
+
     // create string to write to file
     var string = s"$counterTotal,$name,${System.currentTimeMillis().toString}," +
       hashSolution(result._1) + "," +
       hashProgram(result._2) + "," +
       rewrite.filter(elem => elem.strategy != elevate.core.strategies.basic.id[Rise]).mkString("\"[", ",", "]\"") + "," +
       result._3.map(config => s"${config._1}=${config._2.value}").mkString("\"[", ",", "]\"") + "," + // parameter configuration here
-      result._5.toString + ","
+      error_string + ","
 
     result._4 match {
       case Some(value) => string += value.toString + ","
@@ -904,7 +916,7 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
 
     // create string to write to file
     val string = "iteration,runner,timestamp,high-level hash," +
-      "low-level hash,rewrite,parameter-configuration,error-level,runtime,min,max,std,executions \n"
+      "low-level hash,rewrite,parameter-configuration,error-level,error,runtime,min,max,std,executions \n"
 
     val stringHM = "index,runtime,Valid,Timestamp" + "\n"
 
