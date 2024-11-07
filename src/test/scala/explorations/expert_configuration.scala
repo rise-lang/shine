@@ -130,6 +130,55 @@ class expert_configuration extends test_util.Tests {
   }
 
 
+  test("asum rewrite") {
+
+    //    rewrite
+    val rewrites = scala.collection.immutable.Seq(
+      // add rewrites here
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(0),
+        location = 0
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(1),
+        location = 0
+      ),
+    )
+
+    val executor = ExecutorConfig(
+      name = "AutoTuning",
+      iterations = 51, // execution iterations
+      threshold = 10, // speedup to cut iterations
+      samples = 10, // samples per tuning run
+      global_size_limit = 1024,
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "asum",
+      output = "/home/jo/shine/experiments/exploration/expert",
+      inputSizes = scala.collection.immutable.Seq(asum.inputSize), // check how this is used
+      metaheuristics = Right(null),
+      executor = executor,
+      lowering = lowering,
+      strategies = null, // is this ignored here?
+      hostCode = Some(asum.hostCode),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
+      rewriteFunction = None,
+      normalForm = None,
+      importExport = None,
+      expert = None,
+      default = None,
+      overwrite = false
+    )
+
+    rewrite_and_execute(
+      expression = asum.nvidiaDerived1,
+      rewrites = rewrites,
+      explorer = explorer
+    )
+  }
+
   test("acoustic rewrite") {
 
     //    rewrite
