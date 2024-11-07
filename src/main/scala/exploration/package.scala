@@ -588,7 +588,8 @@ package object exploration {
           output = explorer.output
         )
 
-        executor.execute(sol)
+        val result = executor.execute(sol)
+        println("result: " + result)
 
       case None =>
       // rewrite failed, no execution
