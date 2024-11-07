@@ -68,8 +68,8 @@ class expert_configuration extends test_util.Tests {
     lowering0 `;` // add copies if necessary
       lowering1 `;` // reduce -> reduceSeq
       lowering2 `;` // reduceSeq -> reduceOcl
-      lowering3 `;` // map -> map global 0 (topdown/outermost)
-      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
+      //      lowering3 `;` // map -> map global 0 (topdown/outermost)
+      //      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
       lowering5 // map (compute) -> mapSeq
     //      lowering6
   }
@@ -79,22 +79,26 @@ class expert_configuration extends test_util.Tests {
 
     // rewrite
     val rewrites = scala.collection.immutable.Seq(
-      //
-      //      RewriteIdentifier[Rise](
-      //        strategy = rise.elevate.rules.lowering.mapGlobal(1),
-      //        location = 0
-      //      ),
+
       RewriteIdentifier[Rise](
         strategy = fuseReduceMap,
         location = 0
-      )
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(1),
+        location = 0
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(0),
+        location = 0
+      ),
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 51, // execution iterations
+      iterations = 5, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 10, // samples per tuning run
+      samples = 100, // samples per tuning run
       global_size_limit = 1024,
     )
 
