@@ -565,6 +565,10 @@ package object exploration {
     // create solution out of expression
     val solution = rewrite_solution(expression, rewrites)
 
+    // mkdir output folder
+
+    (s"""mkdir -p ${explorer.output}/${explorer.name}""" !!)
+
     println(s"Solution: \n${solution}")
 
     solution match {
@@ -585,7 +589,7 @@ package object exploration {
           threshold = explorer.executor.threshold,
           global_size_limit = explorer.executor.global_size_limit,
           executionBackend = explorer.executor.executionBackend,
-          output = explorer.output
+          output = s"""${explorer.output}/${explorer.name}"""
         )
 
         val result = executor.execute(sol)
