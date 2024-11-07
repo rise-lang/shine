@@ -68,9 +68,9 @@ class expert_configuration extends test_util.Tests {
     lowering0 `;` // add copies if necessary
       lowering1 `;` // reduce -> reduceSeq
       lowering2 `;` // reduceSeq -> reduceOcl
-      //      lowering3 `;` // map -> map global 0 (topdown/outermost)
-      //        lowering4 // map -> mapGlobal 1 (topdown/outermost)
-      lowering5 `;` // map (compute) -> mapSeq
+      lowering3 `;` // map -> map global 0 (topdown/outermost)
+      lowering4 // map -> mapGlobal 1 (topdown/outermost)
+    lowering5 `;` // map (compute) -> mapSeq
       lowering6
   }
 
