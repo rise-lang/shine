@@ -212,7 +212,7 @@ package object explorations {
 
     val expression: Expr = apps.kmeans.kmeansHighLevel
 
-    val expert: Expr = apps.kmeans.kmeansOcl
+    val expert: Expr = apps.kmeans.kmeansOcl2(32)
 
     // scalastyle:off
     val init: (Int, Int, Int) => String = (p, c, f) => {
