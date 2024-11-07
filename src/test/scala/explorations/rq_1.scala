@@ -613,7 +613,7 @@ class rq_1 extends test_util.Tests {
     //
     //    val tuningResult = autotune.search(tuner)(expression)
 
-    val sj = (splitJoinRule `@` topDown[Rise]).apply(kmeans.expert).get
+    val sj = (splitJoinRule `@` topDown[Rise]).apply(kmeans.expression).get
     val sj_p0 = (mapGlobal(0) `@` topDown[Rise]).apply(sj).get
     val sj_p0_p1 = (mapGlobal(1) `@` topDown[Rise]).apply(sj_p0).get
 
