@@ -105,7 +105,7 @@ class reproduce_rewrite extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "mm",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/",
+      output = "~/",
       inputSizes = scala.collection.immutable.Seq(mm.N),
       metaheuristics = Right(null),
       executor = executor,
@@ -197,7 +197,7 @@ class reproduce_rewrite extends test_util.Tests {
     // setup explorer config
     val explorer = exploration.Explorer(
       name = "acoustic",
-      output = "/home/jo/development/rise-lang/shine/experiments/exploration/dodekarch/",
+      output = "~/",
       inputSizes = scala.collection.immutable.Seq(acoustic.N, acoustic.M, acoustic.O), // check how this is used
       metaheuristics = Right(null),
       executor = executor,
