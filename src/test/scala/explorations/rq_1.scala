@@ -612,11 +612,11 @@ class rq_1 extends test_util.Tests {
     //    )
     //
     //    val tuningResult = autotune.search(tuner)(expression)
-
+    //
     val sj = (splitJoinRule `@` topDown[Rise]).apply(kmeans.expression).get
     val sj_p0 = (mapGlobal(0) `@` topDown[Rise]).apply(sj).get
     //    val sj_p0_p1 = (mapGlobal(0) `@` topDown[Rise]).apply(sj_p0).get
-
+    //
 
     val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(lowering.apply(sj_p0).get)
 
@@ -691,15 +691,18 @@ class rq_1 extends test_util.Tests {
   def run_mm_expert() = {
     //    val scal_expert: Expr = rise.core.substitute.natsInExpr(params, scal.expert)
 
-    //    println("test")
-    val fused = (fuseReduceMap `@` topDown[Rise]).apply(mm.expression).get
-    //    println("fused")
-    val p0 = (mapGlobal(0) `@` topDown[Rise]).apply(fused).get
-    //    println("parallel")
-    val p1 = (mapGlobal(1) `@` topDown[Rise]).apply(p0).get
-    //    println("parallel2")
-    val re = (reduceOCL() `@` topDown[Rise]).apply(p1).get
-    //    println("reduce")
+    //    //    println("test")
+    //    val fused = (fuseReduceMap `@` topDown[Rise]).apply(mm.expression).get
+    //    //    println("fused")
+    //    val p0 = (mapGlobal(0) `@` topDown[Rise]).apply(fused).get
+    //    //    println("parallel")
+    //    val p1 = (mapGlobal(1) `@` topDown[Rise]).apply(p0).get
+    //    //    println("parallel2")
+    //    val re = (reduceOCL() `@` topDown[Rise]).apply(p1).get
+    //    //    println("reduce")
+
+    val fused = (fuseReduceMap `@` topDown[Rise]).apply(mm.expert).get
+    val re = (reduceOCL() `@` topDown[Rise]).apply(fused).get
 
     val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(re)
 
