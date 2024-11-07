@@ -198,6 +198,8 @@ class reproduce_rewrite extends test_util.Tests {
     val explorer = exploration.Explorer(
       name = "acoustic",
       output = "/home/jo/shine",
+      //            output = "~/development/rise-lang/shine",
+      //      output = "/Users/jo/development/rise-lang/shine",
       inputSizes = scala.collection.immutable.Seq(acoustic.N, acoustic.M, acoustic.O), // check how this is used
       metaheuristics = Right(null),
       executor = executor,
