@@ -138,6 +138,16 @@ package object explorations {
         input |> map(fun(x => alpha * x))
       )))
 
+    val expert: Expr = depFun((n: Nat) => fun(ArrayType(n, f32))(input => fun(f32)(alpha =>
+      input |>
+        split(1024) |>
+        mapWorkGroup(
+          split(32) >>
+            mapLocal(rise.core.primitives.mapSeqUnroll(fun(x => alpha * x))) >>
+            join
+        ) |> join
+    )))
+
     // hostcode
     val init: Int => String = N => {
       s"""
@@ -201,6 +211,8 @@ package object explorations {
 
 
     val expression: Expr = apps.kmeans.kmeansHighLevel
+
+    val expert: Expr = apps.kmeans.kmeansOcl
 
     // scalastyle:off
     val init: (Int, Int, Int) => String = (p, c, f) => {
@@ -329,6 +341,21 @@ package object explorations {
 
     val inputSize: Int = 2 << 24
 
+    val expert = depFun((n: Nat) =>
+      fun(inputT(n))(input =>
+        input |>
+          split(2048 * 128) |>
+          mapWorkGroup(
+            reorderWithStride(128) >>
+              split(2048) >>
+              mapLocal(
+                oclReduceSeq(AddressSpace.Private)(
+                  fun(a => fun(x => abs(f32)(x) + a))
+                )(lf32(0.0f))
+              )
+          ) |> join
+      )
+    )
 
     // don't fuse map and reduce
     val asum_optimized: ToBeTyped[Expr] = {
@@ -431,11 +458,11 @@ package object explorations {
     //    val N: Int = 128
     //
     val expressionAMD: ToBeTyped[Expr] =
-    tuningParam("v3", RangeAdd(1, 1024, 1), default = 4, (v3: Nat) =>
-      tuningParam("v4", RangeAdd(1, 1024, 1), default = 8, (v4: Nat) =>
-        tuningParam("vw", RangeAdd(1, 1024, 1), default = 4, (vw: Nat) =>
-          mmAMDWithParamsHighLevel(v3: Nat, v4: Nat, vw: Nat)
-        )))
+      tuningParam("v3", RangeAdd(1, 1024, 1), default = 4, (v3: Nat) =>
+        tuningParam("v4", RangeAdd(1, 1024, 1), default = 8, (v4: Nat) =>
+          tuningParam("vw", RangeAdd(1, 1024, 1), default = 4, (vw: Nat) =>
+            mmAMDWithParamsHighLevel(v3: Nat, v4: Nat, vw: Nat)
+          )))
 
 
     val expression: Rise = //infer(
@@ -446,6 +473,19 @@ package object explorations {
               zip(ak)(bk) |>
                 map(fun(x => fst(x) * snd(x))) |>
                 reduce(add)(lf32(0.0f))
+            ))
+          ))
+        ))
+
+
+    val expert: Rise = //infer(
+      fun(ArrayType(N, ArrayType(N, f32)))(a =>
+        fun(ArrayType(N, ArrayType(N, f32)))(b =>
+          a |> mapGlobal(0)(fun(ak =>
+            transpose(b) |> map(fun(bk =>
+              zip(ak)(bk) |>
+                mapGlobal(1)(fun(x => fst(x) * snd(x))) |>
+                oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
             ))
           ))
         ))
@@ -557,6 +597,7 @@ package object explorations {
     val O = 32
 
     val expression: Rise = apps.stencil.acoustic3D.stencilMSS_high_level
+    val expert: Rise = apps.stencil.acoustic3D.stencilMSS
 
     // host code
     // scalastyle:off

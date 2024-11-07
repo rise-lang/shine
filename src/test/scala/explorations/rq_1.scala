@@ -1,18 +1,24 @@
 package explorations
 
+import arithexpr.arithmetic.RangeMul
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.macros.RuleMacro.rule
 import exploration.neighborhoods._
 import exploration.{ExecutorConfig, MetaheuristicConfig, NeighborhoodConfig}
+import rise.autotune
+import rise.autotune.{HostCode, Median, Minimum, Timeouts, Tuner, tuningParam, wrapOclRun}
 import rise.core.DSL._
+import rise.core.Expr
 import rise.core.primitives.{let => _}
+import rise.core.types.{Nat, TuningParameter}
 import rise.elevate.rules.algorithmic._
 import rise.elevate.rules.lowering._
 import rise.elevate.rules.traversal.default._
 import rise.elevate.strategies.traversal._
 import rise.elevate.{Rise, tunable}
+import shine.OpenCL.{GlobalSize, LocalSize}
 
 class rq_1 extends test_util.Tests {
 
@@ -579,20 +585,240 @@ class rq_1 extends test_util.Tests {
     val result = exploration.explore(explorer)(acoustic.expression)
   }
 
-  test("acoustic") {
-    run_acoustic()
-  }
-  test("asum") {
-    run_asum()
-  }
-  test("kmeans") {
-    run_kmeans()
-  }
-  test("mm") {
-    run_mm()
-  }
-  test("scal") {
-    run_scal()
+  def run_kmeans_expert() = {
+    ////    val params: Map[Nat, Nat] = Map(
+    ////      TuningParameter("ls0") -> (32: Nat),
+    ////      TuningParameter("ls1") -> (1: Nat),
+    ////      TuningParameter("gs0") -> (1024: Nat),
+    ////      TuningParameter("gs1") -> (1: Nat)
+    ////    )
+    //
+    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
+    //
+    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //    val tuner = Tuner(
+    //      hostCode = kmeans.hostCode,
+    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //      samples = 20,
+    //      name = "kmeans",
+    //      output = "autotuning/kmeans",
+    //      timeouts = Timeouts(10000, 10000, 10000),
+    //      executionIterations = 10,
+    //      speedupFactor = 100,
+    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
+    //      //      configFile = None,
+    //      hmConstraints = true,
+    //      runtimeStatistic = Median
+    //    )
+    //
+    //    val tuningResult = autotune.search(tuner)(expression)
+
+    val expression: Expr = wrapOclRun(LocalSize(32, 1), GlobalSize(1024, 1))(kmeans.expert)
+
+    val result = autotune.execution.execute(
+      expression = expression,
+      hostCode = kmeans.hostCode,
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 51,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
   }
 
+  def run_acoustic_expert() = {
+    ////    val params: Map[Nat, Nat] = Map(
+    ////      TuningParameter("ls0") -> (32: Nat),
+    ////      TuningParameter("ls1") -> (1: Nat),
+    ////      TuningParameter("gs0") -> (1024: Nat),
+    ////      TuningParameter("gs1") -> (1: Nat)
+    ////    )
+    //
+    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
+    //
+    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //    val tuner = Tuner(
+    //      hostCode = kmeans.hostCode,
+    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //      samples = 20,
+    //      name = "kmeans",
+    //      output = "autotuning/kmeans",
+    //      timeouts = Timeouts(10000, 10000, 10000),
+    //      executionIterations = 10,
+    //      speedupFactor = 100,
+    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
+    //      //      configFile = None,
+    //      hmConstraints = true,
+    //      runtimeStatistic = Median
+    //    )
+    //
+    //    val tuningResult = autotune.search(tuner)(expression)
+
+    val expression: Expr = wrapOclRun(LocalSize(32, 8), GlobalSize(256, 128))(acoustic.expert)
+
+    val result = autotune.execution.execute(
+      expression = expression,
+      hostCode = acoustic.hostCode,
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 51,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
+  }
+
+  def run_asum_expert() = {
+    ////    val params: Map[Nat, Nat] = Map(
+    ////      TuningParameter("ls0") -> (32: Nat),
+    ////      TuningParameter("ls1") -> (1: Nat),
+    ////      TuningParameter("gs0") -> (1024: Nat),
+    ////      TuningParameter("gs1") -> (1: Nat)
+    ////    )
+    //
+    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
+    //
+    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //    val tuner = Tuner(
+    //      hostCode = kmeans.hostCode,
+    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //      samples = 20,
+    //      name = "kmeans",
+    //      output = "autotuning/kmeans",
+    //      timeouts = Timeouts(10000, 10000, 10000),
+    //      executionIterations = 10,
+    //      speedupFactor = 100,
+    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
+    //      //      configFile = None,
+    //      hmConstraints = true,
+    //      runtimeStatistic = Median
+    //    )
+    //
+    //    val tuningResult = autotune.search(tuner)(expression)
+
+    val params: Map[Nat, Nat] = Map(
+      //      TuningParameter("ls0") -> (128: Nat),
+      //      TuningParameter("gs0") -> (1024: Nat),
+      TuningParameter("sp0") -> ((2048 * 128): Nat),
+      TuningParameter("sp1") -> (2048: Nat),
+      TuningParameter("stride") -> (128: Nat),
+    )
+
+    val asum_expert: Expr = rise.core.substitute.natsInExpr(params, asum.expert)
+
+    val expression: Expr = wrapOclRun(LocalSize(128), GlobalSize(1024, 1))(asum_expert)
+
+    val result = autotune.execution.execute(
+      expression = expression,
+      hostCode = asum.hostCode,
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 51,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
+  }
+
+  def run_scal_expert() = {
+    ////    val params: Map[Nat, Nat] = Map(
+    ////      TuningParameter("ls0") -> (32: Nat),
+    ////      TuningParameter("ls1") -> (1: Nat),
+    ////      TuningParameter("gs0") -> (1024: Nat),
+    ////      TuningParameter("gs1") -> (1: Nat)
+    ////    )
+    //
+    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
+    //
+    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //    val tuner = Tuner(
+    //      hostCode = kmeans.hostCode,
+    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
+    //      samples = 20,
+    //      name = "kmeans",
+    //      output = "autotuning/kmeans",
+    //      timeouts = Timeouts(10000, 10000, 10000),
+    //      executionIterations = 10,
+    //      speedupFactor = 100,
+    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
+    //      //      configFile = None,
+    //      hmConstraints = true,
+    //      runtimeStatistic = Median
+    //    )
+    //
+    //    val tuningResult = autotune.search(tuner)(expression)
+
+    //    val scal_expert: Expr = rise.core.substitute.natsInExpr(params, scal.expert)
+    val expression: Expr = wrapOclRun(LocalSize(256), GlobalSize(1024))(scal.expert)
+
+    val result = autotune.execution.execute(
+      expression = expression,
+      hostCode = scal.hostCode,
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 51,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
+
+  }
+
+  def run_mm_expert() = {
+    //    val scal_expert: Expr = rise.core.substitute.natsInExpr(params, scal.expert)
+
+    //    println("test")
+    val fused = (fuseReduceMap `@` topDown[Rise]).apply(mm.expression).get
+    //    println("fused")
+    val p0 = (mapGlobal(0) `@` topDown[Rise]).apply(fused).get
+    //    println("parallel")
+    val p1 = (mapGlobal(1) `@` topDown[Rise]).apply(p0).get
+    //    println("parallel2")
+    val re = (reduceOCL() `@` topDown[Rise]).apply(p1).get
+    //    println("reduce")
+
+    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024))(re)
+
+    val result = autotune.execution.execute(
+      expression = expression,
+      hostCode = mm.hostCode,
+      timeouts = Timeouts(30000, 30000, 30000),
+      executionIterations = 51,
+      speedupFactor = 100,
+      execution = Median
+    )
+
+    println("result: " + result)
+  }
+
+  test("expert config") {
+    run_kmeans_expert()
+    run_acoustic_expert()
+    run_asum_expert()
+    run_scal_expert()
+    run_mm_expert()
+    //        run_mm_2070_expert()
+  }
+
+  //  test("acoustic") {
+  //    run_acoustic()
+  //  }
+  //
+  //  test("asum") {
+  //    run_asum()
+  //  }
+  //
+  //  test("kmeans") {
+  //    run_kmeans()
+  //  }
+  //
+  //  test("mm") {
+  //    run_mm()
+  //  }
+  //
+  //  test("scal") {
+  //    run_scal()
+  //  }
+  //
 }
