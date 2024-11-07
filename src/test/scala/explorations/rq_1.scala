@@ -613,7 +613,7 @@ class rq_1 extends test_util.Tests {
     //
     //    val tuningResult = autotune.search(tuner)(expression)
 
-    val expression: Expr = wrapOclRun(LocalSize(32, 1), GlobalSize(1024, 1))(kmeans.expert)
+    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(kmeans.expert)
 
     val result = autotune.execution.execute(
       expression = expression,
