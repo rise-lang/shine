@@ -615,10 +615,10 @@ class rq_1 extends test_util.Tests {
 
     val sj = (splitJoinRule `@` topDown[Rise]).apply(kmeans.expression).get
     val sj_p0 = (mapGlobal(0) `@` topDown[Rise]).apply(sj).get
-    val sj_p0_p1 = (mapGlobal(1) `@` topDown[Rise]).apply(sj_p0).get
+    //    val sj_p0_p1 = (mapGlobal(0) `@` topDown[Rise]).apply(sj_p0).get
 
 
-    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(lowering.apply(sj_p0_p1).get)
+    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(lowering.apply(sj_p0).get)
 
     val result = autotune.execution.execute(
       expression = expression,
