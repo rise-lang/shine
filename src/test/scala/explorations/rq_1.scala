@@ -624,37 +624,10 @@ class rq_1 extends test_util.Tests {
       execution = Median
     )
 
-    println("result: " + result)
+    println("kmeans: " + result)
   }
 
   def run_acoustic_expert() = {
-    ////    val params: Map[Nat, Nat] = Map(
-    ////      TuningParameter("ls0") -> (32: Nat),
-    ////      TuningParameter("ls1") -> (1: Nat),
-    ////      TuningParameter("gs0") -> (1024: Nat),
-    ////      TuningParameter("gs1") -> (1: Nat)
-    ////    )
-    //
-    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
-    //
-    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //    val tuner = Tuner(
-    //      hostCode = kmeans.hostCode,
-    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //      samples = 20,
-    //      name = "kmeans",
-    //      output = "autotuning/kmeans",
-    //      timeouts = Timeouts(10000, 10000, 10000),
-    //      executionIterations = 10,
-    //      speedupFactor = 100,
-    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
-    //      //      configFile = None,
-    //      hmConstraints = true,
-    //      runtimeStatistic = Median
-    //    )
-    //
-    //    val tuningResult = autotune.search(tuner)(expression)
-
     val expression: Expr = wrapOclRun(LocalSize(32, 8), GlobalSize(256, 128))(acoustic.expert)
 
     val result = autotune.execution.execute(
@@ -666,40 +639,12 @@ class rq_1 extends test_util.Tests {
       execution = Median
     )
 
-    println("result: " + result)
+    println("acoustic: " + result)
   }
 
   def run_asum_expert() = {
-    ////    val params: Map[Nat, Nat] = Map(
-    ////      TuningParameter("ls0") -> (32: Nat),
-    ////      TuningParameter("ls1") -> (1: Nat),
-    ////      TuningParameter("gs0") -> (1024: Nat),
-    ////      TuningParameter("gs1") -> (1: Nat)
-    ////    )
-    //
-    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
-    //
-    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //    val tuner = Tuner(
-    //      hostCode = kmeans.hostCode,
-    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //      samples = 20,
-    //      name = "kmeans",
-    //      output = "autotuning/kmeans",
-    //      timeouts = Timeouts(10000, 10000, 10000),
-    //      executionIterations = 10,
-    //      speedupFactor = 100,
-    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
-    //      //      configFile = None,
-    //      hmConstraints = true,
-    //      runtimeStatistic = Median
-    //    )
-    //
-    //    val tuningResult = autotune.search(tuner)(expression)
 
     val params: Map[Nat, Nat] = Map(
-      //      TuningParameter("ls0") -> (128: Nat),
-      //      TuningParameter("gs0") -> (1024: Nat),
       TuningParameter("sp0") -> ((2048 * 128): Nat),
       TuningParameter("sp1") -> (2048: Nat),
       TuningParameter("stride") -> (128: Nat),
@@ -718,38 +663,11 @@ class rq_1 extends test_util.Tests {
       execution = Median
     )
 
-    println("result: " + result)
+    println("asum: " + result)
   }
 
   def run_scal_expert() = {
-    ////    val params: Map[Nat, Nat] = Map(
-    ////      TuningParameter("ls0") -> (32: Nat),
-    ////      TuningParameter("ls1") -> (1: Nat),
-    ////      TuningParameter("gs0") -> (1024: Nat),
-    ////      TuningParameter("gs1") -> (1: Nat)
-    ////    )
-    //
-    //    val kmeans_replaced = rise.core.substitute.natsInExpr(params, expression)
-    //
-    //    inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //    val tuner = Tuner(
-    //      hostCode = kmeans.hostCode,
-    //      inputSizes = scala.collection.immutable.Seq(kmeans.p, kmeans.c, kmeans.f),
-    //      samples = 20,
-    //      name = "kmeans",
-    //      output = "autotuning/kmeans",
-    //      timeouts = Timeouts(10000, 10000, 10000),
-    //      executionIterations = 10,
-    //      speedupFactor = 100,
-    //      configFile = Some("autotuning/config/kmeans/kmeans_exhaustive.json"),
-    //      //      configFile = None,
-    //      hmConstraints = true,
-    //      runtimeStatistic = Median
-    //    )
-    //
-    //    val tuningResult = autotune.search(tuner)(expression)
 
-    //    val scal_expert: Expr = rise.core.substitute.natsInExpr(params, scal.expert)
     val expression: Expr = wrapOclRun(LocalSize(256), GlobalSize(1024))(scal.expert)
 
     val result = autotune.execution.execute(
@@ -761,7 +679,7 @@ class rq_1 extends test_util.Tests {
       execution = Median
     )
 
-    println("result: " + result)
+    println("scal: " + result)
 
   }
 
@@ -778,7 +696,7 @@ class rq_1 extends test_util.Tests {
     val re = (reduceOCL() `@` topDown[Rise]).apply(p1).get
     //    println("reduce")
 
-    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024))(re)
+    val expression: Expr = wrapOclRun(LocalSize(32, 32), GlobalSize(1024, 1024))(re)
 
     val result = autotune.execution.execute(
       expression = expression,
@@ -789,7 +707,7 @@ class rq_1 extends test_util.Tests {
       execution = Median
     )
 
-    println("result: " + result)
+    println("MM: " + result)
   }
 
   test("expert config") {
