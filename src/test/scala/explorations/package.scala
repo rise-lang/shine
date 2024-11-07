@@ -482,10 +482,10 @@ package object explorations {
       fun(ArrayType(N, ArrayType(N, f32)))(a =>
         fun(ArrayType(N, ArrayType(N, f32)))(b =>
           a |> mapGlobal(0)(fun(ak =>
-            transpose(b) |> map(fun(bk =>
+            transpose(b) |> mapGlobal(1)(fun(bk =>
               zip(ak)(bk) |>
-                mapGlobal(1)(fun(x => fst(x) * snd(x))) |>
-                oclReduceSeq(AddressSpace.Private)(add)(lf32(0.0f))
+                map(fun(x => fst(x) * snd(x))) |>
+                reduce(add)(lf32(0.0f))
             ))
           ))
         ))
