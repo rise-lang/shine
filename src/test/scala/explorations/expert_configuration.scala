@@ -303,7 +303,7 @@ class expert_configuration extends test_util.Tests {
         location = 1
       ),
       RewriteIdentifier[Rise](
-        strategy = rise.elevate.rules.lowering.mapGlobal(1),
+        strategy = rise.elevate.rules.lowering.mapSeq,
         location = 0
       ),
 
