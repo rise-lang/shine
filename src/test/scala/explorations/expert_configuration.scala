@@ -300,11 +300,11 @@ class expert_configuration extends test_util.Tests {
       ),
       RewriteIdentifier[Rise](
         strategy = rise.elevate.rules.lowering.mapGlobal(1),
-        location = 0
+        location = 1
       ),
       RewriteIdentifier[Rise](
         strategy = rise.elevate.rules.lowering.mapGlobal(1),
-        location = 1
+        location = 0
       ),
 
     )
