@@ -242,13 +242,14 @@ class expert_configuration extends test_util.Tests {
         location = 0
       ),
       RewriteIdentifier[Rise](
-        strategy = rise.elevate.rules.lowering.mapWorkGroup(0),
-        location = 0
+        strategy = rise.elevate.rules.lowering.mapLocal(0),
+        location = 1
       ),
       RewriteIdentifier[Rise](
-        strategy = rise.elevate.rules.lowering.mapLocal(0),
+        strategy = rise.elevate.rules.lowering.mapWorkGroup(1),
         location = 0
       ),
+
     )
 
     val executor = ExecutorConfig(
