@@ -86,7 +86,7 @@ class expert_configuration extends test_util.Tests {
   }
 
 
-  ignore("mm") {
+  test("mm") {
 
     // rewrite
     val rewrites = scala.collection.immutable.Seq(
@@ -288,7 +288,7 @@ class expert_configuration extends test_util.Tests {
   }
 
 
-  test("kmeans rewrite") {
+  ignore("kmeans rewrite") {
 
     //    rewrite
     val rewrites = scala.collection.immutable.Seq(
