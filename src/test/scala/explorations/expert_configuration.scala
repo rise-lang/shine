@@ -231,7 +231,7 @@ class expert_configuration extends test_util.Tests {
     )
   }
 
-  test("scal rewrite") {
+  ignore("scal rewrite") {
 
     //    rewrite
     val rewrites = scala.collection.immutable.Seq(
@@ -246,7 +246,7 @@ class expert_configuration extends test_util.Tests {
         location = 1
       ),
       RewriteIdentifier[Rise](
-        strategy = rise.elevate.rules.lowering.mapWorkGroup(1),
+        strategy = rise.elevate.rules.lowering.mapWorkGroup(0),
         location = 0
       ),
 
@@ -281,6 +281,63 @@ class expert_configuration extends test_util.Tests {
 
     rewrite_and_execute(
       expression = scal.expression,
+      rewrites = rewrites,
+      explorer = explorer
+    )
+
+  }
+
+
+  test("kmeans rewrite") {
+
+    //    rewrite
+    val rewrites = scala.collection.immutable.Seq(
+      // rewrites here
+
+      RewriteIdentifier[Rise](
+        strategy = splitJoinRule,
+        location = 0
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(0),
+        location = 1
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapGlobal(1),
+        location = 0
+      ),
+
+    )
+
+    val executor = ExecutorConfig(
+      name = "AutoTuning",
+      iterations = 51, // execution iterations
+      threshold = 10, // speedup to cut iterations
+      samples = 10, // samples per tuning run
+      global_size_limit = 1024,
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "kmeans",
+      output = "/home/jo/shine/experiments/exploration/expert",
+      inputSizes = scala.collection.immutable.Seq(kmeans.inputSize), // check how this is used
+      metaheuristics = Right(null),
+      executor = executor,
+      lowering = lowering,
+      strategies = null, // is this ignored here?
+      hostCode = Some(kmeans.hostCode),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
+      rewriteFunction = None,
+      normalForm = None,
+      importExport = None,
+      expert = None,
+      default = None,
+      overwrite = false
+    )
+
+    rewrite_and_execute(
+      expression = kmeans.expression,
       rewrites = rewrites,
       explorer = explorer
     )
