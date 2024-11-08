@@ -299,21 +299,21 @@ class expert_configuration extends test_util.Tests {
         location = 0
       ),
       RewriteIdentifier[Rise](
-        strategy = rise.elevate.rules.lowering.mapGlobal(0),
-        location = 1
+        strategy = rise.elevate.rules.lowering.mapGlobal(1),
+        location = 0
       ),
       RewriteIdentifier[Rise](
         strategy = rise.elevate.rules.lowering.mapGlobal(1),
-        location = 0
+        location = 1
       ),
 
     )
 
     val executor = ExecutorConfig(
       name = "AutoTuning",
-      iterations = 5, // execution iterations
+      iterations = 51, // execution iterations
       threshold = 10, // speedup to cut iterations
-      samples = 10, // samples per tuning run
+      samples = 100, // samples per tuning run
       global_size_limit = 1024,
     )
 
