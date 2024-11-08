@@ -70,12 +70,23 @@ class expert_configuration extends test_util.Tests {
       lowering2 `;` // reduceSeq -> reduceOcl
       //      lowering3 `;` // map -> map global 0 (topdown/outermost)
       //      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
+      lowering5 `;` // map (compute) -> mapSeq
+      lowering6
+  }
+
+
+  val lowering_mm: Strategy[Rise] = {
+    lowering0 `;` // add copies if necessary
+      lowering1 `;` // reduce -> reduceSeq
+      lowering2 `;` // reduceSeq -> reduceOcl
+      //      lowering3 `;` // map -> map global 0 (topdown/outermost)
+      //      lowering4 `;` // map -> mapGlobal 1 (topdown/outermost)
       lowering5 // map (compute) -> mapSeq
     //      lowering6
   }
 
 
-  test("mm") {
+  ignore("mm") {
 
     // rewrite
     val rewrites = scala.collection.immutable.Seq(
@@ -130,7 +141,7 @@ class expert_configuration extends test_util.Tests {
   }
 
 
-  test("asum rewrite") {
+  ignore("asum rewrite") {
 
     //    rewrite
     val rewrites = scala.collection.immutable.Seq(
@@ -179,7 +190,7 @@ class expert_configuration extends test_util.Tests {
     )
   }
 
-  test("acoustic rewrite") {
+  ignore("acoustic rewrite") {
 
     //    rewrite
     val rewrites = scala.collection.immutable.Seq(
@@ -219,4 +230,60 @@ class expert_configuration extends test_util.Tests {
       explorer = explorer
     )
   }
+
+  test("scal rewrite") {
+
+    //    rewrite
+    val rewrites = scala.collection.immutable.Seq(
+      // rewrites here
+
+      RewriteIdentifier[Rise](
+        strategy = splitJoinRule,
+        location = 0
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapWorkGroup(0),
+        location = 0
+      ),
+      RewriteIdentifier[Rise](
+        strategy = rise.elevate.rules.lowering.mapLocal(0),
+        location = 0
+      ),
+    )
+
+    val executor = ExecutorConfig(
+      name = "AutoTuning",
+      iterations = 51, // execution iterations
+      threshold = 10, // speedup to cut iterations
+      samples = 10, // samples per tuning run
+      global_size_limit = 1024,
+    )
+
+    // setup explorer config
+    val explorer = exploration.Explorer(
+      name = "scal",
+      output = "/home/jo/shine/experiments/exploration/expert",
+      inputSizes = scala.collection.immutable.Seq(scal.inputSize), // check how this is used
+      metaheuristics = Right(null),
+      executor = executor,
+      lowering = lowering,
+      strategies = null, // is this ignored here?
+      hostCode = Some(scal.hostCode),
+      neighborhoodConfig = NeighborhoodConfig(neighborhood = NGraphChoice),
+      rewriteFunction = None,
+      normalForm = None,
+      importExport = None,
+      expert = None,
+      default = None,
+      overwrite = false
+    )
+
+    rewrite_and_execute(
+      expression = scal.expression,
+      rewrites = rewrites,
+      explorer = explorer
+    )
+
+  }
+
 }
