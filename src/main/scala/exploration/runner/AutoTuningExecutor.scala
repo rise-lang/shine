@@ -525,6 +525,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
     //    println("solution: " + solution)
     println("solution: " + hashProgram(solution.expression()))
 
+    //    check_constraints =
+
     // todo adjust this for autotuning benchmarks
     val tuner = Tuner(
       hostCode = hostCode.get, // we don't need that, yes we do!
@@ -545,7 +547,8 @@ case class AutoTuningExecutor(lowering: Strategy[Rise],
       executor = None,
       saveToFile = true,
       tunerRoot = exploration.tunerConfiguration.tunerRoot,
-      tunerTimeBudgetCot = exploration.tunerConfiguration.tunerTimeBudgetCot
+      tunerTimeBudgetCot = exploration.tunerConfiguration.tunerTimeBudgetCot,
+      disableChecking = true
     )
 
     // lower expression
