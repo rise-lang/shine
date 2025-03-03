@@ -926,6 +926,14 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.id() =>
             // FIXME: only supports non-functional values
             Seq(read ->: read, write ->: write)
+          case rp.foreignFunction(_, _) =>
+            def buildAnnot(t: rise.eqsat.TypeId): TypeAnnotation = egraph(t) match {
+              case _: DataTypeNode[NatId, DataTypeId] => read
+              case rise.eqsat.FunType(in, out) => buildAnnot(in) ->: buildAnnot(out)
+              case rise.eqsat.DataFunType(t) => dtFunT(buildAnnot(t))
+              case node => throw new Exception(s"did not expect $node")
+            }
+            Seq(buildAnnot(t))
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((
