@@ -49,7 +49,7 @@ class OclToMem extends test_util.Tests {
       fun(m`.`n`.`f32)(xs =>
         xs
           |> toPrivateFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> mapLocal(1) (fun(t => makePair(t.`1` |> mapLocal(0) (fun(x => x)))(t.`2` |> mapLocal(0) (fun(x => x)))))))
 
     val localSize = LocalSize((4, 4, 1))
     val globalSize = GlobalSize((4, 8, 1))
@@ -64,7 +64,7 @@ class OclToMem extends test_util.Tests {
       fun(m`.`n`.`f32)(xs =>
         xs
           |> toLocalFun(mapLocal(1) (fun(x => makePair(x |> mapLocal(0) (fun(x => x)))(x |> mapLocal(0) (fun(x => x))))))
-          |> mapLocal(1) (fun(t => makePair(t._1 |> mapLocal(0) (fun(x => x)))(t._2 |> mapLocal(0) (fun(x => x)))))))
+          |> mapLocal(1) (fun(t => makePair(t.`1` |> mapLocal(0) (fun(x => x)))(t.`2` |> mapLocal(0) (fun(x => x)))))))
 
     gen.opencl.kernel.fromExpr(e(4)(8))
 
@@ -85,10 +85,10 @@ class OclToMem extends test_util.Tests {
         xs
           |> oclReduceSeq(Private)(fun((x, y) =>
           zip(x)(y)
-            |> mapLocal(1)(fun(zippedDim4Row => zip(zippedDim4Row._1)(zippedDim4Row._2)
-            |> mapLocal(0)(fun(zippedDim3Row => zip(zippedDim3Row._1)(zippedDim3Row._2)
-            |> mapSeq(fun(zippedDim2Row => zip(zippedDim2Row._1)(zippedDim2Row._2)
-            |> mapSeq(fun(zippedDim1Row => zippedDim1Row._1 + zippedDim1Row._2))))))))))
+            |> mapLocal(1)(fun(zippedDim4Row => zip(zippedDim4Row.`1`)(zippedDim4Row.`2`)
+            |> mapLocal(0)(fun(zippedDim3Row => zip(zippedDim3Row.`1`)(zippedDim3Row.`2`)
+            |> mapSeq(fun(zippedDim2Row => zip(zippedDim2Row.`1`)(zippedDim2Row.`2`)
+            |> mapSeq(fun(zippedDim1Row => zippedDim1Row.`1` + zippedDim1Row.`2`))))))))))
         (zeros(m)(n)(o)(p) |> mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(fun(x => x))))))
           |> mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(fun(x => x)))))))
 
