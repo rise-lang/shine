@@ -62,10 +62,10 @@ object TopLevel {
     traverse(t, new Visitor(ftvSubs, sol) {
         override def `type`[T <: ExprType] : T => Pure[T] = {
           case i: TypeIdentifier =>
-            ftvSubs.ts.get(i) match {
+            this.ftvSubs.ts.get(i) match {
               case None => super.`type`(i.asInstanceOf[T])
               case Some(j) =>
-                sol.ts.get(j) match {
+                this.sol.ts.get(j) match {
                   case Some(x) => return_(x.asInstanceOf[T])
                   case None    => super.`type`(i.asInstanceOf[T])
                 }

@@ -14,7 +14,7 @@ object Kind {
     case object MatrixLayout extends AST
   }
 
-  def Kind[_: P]: P[AST] = P(
+  def Kind[$: P]: P[AST] = P(
     "data".!.map(_ => AST.Data) |
       "address".!.map(_ => AST.Address) |
       "nat2nat".!.map(_ => AST.Nat2Nat) |

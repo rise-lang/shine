@@ -164,7 +164,7 @@ object ematching {
   }
 
   /** A node without children for matching purposes */
-  type MNode = Node[Unit, Unit, Unit]
+  type MNode = Node[Unit, Unit, Unit, Unit]
   type MNatNode = NatNode[Unit]
   type MTypeNode = TypeNode[Unit, Unit, Unit]
 

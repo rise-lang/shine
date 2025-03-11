@@ -348,12 +348,12 @@ object fromRise {
 
       case core.depTile() => fromType {
         case nFunT(tile,
-          ((fa: ExpType) ->: (fb: ExpType)) ->:
+          ((fa/*: ExpType*/) ->: (fb/*: ExpType*/)) ->:
           (inT @ expT(ArrayType(m, s), `read`)) ->:
           expT(ArrayType(n, t), `write`))
         =>
           depFun(NatKind, tile)(
-            fun[ExpType ->: ExpType](fa ->: fb, f =>
+            fun[ExpType ->: ExpType](fa.asInstanceOf[ExpType] ->: fb.asInstanceOf[ExpType], f =>
               fun[ExpType](inT, e =>
                 DepTile(n, tile, m-n, s, t, f, e))))
       }

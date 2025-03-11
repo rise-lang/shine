@@ -177,7 +177,7 @@ object ContinuationTranslation {
 
     case idx@shine.OpenCL.primitives.imperative.IdxDistribute(level) =>
       val (m, n, stride, dt, array) = idx.unwrap
-      con(array)(λ(expT(m`.`dt, read))(e =>
+      con(array)(fun(expT(m`.`dt, read))(e =>
         C(shine.OpenCL.primitives.imperative.IdxDistribute(level)(m, n, stride, dt, e))))
 
     case IdxVec(n, st, index, vector) =>
