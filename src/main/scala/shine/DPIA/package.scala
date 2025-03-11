@@ -95,9 +95,9 @@ package object DPIA {
     }
 
     // FIXME: does this work?
-    def unapply[U/* <: PhraseType*/](funType: DepFunType[_, _/*U*/]): Option[(NatIdentifier, U)] = {
+    def unapply/*[U <: PhraseType]*/(funType: DepFunType[_, _/*U*/]): Option[(NatIdentifier, Any)] = {
       funType.x match {
-        case n: NatIdentifier => Some((n, funType.t.asInstanceOf[U]))
+        case n: NatIdentifier => Some((n, funType.t)) // .asInstanceOf[U]
         case _ => throw new Exception("Expected Nat DepFunType")
       }
     }
@@ -115,9 +115,9 @@ package object DPIA {
     }
 
     // FIXME: does this work?
-    def unapply[T/* <: PhraseType*/](funType: DepFunType[_, _/*T*/]): Option[(AddressSpaceIdentifier, T)] = {
+    def unapply[T <: PhraseType](funType: DepFunType[_, _/*T*/]): Option[(AddressSpaceIdentifier, Any)] = {
       funType.x match {
-        case a: AddressSpaceIdentifier => Some((a, funType.t.asInstanceOf[T]))
+        case a: AddressSpaceIdentifier => Some((a, funType.t)) // .asInstanceOf[T]
         case _ => throw new Exception("Expected AddressSpace DepFunType")
       }
     }
@@ -128,9 +128,10 @@ package object DPIA {
       DepFunType(NatToNatKind, n, t)
     }
 
-    def unapply[T <: PhraseType](funType: DepFunType[_, T]): Option[(NatToNatIdentifier, T)] = {
+    // FIXME: does this work?
+    def unapply/*[T <: PhraseType]*/(funType: DepFunType[_, _/*T*/]): Option[(NatToNatIdentifier, Any)] = {
       funType.x match {
-        case n: NatToNatIdentifier => Some((n, funType.t))
+        case n: NatToNatIdentifier => Some((n, funType.t)) // .asInstanceOf[T]
         case _ => throw new Exception("Expected Nat DepFunType")
       }
     }
