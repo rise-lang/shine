@@ -65,7 +65,7 @@ object StreamTranslation {
           // prologue initialisation
           forNat(size - 1, i =>
             streamNext(nextInput, i, fun(expT(dt1, read))(x => acc(load(x))(bufWr `@` i)))) `;`
-          C(nFun(i =>
+          C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
             fun(expT(size `.` dt2, read) ->: (comm: CommType))(k =>
               // load next value
               streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
@@ -75,8 +75,7 @@ object StreamTranslation {
                 // use neighborhood
                 k(Take(size, n - i - size, dt2,
                   Drop(i, n - i, dt2, Cycle(n, size, dt2, bufRd))))
-            ),
-            arithexpr.arithmetic.RangeAdd(0, n, 1)
+            )
           ))
         })
       }))
@@ -86,12 +85,12 @@ object StreamTranslation {
       str(array)(fun((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
       )(next =>
-        C(nFun(i =>
+        C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
           fun(expT(dt2, read) ->: (comm: CommType))(k =>
             streamNext(next, i, fun(expT(dt1, read))(x =>
               con(f(x))(k)
             ))
-          ), arithexpr.arithmetic.RangeAdd(0, n, 1)))))
+          )))))
 
     case RotateValues(n, size, dt, write, input) =>
       val i = NatIdentifier(freshName("i"))
@@ -103,7 +102,7 @@ object StreamTranslation {
           // prologue initialisation
           forNat(unroll = true, size - 1, i =>
             streamNext(nextInput, i, fun(expT(dt, read))(x => acc(write(x))(rs.wr `@` i) ))) `;`
-          C(nFun(i =>
+          C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
             fun(expT(size `.` dt, read) ->: (comm: CommType))(k =>
               // load next value
               streamNext(nextInput, i + size - 1, fun(expT(dt, read))(x =>
@@ -115,8 +114,8 @@ object StreamTranslation {
                 comment("mapSeq") `;`
                 `for`(unroll = true, size - 1, i =>
                   acc(write(Drop(1, size - 1, dt, rs.rd) `@` i))(TakeAcc(size - 1, 1, dt, rs.wr) `@` i))
-            ),
-            arithexpr.arithmetic.RangeAdd(0, n, 1)))
+            )
+          ))
         }))
       }))
 
@@ -128,14 +127,14 @@ object StreamTranslation {
         str(e2)(fun((i: NatIdentifier) ->:
           (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType)
         )(next2 =>
-          C(nFun(i => fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
-            Apply(DepApply(NatKind, next1, i),
-              fun(expT(dt1, read))(x1 =>
-                Apply(DepApply(NatKind, next2, i),
-                  fun(expT(dt2, read))(x2 =>
-                    k(MakePair(dt1, dt2, read, x1, x2))
-                  ))))),
-            arithexpr.arithmetic.RangeAdd(0, n, 1)))))))
+          C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
+            fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
+              Apply(DepApply(NatKind, next1, i),
+                fun(expT(dt1, read))(x1 =>
+                  Apply(DepApply(NatKind, next2, i),
+                    fun(expT(dt2, read))(x2 =>
+                      k(MakePair(dt1, dt2, read, x1, x2))
+                    )))))))))))
 
     // OpenCL
     case ocl.CircularBuffer(a, n, alloc, size, dt1, dt2, load, input) =>
@@ -166,7 +165,7 @@ object StreamTranslation {
           // prologue initialisation
           forNat(size - 1, i => streamNext(nextInput, i, fun(expT(dt1, read))(x =>
             acc(load(x))(bufWr `@` i)))) `;`
-            C(nFun(i =>
+            C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
               fun(expT(size`.`dt2, read) ->: (comm: CommType))(k =>
                 // load next value
                 streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
@@ -176,8 +175,7 @@ object StreamTranslation {
                   // use neighborhood
                   k(Drop(i, size, dt2,
                     Cycle(i + size, alloc, dt2, bufRd)))
-              ),
-              arithexpr.arithmetic.RangeAdd(0, n, 1)
+              )
             ))
         })
       }))
@@ -192,7 +190,7 @@ object StreamTranslation {
           // prologue initialisation
           forNat(unroll = true, size - 1, i => streamNext(nextInput, i, fun(expT(dt, read))(x =>
             acc(write(x))(rs.wr `@` i) ))) `;`
-          C(nFun(i =>
+          C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
             fun(expT(size`.`dt, read) ->: (comm: CommType))(k =>
               // load next value
               streamNext(nextInput, i + size - 1, fun(expT(dt, read))(x =>
@@ -204,8 +202,8 @@ object StreamTranslation {
               comment("mapSeq")`;`
               `for`(unroll = true, size - 1, i =>
                 acc(write(Drop(1, size - 1, dt, rs.rd) `@` i))(TakeAcc(size - 1, 1, dt, rs.wr) `@` i))
-            ),
-            arithexpr.arithmetic.RangeAdd(0, n, 1)))
+            )
+          ))
         })
       }))
 
@@ -221,9 +219,10 @@ object StreamTranslation {
 
     E.t match {
       case ExpType(ArrayType(n, dt), read) =>
-        C(nFun(i => fun(expT(dt, read) ->: (comm: CommType))(k =>
-          con(E `@` i)(k)
-        ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
+        C(nFun(arithexpr.arithmetic.RangeAdd(0, n, 1))(i =>
+          fun(expT(dt, read) ->: (comm: CommType))(k =>
+            con(E `@` i)(k)
+        )))
       case _ => throw new Exception("this should not happen")
     }
   }

@@ -111,16 +111,16 @@ object HoistMemoryAllocations {
           case Left(identExpr) =>
             Phrase.substitute(
               substitutionMap = Map(
-                π1(oldVariable) -> (π1(newVariable) `@` identExpr),
-                π2(oldVariable) -> (π2(newVariable) `@` identExpr)
+                Proj1(oldVariable) -> (Proj1(newVariable) `@` identExpr),
+                Proj2(oldVariable) -> (Proj2(newVariable) `@` identExpr)
               ),
               in = oldBody
             )
           case Right(identNat) =>
             Phrase.substitute(
               substitutionMap = Map(
-                π1(oldVariable) -> (π1(newVariable) `@` identNat),
-                π2(oldVariable) -> (π2(newVariable) `@` identNat)
+                Proj1(oldVariable) -> (Proj1(newVariable) `@` identNat),
+                Proj2(oldVariable) -> (Proj2(newVariable) `@` identNat)
               ),
               in = oldBody
             )

@@ -1,8 +1,8 @@
 package shine.cuda.Compilation.Passes
 
 import arithexpr.arithmetic.ArithExpr.Math.Min
-import shine.DPIA.DSL.{π1, π2, _}
-import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, VisitAndRebuild}
+import shine.DPIA.DSL._
+import shine.DPIA.Phrases.{Identifier, Lambda, Phrase, Proj1, Proj2, VisitAndRebuild}
 import rise.core.types._
 import rise.core.DSL.Type._
 import shine.DPIA.Types.{CommType, ExpType, PhraseType}
@@ -105,16 +105,16 @@ object HoistMemoryAllocations {
           case Left(identExpr) =>
             Phrase.substitute(
               substitutionMap = Map(
-                π1(oldVariable) -> (π1(newVariable) `@` identExpr),
-                π2(oldVariable) -> (π2(newVariable) `@` identExpr)
+                Proj1(oldVariable) -> (Proj1(newVariable) `@` identExpr),
+                Proj2(oldVariable) -> (Proj2(newVariable) `@` identExpr)
               ),
               in = oldBody
             )
           case Right(identNat) =>
             Phrase.substitute(
               substitutionMap = Map(
-                π1(oldVariable) -> (π1(newVariable) `@` identNat),
-                π2(oldVariable) -> (π2(newVariable) `@` identNat)
+                Proj1(oldVariable) -> (Proj1(newVariable) `@` identNat),
+                Proj2(oldVariable) -> (Proj2(newVariable) `@` identNat)
               ),
               in = oldBody
             )

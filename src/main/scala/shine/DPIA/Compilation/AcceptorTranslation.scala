@@ -47,7 +47,7 @@ object AcceptorTranslation {
             acc(fst)(pairAcc1(dt1, dt2, A)) `;`
               acc(snd)(pairAcc2(dt1, dt2, A))
           case _ =>
-            con(e)(λ(e.t)(a => A :=| e.t.dataType | a))
+            con(e)(fun(e.t)(a => A :=| e.t.dataType | a))
         }
 
       case c: Literal => A :=|c.t.dataType| c
@@ -57,13 +57,13 @@ object AcceptorTranslation {
       case n: Natural => A :=|n.t.dataType| n
 
       case u@UnaryOp(op, e) =>
-        con(e)(λ(u.t)(x =>
+        con(e)(fun(u.t)(x =>
           A :=|u.t.dataType| UnaryOp(op, x)
         ))
 
       case b@BinOp(op, e1, e2) =>
-        con(e1)(λ(b.t)(x =>
-          con(e2)(λ(b.t)(y =>
+        con(e1)(fun(b.t)(x =>
+          con(e2)(fun(b.t)(y =>
             A :=|b.t.dataType| BinOp(op, x, y)
           ))
         ))
@@ -73,7 +73,7 @@ object AcceptorTranslation {
       case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
 
       case IfThenElse(cond, thenP, elseP) =>
-        con(cond)(λ(cond.t) { x =>
+        con(cond)(fun(cond.t) { x =>
           `if` (x) `then` acc(thenP)(A) `else` acc(elseP)(A)
         })
 
@@ -95,7 +95,7 @@ object AcceptorTranslation {
       acc(array)(AsVectorAcc(n, m, dt, A))
 
     case DepIdx(n, ft, index, array) =>
-      con(array)(λ(expT(n`.d`ft, read))(x =>
+      con(array)(fun(expT(n`.d`ft, read))(x =>
         A :=| ft(index) | DepIdx(n, ft, index, x)))
 
     case DepJoin(n, lenF, dt, array) =>
@@ -103,7 +103,7 @@ object AcceptorTranslation {
 
     case depMapSeq@DepMapSeq(unroll) =>
       val (n, ft1, ft2, f, array) = depMapSeq.unwrap
-      con(array)(λ(expT(n`.d`ft1, read))(x =>
+      con(array)(fun(expT(n`.d`ft1, read))(x =>
         forNat(unroll, n, i =>
           acc(f(i)(x `@d` i))(A `@d` i))
       ))
@@ -113,19 +113,19 @@ object AcceptorTranslation {
 
     case DMatch(x, elemT, outT, a, f, input) =>
       // Turn the f imperative by means of forwarding the acceptor translation
-      con(input)(λ(expT(DepPairType(NatKind, x, elemT), read))(pair =>
+      con(input)(fun(expT(DepPairType(NatKind, x, elemT), read))(pair =>
         DMatchI(x, elemT, outT,
-          _Λ_(NatKind)((fst: NatIdentifier) =>
-            λ(expT(substituteNatInType(fst, x, elemT), read))(snd =>
+          depFun(NatKind)((fst: NatIdentifier) =>
+            fun(expT(substituteNatInType(fst, x, elemT), read))(snd =>
               acc(f(fst)(snd))(A)
             )), pair)))
 
     case IdxVec(n, st, index, vector) =>
-      con(vector)(λ(expT(vec(n, st), read))(x =>
+      con(vector)(fun(expT(vec(n, st), read))(x =>
         A :=| st | IdxVec(n, st, index, x)))
 
     case Iterate(n, m, k, dt, f, array) =>
-      con(array)(λ(expT((m * n.pow(k))`.`dt, read))(x => {
+      con(array)(fun(expT((m * n.pow(k))`.`dt, read))(x => {
         val sz = n.pow(k) * m
 
         newDoubleBuffer(sz`.`dt, m`.`dt, sz`.`dt, x, A,
@@ -144,7 +144,7 @@ object AcceptorTranslation {
       }))
 
     case IterateStream(n, dt1, dt2, f, array) =>
-      val fI = λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o)))
+      val fI = fun(expT(dt1, read))(x => fun(accT(dt2))(o => acc(f(x))(o)))
       val i = NatIdentifier(freshName("i"))
       str(array)(fun((i: NatIdentifier) ->:
         (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
@@ -178,7 +178,7 @@ object AcceptorTranslation {
       val o = Identifier(freshName("fede_o"), otype)
 
       acc(array)(MapAcc(n, dt2, dt1,
-        Lambda(o, fedAcc(scala.Predef.Map((x, o)))(f(x))(λ(otype)(x => x))),
+        Lambda(o, fedAcc(scala.Predef.Map((x, o)))(f(x))(fun(otype)(x => x))),
         A))
 
     case MapFst(w, dt1, dt2, dt3, f, record) =>
@@ -193,7 +193,7 @@ object AcceptorTranslation {
 
     case mapSeq@MapSeq(unroll) =>
       val (n, dt1, dt2, f, array) = mapSeq.unwrap
-      con(array)(λ(expT(n`.`dt1, read))(x =>
+      con(array)(fun(expT(n`.`dt1, read))(x =>
         comment("mapSeq")`;`
           `for`(unroll, n, i => acc(f(x `@` i))(A `@` i))
       ))
@@ -209,7 +209,7 @@ object AcceptorTranslation {
         A))
 
     case MapVec(n, dt1, dt2, f, array) =>
-      con(array)(λ(expT(vec(n, dt1), read))(x =>
+      con(array)(fun(expT(vec(n, dt1), read))(x =>
         shine.OpenMP.DSL.parForVec(n, dt2, A, i => a => acc(f(x `@v` i))(a))
       ))
 
@@ -221,15 +221,15 @@ object AcceptorTranslation {
 
     case reduceSeq@ReduceSeq(unroll) =>
       val (n, dt1, dt2, f, init, array) = reduceSeq.unwrap
-      con(reduceSeq)(λ(expT(dt2, write))(r =>
+      con(reduceSeq)(fun(expT(dt2, write))(r =>
         acc(r)(A)))
 
     case Reorder(n, dt, access, idxF, idxFinv, input) =>
       acc(input)(ReorderAcc(n, dt, idxFinv, A))
 
     case ScanSeq(n, dt1, dt2, f, init, array) =>
-      con(array)(λ(expT(n`.`dt1, read))(x =>
-        con(init)(λ(expT(dt2, read))(y =>
+      con(array)(fun(expT(n`.`dt1, read))(x =>
+        con(init)(fun(expT(dt2, read))(y =>
           comment("scanSeq")`;`
           `new`(dt2, accumulator =>
             acc(y)(accumulator.wr) `;`
@@ -243,7 +243,7 @@ object AcceptorTranslation {
         acc(input)(ScatterAcc(n, m, dt, y, A))))
 
     case slide@Slide(n, sz, sp, dt, input) =>
-      con(slide)(λ(expT(n`.`(sz`.`dt), read))(x =>
+      con(slide)(fun(expT(n`.`(sz`.`dt), read))(x =>
         A :=|(n`.`(sz`.`dt))| x ))
 
     case Split(n, m, w, dt, array) =>
@@ -256,7 +256,7 @@ object AcceptorTranslation {
       acc(e)(UnzipAcc(n, dt1, dt2, A))
 
     case VectorFromScalar(n, dt, arg) =>
-      con(arg)(λ(expT(dt, read))(e =>
+      con(arg)(fun(expT(dt, read))(e =>
         A :=|vec(n, dt)| VectorFromScalar(n, dt, e)))
 
     case Zip(n, dt1, dt2, access, e1, e2) =>
@@ -265,22 +265,22 @@ object AcceptorTranslation {
 
     // OpenMP
     case omp.DepMapPar(n, ft1, ft2, f, array) =>
-      con(array)(λ(expT(n`.d`ft1, read))(x => {
+      con(array)(fun(expT(n`.d`ft1, read))(x => {
         shine.OpenMP.DSL.parForNat(n, ft2, A, idx => a => acc(f(idx)(x `@d` idx))(a))
       }))
 
     case omp.MapPar(n, dt1, dt2, f, array) =>
-      con(array)(λ(expT(n`.`dt1, read))(x =>
+      con(array)(fun(expT(n`.`dt1, read))(x =>
         shine.OpenMP.DSL.parFor(n, dt2, A, i => a => acc(f(x `@` i))(a))))
 
     case reducePar@omp.ReducePar(n, dt1, dt2, f, init, array) =>
-      con(reducePar)(λ(expT(dt2, write))(r =>
+      con(reducePar)(fun(expT(dt2, write))(r =>
         acc(r)(A)))
 
     // OpenCL
     case depMap@ocl.DepMap(level, dim) =>
       val (n, ft1, ft2, f, array) = depMap.unwrap
-      con(array)(λ(expT(n`.d`ft1, read))(x => {
+      con(array)(fun(expT(n`.d`ft1, read))(x => {
         import shine.OpenCL.DSL._
         level match {
           case shine.OpenCL.Global =>
@@ -294,7 +294,7 @@ object AcceptorTranslation {
         }}))
 
     case ocl.Iterate(a, n, m, k, dt, f, array) =>
-      con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x => {
+      con(array)(fun(expT({m * n.pow(k)}`.`dt, read))(x => {
         import arithexpr.arithmetic.Cst
         val sz = n.pow(k) * m
 
@@ -318,7 +318,7 @@ object AcceptorTranslation {
           case Nil =>
             oclImp.KernelCallCmd(name, localSize, globalSize, n)(kc.inTs, kc.outT, kc.args, A)
           case Seq(arg, tail@_*) =>
-            con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
+            con(arg)(fun(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
         }
       }
 
@@ -326,10 +326,10 @@ object AcceptorTranslation {
 
     case map@ocl.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
-      con(array)(λ(expT(n `.` dt1, read))(x => {
+      con(array)(fun(expT(n `.` dt1, read))(x => {
         comment(s"map${level.toString}") `;`
           shine.OpenCL.DSL.parFor(level, dim, unroll = false)(n, dt2, A,
-            λ(expT(idx(n), read))(i => λ(accT(dt2))(a => acc(f(x `@` i))(a))))
+            fun(expT(idx(n), read))(i => fun(accT(dt2))(a => acc(f(x `@` i))(a))))
       }))
 
     case fc@ocl.OpenCLFunctionCall(name, n) =>
@@ -339,11 +339,11 @@ object AcceptorTranslation {
         ts match {
           // with only one argument left to process return the assignment of the OpenCLFunction call
           case Seq( (arg, inT) ) =>
-            con(arg)(λ(expT(inT, read))(e =>
+            con(arg)(fun(expT(inT, read))(e =>
               A :=|fc.outT| ocl.OpenCLFunctionCall(name, n)(inTs :+ inT, fc.outT, exps :+ e) ))
           // with a `tail` of arguments left, recurse
           case Seq( (arg, inT), tail@_* ) =>
-            con(arg)(λ(expT(inT, read))(e => rec(tail, exps :+ e, inTs :+ inT) ))
+            con(arg)(fun(expT(inT, read))(e => rec(tail, exps :+ e, inTs :+ inT) ))
         }
       }
 
@@ -351,23 +351,23 @@ object AcceptorTranslation {
 
     // CUDA
     case cuda.AsFragment(rows, columns, layers, dataType, fragmentKind, layout, matrix) =>
-      con(matrix)(λ(ExpType(ArrayType(rows, ArrayType(columns, dataType)), read))(matrix =>
+      con(matrix)(fun(ExpType(ArrayType(rows, ArrayType(columns, dataType)), read))(matrix =>
         cudaImp.WmmaLoad(rows, columns, layers, dataType, fragmentKind, layout, matrix, A)))
 
     case cuda.AsMatrix(rows, columns, layers, dataType, fragment) =>
-      con(fragment)(λ(ExpType(fragment.t.dataType, read))(fragment =>
+      con(fragment)(fun(ExpType(fragment.t.dataType, read))(fragment =>
         cudaImp.WmmaStore(rows, columns, layers, dataType, fragment, A)))
 
     case cuda.GenerateFragment(rows, columns, layers, dataType, frag, layout, fill) =>
-      con(fill)(λ(ExpType(dataType, read))(fill =>
+      con(fill)(fun(ExpType(dataType, read))(fill =>
         cudaImp.WmmaFill(rows, columns, layers, dataType, frag, layout, fill, A)))
 
     case map@cuda.Map(level, dim) =>
       val (n, dt1, dt2, f, array) = map.unwrap
-      con(array)(λ(expT(n `.` dt1, read))(x => {
+      con(array)(fun(expT(n `.` dt1, read))(x => {
         val forLoop = comment(s"map${level.toString}") `;`
           shine.cuda.DSL.parFor(level, dim, unroll = false)(n, dt2, A,
-            λ(expT(idx(n), read))(i => λ(accT(dt2))(a =>
+            fun(expT(idx(n), read))(i => fun(accT(dt2))(a =>
               acc(f(x `@` i))(a))))
         //TODO use other InsertMemoryBarrieres-mechanism
         level match {
@@ -378,17 +378,17 @@ object AcceptorTranslation {
         }
       }))
 
-    case cuda.MapFragment(rows, columns, layers, dt, frag, layout, fun, input) =>
-      con(input)(λ(expT(FragmentType(rows, columns, layers, dt, frag, layout), read))(input =>
+    case cuda.MapFragment(rows, columns, layers, dt, frag, layout, f, input) =>
+      con(input)(fun(expT(FragmentType(rows, columns, layers, dt, frag, layout), read))(input =>
         shine.cuda.primitives.imperative.ForFragment(rows, columns, layers, dt, frag, layout, input, A,
-          λ(expT(dt, read))(x =>
-            λ(accT(dt))(o =>
-              acc(fun(x))(o))))))
+          fun(expT(dt, read))(x =>
+            fun(accT(dt))(o =>
+              acc(f(x))(o))))))
 
     case cuda.TensorMatMultAdd(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix) =>
-      con(aMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.AMatrix, layoutA), read))(aMatrix =>
-        con(bMatrix)(λ(ExpType(FragmentType(m, n, k, dataType, Fragment.BMatrix, layoutB), read))(bMatrix =>
-          con(cMatrix)(λ(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
+      con(aMatrix)(fun(ExpType(FragmentType(m, n, k, dataType, Fragment.AMatrix, layoutA), read))(aMatrix =>
+        con(bMatrix)(fun(ExpType(FragmentType(m, n, k, dataType, Fragment.BMatrix, layoutB), read))(bMatrix =>
+          con(cMatrix)(fun(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
     //GAP8
@@ -402,7 +402,7 @@ object AcceptorTranslation {
         case Nil =>
           shine.GAP8.primitives.imperative.KernelCallCmd(name, cores, n)(kc.inTs, kc.outT, kc.args, A)
         case Seq(arg, tail@_*) =>
-          con(arg)(λ(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
+          con(arg)(fun(expT(arg.t.dataType, read))(e => rec(tail, es :+ e)))
       }
 
       rec(kc.args, Seq())

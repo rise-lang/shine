@@ -12,7 +12,10 @@ object monads {
         bind(mx)(x => bind(mxs)(xs => return_(x +: xs)))})
   }
 
-  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]) = new {
+  implicit def monadicSyntax[M[_], A](m: M[A])(implicit tc: Monad[M]): MonadicSyntax[M, A] =
+    new MonadicSyntax[M, A](m, tc)
+
+  class MonadicSyntax[M[_], A](m: M[A], tc: Monad[M]) {
     def map[B](f: A => B): M[B] = tc.bind(m)(a => tc.return_(f(a)) )
     def flatMap[B](f: A => M[B]): M[B] = tc.bind(m)(f)
   }

@@ -210,12 +210,8 @@ object fromRise {
     Lambda(x, f(x))
   }
 
-  object depFun {
-    def apply[T, I](kind: rt.Kind[T, I], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
-    } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
-    }
+  case class depFun[T, I](kind: rt.Kind[T, I], x: I) {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 
   private def primitive(p: r.Primitive,
