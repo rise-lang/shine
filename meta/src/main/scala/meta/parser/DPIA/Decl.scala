@@ -21,10 +21,10 @@ object Decl {
     final case class Type(typeAST: meta.parser.DPIA.Type.AST) extends KindOrType
   }
 
-  def PrimitiveDeclarations[_: P]: P[Seq[AST.PrimitiveDeclaration]] =
+  def PrimitiveDeclarations[$: P]: P[Seq[AST.PrimitiveDeclaration]] =
     P(Start ~ PrimitiveDeclaration.rep(1) ~ End)
 
-  def PrimitiveDeclaration[_: P]: P[AST.PrimitiveDeclaration] = {
+  def PrimitiveDeclaration[$: P]: P[AST.PrimitiveDeclaration] = {
     import scalaparse.Scala.TrailingCommaOps
     def ScalaParams: P[(Int, Int)] = {
       P("{" ~ Index ~

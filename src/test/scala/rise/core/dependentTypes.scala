@@ -195,8 +195,8 @@ class dependentTypes extends test_util.Tests {
             reduceSeq(
               fun(x => fun(y => x + y))
             )(lf32(0.0f))(mapSeq(fun(entry => {
-              val number = entry._1
-              val index = entry._2
+              val number = entry.`1`
+              val index = entry.`2`
               number * (vector `@` index)
             }))(row))
         )

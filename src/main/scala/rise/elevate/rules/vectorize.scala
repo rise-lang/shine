@@ -14,7 +14,7 @@ object vectorize {
   // FIXME: sometimes assuming loads or stores will be aligned
 
   // _ -> asVector >> asScalar
-  @rule def after(n: Nat): Strategy[Rise] = e => e.t match {
+  @rule def after(n: Nat): Strategy[Rise] = e => (e.t: @unchecked) match {
     // FIXME: m + n hack
     case ArrayType(m, _: ScalarType) if (m + n) % n == (0: Nat) =>
       Success(asScalar(asVector(n)(e)) !: e.t)

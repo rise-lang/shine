@@ -570,7 +570,7 @@ object BeamExtract {
 
 object BeamExtractRW {
   sealed trait TypeAnnotation
-  case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, (), rct.Access])
+  case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, Unit, rct.Access])
     extends TypeAnnotation
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation

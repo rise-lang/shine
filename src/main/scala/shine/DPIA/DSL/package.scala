@@ -77,11 +77,14 @@ package object DSL {
 
   //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
-    def :=|(dt: DataType) = new {
+    def :=|(dt: DataType): AssignmentHelper.SyntaxHelper =
+      AssignmentHelper.SyntaxHelper(lhs, dt)
+  }
+  object AssignmentHelper {
+    case class SyntaxHelper(lhs: Phrase[AccType], dt: DataType) {
       def |(rhs: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommType] = {
+           (implicit context: TranslationContext): Phrase[CommType] =
         context.assign(dt, lhs, rhs)
-      }
     }
   }
 
@@ -113,7 +116,7 @@ package object DSL {
 
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 ->: T2]) {
     def o[T3 <: PhraseType](g: Phrase[T3 ->: T1]): Phrase[T3 ->: T2] = {
-      λ(g.t.inT)(arg => f(g(arg)))
+      fun(g.t.inT)(arg => f(g(arg)))
     }
   }
 
@@ -122,13 +125,13 @@ package object DSL {
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
-    def rd: Proj1[ExpType, AccType] = π1(v)
-    def wr: Proj2[ExpType, AccType] = π2(v)
+    def rd: Proj1[ExpType, AccType] = Proj1(v)
+    def wr: Proj2[ExpType, AccType] = Proj2(v)
   }
 
   implicit class PairExtensions[T1 <: PhraseType, T2 <: PhraseType](v: Phrase[T1 x T2]) {
-    def _1: Proj1[T1, T2] = π1(v)
-    def _2: Proj2[T1, T2] = π2(v)
+    def `1`: Proj1[T1, T2] = Proj1(v)
+    def `2`: Proj2[T1, T2] = Proj2(v)
   }
 
   def mapTransientNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {

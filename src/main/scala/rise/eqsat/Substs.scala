@@ -102,7 +102,7 @@ object SubstsVM extends Substs {
   override def get(pv: AddressPatternVar, subst: SubstVM): Address = subst(pv)
 
   // FIXME: avoid cloning all the time ...
-  private def withClone(subst: SubstVM, f: SubstVM => ()): SubstVM = {
+  private def withClone(subst: SubstVM, f: SubstVM => Unit): SubstVM = {
     val c = subst.deepClone()
     f(c)
     c

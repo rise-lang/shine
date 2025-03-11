@@ -154,6 +154,8 @@ object NamedRewrite {
         // note: we set the primitive type to a place holder here,
         // because we do not want type information at the node level
         case p: rc.Primitive => PatternNode(Primitive(p.setType(rct.TypePlaceholder)))
+
+        case _ => ???
       }, if (!isRhs && !matchType) TypePatternAny else makeTPat(expr.t, bound, isRhs))
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
@@ -207,7 +209,7 @@ object NamedRewrite {
         case rcdt.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
         case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
-             _: rcdt.NatToDataApply | _: rcdt.FragmentType =>
+             _: rcdt.NatToDataApply | _: rcdt.FragmentType | rcdt.ManagedBufferType(_) | rcdt.OpaqueType(_) =>
           throw new Exception(s"did not expect $dt")
       }
 

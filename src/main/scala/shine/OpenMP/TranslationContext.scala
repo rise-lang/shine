@@ -1,7 +1,7 @@
 package shine.OpenMP
 
 import shine.C
-import shine.DPIA.DSL.{ExpPhraseExtensions, λ}
+import shine.DPIA.DSL.{ExpPhraseExtensions, fun}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, ExpType}
 import rise.core.types.{DataType, read}

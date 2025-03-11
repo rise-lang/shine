@@ -10,7 +10,7 @@ trait RewriteDirected {
 
 object RewriteDirected {
   sealed trait Match
-  case class MatchNode(mnode: Node[Match, (), (), ()], enode: ENode, id: EClassId) extends Match
+  case class MatchNode(mnode: Node[Match, Unit, Unit, Unit], enode: ENode, id: EClassId) extends Match
   case class MatchClass(id: EClassId) extends Match
 
   // returns whether the right-hand side creates a new alternative,

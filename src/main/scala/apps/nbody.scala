@@ -140,7 +140,7 @@ object nbody {
         fun(tileX`.`(vec(4, f32) x vec(4, f32)))(newP1Chunk =>
           mapLocal(1)(fun(tileX`.`vec(4, f32))(bla =>
             mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
-              update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
+              update(p1.`1`.`1`)(p1.`1`.`2`)(deltaT)(p1.`2`)
             ))(zip(newP1Chunk)(bla)))) o
             // FIXME: there seems to be a bug in AdjustArraySizesForAllocations
             oclReduceSeq(AddressSpace.Private)(
@@ -150,14 +150,14 @@ object nbody {
                   mapLocal(1)(fun(((tileX`.`vec(4, f32)) x (tileX`.`vec(4, f32))) ->: (tileX`.`vec(4, f32)))(accDim2 =>
                     mapLocal(0)(fun(((vec(4, f32) x vec(4, f32)) x vec(4, f32)) ->: vec(4, f32))(p1 =>
                       oclReduceSeq(AddressSpace.Private)(fun(vec(4, f32) ->: vec(4, f32) ->: vec(4, f32))((acc, p2) =>
-                        calcAcc(p1._1._1)(p2)(deltaT)(espSqr)(acc)
-                      ))(p1._2)(accDim2._1)
-                    )) $ zip(newP1Chunk)(accDim2._2)
+                        calcAcc(p1.`1`.`1`)(p2)(deltaT)(espSqr)(acc)
+                      ))(p1.`2`)(accDim2.`1`)
+                    )) $ zip(newP1Chunk)(accDim2.`2`)
                   )) $ zip(p2Local)(acc)
                 )
               )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(lf32(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
-        ) $ zip(toPrivate(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ) $ zip(toPrivate(mapLocal(id)(unzip(p1Chunk).`1`)))(unzip(p1Chunk).`2`)
       )) o split(tileX)
     ) o split(n) $ zip(pos)(vel)
   ))

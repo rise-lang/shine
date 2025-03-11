@@ -145,9 +145,10 @@ object HostManagedBuffers {
   private def insertManagedBuffers(
     managed: mutable.Map[Identifier[_ <: PhraseType], AccessFlags]
   ): Phrase[CommType] => Phrase[CommType] = p => {
-    val managed2 = managed.iterator.flatMap { case (i, a) =>
-      optionallyManaged(i).map(om => i -> (a, om._1))
-    }.toMap
+    val managed2: Map[Identifier[_ <: PhraseType], (AccessFlags, Identifier[_ <: PhraseType])] =
+      managed.iterator.flatMap { case (i, a) =>
+        optionallyManaged(i).map(om => i -> (a, om._1))
+      }.toMap
     VisitAndRebuild(p, InsertManagedBuffersVisitor(managed2))
   }
 

@@ -23,8 +23,8 @@ object convolution {
 
   private val dotElemWeightsSeq = fun((weights, elem) =>
     oclReduceSeqUnroll(AddressSpace.Private)(fun((acc, pair) => {
-      val pixel = pair._1
-      val weight = pair._2
+      val pixel = pair.`1`
+      val weight = pair.`2`
       acc + (pixel * weight)
     }))(lf32(0.0f))(zip(join(elem))(weights)))
 

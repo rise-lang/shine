@@ -76,9 +76,7 @@ object KernelExecutor {
     def getBlockDim(dataLength: Int) : LocalSize
   }
 
-  case class FromKernelModule(ktu: KernelModule,
-                              compilerOptions: List[String]) {
-
+  case class FromKernelModule(ktu: KernelModule, compilerOptions: List[String]) {
     assert(ktu.kernels.size == 1)
 
     val kernel: Kernel = ktu.kernels.head
@@ -109,7 +107,7 @@ object KernelExecutor {
       */
     def as[T, R](localSize: LocalSize, globalSize: GlobalSize)
                 (implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
-      hArgs: T => {
+      (hArgs: T) => {
         val args: List[Any] = hArgs.toList
         assert(kernel.inputParams.length == args.length)
 

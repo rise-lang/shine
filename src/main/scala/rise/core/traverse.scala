@@ -31,6 +31,7 @@ object traverse {
       case f: FragmentKind.IDWrapper => bind(fragmentKind(f.id))(i => typeIdentifier(vt)(FragmentKind.IDWrapper(i.asInstanceOf[FragmentIdentifier])))
       case n2n: NatToNatKind.IDWrapper => bind(natToNat(n2n.id))(i => typeIdentifier(vt)(NatToNatKind.IDWrapper(i.asInstanceOf[NatToNatIdentifier])))
       case n2d: NatToDataKind.IDWrapper => bind(natToData(n2d.id))(i => typeIdentifier(vt)(NatToDataKind.IDWrapper(i.asInstanceOf[NatToDataIdentifier])))
+      case _ => ???
     }).asInstanceOf[M[I]]
     def natDispatch : VarType => Nat => M[Nat] = vt => {
       case i : NatIdentifier => bind(typeIdentifier(vt)(NatKind.IDWrapper(i)))(i => nat(i.id))
@@ -91,6 +92,8 @@ object traverse {
       case NatToDataApply(ntdf, n) =>
         for {ntdf1 <- natToData(ntdf); n1 <- natDispatch(Reference)(n)}
           yield NatToDataApply(ntdf1, n1)
+      case NatToDataApply(_, _) => ???
+      case _ => ???
     }
 
     def natToNat : NatToNat => M[NatToNat] = {

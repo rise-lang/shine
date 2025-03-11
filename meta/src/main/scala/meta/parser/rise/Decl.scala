@@ -13,10 +13,10 @@ object Decl {
                                     typeSignature: Type.AST) extends AST
   }
 
-  def PrimitiveDeclarations[_: P]: P[Seq[AST.PrimitiveDeclaration]] =
+  def PrimitiveDeclarations[$: P]: P[Seq[AST.PrimitiveDeclaration]] =
     P(Start ~ PrimitiveDeclaration.rep(1) ~ End)
 
-  def PrimitiveDeclaration[_: P]: P[AST.PrimitiveDeclaration] = {
+  def PrimitiveDeclaration[$: P]: P[AST.PrimitiveDeclaration] = {
     def ScalaParams: P[(Int, Int)] = {
       import scalaparse.Scala.TrailingCommaOps
       P("(" ~ Index ~

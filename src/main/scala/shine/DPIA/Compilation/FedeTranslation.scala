@@ -54,7 +54,7 @@ object FedeTranslation {
         AsScalarAcc(n, m, dt, C(o))))
 
     case Join(n, m, _, dt, array) =>
-      fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o =>
+      fedAcc(env)(array)(fun(accT(C.t.inT.dataType))(o =>
         JoinAcc(n, m, dt, C(o))))
 
     case Map(n, dt1, dt2, access, f, array) =>
@@ -63,10 +63,10 @@ object FedeTranslation {
       val otype = AccType(dt2)
       val o = Identifier(freshName("fede_o"), otype)
 
-      fedAcc(env)(array)(λ(env.toList.head._2.t)(y =>
+      fedAcc(env)(array)(fun(env.toList.head._2.t)(y =>
         MapAcc(n, dt2, dt1,
           Lambda(o,
-            fedAcc(Predef.Map((x, o)))(f(x))(λ(otype)(x => x))), C(y))))
+            fedAcc(Predef.Map((x, o)))(f(x))(fun(otype)(x => x))), C(y))))
 
     case MapFst(w, dt1, dt2, dt3, f, record) =>
       val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
@@ -95,11 +95,11 @@ object FedeTranslation {
         TakeAcc(n, r, dt, C(o))))
 
     case Reorder(n, dt, _, _, idxFinv, input) =>
-      fedAcc(env)(input)(λ(accT(C.t.inT.dataType))(o =>
+      fedAcc(env)(input)(fun(accT(C.t.inT.dataType))(o =>
         ReorderAcc(n, dt, idxFinv, C(o))))
 
     case Split(n, m, _, dt, array) =>
-      fedAcc(env)(array)(λ(accT(C.t.inT.dataType))(o =>
+      fedAcc(env)(array)(fun(accT(C.t.inT.dataType))(o =>
         SplitAcc(n, m, dt, C(o))))
 
     case Transpose(n, m, dt, _, array) =>

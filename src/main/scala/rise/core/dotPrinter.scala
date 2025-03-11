@@ -96,55 +96,59 @@ case object dotPrinter {
       }
 
       expr match {
-        case Lambda(i, e) if !inlineLambdaIdentifier =>
-          binaryNode("λ", (i, "id"), (e, "body"))
+        case Lambda(i, e) =>
+          if (!inlineLambdaIdentifier) {
+            binaryNode("λ", (i, "id"), (e, "body"))
+          } else {
+            val expr = getID(e)
+            s"""$parent ${attr(fillWhite + Label(s"λ.${i.name}").toString)}
+              |$parent -> $expr ${edgeLabel("body")};
+              |${recurse(e, expr)}""".stripMargin
+          }
 
-        case Lambda(i, e) if inlineLambdaIdentifier =>
-          val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label(s"λ.${i.name}").toString)}
-             |$parent -> $expr ${edgeLabel("body")};
-             |${recurse(e, expr)}""".stripMargin
-
-        case App(f, e) if applyNodes =>
-          binaryNode("apply", (f, "fun"), (e, "arg"))
-
-        case App(f, e) if !applyNodes =>
+        case App(f, e) =>
+          if (applyNodes) {
+            binaryNode("apply", (f, "fun"), (e, "arg"))
+          } else {
           val eID = getID(e)
-          s"""${recurse(f, parent)}
-            |${recurse(e, eID)}
-            |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
+            s"""${recurse(f, parent)}
+              |${recurse(e, eID)}
+              |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
+          }
 
-        case DepLambda(kind, x, e) if !inlineLambdaIdentifier =>
-          val id = getID(x)
-          val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label("Λ").bold.toString)}
-            |$parent -> $id ${edgeLabel("id")};
-            |$parent -> $expr ${edgeLabel("body")};
-            |$id ${attr(fillWhite + Label(Kind.idName(kind, x)).orange.toString)}
-            |${recurse(e, expr)}""".stripMargin
+        case DepLambda(kind, x, e) =>
+          if (!inlineLambdaIdentifier) {
+            val id = getID(x)
+            val expr = getID(e)
+            s"""$parent ${attr(fillWhite + Label("Λ").bold.toString)}
+              |$parent -> $id ${edgeLabel("id")};
+              |$parent -> $expr ${edgeLabel("body")};
+              |$id ${attr(fillWhite + Label(Kind.idName(kind, x)).orange.toString)}
+              |${recurse(e, expr)}""".stripMargin
+          } else {
+            val expr = getID(e)
+            s"""$parent ${attr(fillWhite + Label(s"Λ.${Kind.idName(kind, x)}").toString)}
+              |$parent -> $expr ${edgeLabel("body")};
+              |${recurse(e, expr)}""".stripMargin
+          }
 
-        case DepLambda(kind, x, e) if inlineLambdaIdentifier =>
-          val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label(s"Λ.${Kind.idName(kind, x)}").toString)}
-            |$parent -> $expr ${edgeLabel("body")};
-            |${recurse(e, expr)}""".stripMargin
-
-        case DepApp(_, f, e) if applyNodes =>
-          val fun = getID(f)
-          val arg = getID(e)
-          s"""
-            |$parent ${attr(fillWhite + Label("depApply").toString)}
-            |$parent -> $fun ${edgeLabel("fun")};
-            |$parent -> $arg ${edgeLabel("arg")};
-            |$arg ${attr(fillWhite + Label(e.toString).toString)}
-            |${recurse(f, fun)}""".stripMargin
-
-        case DepApp(_, f, e) if !applyNodes =>
-          val eID = getID(e)
-          s"""
-            |${recurse(f, parent)}
-            |$eID ${attr(fillWhite + Label(e.toString).toString)}
-            |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
+        case DepApp(_, f, e) =>
+          if (applyNodes) {
+            val fun = getID(f)
+            val arg = getID(e)
+            s"""
+              |$parent ${attr(fillWhite + Label("depApply").toString)}
+              |$parent -> $fun ${edgeLabel("fun")};
+              |$parent -> $arg ${edgeLabel("arg")};
+              |$arg ${attr(fillWhite + Label(e.toString).toString)}
+              |${recurse(f, fun)}""".stripMargin
+          } else {
+            val eID = getID(e)
+            s"""
+              |${recurse(f, parent)}
+              |$eID ${attr(fillWhite + Label(e.toString).toString)}
+              |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
+          }
 
         case Literal(data) =>
           s"$parent ${attr(fillWhite + Label(data.toString).orange.italic)}"
@@ -163,6 +167,8 @@ case object dotPrinter {
           case _ =>
             s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"
         }
+
+        case Opaque(_, _) | TypeAnnotation(_, _) | TypeAssertion(_, _) => ???
       }
     }
 

@@ -35,7 +35,7 @@ object mriQ {
   val computePhiMagHighLevel: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
-    map(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
+    map(fun(t => phiMag(t.`1`)(t.`2`)))(zip(phiR)(phiI))
   ))
 
   val computePhiMagOclKnownSizes = util.gen.opencl.PhraseDepLocalAndGlobalSize(phrase => {
@@ -50,7 +50,7 @@ object mriQ {
   val computePhiMagOcl: Expr = depFun((k: Nat) => fun(
     (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
-    mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
+    mapGlobal(fun(t => phiMag(t.`1`)(t.`2`)))(zip(phiR)(phiI))
   ))
 
   // FIXME: could not find original Lift expression, this is made up
@@ -60,8 +60,8 @@ object mriQ {
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
       map(fun(t =>
           kvalues |> reduceSeq(fun((acc, p) =>
-            qFun(t._1)(t._2._1)(t._2._2._1)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-          ))(makePair(t._2._2._2._1)(t._2._2._2._2))
+            qFun(t.`1`)(t.`2`.`1`)(t.`2`.`2`.`1`)(p.`1`.`1`.`1`)(p.`1`.`1`.`2`)(p.`1`.`2`)(p.`2`)(acc)
+          ))(makePair(t.`2`.`2`.`2`.`1`)(t.`2`.`2`.`2`.`2`))
       ))
   ))
 
@@ -79,15 +79,15 @@ object mriQ {
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
     mapGlobal(fun(t =>
-      let (toPrivate(t._1))
+      let (toPrivate(t.`1`))
       be (sX =>
-        let (toPrivate(t._2._1))
+        let (toPrivate(t.`2`.`1`))
         be (sY =>
-          let (toPrivate(t._2._2._1))
+          let (toPrivate(t.`2`.`2`.`1`))
           be (sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
-              qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-            ))(makePair(t._2._2._2._1)(t._2._2._2._2))
+              qFun(sX)(sY)(sZ)(p.`1`.`1`.`1`)(p.`1`.`1`.`2`)(p.`1`.`2`)(p.`2`)(acc)
+            ))(makePair(t.`2`.`2`.`2`.`1`)(t.`2`.`2`.`2`.`2`))
           )
         )
       )
