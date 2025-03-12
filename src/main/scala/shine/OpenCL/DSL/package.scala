@@ -42,7 +42,7 @@ package object DSL {
   private def parForBodyFunction(n:Nat, ft:NatToData,
                                  f:NatIdentifier => Phrase[AccType] => Phrase[CommType]
                                 ): DepLambda[Nat, NatIdentifier, AccType ->: CommType] = {
-    nFun(idx => λ(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1))
+    nFun(idx => fun(accT(ft(idx)))(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 
   def parForNatGlobal(dim:Int)(n:Nat, ft:NatToData, out:Phrase[AccType],
@@ -60,7 +60,7 @@ package object DSL {
   object `new` {
     def apply(addrSpace: AddressSpace)
              (dt: DataType, f: Phrase[VarType] => Phrase[CommType]): New =
-      New(addrSpace, dt, λ(varT(dt))(v => f(v) ))
+      New(addrSpace, dt, fun(varT(dt))(v => f(v) ))
   }
 
   object newDoubleBuffer {
@@ -72,10 +72,10 @@ package object DSL {
               out: Phrase[AccType],
               f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]): NewDoubleBuffer =
       NewDoubleBuffer(a, dt1, dt2, dt3.elemType, dt3.size, in, out,
-        λ(varT(dt1) x CommType() x CommType())(ps => {
-          val    v: Phrase[VarType]  = ps._1._1
-          val swap: Phrase[CommType] = ps._1._2
-          val done: Phrase[CommType] = ps._2
+        fun(varT(dt1) x CommType() x CommType())(ps => {
+          val    v: Phrase[VarType]  = ps.`1`.`1`
+          val swap: Phrase[CommType] = ps.`1`.`2`
+          val done: Phrase[CommType] = ps.`2`
           f(v, swap, done)
         }))
   }

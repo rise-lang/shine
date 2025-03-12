@@ -187,7 +187,7 @@ object Type {
 
   object ->: {
     def unapply[T <: ExprType, U <: ExprType](funType: FunType[T, U]): Option[(T, U)] = {
-      FunType.unapply(funType)
+      Some((funType.inT, funType.outT))
     }
   }
 

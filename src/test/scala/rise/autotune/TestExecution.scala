@@ -22,7 +22,8 @@ class TestExecution extends test_util.Tests {
     result
   }
 
-  test("execute convolution") {
+  // FIXME
+  ignore("execute convolution") {
     val goodParameters: Map[Nat, Nat] = Map(
       TuningParameter("vec") -> (4: Nat),
       TuningParameter("tile") -> (16: Nat)

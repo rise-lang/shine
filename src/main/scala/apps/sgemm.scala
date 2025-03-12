@@ -16,11 +16,11 @@ import scala.collection.parallel.CollectionConverters._
 
 object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult: ToBeTyped[Expr] = impl{ dt: DataType => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt) }
+  val mult: ToBeTyped[Expr] = impl{ dt: DataType => fun(x => x.`1` * x.`2`) :: ((dt x dt) ->: dt) }
   val add: ToBeTyped[Expr] = fun(x => fun(y => x + y))
   val scal: ToBeTyped[Expr] = impl{ n: Nat =>
     fun(xs => fun(a => mapSeq(fun(x => a * x))(xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)) }
-  val dot: ToBeTyped[Expr] = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x._1, x._2))
+  val dot: ToBeTyped[Expr] = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x.`1`, x.`2`))
   def id: ToBeTyped[Expr] = fun(x => x)
 
   object c {
@@ -30,10 +30,10 @@ object sgemm {
         ((a, b, c, alpha, beta) =>
 
           zip(a)(c) |> mapSeq(fun(ac =>
-            zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
-              zip(ac._1)(bc._1) |>
-                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
-                fun(x => (x * alpha) + (beta * bc._2))
+            zip(transpose(b))(ac.`2`) |> mapSeq(fun(bc =>
+              zip(ac.`1`)(bc.`1`) |>
+                reduceSeq(fun( (acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f)) |>
+                fun(x => (x * alpha) + (beta * bc.`2`))
             ))
           ))
         )
@@ -46,10 +46,10 @@ object sgemm {
       ((a, b, c, alpha, beta) =>
 
         zip(a)(c) |> mapSeq(fun(ac =>
-          zip(transpose(b))(ac._2) |> mapSeq(fun(bc =>
-            zip(ac._1)(bc._1) |>
-              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)))(lf32(0.0f)) |>
-              fun(x => (x * alpha) + (beta * bc._2))
+          zip(transpose(b))(ac.`2`) |> mapSeq(fun(bc =>
+            zip(ac.`1`)(bc.`1`) |>
+              oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f)) |>
+              fun(x => (x * alpha) + (beta * bc.`2`))
           ))
         ))
       )
@@ -75,24 +75,24 @@ object sgemm {
 
         zip(split(p2)(A))(split(p2)(C)) |>
           mapGlobal(0)(fun(ac =>
-            zip(split(p2)(B))(split(p1)(transpose(ac._2))) |>
+            zip(split(p2)(B))(split(p1)(transpose(ac.`2`))) |>
               mapGlobal(1)(fun(bc =>
-                zip(split(p3)(transpose(ac._1)))(split(p3)(transpose(bc._1))) |>
+                zip(split(p3)(transpose(ac.`1`)))(split(p3)(transpose(bc.`1`))) |>
                   oclReduceSeq(AddressSpace.Private)(fun((p67, p236) =>
-                    zip(p67)(transpose(p236._1)) |>
+                    zip(p67)(transpose(p236.`1`)) |>
                       mapSeq(fun(p54 =>
-                        zip(p54._1)(transpose(p236._2)) |>
+                        zip(p54.`1`)(transpose(p236.`2`)) |>
                           mapSeq(fun(p157 =>
-                            zip(asVectorAligned(vw)(p54._2))(asVectorAligned(vw)(p157._2)) |>
-                              mapSeq(fun(x => p157._1 + dot(x)))
+                            zip(asVectorAligned(vw)(p54.`2`))(asVectorAligned(vw)(p157.`2`)) |>
+                              mapSeq(fun(x => p157.`1` + dot(x)))
                           )) |> join
                       ))
                   ), write_zeros) |>
                   fun(p235 =>
-                    zip(p235)(transpose(bc._2)) |>
+                    zip(p235)(transpose(bc.`2`)) |>
                       mapSeq(fun(p237 =>
-                        zip(p237._1)(p237._2) |>
-                          mapSeq(fun(p64 => (p64._1 * alpha) + (p64._2 * beta)))
+                        zip(p237.`1`)(p237.`2`) |>
+                          mapSeq(fun(p64 => (p64.`1` * alpha) + (p64.`2` * beta)))
                       ))
                   ) |> transpose
               )) |> join |> transpose
@@ -122,23 +122,23 @@ object sgemm {
 
     def redOp: ToBeTyped[Expr] = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
       let(p15 |> fun(p29 =>
-          zip (p29._1) (p29._2)
-            |> toLocalFun(mapLocal(1) (fun(p31 => makePair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
+          zip (p29.`1`) (p29.`2`)
+            |> toLocalFun(mapLocal(1) (fun(p31 => makePair (mapLocal(0) (id) (p31.`1`)) (mapLocal(0) (id) (p31.`2`)) )))
             |> unzip
         ))
       be (p16 =>
-        zip (p14) (split (v5) (transpose (p16._1)))
+        zip (p14) (split (v5) (transpose (p16.`1`)))
           |> mapLocal(1) (fun(p17 =>
-          zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
+          zip (p17.`1`) (split (v4) (reorderWithStride (v3/v4) (transpose (p16.`2`))))
             |> mapLocal(0) (fun(p18 =>
-            zip (transpose (p17._2)) (transpose (p18._2))
+            zip (transpose (p17.`2`)) (transpose (p18.`2`))
               |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                let (makePair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                let (makePair (toPrivate(mapSeq (id) (p21.`1`))) (toPrivate(mapSeq (id) (p21.`2`))))
                 be (fun(p22 =>
-                    zip (p20) (p22._1) |> mapSeq (fun(p23 =>
-                      zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))
-              )) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
+                    zip (p20) (p22.`1`) |> mapSeq (fun(p23 =>
+                      zip (p23.`1`) (p22.`2`) |> mapSeq (fun(p24 =>
+                        p24.`1` + (p23.`2` * p24.`2`) )) )) ))
+              )) (p18.`1` |> mapSeq (mapSeq (fun(x => x))) )
               |> mapSeq (mapSeq (fun(x => x)))
           ))
         ))
@@ -154,22 +154,22 @@ object sgemm {
         |> mapWorkGroup(1)(
           //BEGIN mapWorkGroup(1) Function
           fun(p2 =>
-          zip (tile2 (v7) (v3) (B)) (p2._2)
+          zip (tile2 (v7) (v3) (B)) (p2.`2`)
           |> mapWorkGroup(0)(
             //BEGIN mapWorkGroup(0) Function
             fun(p3 =>
-            zip (p2._1) (p3._1)
+            zip (p2.`1`) (p3.`1`)
             |> oclReduceSeq (AddressSpace.Private) (redOp)
               (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5)
                 |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
             //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
             |> fun(x =>
-              zip (x) (split (v5) (p3._2))
+              zip (x) (split (v5) (p3.`2`))
                 |> mapLocal(1) (fun(y =>
-                zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(0) (fun(z =>
-                  zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
-                    zip (a._1) (a._2) |> mapSeq (fun(x =>
-                      (x._1 * alpha) + (x._2 * beta) )))))))))
+                zip (y.`1`) (split (v4) (reorderWithStride (v3/v4) (transpose (y.`2`)))) |> mapLocal(0) (fun(z =>
+                  zip (z.`1`) (transpose (z.`2`)) |> mapSeq (fun(a =>
+                    zip (a.`1`) (a.`2`) |> mapSeq (fun(x =>
+                      (x.`1` * alpha) + (x.`2` * beta) )))))))))
             |> map (fun(p4 => p4
               |> map (transpose)
               |> join

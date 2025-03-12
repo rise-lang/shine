@@ -504,8 +504,10 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
           yield ExprWithHashCons(Lambda(ev),  eg.add(FunType(xtv, ev.t)))
       case NatApp(_, _) => None
       case DataApp(_, _) => None
+      case AddrApp(_, _) => None
       case NatLambda(_) => None
       case DataLambda(_) => None
+      case AddrLambda(_) => None
       case Literal(_) =>
         for { tv <- vecDT(expr.t, n, eg) }
           yield ExprWithHashCons(App(

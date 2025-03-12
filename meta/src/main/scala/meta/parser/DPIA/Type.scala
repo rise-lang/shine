@@ -29,7 +29,7 @@ object Type {
     }
   }
 
-  def PhraseType[_: P]: P[AST] = {
+  def PhraseType[$: P]: P[AST] = {
     def DataType: P[rise.Type.AST] = rise.Type.DataType.DataType
 
     def AccessType: P[Access.AST] = P(

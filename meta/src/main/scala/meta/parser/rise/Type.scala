@@ -53,7 +53,7 @@ object Type {
     }
   }
 
-  def TypeSignature[_: P]: P[AST] = {
+  def TypeSignature[$: P]: P[AST] = {
     def DepFunType: P[AST.DepFunType] =
       P("(" ~ IdentifierKindPair ~ ")" ~ "->" ~/ TypeSignature).map(AST.DepFunType.tupled)
 
@@ -79,31 +79,31 @@ object Type {
     P(DepFunType | VariadicDepFunType | ImplicitDepFunType | FunType | VariadicFunType | LeftTypeSignature)
   }
 
-  def TypeIdentifier[_: P]: P[AST.Identifier] = P(Identifier).map(AST.Identifier)
+  def TypeIdentifier[$: P]: P[AST.Identifier] = P(Identifier).map(AST.Identifier)
 
-  def IdentifierKindPair[_: P]: P[(AST.Identifier, Kind.AST)] =
+  def IdentifierKindPair[$: P]: P[(AST.Identifier, Kind.AST)] =
     P(Identifier.map(AST.Identifier) ~ ":" ~ Kind.Kind)
 
-  def UnrolledTypeIdentifier[_: P]: P[AST.UnrolledIdentifier] =
+  def UnrolledTypeIdentifier[$: P]: P[AST.UnrolledIdentifier] =
     P("*" ~ Identifier).map(AST.UnrolledIdentifier)
 
   object DataType {
-    def ScalarType[_: P]: P[AST.ScalarType] =
+    def ScalarType[$: P]: P[AST.ScalarType] =
       P("bool".! | "int".! |
         "i8".! | "i16".! | "i32".! | "i64".! |
         "u8".! | "u16".! | "u32".! | "u64".! |
         "f16".! | "f32".! | "f64".!).map(AST.ScalarType)
 
-    def NatType[_: P]: P[AST.NatType.type] = P("natType").map(_ => AST.NatType)
+    def NatType[$: P]: P[AST.NatType.type] = P("natType").map(_ => AST.NatType)
 
-    def OpaqueType[_: P]: P[AST.OpaqueType] = P( "\"" ~~ Identifier ~~ "\"" ).map(AST.OpaqueType)
+    def OpaqueType[$: P]: P[AST.OpaqueType] = P( "\"" ~~ Identifier ~~ "\"" ).map(AST.OpaqueType)
 
-    def IndexType[_: P]: P[AST.IndexType] = P("idx[" ~ Nat.Nat ~ "]").map(AST.IndexType)
+    def IndexType[$: P]: P[AST.IndexType] = P("idx[" ~ Nat.Nat ~ "]").map(AST.IndexType)
 
-    def VectorType[_: P]: P[AST.VectorType] =
+    def VectorType[$: P]: P[AST.VectorType] =
       P("vec[" ~ DataType ~ "," ~ Nat.Nat ~ "]").map(t => AST.VectorType(t._2, t._1))
 
-    def FragmentType[_: P]: P[AST.FragmentType] = {
+    def FragmentType[$: P]: P[AST.FragmentType] = {
       def FragmentKind: P[Fragment.AST] =
         P(("fragment." ~~ (
           "ACC".!.map(_ => Fragment.AST.ACC) |
@@ -122,34 +122,34 @@ object Type {
         "," ~ MatrixLayoutKind ~ "]").map(AST.FragmentType.tupled)
     }
 
-    def ManagedBufferType[_: P]: P[AST.ManagedBufferType] =
+    def ManagedBufferType[$: P]: P[AST.ManagedBufferType] =
       P("managed[" ~ DataType ~ "]").map(AST.ManagedBufferType)
 
-    def DepArrayType[_: P]: P[AST.DepArrayType] =
+    def DepArrayType[$: P]: P[AST.DepArrayType] =
       P(Nat.Nat ~ ".." ~/ NatToData).map(AST.DepArrayType.tupled)
 
-    def ArrayType[_: P]: P[AST.ArrayType] =
+    def ArrayType[$: P]: P[AST.ArrayType] =
       P(Nat.Nat ~ "." ~~ !"." ~/ DataType).map(AST.ArrayType.tupled)
 
-    def DepPairType[_: P]: P[AST.DepPairType] =
+    def DepPairType[$: P]: P[AST.DepPairType] =
       P("(" ~ IdentifierKindPair ~ "**" ~/ DataType ~ ")").map(AST.DepPairType.tupled)
 
-    def NatToDataApply[_: P]: P[AST.NatToDataApply] =
+    def NatToDataApply[$: P]: P[AST.NatToDataApply] =
       P(NatToData ~ "(" ~ Nat.Nat ~ ")").map(AST.NatToDataApply.tupled)
 
-    def PairType[_: P]: P[AST.PairType] =
+    def PairType[$: P]: P[AST.PairType] =
       P("(" ~ NoCut(DataType) ~ "," ~/ DataType ~ ")").map(AST.PairType.tupled)
 
-    def DataType[_: P]: P[AST] =
+    def DataType[$: P]: P[AST] =
       P(ScalarType | NatType | OpaqueType | IndexType | VectorType | FragmentType |
         ManagedBufferType | DepArrayType | ArrayType | DepPairType | NatToDataApply |
         PairType | UnrolledTypeIdentifier | TypeIdentifier | ("(" ~ DataType ~ ")"))
 
-    def TypeName[_: P]: P[Unit] =
+    def TypeName[$: P]: P[Unit] =
       P(ScalarType | NatType | "idx" | "vec" | "fragment" | "matrixLayout")
   }
 
-  def NatToData[_: P]: P[AST] = {
+  def NatToData[$: P]: P[AST] = {
     def NatToDataLambda: P[AST.NatToDataLambda] =
       P("(" ~ IdentifierKindPair.filter(_._2 == Kind.AST.Nat).map(_._1) ~
         "|->" ~/ DataType.DataType ~ ")").map(AST.NatToDataLambda.tupled)

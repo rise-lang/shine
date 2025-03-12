@@ -87,12 +87,8 @@ object fromRise {
     Lambda(x, f(x))
   }
 
-  object depFun {
-    def apply[T, I](kind: rt.Kind[T, I], x: I): Object {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U]
-    } = new {
-      def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
-    }
+  case class depFun[T, I](kind: rt.Kind[T, I], x: I) {
+    def apply[U <: PhraseType](body: Phrase[U]): DepLambda[T, I, U] = DepLambda(kind, x, body)
   }
 
   private def primitive(p: r.Primitive,
@@ -352,12 +348,12 @@ object fromRise {
 
       case core.depTile() => fromType {
         case nFunT(tile,
-          ((fa: ExpType) ->: (fb: ExpType)) ->:
+          ((fa/*: ExpType*/) ->: (fb/*: ExpType*/)) ->:
           (inT @ expT(ArrayType(m, s), `read`)) ->:
           expT(ArrayType(n, t), `write`))
         =>
           depFun(NatKind, tile)(
-            fun[ExpType ->: ExpType](fa ->: fb, f =>
+            fun[ExpType ->: ExpType](fa.asInstanceOf[ExpType] ->: fb.asInstanceOf[ExpType], f =>
               fun[ExpType](inT, e =>
                 DepTile(n, tile, m-n, s, t, f, e))))
       }

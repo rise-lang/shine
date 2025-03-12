@@ -110,6 +110,7 @@ object AdaptKernelParameters {
               identifierAsSingletonArray(i.asInstanceOf[Identifier[ExpType]]) `@` zero
             case _: AccType =>
               identifierAsSingletonArray(i.asInstanceOf[Identifier[AccType]]) `@` zero
+            case _ => ???
           }).asInstanceOf[Phrase[T]])
 
         case f: OpenCLFunctionCall => Continue(p, this)
@@ -132,6 +133,7 @@ object AdaptKernelParameters {
         ip.copy(`type` = PhrasePairType(
           ExpType(ArrayType(1, ip.`type`.t1.dataType), read),
           AccType(ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
+      case _ => ???
     }
   }
 

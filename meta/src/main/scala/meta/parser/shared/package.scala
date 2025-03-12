@@ -4,7 +4,7 @@ import fastparse.ScalaWhitespace._
 import fastparse._
 
 package object shared {
-  def Identifier[_: P]: P[String] = {
+  def Identifier[$: P]: P[String] = {
     def Keywords: P[Unit] =
       P(( "def" |
           (rise.Kind.Kind: P[Unit]) | rise.Type.DataType.TypeName |

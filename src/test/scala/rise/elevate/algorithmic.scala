@@ -100,7 +100,7 @@ class algorithmic extends test_util.Tests {
           a |> map(fun(ak =>
             transpose(b) |> map(fun(bk =>
               zip(ak)(bk) |>
-                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(
+                reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(
                   lf32(0.0f)))))))))))
 
     def goldMKN(reduceFun: ToBeTyped[Rise]): ToBeTyped[Rise] = {
@@ -278,7 +278,7 @@ class algorithmic extends test_util.Tests {
         fun(ArrayType(K, ArrayType(N, f32)))(b =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f))) $
                 zip(ak)(bk))) $ transpose(b) )) $ a)))))).get
 
     val tile = body(body(body(body(body(tileND(2)(32)))))) `;` DFNF
@@ -308,7 +308,7 @@ class algorithmic extends test_util.Tests {
         ((a, b) =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)))(lf32(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y.`1` * y.`2`)))(lf32(0.0f))) $
                 zip(ak)(bk))) $ transpose(b) )) $ a
         )
       )

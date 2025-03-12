@@ -16,8 +16,8 @@ class TranslationContext() extends shine.OpenCL.Compilation.TranslationContext {
     dt match {
       case FragmentType(rows, columns, layers, dt, frag, layout) =>
         ForFragment(rows, columns, layers, dt, frag, layout, rhs, lhs,
-          λ(expT(dt, read))(x =>
-            λ(accT(dt))(o =>
+          fun(expT(dt, read))(x =>
+            fun(accT(dt))(o =>
               Assign(dt, o, x))))
 
       case _ =>

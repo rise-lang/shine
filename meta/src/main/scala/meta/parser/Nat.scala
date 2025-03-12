@@ -15,7 +15,7 @@ object Nat {
     case class Sum(id: Identifier, from: AST, upTo: AST, body: AST) extends AST
   }
 
-  def Nat[_: P]: P[AST] = {
+  def Nat[$: P]: P[AST] = {
     def CompOrNat: P[AST] = {
       def CompOp: P[String] = P("<".! | ">".!)
       P(AddSubOrNat ~ (CompOp ~/ AddSubOrNat).rep).map(asBinaryOpOrNat)

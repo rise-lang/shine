@@ -104,6 +104,8 @@ object equality {
         case DepPairType(ka, xa, ta) => and { case DepPairType(kb, xb, tb) =>
           ka == kb && equivType(env.add(Kind.toIdentifier(ka, xa), Kind.toIdentifier(kb, xb)))(ta)(tb)
         }
+
+        case ManagedBufferType(_) | /* NatToDataApply(_, _)*/ _ | OpaqueType(_) => ???
       }
     }
 
@@ -135,6 +137,7 @@ object equality {
       case DepArrayType(size, fdt) => 73 * hash[Nat](size) + 79 * hash[NatToData](fdt)
       case FragmentType(r, c, d, dt, fk, ml) => 83 * hash[Nat](r) + 89 * hash[Nat](c) + 97 * hash[Nat](d) +
         101 * hashType(dt) + 103*fk.hashCode()
+      case _ => ???
     }
   }
 
