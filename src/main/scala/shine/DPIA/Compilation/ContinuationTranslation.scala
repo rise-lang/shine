@@ -4,6 +4,7 @@ import rise.core.types.{AddressSpace, DataType, NatKind, read, write}
 import rise.core.types.DataType._
 import rise.core.DSL.Type._
 import rise.core.substitute.{natInType => substituteNatInType}
+import rise.core.types.AddressSpace.Private
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL.{comment, _}
 import shine.DPIA.Phrases._
@@ -12,11 +13,14 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
+import shine.GAP8.{L1, L1toL2, L2, L2toL1}
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenMP.primitives.{functional => omp}
 import shine.OpenCL.primitives.{functional => ocl}
 import shine.cuda.primitives.{functional => cuda}
 import shine.cuda.primitives.{imperative => cudaIm}
+import shine.GAP8.primitives.{functional => gap8}
+import shine.GAP8.primitives.{imperative => gap8Imp}
 
 object ContinuationTranslation {
   def con(E: Phrase[ExpType])
@@ -401,9 +405,21 @@ object ContinuationTranslation {
 
     case ocl.ToMem(addrSpace, dt, input) =>
       val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
-
       shine.OpenCL.DSL.`new` (addrSpace) (adj.dt, tmp =>
         acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
+
+    case gap8.AllocL1(dt, input) =>
+      shine.GAP8.DSL.GAP8MemoryAlloc(L1)(dt, tmp => {
+        acc(input)(tmp.wr) `;` C(tmp.rd)
+      })
+
+    case gap8.AllocL2(dt, input) =>
+      shine.GAP8.DSL.GAP8MemoryAlloc(L2)(dt, tmp => {
+        acc(input)(tmp.wr) `;` C(tmp.rd)
+      })
+
+    case gap8.Cast(dt1, dt2, input) =>
+      con(input)(λ(expT(dt1, read))(inputT => C(gap8.Cast(dt1, dt2, inputT))))
 
     // CUDA
     case cuda.GlobalToShared(dt, inputGlobal) =>

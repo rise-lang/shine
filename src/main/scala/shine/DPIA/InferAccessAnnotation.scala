@@ -8,6 +8,7 @@ import rise.core.DSL.Type.{->:, ArrayTypeConstructors, TupleTypeConstructors, `(
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
 import rise.Cuda.{primitives => rocup}
+import rise.GAP8.{primitives => rg8p}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -596,9 +597,77 @@ private class InferAccessAnnotation {
           (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
       }
 
-      case rise.GAP8.primitives.gap8RunPrimitive() => p.t match {
+      case rg8p.gap8RunPrimitive() => p.t match {
         case cores `(Nat)->:` ((t: rt.DataType) ->: (_: rt.DataType)) =>
           nFunT(cores, expT(t, write) ->: expT(t, write))
+        case _ => error()
+      }
+
+      case rg8p.gap8hwConv3x3() => p.t match {
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(3, ArrayType(3, dt)), read) ->:
+            expT(ArrayType(h - 2, ArrayType(w - 2, dt)), write)
+          )
+      }
+
+      case rg8p.gap8hwConv5x5() => p.t match {
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(5, ArrayType(5, dt)), read) ->:
+            expT(ArrayType(h - 4, ArrayType(w - 4, dt)), write)
+          )
+      }
+
+      case rg8p.gap8hwConv7x7() => p.t match {
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(7, ArrayType(7, dt)), read) ->:
+            expT(ArrayType(h - 6, ArrayType(w - 6, dt)), write)
+          )
+      }
+
+      case rg8p.gap8hwConv7x4() => p.t match {
+        case bias `(Nat)->:` (ArrayType(h, ArrayType(w, dt: DataType)) ->:
+          ArrayType(_, ArrayType(_, _)) ->: ArrayType(_, ArrayType(_, _))) =>
+          nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), read)
+            ->: expT(ArrayType(4, ArrayType(7, dt)), read) ->:
+            expT(ArrayType(h - 3, ArrayType(w - 6, dt)), write)
+          )
+      }
+
+      case rg8p.copyToL1() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, read) ->: expT(dt, write)
+        case _ => error()
+      }
+
+      case rg8p.copyToL2() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, read) ->: expT(dt, write)
+        case _ => error()
+      }
+
+      // case n `(Nat)->:` ((dt1: DataType) ->: (dt2: DataType)) =>
+      // nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
+      case rg8p.copy2DOffsetToL1() => p.t match {
+        case offsetH `(Nat)->:` (offsetW `(Nat)->:` ((ArrayType(h, ArrayType(w, dt: DataType))) ->: (_: DataType))) =>
+          nFunT(offsetH, nFunT(offsetW, expT(h`.`w`.`dt, read) ->: expT((h + 2 * offsetH)`.`(w + 2 * offsetW)`.`dt, write)))
+        case _ => error()
+      }
+
+      case rg8p.allocL1() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, write) ->: expT(dt, read)
+        case _ => error()
+      }
+
+      case rg8p.allocL2() => p.t match {
+        case (dt: DataType) ->: (_: DataType) =>
+          expT(dt, write) ->: expT(dt, read)
         case _ => error()
       }
     }

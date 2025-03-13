@@ -3,6 +3,7 @@ package util
 import rise.elevate.rules.traversal.default
 import shine.C.Compilation.{CodeGenerator => CCodeGenerator, ModuleGenerator => CModuleGenerator}
 import shine.DPIA.Compilation.FunDef
+import shine.GAP8.Compilation.AcceleratorCodeGenerator
 import shine.OpenCL.Compilation._
 import shine.OpenCL._
 import shine.{C, DPIA, Pipe}
@@ -105,14 +106,16 @@ object gen {
 
     case class function(name: String = "foo") {
       def fromExpr: Expr => GAP8.Module =
-        functionFromExpr(name, OpenMP.CodeGenerator()) andThen
+        functionFromExpr(name, AcceleratorCodeGenerator()) andThen
           GAP8.Module.fromCModule
 
       def asStringFromExpr: Expr => String =
-        functionAsStringFromExpr(name, OpenMP.CodeGenerator())
+        functionAsStringFromExpr(name, AcceleratorCodeGenerator())
 
       /**
         * Accelerator function only - Injects unpacking code
+        *
+        * TODO: Introduce appropriate syntax checking for GAP8 application code (not only for accelerator function)
         * */
       private def functionAsStringFromExpr(name: String = "foo",
                                            gen: CCodeGenerator = CCodeGenerator()
@@ -120,7 +123,7 @@ object gen {
         functionFromExpr(name, gen) andThen
           GAP8.Module.injectUnpacking andThen
           C.Module.translateToString andThen
-          run(SyntaxChecker(_))
+          run(SyntaxChecker.checkGAP8(_))
     }
 
     type HostedModule = GAP8.Module
@@ -133,15 +136,14 @@ object gen {
 
     case class hosted(name: String = "foo"){
 
-      def funDefToCModule(): FunDef => C.Module =
-        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.C.Compilation.CodeGenerator())
-
+      def funDefToAcceleratorModule(): FunDef => C.Module =
+        shine.C.Compilation.ModuleGenerator.funDefToModule(shine.GAP8.Compilation.AcceleratorCodeGenerator())
 
       def fromExpr: Expr => HostedModule = exprToPhrase andThen fromPhrase
 
       def fromPhrase: Phrase => HostedModule =
         partialHostCompiler(name) composeWith
-          ((((x: FunDef) => x) x map(funDefToCModule())) andThen hostFunDefToHostPart)
+          ((((x: FunDef) => x) x map(funDefToAcceleratorModule())) andThen hostFunDefToHostPart)
 
       private val hostFunDefToHostPart: ((FunDef, Seq[C.Module])) => (C.Module, Seq[C.Module]) = {
         case (hostModule, acceleratorModule) =>

@@ -14,6 +14,7 @@ import rise.core.types._
 import rise.elevate._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate._
+import rise.GAP8.primitives._
 
 // noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
@@ -565,5 +566,59 @@ object algorithmic {
   @rule def separateSumVH: Strategy[Rise] = {
     case e @ App(sum2, App(join(), in)) if sum2 =~= ((sum !: sum2.t): Expr) =>
       Success((preserveType(in) |> transpose |> map(sum) |> sum) !: e.t)
+  }
+
+  /*@rule def colapseOpenMPfor: Strategy[Rise] = {
+    ???
+  }*/
+
+  /**
+    * TODO: A couple of things to think about:
+    *   1.This is extremely specific. Is there a way to make it more general in any way?
+    *   2. Concrete HWCE primitive depends not only on the size of the sliding window,
+    *     but on the appropirate dimensions of the input parameters as well. Patch that in
+    *   3. slide2D has to be deconstructed fully to ensure that the underlying pattern
+    *     fully conforms with the slide2D
+    *   4. Generalize mapSeq() and reduceSeq()
+    *   5. This should apply only if wrapped somewhere within gap8run (HWCE is in cluster)
+    * */
+  @rule def gap8hwConvMerge: Strategy[Rise] = {
+    case e @
+      App(
+        App(mapSeq(),
+          App(mapSeq(), Lambda(_,
+            App(
+              App(
+                App(reduceSeq(), add()),
+                  App(cast(), _)),
+                    App(
+                      App(map(), Lambda(_,
+                        App(App(mul(), App(fst(), _)), App(snd(), _))
+                        )
+                      ),
+                      App(App(zip(), App(join(), _)), App(join(), filter))
+                    )
+              )
+            )
+          )
+        ),
+        App(Lambda(_,
+          App(_,
+            App(Lambda(_,
+              App(
+                DepApp(NatKind, DepApp(NatKind, slide(), size), step), _
+              )
+            ), _)
+          )
+        ), in)
+      ) =>
+      (size, step) match {
+        case (Cst(iSize), Cst(iStep)) =>
+          if(1 == iStep && 3 == iSize) Success(gap8hwConv3x3(0)(in)(filter) !: e.t)
+          else if(1 == iStep && 5 == iSize) Success(gap8hwConv5x5(0)(in)(filter) !: e.t)
+          else if(1 == iStep && 7 == iSize) Success(gap8hwConv7x7(0)(in)(filter) !: e.t)
+          else Failure(gap8hwConvMerge)
+        case _ => Failure(gap8hwConvMerge)
+      }
   }
 }
