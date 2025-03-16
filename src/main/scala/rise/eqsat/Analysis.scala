@@ -615,7 +615,7 @@ object BeamExtractRW {
     assert(at == bt)
     (a, b) match {
       case (DataTypeAnnotation(x), DataTypeAnnotation(y)) =>
-        (x == y) || (x == rct.read || notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
+        (x == y) || (x == rct.read && notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
       case (NotDataTypeAnnotation(x), NotDataTypeAnnotation(y)) =>
         (x, egraph(at), y, egraph(bt)) match {
           case (FunType(aIn, aOut), FunType(aInT, aOutT), FunType(bIn, bOut), FunType(bInT, bOutT)) =>
@@ -633,11 +633,8 @@ object BeamExtractRW {
   // TODO: could hash-cons this
   def notContainingArrayType(t: DataTypeId, egraph: EGraph): Boolean = {
     egraph(t) match {
-      case DataTypeVar(_) => false
-      case ScalarType(_) => true
-      case NatType => true
-      case VectorType(_, _) => true
-      case IndexType(_) => true
+      case DataTypeVar(_) => false // FIXME: this requires constraint?
+      case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
     }

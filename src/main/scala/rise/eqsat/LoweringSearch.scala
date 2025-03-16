@@ -26,11 +26,25 @@ class LoweringSearch(var filter: Predicate) {
     }
   }
 
-  def run(normalForm: NF,
-          costFunction: CostFunction[_],
-          startBeam: Seq[Expr],
-          loweringRules: Seq[Rewrite],
-          annotations: Option[(BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation])] = None): Option[Expr] = {
+  private def topLevelSubtype(
+    aAnnot: (BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation]),
+    bAnnot: (BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation]),
+    typ: TypeId,
+    egraph: EGraph,
+  ) = {
+    val (aOut, aIns) = aAnnot
+    val (bOut, bIns) = bAnnot
+    BeamExtractRW.subtype(aOut, typ, bOut, typ, egraph) &&
+    aIns == bIns // TODO: could use subtype here as well in contravariant fashion
+  }
+
+  def run[Cost](
+    normalForm: NF,
+    costFunction: CostFunction[Cost],
+    startBeam: Seq[Expr],
+    loweringRules: Seq[Rewrite],
+    annotations: Option[(BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation])] = None
+  ): Option[Expr] = {
     println("---- lowering")
     val egraph = EGraph.empty()
     val normBeam = startBeam.map(normalForm.normalize)
@@ -52,9 +66,28 @@ class LoweringSearch(var filter: Predicate) {
     r.printReport()
 
     util.printTime("lowered extraction time", {
-      val tmp = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)(egraph.find(rootId))
+      val analysisResult = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)(egraph.find(rootId))
+      // : Map[
+      //   (BeamExtractRW.TypeAnnotation, Map[Int,BeamExtractRW.TypeAnnotation]),
+      //   Seq[(Cost, ExprWithHashCons)]]
+
+      println("analysisResult", analysisResult)
+      println("expectedAnnotations", expectedAnnotations)
+      val validResults = analysisResult
+        .map { case (foundAnnot, foundBeam) => (foundAnnot, foundBeam.head) }
+        // first, filter correct subtypes on annotations
+        .filter { case (foundAnnot, found) =>
+          topLevelSubtype(foundAnnot, expectedAnnotations, found._2.t, egraph)
+        }
+      println("validResults", validResults)
+      validResults
+        // then, get the best option
+        .minByOption { case (_, found) => found._1 }(costFunction.ordering)
+        .map { case (_, found) => ExprWithHashCons.expr(egraph)(found._2) }
+      /* without taking subtyping into account:
       tmp.get(expectedAnnotations)
         .map { beam => ExprWithHashCons.expr(egraph)(beam.head._2) }
+      */
     })
   }
 }
