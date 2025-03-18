@@ -572,8 +572,14 @@ object BeamExtractRW {
   sealed trait TypeAnnotation
   case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, Unit, rct.Access])
     extends TypeAnnotation
+  {
+    override def toString: String = node.toString()
+  }
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
+  {
+    override def toString: String = access.toString()
+  }
 
   type Data[Cost] = Map[(TypeAnnotation, Map[Int, TypeAnnotation]), Seq[(Cost, ExprWithHashCons)]]
 
@@ -613,7 +619,7 @@ object BeamExtractRW {
 
   def subtype(a: TypeAnnotation, at: TypeId, b: TypeAnnotation, bt: TypeId, egraph: EGraph): Boolean = {
     assert(at == bt)
-    (a, b) match {
+    val res = (a, b) match {
       case (DataTypeAnnotation(x), DataTypeAnnotation(y)) =>
         (x == y) || (x == rct.read && notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
       case (NotDataTypeAnnotation(x), NotDataTypeAnnotation(y)) =>
@@ -628,12 +634,14 @@ object BeamExtractRW {
         }
       case _ => throw new Exception("this should not happen")
     }
+    // println(s"subtype: $a : ${egraph(at)} <= $b : ${egraph(bt)} ? $res")
+    res
   }
 
   // TODO: could hash-cons this
   def notContainingArrayType(t: DataTypeId, egraph: EGraph): Boolean = {
     egraph(t) match {
-      case DataTypeVar(_) => false // FIXME: this requires constraint?
+      case DataTypeVar(_) => false
       case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
@@ -696,7 +704,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             case NotDataTypeAnnotation(FunType(fIn, fOut)) =>
               eBeams.foreach { case ((eAnnotation, eEnv), eBeam) =>
                 mergeEnv(fEnv, eEnv).foreach { mergedEnv =>
-                  if (subtype(fIn, fInT, eAnnotation, eT, egraph)) {
+                  if (subtype(eAnnotation, eT, fIn, fInT, egraph)) {
                     val newBeam = fBeam.flatMap { x => eBeam.flatMap { y =>
                       Seq((
                         cf.cost(egraph, enode, t, Map(f -> x._1, e -> y._1)),

@@ -67,20 +67,28 @@ class LoweringSearch(var filter: Predicate) {
     r.printReport()
 
     util.printTime("lowered extraction time", {
-      val analysisResult = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)(egraph.find(rootId))
+      val allAnalysisResult = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)
       // : Map[
       //   (BeamExtractRW.TypeAnnotation, Map[Int,BeamExtractRW.TypeAnnotation]),
       //   Seq[(Cost, ExprWithHashCons)]]
 
-      println("analysisResult", analysisResult)
-      println("expectedAnnotations", expectedAnnotations)
+      /* DEBUG: 
+      println("allAnalysisResult")
+      allAnalysisResult.foreach { case (id, map) =>
+        println(id, ";", egraph.classes(id).nodes, ":", map)
+      }
+      println("----------") */
+      
+      val analysisResult = allAnalysisResult(egraph.find(rootId))
+      // DEBUG: println("analysisResult", analysisResult)
+      // DEBUG: println("expectedAnnotations", expectedAnnotations)
       val validResults = analysisResult
         .map { case (foundAnnot, foundBeam) => (foundAnnot, foundBeam.head) }
         // first, filter correct subtypes on annotations
         .filter { case (foundAnnot, found) =>
           topLevelSubtype(foundAnnot, expectedAnnotations, found._2.t, egraph)
         }
-      println("validResults", validResults)
+      // DEBUG: println("validResults", validResults)
       validResults
         // then, get the best option
         .minByOption { case (_, found) => found._1 }(costFunction.ordering)
