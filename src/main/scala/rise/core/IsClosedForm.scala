@@ -77,25 +77,37 @@ object IsClosedForm {
 
     override def natToData: NatToData => Pair[NatToData] = {
       case NatToDataLambda(x, e) =>
-        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).`type`(e)}
-          yield (p._1, NatToDataLambda(x, e))
+//        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).`type`(e)}
+//          yield (p._1, NatToDataLambda(x, e))
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), DataType)] =
+          this.copy(boundT = boundT + NatKind.IDWrapper(x)).`type`(e)
+        pp.map(p => (p._1, NatToDataLambda(x, e)))
       case t => super.natToData(t)
     }
 
     override def natToNat: NatToNat => Pair[NatToNat] = {
       case NatToNatLambda(x, n) =>
-        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).nat(n)}
-          yield (p._1, NatToNatLambda(x, n))
+//        for { p <- this.copy(boundT = boundT + NatKind.IDWrapper(x)).nat(n)}
+//          yield (p._1, NatToNatLambda(x, n))
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), Nat)] =
+          this.copy(boundT = boundT + NatKind.IDWrapper(x)).nat(n)
+        pp.map(p => (p._1, NatToNatLambda(x, n)))
       case n => super.natToNat(n)
     }
 
     override def `type`[T <: ExprType]: T => Pair[T] = {
       case d@DepFunType(k, x, t) =>
-        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t) }
-          yield (p._1, d.asInstanceOf[T])
+//        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t) }
+//          yield (p._1, d.asInstanceOf[T])
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), ExprType)] =
+          this.copy(boundT = boundT + Kind.toIdentifier(k, x)).`type`(t)
+        pp.map(p => (p._1, d.asInstanceOf[T]))
       case d@DepPairType(k, x, dt) =>
-        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).datatype(dt) }
-          yield (p._1, d.asInstanceOf[T])
+//        for { p <- this.copy(boundT = boundT + Kind.toIdentifier(k, x)).datatype(dt) }
+//          yield (p._1, d.asInstanceOf[T])
+        val pp: Pure[((OrderedSet[Identifier], OrderedSet[Kind.Identifier]), DataType)] =
+          this.copy(boundT = boundT + Kind.toIdentifier(k, x)).datatype(dt)
+        pp.map(p => (p._1, d.asInstanceOf[T]))
       case t => super.`type`(t)
     }
   }

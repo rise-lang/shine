@@ -150,10 +150,16 @@ object NamedRewrite {
             makePat(f, bound, isRhs, matchType = false), makeAPat(x, bound, isRhs)))
         case rc.DepApp(_, _, _) => ???
 
+        case rc.Literal(rc.semantics.NatData(n)) =>
+          PatternNode(NatLiteral(makeNPat(n, bound, isRhs)))
+        case rc.Literal(rc.semantics.IndexData(i, n)) =>
+          PatternNode(IndexLiteral(makeNPat(i, bound, isRhs), makeNPat(n, bound, isRhs)))
         case rc.Literal(d) => PatternNode(Literal(d))
         // note: we set the primitive type to a place holder here,
         // because we do not want type information at the node level
         case p: rc.Primitive => PatternNode(Primitive(p.setType(rct.TypePlaceholder)))
+
+        case _ => ???
       }, if (!isRhs && !matchType) TypePatternAny else makeTPat(expr.t, bound, isRhs))
 
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
@@ -207,7 +213,7 @@ object NamedRewrite {
         case rcdt.ArrayType(s, et) =>
           DataTypePatternNode(ArrayType(makeNPat(s, bound, isRhs), makeDTPat(et, bound, isRhs)))
         case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
-             _: rcdt.NatToDataApply | _: rcdt.FragmentType =>
+             _: rcdt.NatToDataApply | _: rcdt.FragmentType | rcdt.ManagedBufferType(_) | rcdt.OpaqueType(_) =>
           throw new Exception(s"did not expect $dt")
       }
 
@@ -565,7 +571,9 @@ object NamedRewriteDSL {
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
   def lf32(f: Float): Pattern = l(rise.core.semantics.FloatData(f))
+  def li32(i: Int): Pattern = app(cast, l(rise.core.semantics.IntData(i)))
   def lidx(i: Int, n: Int) = l(rise.core.semantics.IndexData(i, n))
+  def lnat(n: rct.Nat) = l(rise.core.semantics.NatData(n))
 
   def slide: Pattern = rcp.slide.primitive
   def map: Pattern = rcp.map.primitive
@@ -589,6 +597,7 @@ object NamedRewriteDSL {
   def asVector: Pattern = rcp.asVector.primitive
   def asVectorAligned: Pattern = rcp.asVectorAligned.primitive
   def vectorFromScalar: Pattern = rcp.vectorFromScalar.primitive
+  def cast: Pattern = rcp.cast.primitive
 
   def `?n`: NatPattern =
     rct.NatIdentifier(rc.freshName("n"))
@@ -610,6 +619,7 @@ object NamedRewriteDSL {
     rct.TypeIdentifier(name)
 
   val int: DataTypePattern = rcdt.int
+  val i32: DataTypePattern = rcdt.i32
   val f32: DataTypePattern = rcdt.f32
 
   implicit final class TypeAnnotation(private val t: TypePattern) extends AnyVal {

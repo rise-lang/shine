@@ -1119,7 +1119,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              case Pow(_, Cst(-1)) => false
              case _ => true
            })
-           denum = denum.map({ case Pow(b, Cst(-1)) => b })
+           denum = denum.map {
+             case Pow(b, Cst(-1)) => b
+             case _ => ???
+            }
            if (denum.nonEmpty) { // num /^ denum
              val aNum = num.fold(1: ArithExpr)(_*_)
              val aDenum = denum.fold(1: ArithExpr)(_*_)

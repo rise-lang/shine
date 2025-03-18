@@ -82,7 +82,7 @@ object KernelExecutor {
       */
     def as[T, R](localSize: LocalSize, globalSize: GlobalSize)
                 (implicit ev: T <:< HList): T => (R, TimeSpan[Time.ms]) = {
-      hArgs: T => {
+      (hArgs: T) => {
         val args: List[Any] = hArgs.toList
         assert(kernel.inputParams.length == args.length)
 

@@ -6,6 +6,7 @@ object Optimize {
   def apply(e: rise.core.Expr): rise.core.Expr = {
     val expr = Expr.fromNamed(e)
     val (body, annotation, wrapBody) = analyseTopLevel(expr)
+    println("eqsat expr", expr)
 
     val rules = {
       import rise.eqsat.rules._
@@ -16,11 +17,12 @@ object Optimize {
         // satisfying read/write annotations:
         mapSeqArray,
         // simplifications:
-        mapFusion,
-        reduceSeqMapFusion,
+        // mapFusion,
+        // reduceSeqMapFusion,
         removeTransposePair,
         fstReduction,
         sndReduction,
+        reduceSeqOne,
       /* maybe:
         omp.mapPar --> need heuristic vs mapSeq
         toMemAfterMapSeq / storeToMem

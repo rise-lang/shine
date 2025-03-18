@@ -10,7 +10,7 @@ import rise.core.{types => rt}
 package object DPIA {
 
   def error(found: String, expected: String): Nothing = {
-    throw new TypeException(s"Found $found but expected $expected")
+    throw TypeException(s"Found $found but expected $expected")
   }
 
   def error(msg: String = "This should not happen"): Nothing = {
@@ -48,42 +48,6 @@ package object DPIA {
     def apply(dt: DataType): PhrasePairType[ExpType, AccType] = ExpType(dt, read) x AccType(dt)
   }
 
-  //noinspection TypeAnnotation
-  implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
-    def `[`(e: Nat) = new {
-      def `/`(a: NatIdentifier) = new {
-        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-      }
-    }
-
-    def `[`(e: DataType) = new {
-      def `/`(a: DataType) = new {
-        def `]`: PhraseType = shine.DPIA.Types.substitute(e, `for`=a, in=t)
-      }
-    }
-  }
-
-  //noinspection TypeAnnotation
-  implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
-    def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
-      def `/`(`for`: Phrase[T2]) = new {
-        def `]`: Phrase[T1] = Phrase.substitute(p, `for`, in)
-      }
-    }
-
-    def `[`(e: Nat) = new {
-      def `/`(`for`: NatIdentifier) = new {
-        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(e, `for`, in)
-      }
-    }
-
-    def `[`(dt: DataType) = new {
-      def `/`(`for`: DataTypeIdentifier) = new {
-        def `]`: Phrase[T1] = shine.DPIA.Types.substitute(dt, `for`, in)
-      }
-    }
-  }
-
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
     @inline
     def x[T2 <: PhraseType](t2: T2): T1 x T2 = PhrasePairType(t1, t2)
@@ -109,7 +73,7 @@ package object DPIA {
     def apply(dt: DataType, a: Access): ExpType = ExpType(dt, a)
 
     def unapply(et: ExpType): Option[(DataType, Access)] = {
-      ExpType.unapply(et)
+      Some((et.dataType, et.accessType))
     }
   }
 
@@ -117,7 +81,7 @@ package object DPIA {
     def apply(dt: DataType): AccType = AccType(dt)
 
     def unapply(at: AccType): Option[DataType] = {
-      AccType.unapply(at)
+      Some(at.dataType)
     }
   }
 
@@ -130,9 +94,10 @@ package object DPIA {
       DepFunType(NatKind, n, t)
     }
 
-    def unapply[U <: PhraseType](funType: DepFunType[_, U]): Option[(NatIdentifier, U)] = {
+    // FIXME: does this work?
+    def unapply/*[U <: PhraseType]*/(funType: DepFunType[_, _/*U*/]): Option[(NatIdentifier, Any)] = {
       funType.x match {
-        case n: NatIdentifier => Some((n, funType.t))
+        case n: NatIdentifier => Some((n, funType.t)) // .asInstanceOf[U]
         case _ => throw new Exception("Expected Nat DepFunType")
       }
     }
@@ -149,9 +114,10 @@ package object DPIA {
       DepFunType(AddressSpaceKind, a, t)
     }
 
-    def unapply[T <: PhraseType](funType: DepFunType[_, T]): Option[(AddressSpaceIdentifier, T)] = {
+    // FIXME: does this work?
+    def unapply[T <: PhraseType](funType: DepFunType[_, _/*T*/]): Option[(AddressSpaceIdentifier, Any)] = {
       funType.x match {
-        case a: AddressSpaceIdentifier => Some((a, funType.t))
+        case a: AddressSpaceIdentifier => Some((a, funType.t)) // .asInstanceOf[T]
         case _ => throw new Exception("Expected AddressSpace DepFunType")
       }
     }
@@ -162,9 +128,10 @@ package object DPIA {
       DepFunType(NatToNatKind, n, t)
     }
 
-    def unapply[T <: PhraseType](funType: DepFunType[_, T]): Option[(NatToNatIdentifier, T)] = {
+    // FIXME: does this work?
+    def unapply/*[T <: PhraseType]*/(funType: DepFunType[_, _/*T*/]): Option[(NatToNatIdentifier, Any)] = {
       funType.x match {
-        case n: NatToNatIdentifier => Some((n, funType.t))
+        case n: NatToNatIdentifier => Some((n, funType.t)) // .asInstanceOf[T]
         case _ => throw new Exception("Expected Nat DepFunType")
       }
     }

@@ -97,6 +97,12 @@ object TypeCheck {
           case Literal(d) =>
             // TODO: more efficient egraph.addTypeFromNamed?
             assertSameType(t, egraph.addType(Type.fromNamed(d.dataType)))
+          case NatLiteral(_) =>
+            ()
+            // TODO: assertSameType(t, egraph.addType(NatType))
+          case IndexLiteral(_, _) =>
+            ()
+            // TODO: assertSameType(t, egraph.addType(IndexType(?)))
           case Primitive(_) =>
             // TODO: check p.typeScheme consistency?
 

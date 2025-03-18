@@ -41,8 +41,8 @@ object molecularDynamics {
   )((particles, neighbourIds, cutsq, lj1, lj2) =>
     zip(particles)(transpose(neighbourIds)) |>
       map(fun { p =>
-        val particle = p._1
-        gather(p._2)(particles) |>
+        val particle = p.`1`
+        gather(p.`2`)(particles) |>
         reduce(fun(force => fun(n =>
           mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
         )))(vectorFromScalar(lf32(0.0f)))
@@ -67,9 +67,9 @@ object molecularDynamics {
       split(128) |>
       mapWorkGroup(
         mapLocal(fun(p =>
-          let (toPrivate(p._1))
+          let (toPrivate(p.`1`))
           be (particle =>
-            gather(p._2)(particles) |>
+            gather(p.`2`)(particles) |>
             oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
               mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
             )))(vectorFromScalar(lf32(0.0f)))

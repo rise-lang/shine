@@ -310,10 +310,10 @@ object movement {
 
       val result: ToBeTyped[Rise] = (fun(x =>
         (reduceSeq(fun((acc, y) =>
-          map(fun(a => preserveType(op)(a._1)(a._2))) $ zip(acc)(y)
-        ))(x._1 !: resultT) o // x._1 :: 2D array
+          map(fun(a => preserveType(op)(a.`1`)(a.`2`))) $ zip(acc)(y)
+        ))(x.`1` !: resultT) o // x._1 :: 2D array
           // transpose2D
-          transpose o map(transpose) $ x._2)) o
+          transpose o map(transpose) $ x.`2`)) o
         // unzip2D
         unzip o map(unzip)) !: e.t
 
@@ -340,10 +340,10 @@ object movement {
         (fun(x =>
           reduceSeq(
             fun((acc, y) => // acc::32.float, y::32.(float,float)
-              map(fun(a => preserveType(op)(a._1)(a._2))) $ zip(acc)(y)
+              map(fun(a => preserveType(op)(a.`1`)(a.`2`))) $ zip(acc)(y)
             )
-          )(x._1 !: resultT) o
-            transpose $ x._2) o unzip) !: e.t
+          )(x.`1` !: resultT) o
+            transpose $ x.`2`) o unzip) !: e.t
 
       Success(result)
 

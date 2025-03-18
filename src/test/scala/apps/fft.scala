@@ -16,8 +16,8 @@ class fft extends test_util.Tests {
     val sinpi = foreignFun("sinpi", f64 ->: f64)
 
     val cmultandsum = fun(acc => fun(vt => {
-      val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
-      val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
+      val lres = acc.`1` + (vt.`1`.`1` * vt.`2`.`1` - vt.`1`.`2` * vt.`2`.`2`)
+      val rres = acc.`2` + (vt.`1`.`2` * vt.`2`.`1` + vt.`1`.`1` * vt.`2`.`2`)
       makePair(lres)(rres)
     }))
 
@@ -43,8 +43,8 @@ class fft extends test_util.Tests {
       ) |> map(fun(yChunkRow =>
         zip(yChunkRow)(reorderedB))
       ) |> mapGlobal(mapSeq(fun(yChunkWithBrow => {
-        val yChunk = yChunkWithBrow._1
-        val Brow = yChunkWithBrow._2
+        val yChunk = yChunkWithBrow.`1`
+        val Brow = yChunkWithBrow.`2`
         Brow |> mapSeq(
           fun(Bchunk =>
             zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(

@@ -38,7 +38,7 @@ object harrisCornerDetection {
     (h `.` w `.` f32) ->: (h `.` w `.` f32) ->: (h `.` w `.` f32)
   )((a, b) =>
     zip(a)(b) |> mapGlobal(fun(ab =>
-      zip(asVectorAligned(4)(ab._1))(asVectorAligned(4)(ab._2)) |>
+      zip(asVectorAligned(4)(ab.`1`))(asVectorAligned(4)(ab.`2`)) |>
       mapSeq(mulT) >>
       asScalar
     ))
@@ -57,8 +57,8 @@ object harrisCornerDetection {
     (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: (h`.`w`.`f32) ->: f32 ->: (h`.`w`.`f32)
   )((sxx, sxy, syy, kappa) =>
     zip(sxx)(zip(sxy)(syy)) |> mapGlobal(fun(s =>
-      zip(asVectorAligned(4)(s._1))(
-        zip(asVectorAligned(4)(s._2._1))(asVectorAligned(4)(s._2._2))
+      zip(asVectorAligned(4)(s.`1`))(
+        zip(asVectorAligned(4)(s.`2`.`1`))(asVectorAligned(4)(s.`2`.`2`))
       ) |>
       mapSeq(fun(s => {
         val sxx = fst(s)
@@ -93,7 +93,7 @@ object harrisCornerDetection {
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         // TODO: this triggers an extra copy
         toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
-          C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
+          C2D.weightsSeqVecUnroll(hWsNbh.`1`)(hWsNbh.`2`)
         ))) >>
         letf(ixiy => {
           val ix = ixiy `@` lidx(0, 2)
@@ -162,7 +162,7 @@ object harrisCornerDetection {
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         mapSeqUnroll(fun(hWsNbh =>
-          C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
+          C2D.weightsSeqVecUnroll(hWsNbh.`1`)(hWsNbh.`2`)
         ))
       ) >> transpose >> map(asScalar)
     ) >> transpose
