@@ -815,7 +815,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           // note: recording DataFunType() constructor is useless
           (NotDataTypeAnnotation(AddrFunType(annotation)), env) -> newBeam
         }
-      case Literal(_) =>
+      case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) =>
         val beam = Seq((
           cf.cost(egraph, enode, t, Map.empty),
           ExprWithHashCons(enode.mapChildren(Map.empty), t)

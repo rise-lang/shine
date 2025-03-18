@@ -1,0 +1,5 @@
+def length() = reduceSeq(fun(acc => fun(x => acc + li32(1))))(li32(0))
+
+depFun((n: Nat) => fun(n`.`i32)(x =>
+    x |> mapSeq(fun(y => y + length()(x)))
+))

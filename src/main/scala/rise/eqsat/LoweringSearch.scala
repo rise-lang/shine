@@ -34,6 +34,7 @@ class LoweringSearch(var filter: Predicate) {
     println("---- lowering")
     val egraph = EGraph.empty()
     val normBeam = startBeam.map(normalForm.normalize)
+    println(s"normalized: $normBeam")
 
     val expectedAnnotations = annotations match {
       case Some(annotations) => annotations
@@ -48,7 +49,7 @@ class LoweringSearch(var filter: Predicate) {
       .withTimeLimit(java.time.Duration.ofMinutes(1))
       .withMemoryLimit(4L * 1024L * 1024L * 1024L /* 4GiB */)
       .withNodeLimit(1_000_000)
-      .run(egraph, filter, loweringRules, normalForm.directedRules, Seq(rootId))
+      .run(egraph, filter, loweringRules, Seq()/*normalForm.directedRules*/, Seq(rootId))
     r.printReport()
 
     util.printTime("lowered extraction time", {
