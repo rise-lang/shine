@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
             transpose >> map(shuffle) >>
             zip(makeArray(2)(sobelXWeightsH)(sobelYWeightsH)) >>
             toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
-              dotSeqUWV(hWsNbh._1)(hWsNbh._2)
+              dotSeqUWV(hWsNbh.`1`)(hWsNbh.`2`)
             ))) >>
             letf(fun(ixiy => {
               val ix = ixiy `@` lidx(0, 2)
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
             transpose >> map(shuffle) >>
             zip(makeArray(2)(sobelXWeightsH)(sobelYWeightsH)) >>
             toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
-              dotSeqUWV(hWsNbh._1)(hWsNbh._2)
+              dotSeqUWV(hWsNbh.`1`)(hWsNbh.`2`)
             ))) >>
             letf(fun(ixiy => {
               val ix = ixiy `@` lidx(0, 2)

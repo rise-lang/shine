@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
             transpose >> map(shuffle) >>
             zip(makeArray(2)(sobelXWeightsH)(sobelYWeightsH)) >>
             mapSeqUnroll(fun(hWsNbh =>
-              dotSeqUWV(hWsNbh._1)(hWsNbh._2)
+              dotSeqUWV(hWsNbh.`1`)(hWsNbh.`2`)
             ))
           ) >> transpose >> map(asScalar)
       ) >> transpose
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
           oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >> iterateStream(
             transpose >> map(shuffle) >>
             zip(makeArray(2)(sobelXWeightsH)(sobelYWeightsH)) >>
-            mapSeqUnroll(fun(hWsNbh => dotSeqUWV(hWsNbh._1)(hWsNbh._2)))
+            mapSeqUnroll(fun(hWsNbh => dotSeqUWV(hWsNbh.`1`)(hWsNbh.`2`)))
           ) >> transpose >> map(asScalar)
       ) >> transpose
     ))))

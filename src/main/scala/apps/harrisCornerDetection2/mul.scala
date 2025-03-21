@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     )((a, b) =>
       oclRun(LocalSize(1), GlobalSize(num_threads))(
         zip(a)(b) |> mapGlobal(fun(ab =>
-          zip(ab._1)(ab._2) |>
+          zip(ab.`1`)(ab.`2`) |>
           mapSeq(mulT)
         ))
     )))
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     )((a, b) =>
       oclRun(LocalSize(1), GlobalSize(num_threads))(
         zip(a)(b) |> mapGlobal(fun(ab =>
-          zip(asVectorAligned(vecw)(ab._1))(asVectorAligned(vecw)(ab._2)) |>
+          zip(asVectorAligned(vecw)(ab.`1`))(asVectorAligned(vecw)(ab.`2`)) |>
           mapSeq(mulT) >>
           asScalar
         ))
@@ -115,8 +115,8 @@ int main(int argc, char** argv) {
         map(transpose) |>
         mapWorkGroup(1)(mapWorkGroup(0)(
           mapLocal(1)(fun(ab =>
-            zip(asVectorAligned(vecw)(unzip(ab)._1))(
-              asVectorAligned(vecw)(unzip(ab)._2)) |>
+            zip(asVectorAligned(vecw)(unzip(ab).`1`))(
+              asVectorAligned(vecw)(unzip(ab).`2`)) |>
               mapLocal(0)(mulT)
           ))
         )) >> map(transpose) >> join >> map(join >> asScalar)
