@@ -52,7 +52,7 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
     }
     val temporaries = calledKernel.paramKinds.zip(calledKernel.code.params).flatMap { case (pk, p) =>
       if (pk.kind == ParamKind.Kind.temporary) {
-        Some((pk.typ, p.t.asInstanceOf[shine.OpenCL.AST.PointerType].a))
+        Some((pk.typ, p.t.asInstanceOf[shine.OpenCL.AST.PointerType].a, "m" + p.name))
       } else {
         None
       }
@@ -66,6 +66,29 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
             Some(deviceBufferSync(s"b${i + 1}", argC, arg.t.dataType, DEVICE_READ))
           case _ => None
         }
+      }
+      // TODO: could optimize temporary buffer creation/deletion
+      val createTmp = temporaries.zipWithIndex.flatMap {
+        case ((dt, AddressSpace.Global, name), i) => Seq(
+          C.AST.DeclStmt(C.AST.VarDecl(name, typ(ManagedBufferType(dt)), Some(
+            C.AST.FunCall(C.AST.DeclRef("createBuffer"), Seq(
+              C.AST.DeclRef("ctx"),
+              bufferSize(dt),
+              C.AST.Literal(accessToString(DEVICE_READ | DEVICE_WRITE))
+            ))
+          ))),
+          deviceBufferSync(s"tb${i}", C.AST.DeclRef(name), dt, DEVICE_READ | DEVICE_WRITE)
+        )
+        case _ => Seq()
+      }
+      val destroyTmp = temporaries.flatMap {
+        case (dt, AddressSpace.Global, name) => Seq(
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("destroyBuffer"), Seq(
+            C.AST.DeclRef("ctx"),
+            C.AST.DeclRef(name)
+          )))
+        )
+        case _ => Seq()
       }
       val ndRangeTy = C.AST.ArrayType(C.AST.Type.usize, Some(3), true)
       val declGlobalSize = C.AST.DeclStmt(C.AST.VarDecl("global_size", ndRangeTy, Some(
@@ -81,9 +104,14 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
           ((args zip argsC).zipWithIndex.map { case ((arg, argC), i) =>
             kernelArg(i + 1, arg.t.dataType, argC)
           } ++ temporaries.zipWithIndex.map {
-            case ((dt, AddressSpace.Local), i) =>
+            case ((_, AddressSpace.Private, _), _) =>
+              throw new Exception("temporary kernel argument cannot live in private memory")
+            case ((dt, AddressSpace.Local, _), i) =>
               kernelLocalArg(i + 1 + args.size, dt)
-            case ((_, a), _) => throw new Exception(s"codegen is not implemented for temporaries in $a")
+            case ((dt, AddressSpace.Global, name), i) =>
+              kernelArg(i + 1 + args.size, dt, C.AST.DeclRef(s"tb${i}"))
+            case ((_, addr, _), _) =>
+              throw new Exception(s"did not expect $addr address space")
           })
         )
       )))
@@ -99,8 +127,8 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
         C.AST.DeclRef("args")
       )))
       C.AST.Block(
-        Seq(outputSync) ++ argSyncs ++
-        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel)
+        Seq(outputSync) ++ argSyncs ++ createTmp ++
+        Seq(declGlobalSize, declLocalSize, declArgs, launchKernel) ++ destroyTmp
       )
     }))
   }
@@ -196,11 +224,14 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
     }
   }
 
+  // TODO: use arith expr simplification here
   private def bufferSize(dt: DataType): Expr =
     dt match {
       case ManagedBufferType(dt) => bufferSize(dt)
-      case _: ScalarType | _: IndexType | _: VectorType | NatType =>
+      case _: ScalarType | _: IndexType | NatType =>
         C.AST.Literal(s"sizeof(${typ(dt)})")
+      case v: VectorType =>
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(v.size), BinaryOperator.*, bufferSize(v.elemType))
       case PairType(fst, snd) =>
         C.AST.BinaryExpr(bufferSize(fst), BinaryOperator.+, bufferSize(snd))
       case a: DataType.ArrayType =>

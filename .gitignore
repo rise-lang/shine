@@ -19,3 +19,4 @@ modules.xml
 *.sc
 
 float-safe-optimizer.jar
+*.o

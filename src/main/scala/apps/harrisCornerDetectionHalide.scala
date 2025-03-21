@@ -8,6 +8,8 @@ import rise.core.types._
 import rise.core.types.DataType._
 import HighLevelConstructs._
 
+// This version of Harris uses Halide's version as reference
+// used in the CGO'21 paper: https://ieeexplore.ieee.org/abstract/document/9370337/
 // in Halide: https://github.com/halide/Halide/blob/e8acdea/apps/harris
 // in PolyMage: https://bitbucket.org/udayb/polymage/src/e28327c/sandbox/apps/python/img_proc/harris
 // FIXME: PolyMage's algorithm is different
