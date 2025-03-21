@@ -281,7 +281,7 @@ object cameraPipeline {
       (lf32(1.0f) / kelvin - lf32(1.0f / 3200)) / lf32(1.0f / 7000 - 1.0f / 3200)
     (
       zipND(2)(matrix_3200, matrix_7000) |>
-        map(map(fun(p => p._1 * alpha + p._2 * (lf32(1.0f) - alpha)))) >>
+        map(map(fun(p => p.`1` * alpha + p.`2` * (lf32(1.0f) - alpha)))) >>
           map(map(fun(v => cast(v * lf32(256.0f)) :: i16))) // Q8.8 fixed point
       ) |> fun(matrix =>
         input |> transpose >>
@@ -380,11 +380,11 @@ object cameraPipeline {
           blur121(u8)(u16)),
           unsharp => {
           letImage(mapImage(zipImage(plane, unsharp), fun(p =>
-            (cast(p._1) :: i16) - (cast(p._2) :: i16)
+            (cast(p.`1`) :: i16) - (cast(p.`2`) :: i16)
           )), mask => {
             mapImage(zipImage(plane, mask), fun(p =>
-              u8_sat(i16)((cast(p._1) :: i16)
-                + (p._2 * (cast(strength_x32) :: i16)) / li16(32))
+              u8_sat(i16)((cast(p.`1`) :: i16)
+                + (p.`2` * (cast(strength_x32) :: i16)) / li16(32))
             )).expr
           })
         }))

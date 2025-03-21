@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     )((sxx, sxy, syy, kappa) =>
       oclRun(LocalSize(1), GlobalSize(num_threads))(
         zip(sxx)(zip(sxy)(syy)) |> mapGlobal(fun(s =>
-          zip(s._1)(zip(s._2._1)(s._2._2)) |>
+          zip(s.`1`)(zip(s.`2`.`1`)(s.`2`.`2`)) |>
             mapSeq(fun(s => {
               val sxx = fst(s)
               val sxy = fst(snd(s))
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     )((sxx, sxy, syy, kappa) =>
       oclRun(LocalSize(1), GlobalSize(num_threads))(
         zip(sxx)(zip(sxy)(syy)) |> mapGlobal(fun(s =>
-          zip(asVectorAligned(vecw)(s._1))(zip(asVectorAligned(vecw)(s._2._1))(asVectorAligned(vecw)(s._2._2))) |>
+          zip(asVectorAligned(vecw)(s.`1`))(zip(asVectorAligned(vecw)(s.`2`.`1`))(asVectorAligned(vecw)(s.`2`.`2`))) |>
           mapSeq(fun(s => {
             val sxx = fst(s)
             val sxy = fst(snd(s))
@@ -113,9 +113,9 @@ int main(int argc, char** argv) {
         map(transpose) |>
         mapWorkGroup(1)(mapWorkGroup(0)(
           mapLocal(1)(fun(s =>
-            zip(asVectorAligned(vecw)(unzip(s)._1))(
-              zip(asVectorAligned(vecw)(unzip(unzip(s)._2)._1))(
-                asVectorAligned(vecw)(unzip(unzip(s)._2)._2))) |>
+            zip(asVectorAligned(vecw)(unzip(s).`1`))(
+              zip(asVectorAligned(vecw)(unzip(unzip(s).`2`).`1`))(
+                asVectorAligned(vecw)(unzip(unzip(s).`2`).`2`))) |>
             mapLocal(0)(fun(s => {
               val sxx = fst(s)
               val sxy = fst(snd(s))
@@ -143,9 +143,9 @@ int main(int argc, char** argv) {
         map(transpose) |>
         mapWorkGroup(1)(mapWorkGroup(0)(
           mapLocal(1)(fun(s =>
-            zip(asVectorAligned(vecw)(unzip(s)._1))(
-              zip(asVectorAligned(vecw)(unzip(unzip(s)._2)._1))(
-                asVectorAligned(vecw)(unzip(unzip(s)._2)._2))) |>
+            zip(asVectorAligned(vecw)(unzip(s).`1`))(
+              zip(asVectorAligned(vecw)(unzip(unzip(s).`2`).`1`))(
+                asVectorAligned(vecw)(unzip(unzip(s).`2`).`2`))) |>
             mapLocal(0)(fun(s => {
               val sxx = fst(s)
               val sxy = fst(snd(s))

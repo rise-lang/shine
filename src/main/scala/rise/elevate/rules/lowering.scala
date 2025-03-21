@@ -280,7 +280,7 @@ object lowering {
           dt match {
             case _ if typeHasTrivialCopy(dt) => asVectorAligned(n)
             case PairType(aT, bT) => fun(x =>
-              zip(generateUnZips(aT) $ x._1)(generateUnZips(bT) $ x._2)) o unzip
+              zip(generateUnZips(aT) $ x.`1`)(generateUnZips(bT) $ x.`2`)) o unzip
             case x => println(x) ; ???
           }
         }

@@ -565,33 +565,33 @@ private class InferAccessAnnotation {
         }
         buildType(p.t)
 
-      case rocup.asFragment() => p.t match {
+      case rocup.asFragment() => (p.t : @unchecked) match {
         case (aMatrix: ArrayType) ->: (resultMatrix: FragmentType) =>
           expT(aMatrix, read) ->: expT(resultMatrix, read)
       }
 
-      case rocup.asMatrix() => p.t match {
+      case rocup.asMatrix() => (p.t : @unchecked) match {
         case (accMatrix: FragmentType) ->: (resultArray: ArrayType) =>
           expT(accMatrix, read) ->: expT(resultArray, write)
       }
 
-      case rocup.generateFragment() => p.t match {
+      case rocup.generateFragment() => (p.t : @unchecked) match {
         case (dt: DataType) ->: (resultMatrix: FragmentType) =>
           expT(dt, read) ->: expT(resultMatrix, read)
       }
 
-      case rocup.tensorMMA() => p.t match {
+      case rocup.tensorMMA() => (p.t : @unchecked) match {
         case (aMatrix: FragmentType) ->: (bMatrix: FragmentType) ->:
           (cMatrix: FragmentType) ->: (resultMatrix: FragmentType) =>
           expT(aMatrix, read) ->: expT(bMatrix, read) ->: expT(cMatrix, read) ->: expT(resultMatrix, write)
       }
 
-      case rocup.globalToShared() => p.t match {
+      case rocup.globalToShared() => (p.t : @unchecked) match {
         case (dt: DataType) ->: _ =>
           expT(dt, write) ->: expT(dt, read)
       }
 
-      case rocup.mapFragment() => p.t match {
+      case rocup.mapFragment() =>  (p.t : @unchecked) match {
         case ((dt: DataType) ->: _) ->: (fragType: FragmentType) ->: _ =>
           (expT(dt, read) ->: expT(dt, write)) ->: expT(fragType, read) ->: expT(fragType, write)
       }

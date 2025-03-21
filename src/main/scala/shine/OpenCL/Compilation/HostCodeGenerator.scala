@@ -110,6 +110,8 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
               kernelLocalArg(i + 1 + args.size, dt)
             case ((dt, AddressSpace.Global, name), i) =>
               kernelArg(i + 1 + args.size, dt, C.AST.DeclRef(s"tb${i}"))
+            case ((_, addr, _), _) =>
+              throw new Exception(s"did not expect $addr address space")
           })
         )
       )))

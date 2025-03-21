@@ -13,7 +13,7 @@ object Kind {
     case class VariadicKind(n: String, kind: AST) extends AST
   }
 
-  def Kind[_: P]: P[AST] = {
+  def Kind[$: P]: P[AST] = {
     def OnlyKind: P[AST] = P(rise.Kind.Kind.map(AST.RiseKind) | "access".!.map(_ => AST.Access))
 
     OnlyKind | (Identifier ~ "*" ~ OnlyKind).map(AST.VariadicKind.tupled)

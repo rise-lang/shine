@@ -641,8 +641,8 @@ object SketchDSL {
     @inline def <=(rhs: Sketch): Sketch = app(not, p > rhs)
   }
 
-  case object ?
-  case class ?(index: Int)
+  case object `?`
+  case class `?`(index: Int)
   def %(index: Int): Var = Var(index)
 
   def app(a: Sketch, b: Sketch): Sketch.PNode = App(a, b)
@@ -700,9 +700,9 @@ object SketchDSL {
     def mapPar: Sketch.PNode = prim(rise.openMP.primitives.mapPar.primitive)
   }
 
-  implicit def panyWithoutType(v: ?.type): SketchAny =
+  implicit def panyWithoutType(v: `?`.type): SketchAny =
     SketchAny(TypePatternAny)
-  implicit def pvarWithoutType(v: ?): SketchVar =
+  implicit def pvarWithoutType(v: `?`): SketchVar =
     SketchVar(v.index, TypePatternAny)
   implicit def pnodeWithoutType(n: Sketch.PNode): Sketch =
     SketchNode(n, TypePatternAny)
@@ -710,10 +710,10 @@ object SketchDSL {
     @inline def ::(p: Sketch): Sketch = SketchWithType(p, t)
   }
   implicit final class PAnyWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(v: ?.type): Sketch = SketchAny(t)
+    @inline def ::(v: `?`.type): Sketch = SketchAny(t)
   }
   implicit final class PVarWithType(private val t: TypePattern) extends AnyVal {
-    @inline def ::(v: ?): Sketch = SketchVar(v.index, t)
+    @inline def ::(v: `?`): Sketch = SketchVar(v.index, t)
   }
   implicit final class PNodeWithType(private val t: TypePattern) extends AnyVal {
     @inline def ::(n: Sketch.PNode): Sketch = SketchNode(n, t)

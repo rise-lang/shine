@@ -48,20 +48,20 @@ object gemmTensor {
 
           zip
           (bT |> split(nTileFrag))
-          (aRowsC._2 |> transpose |> split(nTileFrag)) |> // n/nTileFrag.(nTileFrag.k.f16, nTileFrag.mTileFrag.f32)
+          (aRowsC.`2` |> transpose |> split(nTileFrag)) |> // n/nTileFrag.(nTileFrag.k.f16, nTileFrag.mTileFrag.f32)
             mapWarp(0)(fun(bColumnsTCT =>
 
               zip
-              (transpose(aRowsC._1) |> split(kTileFrag))
-              (transpose(bColumnsTCT._1) |> split(kTileFrag)) |> // k/kTileFrag.(kTile.mTileFrag.f16 x kTile.nTile.f16)
+              (transpose(aRowsC.`1`) |> split(kTileFrag))
+              (transpose(bColumnsTCT.`1`) |> split(kTileFrag)) |> // k/kTileFrag.(kTile.mTileFrag.f16 x kTile.nTile.f16)
 
                 oclReduceSeq(AddressSpace.Private)(fun((cTile, abTiles) =>
                   tensorMMA(
-                    abTiles._1 |> transpose |> asFragment |> toPrivate,
-                    abTiles._2 |> asFragment |> toPrivate,
+                    abTiles.`1` |> transpose |> asFragment |> toPrivate,
+                    abTiles.`2` |> asFragment |> toPrivate,
                     cTile)))
 
-                (bColumnsTCT._2 |>
+                (bColumnsTCT.`2` |>
                   transpose |>
                   asFragment |> toPrivate |>
                   mapFragment(fun(x => x * (beta / alpha)))) |>
@@ -107,36 +107,36 @@ object gemmTensor {
 
           zip
           (bT |> split(nTileBlock))
-          (aRowsBlockC._2 |> transpose |> split(nTileBlock)) |>
+          (aRowsBlockC.`2` |> transpose |> split(nTileBlock)) |>
             mapBlock(0)(fun(bColumnsTBlockCT => // (nTileBlock.k.f16, nTileBlock.mTileBlock.f32)
 
               zip
-              (aRowsBlockC._1 |> split(mTileWarp))
-              (bColumnsTBlockCT._2 |> transpose |> split(mTileWarp)) |>
+              (aRowsBlockC.`1` |> split(mTileWarp))
+              (bColumnsTBlockCT.`2` |> transpose |> split(mTileWarp)) |>
                 mapThreads(1)(fun(aRowsWarpC => // (mTileWarp.k.f16, mTileWarp.nTileBlock.f32)
 
                   zip
-                  (bColumnsTBlockCT._1 |> split(nTileWarp))
-                  (aRowsWarpC._2 |> transpose |> split(nTileWarp)) |>
+                  (bColumnsTBlockCT.`1` |> split(nTileWarp))
+                  (aRowsWarpC.`2` |> transpose |> split(nTileWarp)) |>
                     mapWarp(0)(fun(bColumnsTWarpCT => // (nTileWarp.k.f16, nTileWarp.mTileWarp.f32)
 
                       zip
-                      (aRowsWarpC._1 |> transpose |> split(kTileFrag))
-                      (bColumnsTWarpCT._1 |> transpose |> split(kTileFrag)) |>
+                      (aRowsWarpC.`1` |> transpose |> split(kTileFrag))
+                      (bColumnsTWarpCT.`1` |> transpose |> split(kTileFrag)) |>
                         // k/kTileFrag.(kTileFrag.mTileWarp.f16, kTileFrag.nTileWarp.f16)
 
                         oclReduceSeq(AddressSpace.Private)(fun((cFrags, abTilesWarp) =>
 
                           //Load tiles of a-matrix into fragments
                           let(toPrivate(
-                            abTilesWarp._1 |> transpose |> split(mTileFrag) |>
+                            abTilesWarp.`1` |> transpose |> split(mTileFrag) |>
                               mapSeqUnroll(fun(aFragTile =>
                                 aFragTile |> asFragment))))
                             be(aFrags => // mTileWarp/mTileFrag.WmmaAMatrix
 
                             //Load tiles of b-matrix into fragments
                             let(toPrivate(
-                              abTilesWarp._2 |> transpose |> split(nTileFrag) |>
+                              abTilesWarp.`2` |> transpose |> split(nTileFrag) |>
                                 mapSeqUnroll(fun(bFragTileT =>
                                   bFragTileT |> transpose |> asFragment))))
                               be(bFrags => // nTileWarp/nTileFrag.WmmaBMatrix
@@ -144,11 +144,11 @@ object gemmTensor {
                               //Do matrix multiplication and accumulate with tensor cores
                               zip(aFrags)(cFrags) |>
                                 mapSeqUnroll(fun(acFrags =>
-                                  zip(bFrags)(acFrags._2) |>
+                                  zip(bFrags)(acFrags.`2`) |>
                                     mapSeqUnroll(fun(bcFrags =>
-                                      tensorMMA(acFrags._1, bcFrags._1, bcFrags._2)))))))))
+                                      tensorMMA(acFrags.`1`, bcFrags.`1`, bcFrags.`2`)))))))))
 
-                        (bColumnsTWarpCT._2 |> transpose |> split(mTileFrag) |>
+                        (bColumnsTWarpCT.`2` |> transpose |> split(mTileFrag) |>
                           mapSeq(fun(cTiles =>
                             cTiles |> transpose |> split(nTileFrag) |>
                               mapSeq(fun(cTileFragT =>
@@ -270,14 +270,14 @@ object gemmTensor {
         oclReduceSeq(AddressSpace.Private)(fun((cFragsBlock, aTbTileBlock) =>
 
           //Load aTile and bTile to shared memory
-          let(aTbTileBlock._1 |>
+          let(aTbTileBlock.`1` |>
             transpose |>
             copyMatrix(config.mTileBlock, config.kTileBlock, 8) |>
             toSharedWithPadding(config.kTileBlock, 8))
             be(aTile =>
 
             //Load bTile transposed to shared memory
-            let(aTbTileBlock._2 |>
+            let(aTbTileBlock.`2` |>
               transpose |>
               copyMatrix(config.nTileBlock, config.kTileBlock, 8) |>
               toSharedWithPadding(config.kTileBlock, 8))
@@ -289,9 +289,9 @@ object gemmTensor {
 
                 mapWarp(fun(abWarpC =>
                   warpMMA(
-                    abWarpC._1._1,
-                    abWarpC._1._2,
-                    abWarpC._2 |> split(config.nNumberOfFragsWarp)) |>
+                    abWarpC.`1`.`1`,
+                    abWarpC.`1`.`2`,
+                    abWarpC.`2` |> split(config.nNumberOfFragsWarp)) |>
 
                     mapSeq(mapSeq(fun(x => x))))) |>
                 join |>
@@ -464,9 +464,9 @@ object gemmTensor {
 
         blockGEMM(
           alpha, beta,
-          aRowsBlockBColumnBlockCTileBlock._1._1, //aRowsBlockBColumnBlockCTileBlock._1._1
-          aRowsBlockBColumnBlockCTileBlock._1._2, //aRowsBlockBColumnBlockCTileBlock._1._2
-          aRowsBlockBColumnBlockCTileBlock._2) |>     //mTileBlock.nTilcblock.f32
+          aRowsBlockBColumnBlockCTileBlock.`1`.`1`, //aRowsBlockBColumnBlockCTileBlock.`1`.`1`
+          aRowsBlockBColumnBlockCTileBlock.`1`.`2`, //aRowsBlockBColumnBlockCTileBlock.`1`.`2`
+          aRowsBlockBColumnBlockCTileBlock.`2`) |>     //mTileBlock.nTilcblock.f32
             transpose)) |>                                //m/mTileBlock*n/nTileBlock.nTileBlock.mTilcblock.f32
         join |>                                         //m/mTileBlock*n.mTilcblock.f32
         split(n) |>                                     //m/mTileBlock.n.mTilcblock.f32

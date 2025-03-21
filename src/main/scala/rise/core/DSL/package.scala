@@ -37,13 +37,12 @@ package object DSL {
   def toMemFun(f: ToBeTyped[Expr]): ToBeTyped[Expr] = fun(x => toMem(f(x)))
 
   case class `if`(b: ToBeTyped[Expr]) {
-    def `then`(tE: ToBeTyped[Expr]): Object {
-      def `else` (eE: ToBeTyped[Expr] ): ToBeTyped[Expr]
-    } = {
-      new {
-        def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr] = {
-          select(b)(tE)(eE)
-        }
+    def `then`(tE: ToBeTyped[Expr]): `if`.`then` = `if`.`then`(b, tE)
+  }
+  object `if` {
+    case class `then`(b: ToBeTyped[Expr], tE: ToBeTyped[Expr]) {
+      def `else`(eE: ToBeTyped[Expr]): ToBeTyped[Expr] = {
+        select(b)(tE)(eE)
       }
     }
   }
@@ -69,8 +68,8 @@ package object DSL {
     // scalastyle:on disallow.space.before.token
 
     // pair accesses
-    def _1: ToBeTyped[App] = fst(lhs)
-    def _2: ToBeTyped[App] = snd(lhs)
+    def `1`: ToBeTyped[App] = fst(lhs)
+    def `2`: ToBeTyped[App] = snd(lhs)
   }
 
   implicit class Indexing(e: ToBeTyped[Expr]) {
@@ -264,140 +263,78 @@ package object DSL {
       lambda(e, fun((e1, e2, e3, e4, e5, e6, e7, e8) => f(e, e1, e2, e3, e4, e5, e6, e7, e8)))
     }
 
-    // noinspection TypeAnnotation
-    // scalastyle:off structural.type
-    def apply(ft: FunType[ExprType, ExprType]): Object {
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier]) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
+    def apply(ft: FunType[ExprType, ExprType]): WithFunType = WithFunType(ft)
 
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier]
-        ) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier]) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier]
-        ) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier]) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier], ToBeTyped[Identifier]
-        ) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier],
-        ToBeTyped[Identifier]) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier]
-        ) => ToBeTyped[Expr]
-               ): ToBeTyped[Expr]
-
-      def apply(f: ToBeTyped[Identifier] => ToBeTyped[Expr]): ToBeTyped[Expr]
-    } = new {
+    case class WithFunType(ft: FunType[ExprType, ExprType]) {
       def apply(f: ToBeTyped[Identifier] => ToBeTyped[Expr]): ToBeTyped[Expr] =
         fun(f) :: ft
 
-      def apply(
-                 f: (ToBeTyped[Identifier], ToBeTyped[Identifier]) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier], ToBeTyped[Identifier]) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
 
-      def apply(
-                 f: (
-                   ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier],
-                     ToBeTyped[Identifier]
-                   ) => ToBeTyped[Expr]
+      def apply(f: (ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier],
+        ToBeTyped[Identifier]
+        ) => ToBeTyped[Expr]
                ): ToBeTyped[Expr] = fun(f) :: ft
     }
-    // scalastyle:on structural.type
   }
 
   object depFun {
@@ -470,20 +407,12 @@ package object DSL {
     }
   }
 
-  // noinspection ScalaUnusedSymbol
-  // scalastyle:off structural.type
-  object let {
-    def apply(e: ToBeTyped[Expr]): Object {
-      def be(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr]
-      def be(in: ToBeTyped[Expr]): ToBeTyped[Expr]
-    } = new {
-      def be(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
-        primitives.let(e)(fun(in))
-      def be(in: ToBeTyped[Expr]): ToBeTyped[Expr] =
-        primitives.let(e)(in)
-    }
+  case class  let(e: ToBeTyped[Expr]) {
+    def be(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] =
+      primitives.let(e)(fun(in))
+    def be(in: ToBeTyped[Expr]): ToBeTyped[Expr] =
+      primitives.let(e)(in)
   }
-  // scalastyle:on structural.type
 
   object letf {
     def apply(in: ToBeTyped[Expr] => ToBeTyped[Expr]): ToBeTyped[Expr] = {
