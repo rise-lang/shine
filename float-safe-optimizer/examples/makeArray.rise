@@ -1,0 +1,3 @@
+depFun((n: Nat) => fun(i32 ->: i32 ->: 2`.`i32)((x, y) =>
+  makeArray(2)(x)(y) |> mapSeqUnroll(fun(x => x))
+))

@@ -1,0 +1,5 @@
+def length() = impl { n: Nat => impl{ dt: DataType => fun(n`.`dt)(x => l(n)) } }
+
+depFun((n: Nat) => fun(n`.`i32)(x =>
+    x |> mapSeq(fun(y => y + (cast(length()(x)) :: i32)))
+))

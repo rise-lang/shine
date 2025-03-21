@@ -135,7 +135,7 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return end() }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
-      // println(iter)
+      println(iter)
 
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {

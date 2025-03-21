@@ -202,7 +202,7 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
       case AddrLambda(e) =>
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
-      case Literal(_) | Primitive(_) =>
+      case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) | Primitive(_) =>
         Data(0, Set(), isEtaApp = false, isLam = false, isNatLam = false)
       case Composition(f, g) =>
         val fd = costs(f)

@@ -113,6 +113,8 @@ case class EGraphDot(egraph: EGraph,
       case AddrApp(_, a) => s"aApp $a"
       case AddrLambda(_) => "Λ : addr"
       case Literal(d) => s"$d"
+      case NatLiteral(n) => s"$n"
+      case IndexLiteral(i, n) => s"idx($i, $n)"
       case Primitive(p) => s"${p.toString.trim}"
       case Composition(_, _) => ">>"
     }

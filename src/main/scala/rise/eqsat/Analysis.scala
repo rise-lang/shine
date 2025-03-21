@@ -572,8 +572,14 @@ object BeamExtractRW {
   sealed trait TypeAnnotation
   case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, Unit, rct.Access])
     extends TypeAnnotation
+  {
+    override def toString: String = node.toString()
+  }
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
+  {
+    override def toString: String = access.toString()
+  }
 
   type Data[Cost] = Map[(TypeAnnotation, Map[Int, TypeAnnotation]), Seq[(Cost, ExprWithHashCons)]]
 
@@ -613,9 +619,9 @@ object BeamExtractRW {
 
   def subtype(a: TypeAnnotation, at: TypeId, b: TypeAnnotation, bt: TypeId, egraph: EGraph): Boolean = {
     assert(at == bt)
-    (a, b) match {
+    val res = (a, b) match {
       case (DataTypeAnnotation(x), DataTypeAnnotation(y)) =>
-        (x == y) || (x == rct.read || notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
+        (x == y) || (x == rct.read && notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
       case (NotDataTypeAnnotation(x), NotDataTypeAnnotation(y)) =>
         (x, egraph(at), y, egraph(bt)) match {
           case (FunType(aIn, aOut), FunType(aInT, aOutT), FunType(bIn, bOut), FunType(bInT, bOutT)) =>
@@ -628,16 +634,15 @@ object BeamExtractRW {
         }
       case _ => throw new Exception("this should not happen")
     }
+    // println(s"subtype: $a : ${egraph(at)} <= $b : ${egraph(bt)} ? $res")
+    res
   }
 
   // TODO: could hash-cons this
   def notContainingArrayType(t: DataTypeId, egraph: EGraph): Boolean = {
     egraph(t) match {
       case DataTypeVar(_) => false
-      case ScalarType(_) => true
-      case NatType => true
-      case VectorType(_, _) => true
-      case IndexType(_) => true
+      case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
     }
@@ -687,7 +692,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
       case App(f, e) =>
         val fInT = egraph(egraph.get(f).t) match {
           case FunType(inT, _) => inT
-          case _ => throw new Exception("this should not happen")
+          case _ => throw new Exception("app expected fun type")
         }
         val eT = egraph.get(e).t
 
@@ -699,7 +704,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             case NotDataTypeAnnotation(FunType(fIn, fOut)) =>
               eBeams.foreach { case ((eAnnotation, eEnv), eBeam) =>
                 mergeEnv(fEnv, eEnv).foreach { mergedEnv =>
-                  if (subtype(fIn, fInT, eAnnotation, eT, egraph)) {
+                  if (subtype(eAnnotation, eT, fIn, fInT, egraph)) {
                     val newBeam = fBeam.flatMap { x => eBeam.flatMap { y =>
                       Seq((
                         cf.cost(egraph, enode, t, Map(f -> x._1, e -> y._1)),
@@ -713,7 +718,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                   }
                 }
               }
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("app expected fun type")
           }
         }
         newBeams
@@ -748,7 +753,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(NatFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("natApp expected NatFunType")
           }
         }
       case DataApp(f, _) =>
@@ -762,7 +767,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(DataFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("dataApp expected DataFunType")
           }
         }
       case AddrApp(f, _) =>
@@ -776,7 +781,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(AddrFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("addrApp expected AddrFunType")
           }
         }
       case NatLambda(e) =>
@@ -815,7 +820,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           // note: recording DataFunType() constructor is useless
           (NotDataTypeAnnotation(AddrFunType(annotation)), env) -> newBeam
         }
-      case Literal(_) =>
+      case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) =>
         val beam = Seq((
           cf.cost(egraph, enode, t, Map.empty),
           ExprWithHashCons(enode.mapChildren(Map.empty), t)
@@ -923,6 +928,17 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
               }
             }
             Seq(rec(n))
+          case rp.id() =>
+            // FIXME: only supports non-functional values
+            Seq(read ->: read, write ->: write)
+          case rp.foreignFunction(_, _) =>
+            def buildAnnot(t: rise.eqsat.TypeId): TypeAnnotation = egraph(t) match {
+              case _: DataTypeNode[NatId, DataTypeId] => read
+              case rise.eqsat.FunType(in, out) => buildAnnot(in) ->: buildAnnot(out)
+              case rise.eqsat.DataFunType(t) => dtFunT(buildAnnot(t))
+              case node => throw new Exception(s"did not expect $node")
+            }
+            Seq(buildAnnot(t))
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((

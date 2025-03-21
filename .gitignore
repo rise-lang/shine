@@ -18,4 +18,5 @@ modules.xml
 *.gz
 *.sc
 
+float-safe-optimizer.jar
 *.o

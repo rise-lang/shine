@@ -1,4 +1,5 @@
 package rise.eqsat
+import rise.eqsat.NatLiteral
 
 object NodeSubs {
   /** Shifts De-Bruijn indices up or down if they are >= cutoff
@@ -31,6 +32,10 @@ object NodeSubs {
       case AddrApp(f, x) =>
         AddrApp(shiftedE(f, shift, cutoff),
           Address.shifted(x, shift._4, cutoff._4))
+      case NatLiteral(n) => NatLiteral(Nat.shifted(egraph, n, shift._2, cutoff._2))
+      case IndexLiteral(i, n) => IndexLiteral(
+        Nat.shifted(egraph, i, shift._2, cutoff._2),
+        Nat.shifted(egraph, n, shift._2, cutoff._2))
       case Literal(_) | Primitive(_) => n
 
       case Composition(f, g) =>
@@ -43,7 +48,7 @@ object NodeSubs {
                 (shiftedE: (E, Expr.Shift, Expr.Shift) => E): E =
     n match {
       case Var(idx) if idx == index => subs
-      case Var(_) | Literal(_) | Primitive(_) => makeE(n)
+      case Var(_) | Literal(_) | NatLiteral(_) | IndexLiteral(_, _) | Primitive(_) => makeE(n)
       case Lambda(e) =>
         // TODO: could shift lazily
         val e2 = replaceE(e, index + 1, shiftedE(subs, (1, 0, 0, 0), (0, 0, 0, 0)))
@@ -100,6 +105,10 @@ object NodeSubs {
         AddrLambda(replaceE(e, index, subs))
       case AddrApp(f, x) =>
         AddrApp(replaceE(f, index, subs), x)
+      case NatLiteral(n) =>
+        NatLiteral(Nat.replace(egraph, n, index, subs))
+      case IndexLiteral(i, n) =>
+        IndexLiteral(Nat.replace(egraph, i, index, subs), Nat.replace(egraph, n, index, subs))
 
       case Composition(f, g) =>
         Composition(replaceE(f, index, subs), replaceE(g, index, subs))
@@ -140,6 +149,9 @@ object NodeSubs {
         case other => egraph.add(other.map(n => replace(egraph, n, index, subs)))
       }
     }
+
+    def replace(egraph: EGraph, id: NatId,
+                index: Int, subs: DataTypeId): NatId = id // nats cannot contain datatypes
   }
 
   object DataType {
@@ -174,6 +186,17 @@ object NodeSubs {
         n => Nat.replace(egraph, n, index, subs),
         dt => replace(egraph, dt, index, subs)
       ))
+
+    def replace(egraph: EGraph, id: DataTypeId,
+                index: Int, subs: DataTypeId): DataTypeId =
+      egraph(id) match {
+        case DataTypeVar(i) if i == index => subs
+        case dtv: DataTypeVar => egraph.add(dtv)
+        case other => egraph.add(other.map(
+          Nat.replace(egraph, _, index, subs),
+          replace(egraph, _, index, subs)
+        ))
+      }
 
     def replaceDataType(index: Int, subs: DataType): DataType = {
       ???
@@ -220,9 +243,21 @@ object NodeSubs {
       })
 
     def replace(egraph: EGraph, id: TypeId,
-                index: Int, subs: DataTypeId): TypeId = {
-      ???
-    }
+                index: Int, subs: DataTypeId): TypeId =
+      id match {
+        case dt: DataTypeId => DataType.replace(egraph, dt, index, subs)
+        case _: NotDataTypeId => egraph.add(egraph(id) match {
+          case DataFunType(t) =>
+            val t2 = replace(egraph, t, index + 1, DataType.shifted(egraph, subs, (0, 1), (0, 0)))
+            DataFunType(t2)
+          case _: DataTypeNode[NatId, DataTypeId] =>
+            throw new Exception("this should not happen")
+          case other => other.map(
+            replace(egraph, _, index, subs),
+            Nat.replace(egraph, _, index, subs),
+            DataType.replace(egraph, _, index, subs))
+        })
+      }
 
     // substitutes %n0 for arg in this
     def withNatArgument(egraph: EGraph,

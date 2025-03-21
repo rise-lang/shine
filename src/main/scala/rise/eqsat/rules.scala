@@ -612,6 +612,12 @@ object rules {
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
   )
 
+  val reduceSeqOne = NamedRewrite.init("reduce-seq-one",
+    (app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("x", app(app(add, "acc"), li32(1))))), li32(0)), "in" :: ("n" : Nat)`.``?dt`) :: i32)
+      -->
+    (app(cast, lnat("n")) :: i32)
+  )
+
   object omp {
     val mapPar = NamedRewrite.init("map-par",
       map --> rise.openMP.primitives.mapPar.primitive

@@ -160,14 +160,16 @@ object Expr {
         DataApp(fromNamed(f, bound), DataType.fromNamed(dt, bound))
       case core.DepApp(rct.AddressSpaceKind, f, a: rct.AddressSpace) =>
         AddrApp(fromNamed(f, bound), Address.fromNamed(a, bound))
-      case core.DepApp(_, _, _) => ???
+      case core.DepApp(k, _, _) => throw new Exception(s"missing DepApp case for $k")
       case core.DepLambda(rct.NatKind, n: rct.NatIdentifier, e) =>
         NatLambda(fromNamed(e, bound + n))
       case core.DepLambda(rct.DataKind, dt: rcdt.DataTypeIdentifier, e) =>
         DataLambda(fromNamed(e, bound + dt))
       case core.DepLambda(rct.AddressSpaceKind, a: rct.AddressSpaceIdentifier, e) =>
         AddrLambda(fromNamed(e, bound + a))
-      case core.DepLambda(_, _, _) => ???
+      case core.DepLambda(k, _, _) => throw new Exception(s"missing DepLambda case for $k")
+      case core.Literal(core.semantics.NatData(n)) => NatLiteral(Nat.fromNamed(n, bound))
+      case core.Literal(core.semantics.IndexData(i, n)) => IndexLiteral(Nat.fromNamed(i, bound), Nat.fromNamed(n, bound))
       case core.Literal(d) => Literal(d)
       // note: we set the primitive type to a place holder here,
       // because we do not want type information at the node level
@@ -202,6 +204,9 @@ object Expr {
         core.DepLambda(rct.AddressSpaceKind, i, toNamed(e, bound + i)) _
       case Literal(d) => core.Literal(d).setType _
       case Primitive(p) => p.setType _
+      case NatLiteral(n) => core.Literal(core.semantics.NatData(Nat.toNamed(n, bound))).setType _
+      case IndexLiteral(i, n) => core.Literal(core.semantics.IndexData(
+        Nat.toNamed(i, bound), Nat.toNamed(n, bound))).setType _
 
       case Composition(f, g) => /*
         val f2 = f.shifted((1, 0, 0), (0, 0, 0))
@@ -251,6 +256,9 @@ object Expr {
           val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}")
           core.DepLambda(rct.AddressSpaceKind, i, rec(e, bound + i)) _
         case Literal(d) => core.Literal(d).setType _
+        case NatLiteral(n) => core.Literal(core.semantics.NatData(Nat.toNamed(n, bound))).setType _
+        case IndexLiteral(i, n) => core.Literal(core.semantics.IndexData(
+          Nat.toNamed(i, bound), Nat.toNamed(n, bound))).setType _
         case Primitive(p) => p.setType _
 
         case Composition(f, g) => /*

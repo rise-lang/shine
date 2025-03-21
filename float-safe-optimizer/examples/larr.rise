@@ -1,0 +1,7 @@
+import rise.core.semantics._
+
+def larrToMem(s: Seq[Data]) = larr(s) |> mapSeqUnroll(fun(x => x)) |> toMem
+
+depFun((n: Nat) =>
+  larrToMem(Seq(IntData(1), IntData(2), IntData(3)))
+)
