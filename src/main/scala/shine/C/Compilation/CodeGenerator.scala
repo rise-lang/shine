@@ -67,6 +67,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
 
+  // Must be overridden by every subclass
   def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 

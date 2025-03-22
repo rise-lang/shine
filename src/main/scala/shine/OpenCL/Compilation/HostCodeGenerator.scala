@@ -26,6 +26,10 @@ case class HostCodeGenerator(override val decls: C.Compilation.CodeGenerator.Dec
 {
   override def name: String = "OpenCL Host"
 
+  override def updatedRanges(key: String,
+                             value: arithexpr.arithmetic.Range): HostCodeGenerator =
+    new HostCodeGenerator(decls, ranges.updated(key, value), kernelModules)
+
   override def cmd(env: Environment): Phrase[CommType] => Stmt = {
     case k@KernelCallCmd(name, LocalSize(ls), GlobalSize(gs), n) =>
       kernelCallCmd(name, ls, gs, k.output, k.args, env)
