@@ -193,6 +193,11 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
         val isRedex = 0 // TODO: if (fd.isDataLam) { 1 } else { 0 }
         Data(fd.redexes + isRedex, fd.free,
           isEtaApp = false, isLam = false, isNatLam = false)
+      case AppNatToNat(f, _) =>
+        val fd = costs(f)
+        val isRedex = 0 // TODO: if (fd.isDataLam) { 1 } else { 0 }
+        Data(fd.redexes + isRedex, fd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)          
       case NatLambda(e) =>
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = true)
@@ -200,6 +205,9 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
       case AddrLambda(e) =>
+        val ed = costs(e)
+        Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
+      case LambdaNatToNat(e) =>
         val ed = costs(e)
         Data(ed.redexes, ed.free, isEtaApp = false, isLam = false, isNatLam = false)
       case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) | Primitive(_) =>

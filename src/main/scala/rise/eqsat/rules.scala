@@ -12,7 +12,7 @@ object rules {
     (new ConditionalApplier(
       Set(?(0)),
       (Set(FreeIntersectionAnalysis), Set()),
-      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern)) {
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0, 0), (1, 0, 0, 0, 0), ?(1): Pattern)) {
       override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
         def notContainsIdent(v: PatternVar, ident: Var, freeAnalysis: FreeAnalysisCustomisable): Boolean = {
           val freeOf = egraph.getAnalysis(freeAnalysis)
