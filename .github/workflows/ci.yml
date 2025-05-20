@@ -24,6 +24,8 @@ jobs:
         uses: sbt/setup-sbt@v1
       - name: Setup SBT (cache)
         uses: coursier/cache-action@v6
+      - name: Setup C++
+        run: sudo apt install clang++ libc++abi-dev
       - name: Setup OpenCL
         run: |
           sudo apt install ocl-icd-opencl-dev opencl-headers
