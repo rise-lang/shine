@@ -29,7 +29,7 @@ jobs:
       # hypothesis: clang++ uses GCC's libstdc++ by default without '-stdlib=libc++' option ?
         run: |
           sudo apt install clang libc++-dev libc++abi-dev
-          sudo apt install g++ libstdc++-dev
+          sudo apt install g++-12 libstdc++-12-dev
       - name: Setup OpenCL
         run: |
           sudo apt install ocl-icd-opencl-dev opencl-headers
