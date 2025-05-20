@@ -22,13 +22,12 @@ jobs:
           java-version: 17
       - name: Setup SBT
         uses: sbt/setup-sbt@v1
-      # uses: coursier/setup-action@v1
       - name: Setup SBT (cache)
         uses: coursier/cache-action@v6
       - name: Setup OpenCL
         run: |
           sudo apt install ocl-icd-opencl-dev opencl-headers
-          sudo apt install pocl libpocl-dev
+          sudo apt install libpocl-dev pocl-opencl-icd
       - name: Compile
         run: sbt compile
       - name: Run tests
