@@ -24,16 +24,15 @@ jobs:
         uses: sbt/setup-sbt@v1
       - name: Setup SBT (cache)
         uses: coursier/cache-action@v6
-      - name: Setup C++
-      # FIXME: seems like using clang / libc++ alone does not work
-      # hypothesis: clang++ uses GCC's libstdc++ by default without '-stdlib=libc++' option ?
+      - name: Setup C++ and JNI dependencies
         run: |
-          sudo apt install clang libc++-dev libc++abi-dev
-          sudo apt install g++-12 libstdc++-12-dev
+          sudo apt update
+          sudo apt install -y cmake clang libc++-dev libc++abi-dev libxtst6 libxi6 libxrender1 libxext6
       - name: Setup OpenCL
         run: |
-          sudo apt install ocl-icd-opencl-dev opencl-headers
-          sudo apt install libpocl-dev pocl-opencl-icd
+          sudo apt update
+          sudo apt install -y ocl-icd-opencl-dev opencl-headers
+          sudo apt install -y libpocl-dev pocl-opencl-icd
       - name: Compile
         run: sbt compile
       - name: Run tests

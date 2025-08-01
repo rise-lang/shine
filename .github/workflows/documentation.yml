@@ -28,10 +28,15 @@ jobs:
         uses: sbt/setup-sbt@v1
       - name: Setup SBT (cache)
         uses: coursier/cache-action@v6
+      - name: Setup C++
+        run: |
+          sudo apt update
+          sudo apt install -y cmake clang libc++-dev libc++abi-dev libxtst6 libxi6 libxrender1 libxext6
       - name: Setup OpenCL
         run: |
-          sudo apt install ocl-icd-opencl-dev opencl-headers
-          sudo apt install libpocl-dev pocl-opencl-icd
+          sudo apt update
+          sudo apt install -y ocl-icd-opencl-dev opencl-headers
+          sudo apt install -y libpocl-dev pocl-opencl-icd
       - name: Check documentation
         run: sbt generateRISEPrimitives docs/mdoc
       - uses: actions/setup-node@v2
@@ -67,10 +72,15 @@ jobs:
         uses: sbt/setup-sbt@v1
       - name: Setup SBT (cache)
         uses: coursier/cache-action@v6
+      - name: Setup C++
+        run: |
+          sudo apt update
+          sudo apt install -y cmake clang libc++-dev libc++abi-dev libxtst6 libxi6 libxrender1 libxext6
       - name: Setup OpenCL
         run: |
-          sudo apt install ocl-icd-opencl-dev opencl-headers
-          sudo apt install libpocl-dev pocl-opencl-icd
+          sudo apt update
+          sudo apt install -y ocl-icd-opencl-dev opencl-headers
+          sudo apt install -y libpocl-dev pocl-opencl-icd
       - name: Check documentation
         run: sbt generateRISEPrimitives docs/mdoc
       - uses: actions/setup-node@v2
