@@ -108,7 +108,7 @@ object NamedRewrite {
       Pattern(expr match {
         case i: rc.Identifier if freeV.contains(i.name) =>
           makePatVar(i.name,
-            (bound.expr.size, bound.nat.size, bound.data.size, bound.addr.size),
+            (bound.expr.size, bound.nat.size, bound.data.size, bound.addr.size, bound.n2n.size),
             patVars, PatternVar, if (isRhs) { Unknown } else { Known })
         case i: rc.Identifier => PatternNode(Var(bound.indexOf(i)))
 
@@ -119,7 +119,7 @@ object NamedRewrite {
           if (!isRhs) {
             assert(!boundVarToShift.contains(x.name))
             boundVarToShift += x.name ->
-              (bound.expr.size + 1, bound.nat.size, bound.data.size, bound.addr.size)
+              (bound.expr.size + 1, bound.nat.size, bound.data.size, bound.addr.size, bound.n2n.size)
           }
           PatternNode(Lambda(makePat(e, bound + x, isRhs, matchType = false)))
         case rc.DepLambda(rct.NatKind, x: rct.NatIdentifier, e) =>
@@ -150,6 +150,10 @@ object NamedRewrite {
             makePat(f, bound, isRhs, matchType = false), makeAPat(x, bound, isRhs)))
         case rc.DepApp(_, _, _) => ???
 
+        case rc.Literal(rc.semantics.NatData(n)) =>
+          PatternNode(NatLiteral(makeNPat(n, bound, isRhs)))
+        case rc.Literal(rc.semantics.IndexData(i, n)) =>
+          PatternNode(IndexLiteral(makeNPat(i, bound, isRhs), makeNPat(n, bound, isRhs)))
         case rc.Literal(d) => PatternNode(Literal(d))
         // note: we set the primitive type to a place holder here,
         // because we do not want type information at the node level
@@ -161,7 +165,7 @@ object NamedRewrite {
     def makeNPat(n: rct.Nat, bound: Expr.Bound, isRhs: Boolean): NatPattern =
       n match {
         case i: rct.NatIdentifier if freeT(rct.NatKind.IDWrapper(i)) =>
-          makePatVar(i.name, bound.nat.size, natPatVars,
+          makePatVar(i.name, (bound.nat.size, bound.n2n.size), natPatVars,
             NatPatternVar, if (isRhs) { Unknown } else { Known })
         case i: rct.NatIdentifier =>
           NatPatternNode(NatVar(bound.indexOf(i)))
@@ -182,8 +186,8 @@ object NamedRewrite {
         // try to pivot the equality around a fresh pattern variable instead
         case ae.Sum(_) | ae.Prod(_) | ae.Pow(_, _) if !isRhs =>
           val nv = rct.NatIdentifier(s"_nv${natsToPivot.size}")
-          val pv = makePatVar(nv.name, bound.nat.size, natPatVars, NatPatternVar, Known)
-          natsToPivot.addOne((n, nv, bound.nat.size, pv))
+          val pv = makePatVar(nv.name, (bound.nat.size, bound.n2n.size), natPatVars, NatPatternVar, Known)
+          natsToPivot.addOne((n, nv, (bound.nat.size, bound.n2n.size), pv))
           pv
         case _ =>
           throw new Exception(s"did not expect $n")
@@ -192,7 +196,7 @@ object NamedRewrite {
     def makeDTPat(dt: rct.DataType, bound: Expr.Bound, isRhs: Boolean): DataTypePattern =
       dt match {
         case i: rcdt.DataTypeIdentifier if freeT(IDWrapper(i)) =>
-          makePatVar(i.name, (bound.nat.size, bound.data.size),
+          makePatVar(i.name, (bound.nat.size, bound.data.size, bound.n2n.size),
             dataTypePatVars, DataTypePatternVar, if (isRhs) { Unknown } else { Known })
         case i: rcdt.DataTypeIdentifier =>
           DataTypePatternNode(DataTypeVar(bound.indexOf(i)))
@@ -227,7 +231,7 @@ object NamedRewrite {
         case rct.DepFunType(_, _, _) => ???
         case i: rct.TypeIdentifier =>
           assert(freeT(rct.TypeKind.IDWrapper(i)))
-          makePatVar(i.name, (bound.nat.size, bound.data.size),
+          makePatVar(i.name, (bound.nat.size, bound.data.size, bound.n2n.size),
             typePatVars, TypePatternVar, if (isRhs) { Unknown } else { Known })
         case rct.TypePlaceholder =>
           throw new Exception(s"did not expect $t, something was not infered")
@@ -285,7 +289,7 @@ object NamedRewrite {
                   (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3, s2._4 - s1._4)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3, s2._4 - s1._4, s2._5 - s1._5)
       // TODO: or ShiftedApplier?
       ShiftedExtractApplier(pv1, pv2, shift, cutoff, applier)
     }
@@ -295,7 +299,7 @@ object NamedRewrite {
                        (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3, s2._4 - s1._4)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3, s2._4 - s1._4, s2._5 - s1._5)
       ShiftedCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -304,7 +308,7 @@ object NamedRewrite {
                      (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = s2 - s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
       ShiftedNatApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -313,7 +317,7 @@ object NamedRewrite {
                           (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = s2 - s1
+      val shift = (s2._1 - s1._1, s2._2 - s1._2)
       ShiftedNatCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -322,7 +326,7 @@ object NamedRewrite {
                           (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
       ShiftedDataTypeApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -331,7 +335,7 @@ object NamedRewrite {
                                (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
       ShiftedDataTypeCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -340,7 +344,7 @@ object NamedRewrite {
                       (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
       ShiftedTypeApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -349,7 +353,7 @@ object NamedRewrite {
                            (applier: Applier): Applier = {
       assert(s1 != s2)
       val cutoff = s1
-      val shift = (s2._1 - s1._1, s2._2 - s1._2)
+      val shift = (s2._1 - s1._1, s2._2 - s1._2, s2._3 - s1._3)
       ShiftedTypeCheckApplier(pv1, pv2, shift, cutoff, applier)
     }
 
@@ -487,15 +491,15 @@ object NamedRewrite {
     val param = parameters.foldRight((a: Applier) => a) { case (c, acc) =>
       c match {
         case NotFreeIn(notFree, in) =>
-          val nfShift = boundVarToShift.getOrElse(notFree, (0, 0, 0, 0))._1
+          val nfShift = boundVarToShift.getOrElse(notFree, (0, 0, 0, 0, 0))._1
           // all left-hand-side uses of `in` may contain `notFree`
           assert(patVars(in).forall {
-            case ((shift, _, _, _), (_, status)) =>
+            case ((shift, _, _, _, _), (_, status)) =>
               shift >= nfShift || status != Known
           })
           // pick one of these uses
           val (iS, iPV) = patVars(in).collectFirst {
-            case ((s, _, _, _), (pv, Known)) => (s, pv)
+            case ((s, _, _, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
           (a: Applier) => (new ConditionalApplier(Set(iPV), (Set(FreeAnalysis), Set()), acc(a)) {
@@ -505,11 +509,11 @@ object NamedRewrite {
             }
           })
         case VectorizeScalarFun(f, n, fV) =>
-          val (nPV, nST) = natPatVars(n)(0)
+          val (nPV, nST) = natPatVars(n)(0, 0)
           assert(nST == Known)
-          val (fPV, fST) = patVars(f)((0, 0, 0, 0))
+          val (fPV, fST) = patVars(f)((0, 0, 0, 0, 0))
           assert(fST == Known)
-          val fVPV = makePatVar(fV, (0, 0, 0, 0), patVars, PatternVar, Known)
+          val fVPV = makePatVar(fV, (0, 0, 0, 0, 0), patVars, PatternVar, Known)
           (a: Applier) => VectorizeScalarFunExtractApplier(fPV, nPV, fVPV, acc(a))
       }
     }
@@ -567,7 +571,9 @@ object NamedRewriteDSL {
   }
   def l(d: rc.semantics.Data): Pattern = rc.Literal(d)
   def lf32(f: Float): Pattern = l(rise.core.semantics.FloatData(f))
+  def li32(i: Int): Pattern = app(cast, l(rise.core.semantics.IntData(i)))
   def lidx(i: Int, n: Int) = l(rise.core.semantics.IndexData(i, n))
+  def lnat(n: rct.Nat) = l(rise.core.semantics.NatData(n))
 
   def slide: Pattern = rcp.slide.primitive
   def map: Pattern = rcp.map.primitive
@@ -591,6 +597,7 @@ object NamedRewriteDSL {
   def asVector: Pattern = rcp.asVector.primitive
   def asVectorAligned: Pattern = rcp.asVectorAligned.primitive
   def vectorFromScalar: Pattern = rcp.vectorFromScalar.primitive
+  def cast: Pattern = rcp.cast.primitive
 
   def `?n`: NatPattern =
     rct.NatIdentifier(rc.freshName("n"))
@@ -612,6 +619,7 @@ object NamedRewriteDSL {
     rct.TypeIdentifier(name)
 
   val int: DataTypePattern = rcdt.int
+  val i32: DataTypePattern = rcdt.i32
   val f32: DataTypePattern = rcdt.f32
 
   implicit final class TypeAnnotation(private val t: TypePattern) extends AnyVal {

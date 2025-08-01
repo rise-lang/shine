@@ -1,4 +1,5 @@
 package rise.eqsat
+import rise.eqsat.NatLiteral
 
 object NodeSubs {
   /** Shifts De-Bruijn indices up or down if they are >= cutoff
@@ -20,17 +21,26 @@ object NodeSubs {
         NatLambda(shiftedE(e, shift, cutoff.copy(_2 = cutoff._2 + 1)))
       case NatApp(f, x) =>
         NatApp(shiftedE(f, shift, cutoff),
-          Nat.shifted(egraph, x, shift._2, cutoff._2))
+          Nat.shifted(egraph, x, (shift._2, shift._5), (cutoff._2, cutoff._5)))
       case DataLambda(e) =>
         DataLambda(shiftedE(e, shift, cutoff.copy(_3 = cutoff._3 + 1)))
       case DataApp(f, x) =>
         DataApp(shiftedE(f, shift, cutoff),
-          DataType.shifted(egraph, x, (shift._2, shift._3), (cutoff._2, cutoff._3)))
+          DataType.shifted(egraph, x, (shift._2, shift._3, shift._5), (cutoff._2, cutoff._3, cutoff._5)))
       case AddrLambda(e) =>
         AddrLambda(shiftedE(e, shift, cutoff.copy(_4 = cutoff._4 + 1)))
       case AddrApp(f, x) =>
         AddrApp(shiftedE(f, shift, cutoff),
           Address.shifted(x, shift._4, cutoff._4))
+      case LambdaNatToNat(e) =>
+        LambdaNatToNat(shiftedE(e, shift, cutoff.copy(_5 = cutoff._5 + 1)))
+      case AppNatToNat(f, x) =>
+        AppNatToNat(shiftedE(f, shift, cutoff),
+          NatToNat.shifted(egraph, x, (shift._2, shift._5), (shift._2, cutoff._5)))
+      case NatLiteral(n) => NatLiteral(Nat.shifted(egraph, n, (shift._2, shift._5), (cutoff._2, cutoff._5)))
+      case IndexLiteral(i, n) => IndexLiteral(
+        Nat.shifted(egraph, i, (shift._2, shift._5), (cutoff._2, cutoff._5)),
+        Nat.shifted(egraph, n, (shift._2, shift._5), (cutoff._2, cutoff._5)))
       case Literal(_) | Primitive(_) => n
 
       case Composition(f, g) =>
@@ -43,10 +53,10 @@ object NodeSubs {
                 (shiftedE: (E, Expr.Shift, Expr.Shift) => E): E =
     n match {
       case Var(idx) if idx == index => subs
-      case Var(_) | Literal(_) | Primitive(_) => makeE(n)
+      case Var(_) | Literal(_) | NatLiteral(_) | IndexLiteral(_, _) | Primitive(_) => makeE(n)
       case Lambda(e) =>
         // TODO: could shift lazily
-        val e2 = replaceE(e, index + 1, shiftedE(subs, (1, 0, 0, 0), (0, 0, 0, 0)))
+        val e2 = replaceE(e, index + 1, shiftedE(subs, (1, 0, 0, 0, 0), (0, 0, 0, 0, 0)))
         makeE(Lambda(e2))
       case App(f, e) =>
         val f2 = replaceE(f, index, subs)
@@ -54,22 +64,28 @@ object NodeSubs {
         makeE(App(f2, e2))
       case NatLambda(e) =>
         // TODO: could shift lazily
-        val subs2 = shiftedE(subs, (0, 1, 0, 0), (0, 0, 0, 0))
+        val subs2 = shiftedE(subs, (0, 1, 0, 0, 0), (0, 0, 0, 0, 0))
         makeE(NatLambda(replaceE(e, index, subs2)))
       case NatApp(f, x) =>
         makeE(NatApp(replaceE(f, index, subs), x))
       case DataLambda(e) =>
         // TODO: could shift lazily
-        val subs2 = shiftedE(subs, (0, 0, 1, 0), (0, 0, 0, 0))
+        val subs2 = shiftedE(subs, (0, 0, 1, 0, 0), (0, 0, 0, 0, 0))
         makeE(DataLambda(replaceE(e, index, subs2)))
       case DataApp(f, x) =>
         makeE(DataApp(replaceE(f, index, subs), x))
       case AddrLambda(e) =>
         // TODO: could shift lazily
-        val subs2 = shiftedE(subs, (0, 0, 0, 1), (0, 0, 0, 0))
+        val subs2 = shiftedE(subs, (0, 0, 0, 1, 0), (0, 0, 0, 0, 0))
         makeE(AddrLambda(replaceE(e, index, subs2)))
       case AddrApp(f, x) =>
         makeE(AddrApp(replaceE(f, index, subs), x))
+      case LambdaNatToNat(e) =>
+        // TODO: could shift lazily
+        val subs2 = shiftedE(subs, (0, 0, 0, 0, 1), (0, 0, 0, 0, 0))
+        makeE(LambdaNatToNat(replaceE(e, index, subs2)))
+      case AppNatToNat(f, x) =>
+        makeE(AppNatToNat(replaceE(f, index, subs), x))
 
       case Composition(f, g) =>
         makeE(Composition(replaceE(f, index, subs), replaceE(g, index, subs)))
@@ -88,7 +104,7 @@ object NodeSubs {
         App(f2, e2)
       case NatLambda(e) =>
         // TODO: could shift lazily
-        val e2 = replaceE(e, index + 1, Nat.shifted(egraph, subs, 1, 0))
+        val e2 = replaceE(e, index + 1, Nat.shifted(egraph, subs, (1, 0), (0, 0)))
         NatLambda(e2)
       case NatApp(f, x) =>
         NatApp(replaceE(f, index, subs), Nat.replace(egraph, x, index, subs))
@@ -100,6 +116,14 @@ object NodeSubs {
         AddrLambda(replaceE(e, index, subs))
       case AddrApp(f, x) =>
         AddrApp(replaceE(f, index, subs), x)
+      case LambdaNatToNat(e) =>
+        LambdaNatToNat(replaceE(e, index, subs))
+      case AppNatToNat(f, x) =>
+        AppNatToNat(replaceE(f, index, subs), x)
+      case NatLiteral(n) =>
+        NatLiteral(Nat.replace(egraph, n, index, subs))
+      case IndexLiteral(i, n) =>
+        IndexLiteral(Nat.replace(egraph, i, index, subs), Nat.replace(egraph, n, index, subs))
 
       case Composition(f, g) =>
         Composition(replaceE(f, index, subs), replaceE(g, index, subs))
@@ -113,7 +137,7 @@ object NodeSubs {
                 id: NatId, shift: Shift, cutoff: Shift): NatId = {
       egraph.add(egraph(id) match {
         case NatVar(index) =>
-          val delta = if (index >= cutoff) shift else 0
+          val delta = if (index >= cutoff._1) shift._1 else 0
           NatVar(index + delta)
         case NatCst(value) =>
           NatCst(value)
@@ -129,6 +153,8 @@ object NodeSubs {
           NatMod(shifted(egraph, a, shift, cutoff), shifted(egraph, b, shift, cutoff))
         case NatIntDiv(a, b) =>
           NatIntDiv(shifted(egraph, a, shift, cutoff), shifted(egraph, b, shift, cutoff))
+        case NatToNatApp(n2n, n) =>
+          NatToNatApp(NatToNat.shifted(egraph, n2n, shift, cutoff), shifted(egraph, n, shift, cutoff))
       })
     }
 
@@ -140,6 +166,9 @@ object NodeSubs {
         case other => egraph.add(other.map(n => replace(egraph, n, index, subs)))
       }
     }
+
+    def replace(egraph: EGraph, id: NatId,
+                index: Int, subs: DataTypeId): NatId = id // nats cannot contain datatypes
   }
 
   object DataType {
@@ -155,15 +184,15 @@ object NodeSubs {
         case ScalarType(s) => ScalarType(s)
         case NatType => NatType
         case VectorType(size, elemType) =>
-          VectorType(Nat.shifted(egraph, size, shift._1, cutoff._1),
+          VectorType(Nat.shifted(egraph, size, (shift._1, shift._3), (cutoff._1, cutoff._3)),
             shifted(egraph, elemType, shift, cutoff))
         case IndexType(size) =>
-          IndexType(Nat.shifted(egraph, size, shift._1, cutoff._1))
+          IndexType(Nat.shifted(egraph, size, (shift._1, shift._3), (cutoff._1, cutoff._3)))
         case PairType(dt1, dt2) =>
           PairType(shifted(egraph, dt1, shift, cutoff),
             shifted(egraph, dt2, shift, cutoff))
         case ArrayType(size, elemType) =>
-          ArrayType(Nat.shifted(egraph, size, shift._1, cutoff._1),
+          ArrayType(Nat.shifted(egraph, size, (shift._1, shift._3), (cutoff._1, cutoff._3)),
             shifted(egraph, elemType, shift, cutoff))
       })
     }
@@ -174,6 +203,17 @@ object NodeSubs {
         n => Nat.replace(egraph, n, index, subs),
         dt => replace(egraph, dt, index, subs)
       ))
+
+    def replace(egraph: EGraph, id: DataTypeId,
+                index: Int, subs: DataTypeId): DataTypeId =
+      egraph(id) match {
+        case DataTypeVar(i) if i == index => subs
+        case dtv: DataTypeVar => egraph.add(dtv)
+        case other => egraph.add(other.map(
+          Nat.replace(egraph, _, index, subs),
+          replace(egraph, _, index, subs)
+        ))
+      }
 
     def replaceDataType(index: Int, subs: DataType): DataType = {
       ???
@@ -200,6 +240,8 @@ object NodeSubs {
             case AddrFunType(t) => egraph.add(
               // note: addresses don't appear in types
               AddrFunType(shifted(egraph, t, shift, cutoff)))
+            case NatToNatFunType(t) => egraph.add(
+              NatToNatFunType(shifted(egraph, t, shift, cutoff.copy(_3 = cutoff._3 + 1))))
             case _: DataTypeNode[NatId, DataTypeId] =>
               throw new Exception("this should not happen")
           }
@@ -211,7 +253,7 @@ object NodeSubs {
       egraph.add(egraph(id) match {
         case NatFunType(t) =>
           // TODO: could shift lazily
-          val t2 = replace(egraph, t, index + 1, Nat.shifted(egraph, subs, 1, 0))
+          val t2 = replace(egraph, t, index + 1, Nat.shifted(egraph, subs, (1, 0), (0, 0)))
           NatFunType(t2)
         case other => other.map(
           replace(egraph, _, index, subs),
@@ -220,24 +262,36 @@ object NodeSubs {
       })
 
     def replace(egraph: EGraph, id: TypeId,
-                index: Int, subs: DataTypeId): TypeId = {
-      ???
-    }
+                index: Int, subs: DataTypeId): TypeId =
+      id match {
+        case dt: DataTypeId => DataType.replace(egraph, dt, index, subs)
+        case _: NotDataTypeId => egraph.add(egraph(id) match {
+          case DataFunType(t) =>
+            val t2 = replace(egraph, t, index + 1, DataType.shifted(egraph, subs, (0, 1, 0), (0, 0, 0)))
+            DataFunType(t2)
+          case _: DataTypeNode[NatId, DataTypeId] =>
+            throw new Exception("this should not happen")
+          case other => other.map(
+            replace(egraph, _, index, subs),
+            Nat.replace(egraph, _, index, subs),
+            DataType.replace(egraph, _, index, subs))
+        })
+      }
 
     // substitutes %n0 for arg in this
     def withNatArgument(egraph: EGraph,
                         body: TypeId, arg: NatId): TypeId = {
-      val argS = Nat.shifted(egraph, arg, 1, 0)
+      val argS = Nat.shifted(egraph, arg, (1, 0), (0, 0))
       val bodyR = replace(egraph, body, 0, argS)
-      shifted(egraph, bodyR, (-1, 0), (0, 0))
+      shifted(egraph, bodyR, (-1, 0, 0), (0, 0, 0))
     }
 
     // substitutes %dt0 for arg in this
     def withDataArgument(egraph: EGraph,
                          body: TypeId, arg: DataTypeId): TypeId = {
-      val argS = DataType.shifted(egraph, arg, (0, 1), (0, 0))
+      val argS = DataType.shifted(egraph, arg, (0, 1, 0), (0, 0, 0))
       val bodyR = replace(egraph, body, 0, argS)
-      shifted(egraph, bodyR, (0, -1), (0, 0))
+      shifted(egraph, bodyR, (0, -1, 0), (0, 0, 0))
     }
   }
 
@@ -259,6 +313,32 @@ object NodeSubs {
         case AddressVar(i) if i == index => subs
         case AddressVar(_) => a
         case Global | Local | Private | Constant => a
+      }
+    }
+  }
+
+  object NatToNat {
+    type Shift = rise.eqsat.NatToNat.Shift
+       
+    def shifted(egraph: EGraph, n2n: NatToNatNode[NatId],
+                shift: Shift, cutoff: Shift): NatToNatNode[NatId] = {
+      n2n match {
+        case NatToNatVar(index) =>
+          val delta = if (index >= cutoff._2) shift._2 else 0
+          NatToNatVar(index + delta)
+        case NatToNatLambda(e) => NatToNatLambda(Nat.shifted(egraph, e, shift, cutoff.copy(_2 = cutoff._2 + 1)))
+      }
+    }
+
+    def replace(egraph: EGraph, n2n: NatToNatNode[NatId],
+                index: Int, subs: NatId): NatToNatNode[NatId] = {
+      n2n match {
+        // NOTE: replacing Nat vars here
+        // case NatToNatVar(i) if i == index => subs
+        case NatToNatVar(_) => n2n
+        case NatToNatLambda(e) =>
+          val subs2 = Nat.shifted(egraph, subs, (0, 1), (0, 0))
+          NatToNatLambda(Nat.replace(egraph, e, index, subs2))
       }
     }
   }

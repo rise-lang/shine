@@ -12,7 +12,7 @@ object rules {
     (new ConditionalApplier(
       Set(?(0)),
       (Set(FreeIntersectionAnalysis), Set()),
-      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0), (1, 0, 0, 0), ?(1): Pattern)) {
+      ShiftedExtractApplier(?(0), ?(1), (-1, 0, 0, 0, 0), (1, 0, 0, 0, 0), ?(1): Pattern)) {
       override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
         def notContainsIdent(v: PatternVar, ident: Var, freeAnalysis: FreeAnalysisCustomisable): Boolean = {
           val freeOf = egraph.getAnalysis(freeAnalysis)
@@ -610,6 +610,12 @@ object rules {
   // TODO: generalize to rotateValues(write: Expr)
   val rotateValuesScalar = NamedRewrite.init("rotate-values-scalar",
     nApp(nApp(slide, "sz"), 1) --> app(nApp(rcp.rotateValues.primitive, "sz"), lam("x", "x"))
+  )
+
+  val reduceSeqOne = NamedRewrite.init("reduce-seq-one",
+    (app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("x", app(app(add, "acc"), li32(1))))), li32(0)), "in" :: ("n" : Nat)`.``?dt`) :: i32)
+      -->
+    (app(cast, lnat("n")) :: i32)
   )
 
   object omp {

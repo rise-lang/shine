@@ -9,6 +9,7 @@ package object eqsat {
   type ENode = Node[EClassId, NatId, DataTypeId, Address]
   type PNode = Node[Pattern, NatPattern, DataTypePattern, AddressPattern]
   type Address = AddressNode
+  type NatToNat = NatToNatNode[Nat]
 
   /** A key to identify [[EClass]]es within an [[EGraph]] */
   case class EClassId(i: Int)

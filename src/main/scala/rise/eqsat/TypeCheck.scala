@@ -38,6 +38,11 @@ object TypeCheck {
         case AddrFunType(t) => t
         case node => throw Error(s"expected address function type, found $node")
       }
+    def unwrapNatToNatFunType(t: TypeId): TypeId =
+      egraph(unwrapNotDataTypeId(t)) match {
+        case NatToNatFunType(t) => t
+        case node => throw Error(s"expected nat2nat function type, found $node")
+      }
 
     for (eclass <- egraph.classes.values) {
       val t = eclass.t
@@ -85,6 +90,9 @@ object TypeCheck {
           case AddrApp(f, x) =>
             val ft = unwrapAddrFunType(egraph.get(f).t)
             assertSameType(t, ft) // identity: NodeSubs.Address.withAddrArgument(egraph, ft, x)
+          case AppNatToNat(f, x) =>
+            val ft = unwrapNatToNatFunType(egraph.get(f).t)
+            () // TODO: assertSameType(t, NodeSubs.Type.withft)
           case NatLambda(e) =>
             val ft = unwrapNatFunType(t)
             assertSameType(ft, egraph.get(e).t)
@@ -94,9 +102,18 @@ object TypeCheck {
           case AddrLambda(e) =>
             val ft = unwrapAddrFunType(t)
             assertSameType(ft, egraph.get(e).t)
+          case LambdaNatToNat(e) =>
+            val ft = unwrapNatToNatFunType(t)
+            assertSameType(ft, egraph.get(e).t)
           case Literal(d) =>
             // TODO: more efficient egraph.addTypeFromNamed?
             assertSameType(t, egraph.addType(Type.fromNamed(d.dataType)))
+          case NatLiteral(_) =>
+            ()
+            // TODO: assertSameType(t, egraph.addType(NatType))
+          case IndexLiteral(_, _) =>
+            ()
+            // TODO: assertSameType(t, egraph.addType(IndexType(?)))
           case Primitive(_) =>
             // TODO: check p.typeScheme consistency?
 

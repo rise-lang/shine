@@ -3,6 +3,10 @@ package rise.eqsat
 import arithexpr.arithmetic.BoolExpr.ArithPredicate
 import rise.eqsat.ematching.MNode
 
+import rise.core.{types => rct}
+import rise.core
+import rise.core.types.{DataType => rcdt}
+
 trait Predicate {
   def start(egraph: EGraph,
             roots: Seq[EClassId]): Unit = {}
@@ -75,6 +79,7 @@ case class ArrayDimensionPredicate(limit: Int) extends Predicate {
         case NatFunType(t) => countArrayDims(t)
         case DataFunType(t) => countArrayDims(t)
         case AddrFunType(t) => countArrayDims(t)
+        case NatToNatFunType(t) => countArrayDims(t)
         case ArrayType(_, et) => 1 + countArrayDims(et)
         case PairType(dt1, dt2) =>
           countArrayDims(dt1) max countArrayDims(dt2)
@@ -104,6 +109,7 @@ object StandardConstraintsPredicate extends Predicate {
         case NatFunType(t) => checkType(t)
         case DataFunType(t) => checkType(t)
         case AddrFunType(t) => checkType(t)
+        case NatToNatFunType(t) => checkType(t)
         case ArrayType(n, et) => checkArraySize(n) && checkType(et)
         case VectorType(n, _) => checkArraySize(n)
         case IndexType(n) => checkArraySize(n)
@@ -114,8 +120,33 @@ object StandardConstraintsPredicate extends Predicate {
     }
 
     def checkArraySize(n: NatId): Boolean = {
-      val named = Nat.toNamedGeneric(ExprWithHashCons.nat(egraph)(n),
-        i => rise.core.types.NatIdentifier(s"n$i"))
+      case class Scope() extends Expr.Scope {
+        def getExpr(i: Int): core.Identifier = ???
+        def getNat(i: Int): rct.NatIdentifier = rct.NatIdentifier(s"n$i")
+        def getData(i: Int): rcdt.DataTypeIdentifier = ???
+        def getAddr(i: Int): rct.AddressSpaceIdentifier = ???
+        def getN2N(i: Int): rct.NatToNatIdentifier = rct.NatToNatIdentifier(s"n2n$i")
+
+        def indexOf(i: core.Identifier): Int = ???
+        def indexOf(i: rct.NatIdentifier): Int = ???
+        def indexOf(i: rcdt.DataTypeIdentifier): Int = ???
+        def indexOf(i: rct.AddressSpaceIdentifier): Int = ???
+        def indexOf(i: rct.NatToNatIdentifier): Int = ???
+
+        def +(i: core.Identifier): Expr.Scope = ???
+        def +(i: rct.NatIdentifier): Expr.Scope = this
+        def +(i: rcdt.DataTypeIdentifier): Expr.Scope = ???
+        def +(i: rct.AddressSpaceIdentifier): Expr.Scope = ???
+        def +(i: rct.NatToNatIdentifier): Expr.Scope = this
+
+        def bindExpr(t: rct.ExprType): (core.Identifier, Expr.Scope) = ???
+        def bindNat(): (rct.NatIdentifier, Expr.Scope) = ???
+        def bindData(): (rcdt.DataTypeIdentifier, Expr.Scope) = ???
+        def bindAddr(): (rct.AddressSpaceIdentifier, Expr.Scope) = ???
+        def bindN2N(): (rct.NatToNatIdentifier, Expr.Scope) = ???
+      }
+      val scope = Scope()
+      val named = Nat.toNamed(ExprWithHashCons.nat(egraph)(n), scope)
       !ArithPredicate(named, 1, ArithPredicate.Operator.>=).evaluate.contains(false)
     }
 

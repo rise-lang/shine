@@ -25,6 +25,10 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(e) => DataLambda(fe(e))
     case AddrApp(f, x) => AddrApp(fe(f), fa(x))
     case AddrLambda(e) => AddrLambda(fe(e))
+    case AppNatToNat(f, x) => AppNatToNat(fe(f), x.map(fn))
+    case LambdaNatToNat(e) => LambdaNatToNat(fe(e))
+    case NatLiteral(n) => NatLiteral(fn(n))
+    case IndexLiteral(i, n) => IndexLiteral(fn(i), fn(n))
 
     case Composition(f, g) => Composition(fe(f), fe(g))
   }
@@ -32,7 +36,8 @@ sealed trait Node[+E, +N, +DT, +A] {
   def mapChildren[OE](fc: E => OE): Node[OE, N, DT, A] =
     map(fc, n => n, dt => dt, a => a)
   def children(): Iterator[E] = this match {
-    case Var(_) | Literal(_) | Primitive(_) => Iterator()
+    case Var(_) | Literal(_) | NatLiteral(_) | IndexLiteral(_, _) |
+     Primitive(_) => Iterator()
     case App(f, e) => Iterator(f, e)
     case Lambda(e) => Iterator(e)
     case NatApp(f, _) => Iterator(f)
@@ -41,6 +46,8 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(e) => Iterator(e)
     case AddrApp(f, _) => Iterator(f)
     case AddrLambda(e) => Iterator(e)
+    case AppNatToNat(f, _) => Iterator(f)
+    case LambdaNatToNat(e) => Iterator(e)
 
     case Composition(f, g) => Iterator(f, g)
   }
@@ -49,6 +56,8 @@ sealed trait Node[+E, +N, +DT, +A] {
 
   def nats(): Iterator[N] = this match {
     case NatApp(_, n) => Iterator(n)
+    case NatLiteral(n) => Iterator(n)
+    case IndexLiteral(i, n) => Iterator(i, n)
     case _ => Iterator()
   }
   def natsCount(): Int = nats().length
@@ -75,10 +84,14 @@ sealed trait Node[+E, +N, +DT, +A] {
     case DataLambda(_) => 6
     case AddrApp(_, _) => 7
     case AddrLambda(_) => 8
+    case AppNatToNat(_, _) => 9
+    case LambdaNatToNat(_) => 10
     case Literal(d) => 17 * d.hashCode()
+    case NatLiteral(n) => 23 * n.hashCode()
+    case IndexLiteral(i, n) => 29 * (i, n).hashCode()
     case Primitive(p) => 19 * p.setType(rct.TypePlaceholder).hashCode()
 
-    case Composition(_, _) => 9
+    case Composition(_, _) => 11
   }
 
   // Returns true if this enode matches another enode.
@@ -94,6 +107,8 @@ sealed trait Node[+E, +N, +DT, +A] {
     case (DataLambda(_), DataLambda(_)) => true
     case (AddrLambda(_), AddrLambda(_)) => true
     case (Literal(d1), Literal(d2)) => d1 == d2
+    case (NatLiteral(n1), NatLiteral(n2)) => n1 == n2
+    case (IndexLiteral(i1, n1), IndexLiteral(i2, n2)) => i1 == i2 && n1 == n2
     case (Primitive(p1), Primitive(p2)) =>
       // TODO: type should not be inside the primitive?
       p1.setType(rct.TypePlaceholder) == p2.setType(rct.TypePlaceholder)
@@ -109,14 +124,20 @@ case class Var(index: Int) extends Node[Nothing, Nothing, Nothing, Nothing] {
 case class App[E](f: E, e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class Lambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class NatApp[E, N](f: E, x: N) extends Node[E, N, Nothing, Nothing]
+// FIXME: name inconsistency, rename DepApps to AppKind ?
+case class AppNatToNat[E, N](f: E, x: NatToNatNode[N]) extends Node[E, N, Nothing, Nothing]
 case class DataApp[E, DT](f: E, x: DT) extends Node[E, Nothing, DT, Nothing]
 case class AddrApp[E, A](f: E, x: A) extends Node[E, Nothing, Nothing, A]
 case class NatLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
+// FIXME: name inconsistency, rename DepLambdas to LambdaKind ?
+case class LambdaNatToNat[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class DataLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class AddrLambda[E](e: E) extends Node[E, Nothing, Nothing, Nothing]
 case class Literal(d: semantics.Data) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = d.toString
 }
+case class NatLiteral[N](n: N) extends Node[Nothing, N, Nothing, Nothing]
+case class IndexLiteral[N](i: N, n: N) extends Node[Nothing, N, Nothing, Nothing]
 case class Primitive(p: rise.core.Primitive) extends Node[Nothing, Nothing, Nothing, Nothing] {
   override def toString: String = p.toString.trim
 }
@@ -135,10 +156,14 @@ object Node {
     case NatApp(f, x) => Seq(f, x)
     case DataApp(f, x) => Seq(f, x)
     case AddrApp(f, x) => Seq(f, x)
+    case AppNatToNat(f, x) => Seq(f) ++ x.nats()
     case NatLambda(e) => Seq(e)
     case DataLambda(e) => Seq(e)
     case AddrLambda(e) => Seq(e)
+    case LambdaNatToNat(e) => Seq(e)
     case Literal(_) => Seq()
+    case NatLiteral(n) => Seq(n)
+    case IndexLiteral(i, n) => Seq(i, n)
     case Primitive(_) => Seq()
 
     case Composition(f, g) => Seq(f, g)
@@ -201,13 +226,11 @@ object Node {
 
     def compare(d1: Data, d2: Data): Int =
       (d1, d2) match {
-        case (NatData(n1), NatData(n2)) => ??? // natOrdering.compare(n1, n2)
-        case (NatData(_), _) => ??? // -1
-        case (_, NatData(_)) => ??? // 1
+        // case (NatData(n1), NatData(n2)) => ??? // natOrdering.compare(n1, n2)
+        case (NatData(_), _) | (_, NatData(_)) => throw new Exception("should not compare 'NatData'")
         case (IndexData(i1, n1), IndexData(i2, n2)) => ???
           // implicitly[Ordering[(Nat, Nat)]].compare((i1, n1), (i2, n2))
-        case (IndexData(_, _), _) => ??? // -1
-        case (_, IndexData(_, _)) => ??? // 1
+        case (IndexData(_, _), _) | (_, IndexData(_, _)) => throw new Exception("should not compare 'IndexData'")
         case (sd1: ScalarData, sd2: ScalarData) => scalarDataOrdering.compare(sd1, sd2)
         case (_: ScalarData, _) => -1
         case (_, _: ScalarData) => 1
@@ -293,6 +316,13 @@ object Node {
         case (Literal(d1), Literal(d2)) => dataOrdering.compare(d1, d2)
         case (Literal(_), _) => -1
         case (_, Literal(_)) => 1
+        case (NatLiteral(n1), NatLiteral(n2)) => nOrd.compare(n1, n2)
+        case (NatLiteral(_), _) => -1
+        case (_, NatLiteral(_)) => 1
+        case (IndexLiteral(i1, n1), IndexLiteral(i2, n2)) =>
+          implicitly[Ordering[(N, N)]].compare((i1, n1), (i2, n2))
+        case (IndexLiteral(_, _), _) => -1
+        case (_, IndexLiteral(_, _)) => 1
 
         case (Composition(f1, g1), Composition(f2, g2)) =>
           implicitly[Ordering[(E, E)]].compare((f1, g1), (f2, g2))

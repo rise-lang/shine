@@ -5,9 +5,9 @@ import rise.core.{types => rct}
 object Address {
   type Shift = Int
 
-  def fromNamed(a: rct.AddressSpace, bound: Expr.Bound): Address = {
+  def fromNamed(a: rct.AddressSpace, scope: Expr.Scope): Address = {
     a match {
-      case i: rct.AddressSpaceIdentifier => AddressVar(bound.indexOf(i))
+      case i: rct.AddressSpaceIdentifier => AddressVar(scope.indexOf(i))
       case rct.AddressSpace.Global => Global
       case rct.AddressSpace.Local => Local
       case rct.AddressSpace.Private => Private
@@ -15,9 +15,9 @@ object Address {
     }
   }
 
-  def toNamed(a: Address, bound: Expr.Bound): rct.AddressSpace = {
+  def toNamed(a: Address, scope: Expr.Scope): rct.AddressSpace = {
     a match {
-      case AddressVar(index) => bound.getAddr(index)
+      case AddressVar(index) => scope.getAddr(index)
       case Global => rct.AddressSpace.Global
       case Local => rct.AddressSpace.Local
       case Private => rct.AddressSpace.Private

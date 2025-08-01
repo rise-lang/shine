@@ -1,6 +1,8 @@
 package rise.eqsat
 
 import rise.core.{types => rct}
+import rise.core
+import rise.core.types.{DataType => rcdt}
 
 object Rewrite {
   def init(name: String, rule: (Searcher, Applier)): Rewrite = {
@@ -413,8 +415,34 @@ case class ComputeNatApplier(v: NatPatternVar, value: NatPattern,
                         shc: Substs)(
                         subst: shc.Subst): Vec[EClassId] = {
     // TODO: can we be more efficient here?
-    val actualValue = Nat.fromNamedGeneric(
-      ComputeNat.toNamed(egraph, value, shc)(subst), ni => ni.name.drop(1).toInt)
+    case class ComputeScope() extends Expr.Scope {
+      def getExpr(i: Int): core.Identifier = ???
+      def getNat(i: Int): rct.NatIdentifier = ???
+      def getData(i: Int): rcdt.DataTypeIdentifier = ???
+      def getAddr(i: Int): rct.AddressSpaceIdentifier = ???
+      def getN2N(i: Int): rct.NatToNatIdentifier = ???
+
+      def indexOf(i: core.Identifier): Int = ???
+      def indexOf(i: rct.NatIdentifier): Int = i.name.drop(1).toInt
+      def indexOf(i: rcdt.DataTypeIdentifier): Int = ???
+      def indexOf(i: rct.AddressSpaceIdentifier): Int = ???
+      def indexOf(i: rct.NatToNatIdentifier): Int = ???
+
+      def +(i: core.Identifier): Expr.Scope = ???
+      def +(i: rct.NatIdentifier): Expr.Scope = ???
+      def +(i: rcdt.DataTypeIdentifier): Expr.Scope = ???
+      def +(i: rct.AddressSpaceIdentifier): Expr.Scope = ???
+      def +(i: rct.NatToNatIdentifier): Expr.Scope = ???
+
+      def bindExpr(t: rct.ExprType): (core.Identifier, Expr.Scope) = ???
+      def bindNat(): (rct.NatIdentifier, Expr.Scope) = ???
+      def bindData(): (rcdt.DataTypeIdentifier, Expr.Scope) = ???
+      def bindAddr(): (rct.AddressSpaceIdentifier, Expr.Scope) = ???
+      def bindN2N(): (rct.NatToNatIdentifier, Expr.Scope) = ???
+    }
+    val computeScope = ComputeScope()
+    val actualValue = Nat.fromNamed(
+      ComputeNat.toNamed(egraph, value, shc)(subst), computeScope)
     val subst2 = shc.insert(v, egraph.addNat(actualValue), subst)
     applier.applyOne(egraph, eclass, shc)(subst2)
   }
@@ -440,6 +468,12 @@ private object ComputeNat {
         case NatPow(b, e) => toNamed(egraph, b, shc)(subst).pow(toNamed(egraph, e, shc)(subst))
         case NatMod(a, b) => toNamed(egraph, a, shc)(subst) % toNamed(egraph, b, shc)(subst)
         case NatIntDiv(a, b) => toNamed(egraph, a, shc)(subst) / toNamed(egraph, b, shc)(subst)
+        case NatToNatApp(n2n, n) => ??? /*
+        // TODO: compare and maybe factorize with Nat.simplify
+        NatToNatApp(
+          ComputeNatToNat.toNamed(egraph, n2n, shc)(subst),
+          toNamed(egraph, n, shc)(subst))
+        */
       }
     }
   }
@@ -455,6 +489,12 @@ private object ComputeNat {
       case NatPow(b, e) => toNamed(egraph, b).pow(toNamed(egraph, e))
       case NatMod(a, b) => toNamed(egraph, a) % toNamed(egraph, b)
       case NatIntDiv(a, b) => toNamed(egraph, a) / toNamed(egraph, b)
+      case NatToNatApp(n2n, n) => ??? /*
+        // TODO: compare and maybe factorize with Nat.simplify
+        NatToNatApp(
+        ComputeNatToNat.toNamed(egraph, n2n),
+        toNamed(egraph, n))
+      */
     }
   }
 }
@@ -505,10 +545,12 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
       case NatApp(_, _) => None
       case DataApp(_, _) => None
       case AddrApp(_, _) => None
+      case AppNatToNat(_, _) => None
       case NatLambda(_) => None
       case DataLambda(_) => None
       case AddrLambda(_) => None
-      case Literal(_) =>
+      case LambdaNatToNat(_) => None
+      case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) =>
         for { tv <- vecDT(expr.t, n, eg) }
           yield ExprWithHashCons(App(
             ExprWithHashCons(Primitive(rcp.vectorFromScalar.primitive), eg.add(FunType(expr.t, tv))),
@@ -536,6 +578,7 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
         case NatFunType(t) => ???
         case DataFunType(t) => ???
         case AddrFunType(t) => ???
+        case NatToNatFunType(t) => ???
         case _: DataTypeNode[_, _] => throw new Exception("this should not happen")
       }
     }

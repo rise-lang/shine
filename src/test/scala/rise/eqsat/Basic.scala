@@ -126,6 +126,17 @@ class Basic extends test_util.Tests {
       Seq())
   }
 
+
+  test("foreign function") {
+    import rise.core.types.DataType.f32
+
+    ProveEquiv.init().run(
+      Expr.fromNamed(foreignFun("cos", f32 ->: f32)),
+      Expr.fromNamed(foreignFun("cos", f32 ->: f32)),
+      Seq(), Seq()
+    )
+  }
+
   ignore("saturate associativity and fusion/fission") {
     withFuns(4)
     withFuns(5)

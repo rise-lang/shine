@@ -1,0 +1,3 @@
+depFun((n: Nat) => fun(n`.`f64)(x =>
+    x |> reorder(n)(n2nFun(i => n - i - 1))(n2nFun(i => n - i - 1))
+))

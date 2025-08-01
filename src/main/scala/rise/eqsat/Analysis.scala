@@ -338,10 +338,14 @@ object SmallestSizeAnalysis extends SemiLatticeAnalysis {
 class FreeData(var free: HashSet[Int],
                var freeNat: HashSet[Int],
                var freeDataType: HashSet[Int],
-               var freeAddr: HashSet[Int])
-class FreeNatData(var freeNat: HashSet[Int])
+               var freeAddr: HashSet[Int],
+               var freeN2N: HashSet[Int])
+class FreeNatData(var freeNat: HashSet[Int],
+                  var freeN2N: HashSet[Int])
 class FreeTypeData(var freeNat: HashSet[Int],
-                   var freeDataType: HashSet[Int])
+                   var freeDataType: HashSet[Int],
+                   var freeAddr: HashSet[Int],
+                   var freeN2N: HashSet[Int])
 
 object FreeAnalysis extends FreeAnalysisCustomisable() {
   override def freeMerge(to: HashSet[Int], from: HashSet[Int]): Unit =
@@ -369,6 +373,7 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
     val freeNat = HashSet.empty[Int]
     val freeDataType = HashSet.empty[Int]
     val freeAddr = HashSet.empty[Int]
+    val freeN2N = HashSet.empty[Int]
 
     val (freeOfNat, freeOfType) = egraph.getTypeAnalysis(this)
 
@@ -381,24 +386,35 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType
         freeAddr ++= ed.freeAddr
+        freeN2N ++= ed.freeN2N
       case NatLambda(e) =>
         val ed = freeOf(e)
         free ++= ed.free
         freeNat ++= ed.freeNat.filter(idx => idx != 0).map(idx => idx - 1)
         freeDataType ++= ed.freeDataType
         freeAddr ++= ed.freeAddr
+        freeN2N ++= ed.freeN2N
       case DataLambda(e) =>
         val ed = freeOf(e)
         free ++= ed.free
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType.filter(idx => idx != 0).map(idx => idx - 1)
         freeAddr ++= ed.freeAddr
+        freeN2N ++= ed.freeN2N
       case AddrLambda(e) =>
         val ed = freeOf(e)
         free ++= ed.free
         freeNat ++= ed.freeNat
         freeDataType ++= ed.freeDataType
+        freeAddr ++= ed.freeAddr.filter(idx => idx != 0).map(idx => idx - 1)
+        freeN2N ++= ed.freeN2N
+      case LambdaNatToNat(e) => 
+        val ed = freeOf(e)
+        free ++= ed.free
+        freeNat ++= ed.freeNat
+        freeDataType ++= ed.freeDataType
         freeAddr ++= ed.freeAddr
+        freeN2N ++= ed.freeN2N.filter(idx => idx != 0).map(idx => idx - 1)
       case _ => enode.map(
         { c =>
           val d = freeOf(c)
@@ -406,15 +422,19 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
           freeNat ++= d.freeNat
           freeDataType ++= d.freeDataType
           freeAddr ++= d.freeAddr
+          freeN2N ++= d.freeN2N
         },
         { n =>
           val d = freeOfNat(n)
           freeNat ++= d.freeNat
+          freeN2N ++= d.freeN2N
         },
         { dt =>
           val d = freeOfType(dt)
           freeNat ++= d.freeNat
           freeDataType ++= d.freeDataType
+          freeAddr ++= d.freeAddr
+          freeN2N ++= d.freeN2N
         },
         {
           case AddressVar(index) =>
@@ -427,9 +447,11 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
       val d = freeOfType(t)
       freeNat ++= d.freeNat
       freeDataType ++= d.freeDataType
+      freeAddr ++= d.freeAddr
+      freeN2N ++= d.freeN2N
     }
 
-    new Data(free, freeNat, freeDataType, freeAddr)
+    new Data(free, freeNat, freeDataType, freeAddr, freeN2N)
   }
 
   override def merge(a: Data, b: Data): MergeResult = {
@@ -437,43 +459,62 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
     val beforeFreeNatCount = a.freeNat.size
     val beforeFreeDataTypeCount = a.freeDataType.size
     val beforeFreeAddrCount = a.freeAddr.size
+    val beforeFreeN2NCount = a.freeN2N.size
     freeMerge(a.free, b.free)
     freeMerge(a.freeNat, b.freeNat)
     freeMerge(a.freeDataType, b.freeDataType)
     freeMerge(a.freeAddr, b.freeAddr)
+    freeMerge(a.freeN2N, b.freeN2N)
 
     MergeResult(a,
       mayNotBeA = beforeFreeCount != a.free.size ||
         beforeFreeNatCount != a.freeNat.size ||
         beforeFreeDataTypeCount != a.freeDataType.size ||
-        beforeFreeAddrCount != a.freeAddr.size,
+        beforeFreeAddrCount != a.freeAddr.size ||
+        beforeFreeN2NCount != a.freeN2N.size,
       mayNotBeB = beforeFreeCount != b.free.size ||
         beforeFreeNatCount != b.freeNat.size ||
         beforeFreeDataTypeCount != b.freeDataType.size ||
-        beforeFreeAddrCount != b.freeAddr.size
+        beforeFreeAddrCount != b.freeAddr.size ||
+        beforeFreeN2NCount != b.freeN2N.size
     )
   }
 
   override def makeNat(egraph: EGraph, node: NatNode[NatId]): NatData = {
     val freeNat = HashSet[Int]()
+    val freeN2N = HashSet[Int]()
     val (freeOfNat, _) = egraph.getTypeAnalysis(this)
 
     node match {
-      case NatVar(index) => freeNat += index
-      case node => node.map(n => freeNat ++= freeOfNat(n).freeNat)
+      case NatVar(index) =>
+        freeNat += index
+      case NatToNatApp(NatToNatVar(index), n) =>
+        val d = freeOfNat(n)
+        freeNat ++= d.freeNat
+        freeN2N ++= d.freeN2N
+        freeN2N += index
+      case node => node.map { n =>
+        val d = freeOfNat(n)
+        freeNat ++= d.freeNat
+        freeN2N ++= d.freeN2N
+      }
     }
-    new NatData(freeNat)
+    new NatData(freeNat, freeN2N)
   }
 
   override def makeType(egraph: EGraph, node: TypeNode[TypeId, NatId, DataTypeId]): TypeData = {
     val freeNat = HashSet[Int]()
     val freeDataType = HashSet[Int]()
+    val freeAddr = HashSet.empty[Int]
+    val freeN2N = HashSet.empty[Int]
 
     val (freeOfNat, freeOfType) = egraph.getTypeAnalysis(this)
 
     def acc(d: TypeData): Unit = {
       freeNat ++= d.freeNat
       freeDataType ++= d.freeDataType
+      freeAddr ++= d.freeAddr
+      freeN2N ++= d.freeN2N
     }
     node match {
       case FunType(inT, outT) =>
@@ -483,23 +524,40 @@ abstract class FreeAnalysisCustomisable() extends SemiLatticeAnalysis with TypeA
         val d = freeOfType(t)
         freeNat ++= d.freeNat.iterator.filter(idx => idx != 0).map(idx => idx - 1)
         freeDataType ++= d.freeDataType
+        freeAddr ++= d.freeAddr
+        freeN2N ++= d.freeN2N
       case DataFunType(t) =>
         val d = freeOfType(t)
         freeNat ++= d.freeNat
         freeDataType ++= d.freeDataType.iterator.filter(idx => idx != 0).map(idx => idx - 1)
+        freeAddr ++= d.freeAddr
+        freeN2N ++= d.freeN2N
       case AddrFunType(t) =>
         val d = freeOfType(t)
         freeNat ++= d.freeNat
         freeDataType ++= d.freeDataType
+        freeAddr ++= d.freeAddr.iterator.filter(idx => idx != 0).map(idx => idx - 1)
+        freeN2N ++= d.freeN2N
+      case NatToNatFunType(t) =>
+        val d = freeOfType(t)
+        freeNat ++= d.freeNat
+        freeDataType ++= d.freeDataType
+        freeAddr ++= d.freeAddr
+        freeN2N ++= d.freeN2N.iterator.filter(idx => idx != 0).map(idx => idx - 1)
       case dt: DataTypeNode[NatId, DataTypeId] =>
         dt match {
-          case DataTypeVar(index) => freeDataType += index
+          case DataTypeVar(index) =>
+            freeDataType += index
           case node => node.map(
-            { n => freeNat ++= freeOfNat(n).freeNat },
+            { n =>
+              val d = freeOfNat(n)
+              freeNat ++= d.freeNat 
+              freeN2N ++= d.freeN2N
+            },
             { dt => acc(freeOfType(dt)) })
         }
     }
-    new TypeData(freeNat, freeDataType)
+    new TypeData(freeNat, freeDataType, freeAddr, freeN2N)
   }
 }
 
@@ -572,8 +630,14 @@ object BeamExtractRW {
   sealed trait TypeAnnotation
   case class NotDataTypeAnnotation(node: TypeNode[TypeAnnotation, Unit, rct.Access])
     extends TypeAnnotation
+  {
+    override def toString: String = node.toString()
+  }
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
+  {
+    override def toString: String = access.toString()
+  }
 
   type Data[Cost] = Map[(TypeAnnotation, Map[Int, TypeAnnotation]), Seq[(Cost, ExprWithHashCons)]]
 
@@ -613,9 +677,9 @@ object BeamExtractRW {
 
   def subtype(a: TypeAnnotation, at: TypeId, b: TypeAnnotation, bt: TypeId, egraph: EGraph): Boolean = {
     assert(at == bt)
-    (a, b) match {
+    val res = (a, b) match {
       case (DataTypeAnnotation(x), DataTypeAnnotation(y)) =>
-        (x == y) || (x == rct.read || notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
+        (x == y) || (x == rct.read && notContainingArrayType(bt.asInstanceOf[DataTypeId], egraph))
       case (NotDataTypeAnnotation(x), NotDataTypeAnnotation(y)) =>
         (x, egraph(at), y, egraph(bt)) match {
           case (FunType(aIn, aOut), FunType(aInT, aOutT), FunType(bIn, bOut), FunType(bInT, bOutT)) =>
@@ -628,16 +692,15 @@ object BeamExtractRW {
         }
       case _ => throw new Exception("this should not happen")
     }
+    // println(s"subtype: $a : ${egraph(at)} <= $b : ${egraph(bt)} ? $res")
+    res
   }
 
   // TODO: could hash-cons this
   def notContainingArrayType(t: DataTypeId, egraph: EGraph): Boolean = {
     egraph(t) match {
       case DataTypeVar(_) => false
-      case ScalarType(_) => true
-      case NatType => true
-      case VectorType(_, _) => true
-      case IndexType(_) => true
+      case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
     }
@@ -656,6 +719,7 @@ object RWAnnotationDSL {
   def nFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(NatFunType(a))
   def dtFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(DataFunType(a))
   def aFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(AddrFunType(a))
+  def n2nFunT(a: TypeAnnotation): TypeAnnotation = NotDataTypeAnnotation(NatToNatFunType(a))
 }
 
 /** An analysis to extract a beam of programs with valid DPIA read/write annotations.
@@ -687,7 +751,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
       case App(f, e) =>
         val fInT = egraph(egraph.get(f).t) match {
           case FunType(inT, _) => inT
-          case _ => throw new Exception("this should not happen")
+          case _ => throw new Exception("app expected fun type")
         }
         val eT = egraph.get(e).t
 
@@ -699,7 +763,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             case NotDataTypeAnnotation(FunType(fIn, fOut)) =>
               eBeams.foreach { case ((eAnnotation, eEnv), eBeam) =>
                 mergeEnv(fEnv, eEnv).foreach { mergedEnv =>
-                  if (subtype(fIn, fInT, eAnnotation, eT, egraph)) {
+                  if (subtype(eAnnotation, eT, fIn, fInT, egraph)) {
                     val newBeam = fBeam.flatMap { x => eBeam.flatMap { y =>
                       Seq((
                         cf.cost(egraph, enode, t, Map(f -> x._1, e -> y._1)),
@@ -713,7 +777,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                   }
                 }
               }
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("app expected fun type")
           }
         }
         newBeams
@@ -748,7 +812,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(NatFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("natApp expected NatFunType")
           }
         }
       case DataApp(f, _) =>
@@ -762,7 +826,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(DataFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("dataApp expected DataFunType")
           }
         }
       case AddrApp(f, _) =>
@@ -776,7 +840,21 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           }
           annotation match {
             case NotDataTypeAnnotation(AddrFunType(at)) => (at, env) -> newBeam
-            case _ => throw new Exception("this should not happen")
+            case _ => throw new Exception("addrApp expected AddrFunType")
+          }
+        }
+      case AppNatToNat(f, _) =>
+        val fBeams = analysisOf(f)
+        fBeams.map { case ((annotation, env), beam) =>
+          val newBeam = beam.flatMap { x =>
+            Seq((
+              cf.cost(egraph, enode, t, Map(f -> x._1)),
+              ExprWithHashCons(enode.mapChildren(Map(f -> x._2)), t)
+            ))
+          }
+          annotation match {
+            case NotDataTypeAnnotation(NatToNatFunType(t)) => (t, env) -> newBeam
+            case _ => throw new Exception("addrApp expected AddrFunType")
           }
         }
       case NatLambda(e) =>
@@ -815,7 +893,19 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           // note: recording DataFunType() constructor is useless
           (NotDataTypeAnnotation(AddrFunType(annotation)), env) -> newBeam
         }
-      case Literal(_) =>
+      case LambdaNatToNat(e) =>
+        val eBeams = analysisOf(e)
+        eBeams.map { case ((annotation, env), beam) =>
+          val newBeam = beam.flatMap { x =>
+            Seq((
+              cf.cost(egraph, enode, t, Map(e -> x._1)),
+              ExprWithHashCons(enode.mapChildren(Map(e -> x._2)), t)
+            ))
+          }
+          // note: recording DataFunType() constructor is useless
+          (NotDataTypeAnnotation(NatToNatFunType(annotation)), env) -> newBeam
+        }
+      case Literal(_) | NatLiteral(_) | IndexLiteral(_, _) =>
         val beam = Seq((
           cf.cost(egraph, enode, t, Map.empty),
           ExprWithHashCons(enode.mapChildren(Map.empty), t)
@@ -853,6 +943,10 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.join() | rp.transpose() | rp.asScalar() | rp.unzip() => Seq(
             read ->: read,
             write ->: write
+          )
+          case rp.reorder() => Seq(
+            nFunT(n2nFunT(n2nFunT(read ->: read))),
+            nFunT(n2nFunT(n2nFunT(write ->: write))),
           )
           case rp.vectorFromScalar() | rp.neg() | rp.not() | rp.indexAsNat() |
                rp.fst() | rp.snd()  | rp.cast() => Seq(
@@ -923,6 +1017,17 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
               }
             }
             Seq(rec(n))
+          case rp.id() =>
+            // FIXME: only supports non-functional values
+            Seq(read ->: read, write ->: write)
+          case rp.foreignFunction(_, _) =>
+            def buildAnnot(t: rise.eqsat.TypeId): TypeAnnotation = egraph(t) match {
+              case _: DataTypeNode[NatId, DataTypeId] => read
+              case rise.eqsat.FunType(in, out) => buildAnnot(in) ->: buildAnnot(out)
+              case rise.eqsat.DataFunType(t) => dtFunT(buildAnnot(t))
+              case node => throw new Exception(s"did not expect $node")
+            }
+            Seq(buildAnnot(t))
           case _ => throw new Exception(s"did not expect $p")
         }
         val beam = Seq((

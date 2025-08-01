@@ -1,0 +1,3 @@
+depFun((n: Nat) => fun(n`.`f64)(x =>
+  x |> reduceSeq(add)(lf64(0.0))
+))
