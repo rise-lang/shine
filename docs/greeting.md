@@ -16,3 +16,4 @@ A good starting point to understand RISE and its compiler is the [Overview Tutor
 Technical papers as well as video presentations are available from the [RISE website](https://rise-lang.org/).
 The best overview paper to read is: [_Achieving high-performance the functional way: a functional pearl on expressing high-performance optimizations as rewrite strategies_](https://michel.steuwer.info/files/publications/2020/ICFP-2020.pdf) that appeared at ICFP 2020.
 
+If you plan to read or contribute to the code, we have a quick overview of the [file structure](structure.md).
