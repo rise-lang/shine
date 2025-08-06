@@ -219,9 +219,11 @@ object fromRise {
     import rise.openCL.{primitives => rocl}
     import rise.openMP.{primitives => romp}
     import rise.Cuda.{primitives => rcuda}
+    import rise.GAP8.{primitives => rgap8}
     import shine.OpenCL.primitives.{functional => ocl}
     import shine.OpenMP.primitives.{functional => omp}
     import shine.cuda.primitives.{functional => cuda}
+    import shine.GAP8.primitives.{functional => gap8}
     import shine.DPIA.Types.MatchingDSL._
     import shine.OpenCL.{Global, Warp, WorkGroup, Lane, Local}
 
@@ -1039,13 +1041,97 @@ object fromRise {
       case core.reduce() =>
         throw new Exception(s"$p has no implementation")
 
-      case rise.GAP8.primitives.gap8RunPrimitive() => fromType {
+      case rgap8.gap8RunPrimitive() => fromType {
         case nFunT(cores, expT(t, `write`) ->: _) =>
           depFun(NatKind, cores)(fun[ExpType](expT(t, write), e =>
             shine.GAP8.primitives.functional.Run(cores)(t, e)
           ))
       }
 
+      case rgap8.gap8hwConv3x3() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
+            depFun(NatKind, bias)(
+              fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+                fun[ExpType](expT(ArrayType(3, ArrayType(3, dt)), read), filter =>
+                  gap8.FunConv3x3(h, w, dt, bias, input, filter)
+                )
+              )
+            )
+      }
+
+      case rgap8.gap8hwConv5x5() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(5, ArrayType(5, dt)), read), filter =>
+                gap8.FunConv5x5(h, w, dt, bias, input, filter)
+              )
+            )
+          )
+      }
+
+      case rgap8.gap8hwConv7x7() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(7, ArrayType(7, dt)), read), filter =>
+                gap8.FunConv7x7(h, w, dt, bias, input, filter)
+              )
+            )
+          )
+      }
+
+      case rgap8.gap8hwConv7x4() => fromType {
+        case nFunT(bias, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `read`) ->:
+          expT(ArrayType(_, ArrayType(_, _)), `write`)) =>
+          depFun(NatKind, bias)(
+            fun[ExpType](expT(ArrayType(h, ArrayType(w, dt)), read), input =>
+              fun[ExpType](expT(ArrayType(4, ArrayType(7, dt)), read), filter =>
+                gap8.FunConv7x4(h, w, dt, bias, input, filter)
+              )
+            )
+          )
+      }
+
+      case rgap8.copyToL1() => fromType {
+        case expT(t, `read`) ->: expT(_, `write`) =>
+          fun[ExpType](expT(t, read), e => gap8.CopyToL1(t, e))
+      }
+
+      case rgap8.copyToL2() => fromType {
+        case expT(dt, `read`) ->: expT(_, `write`) =>
+          fun[ExpType](expT(dt, read), e => gap8.CopyToL2(dt, e))
+      }
+      //case nFunT(n, expT(ArrayType(_, t), a) ->:
+      //          expT(ArrayType(m, ArrayType(_, _)), _))
+      //        =>
+      //        depFun(NatKind, n)(
+      //          fun[ExpType](expT({m*n}`.`t, a), e =>
+      //            Split(n, m, a, t, e)))
+
+      case rgap8.copy2DOffsetToL1() => fromType {
+        case nFunT(offsetH, nFunT(offsetW, expT(ArrayType(h, ArrayType(w, dt)), `read`) ->: expT(_, `write`))) =>
+          depFun(NatKind, offsetH)(depFun(NatKind, offsetW)(fun[ExpType](expT(h`.`w`.`dt, read), input =>
+            gap8.Copy2DOffsetToL1(dt, h, w, offsetH, offsetW, input)
+          )))
+      }
+
+      case rgap8.allocL1() => fromType {
+        case expT(dt, `write`) ->: expT(_, `read`) =>
+          fun[ExpType](expT(dt, write), e => gap8.AllocL1(dt, e))
+      }
+
+      case rgap8.allocL2() => fromType {
+        case expT(dt, `write`) ->: expT(_, `read`) =>
+          fun[ExpType](expT(dt, write), e => gap8.AllocL2(dt, e))
+      }
 
       case _ => throw new Exception(s"Missing rule for $p")
     }

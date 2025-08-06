@@ -6,6 +6,7 @@ import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.{imperative => dpia}
+import shine.GAP8.primitives.imperative.{Conv3x3, Conv5x5, Conv7x4, Conv7x7}
 import shine.OpenCL._
 import shine.OpenCL.primitives.imperative.HostExecution
 import shine.OpenCL.primitives.{imperative => ocl}
@@ -179,6 +180,8 @@ object HostManagedBuffers {
             newArgs.map(_.t.dataType), newOutput.t.dataType, k.args.map(VisitAndRebuild(_, this)), newOutput
           ))
         case _: HostExecution => Stop(p)
+        case _: Conv3x3 | _: Conv5x5 | _: Conv7x7 | _: Conv7x4 =>
+          Continue(p, this)
         case unexpected => throw new Exception(s"did not expect $unexpected")
       }
   }

@@ -291,6 +291,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (_: ScalarType, Nil) =>
           CCodeGen.codeGenForeignFunctionCall(funDecl, inTs, outT, args, env, cont)
 
+        case (pt@PairType(dt1, dt2), _) =>
+          CCodeGen.codeGenForeignFunctionCall(funDecl, inTs, outT, args, env, cont)
+
         // TODO: This has to be generalised at some point ...
         case (VectorType(_, elemType), i :: Nil) =>
           // this is not really generic, to treat all arguments the same ...
@@ -313,7 +316,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           }
 
           CCodeGen.codeGenForeignCall(funDecl.name, args, env, i :: Nil, cont)
-
         case _ =>
           throw new Exception(s"Can not generate fun call to $funDecl with current path $ps")
       }

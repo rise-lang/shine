@@ -1,23 +1,22 @@
 package shine.DPIA.Compilation
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
+import rise.core.DSL.Type._
+import rise.core.substitute.{natInType => substituteNatInType}
+import rise.core.types.DataType._
+import rise.core.types.{Nat, NatIdentifier, _}
 import shine.DPIA.Compilation.TranslationToImperative._
 import shine.DPIA.DSL.{comment, _}
 import shine.DPIA.Phrases._
-import rise.core.types.{DataType, Fragment, MatrixLayout, NatIdentifier, NatKind, read, write}
-import rise.core.DSL.Type._
-import rise.core.types.DataType._
-import rise.core.substitute.{natInType => substituteNatInType}
 import shine.DPIA.Types.{AccType, CommType, ExpType, TypeCheck, comm}
-import rise.core.types.DataTypeOps._
 import shine.DPIA._
 import shine.DPIA.primitives.functional._
 import shine.DPIA.primitives.imperative.{Seq => _, _}
+import shine.GAP8.{L1toL2, L2toL1}
+import shine.GAP8.primitives.{functional => gap8, imperative => gap8Imp}
+import shine.OpenCL.primitives.{functional => ocl, imperative => oclImp}
 import shine.OpenMP.primitives.{functional => omp}
-import shine.OpenCL.primitives.{functional => ocl}
-import shine.OpenCL.primitives.{imperative => oclImp}
-import shine.cuda.primitives.{functional => cuda}
-import shine.cuda.primitives.{imperative => cudaImp}
+import shine.cuda.primitives.{functional => cuda, imperative => cudaImp}
 
 object AcceptorTranslation {
   def acc(E: Phrase[ExpType])
@@ -391,7 +390,74 @@ object AcceptorTranslation {
           con(cMatrix)(fun(ExpType(FragmentType(m, n, k, dataTypeAcc, Fragment.Accumulator, MatrixLayout.None), read))(cMatrix =>
             cudaImp.WmmaMMA(m, n, k, layoutA, layoutB, dataType, dataTypeAcc, aMatrix, bMatrix, cMatrix, A)))))))
 
-    //GAP8
+    // GAP8
+    // TODO: think about generalizing this. This currently only works if the filter is an identifier
+    case gap8.FunConv3x3(h, w, dt, bias, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        // val paddedArray = PadCst(3 * 3, 0, 1, dt, Literal(Unsigned8BitIntData(0)), Join(3, 3, read, dt, filter))
+        // val paddedArray = shine.DPIA.Phrases.Identifier(filter.name, ExpType(ArrayType(10, dt), read))
+        val paddedArray = gap8.Cast(
+          ArrayType(3, ArrayType(3, dt)),
+          ArrayType(10, dt),
+          filter
+        )
+        con(paddedArray)(λ(ExpType(ArrayType(10, dt), read))(filterInner =>
+          gap8Imp.Conv3x3(h, w, dt, bias, inInner, filterInner, A)
+        ))
+      }))
+    case gap8.FunConv5x5(h, w, dt, bias, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = gap8.Cast(
+          ArrayType(5, ArrayType(5, dt)),
+          ArrayType(26, dt),
+          filter
+        )
+        con(paddedArray)(λ(ExpType(ArrayType(26, dt), read))(filterInner =>
+          gap8Imp.Conv5x5(h, w, dt, bias, inInner, filterInner, A)
+        ))
+      }))
+    case gap8.FunConv7x7(h, w, dt, bias, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = gap8.Cast(
+          ArrayType(7, ArrayType(7, dt)),
+          ArrayType(56, dt),
+          filter
+        )
+        con(paddedArray)(λ(ExpType(ArrayType(56, dt), read))(filterInner =>
+          gap8Imp.Conv7x7(h, w, dt, bias, inInner, filterInner, A)
+        ))
+      }))
+    case gap8.FunConv7x4(h, w, dt, bias, in, filter: Identifier[ExpType]) =>
+      con(in)(λ(ExpType(h`.`(w`.`dt), read))(inInner => {
+        val paddedArray = gap8.Cast(
+          ArrayType(4, ArrayType(7, dt)),
+          ArrayType(28, dt),
+          filter
+        )
+        con(paddedArray)(λ(ExpType(ArrayType(28, dt), read))(filterInner =>
+          gap8Imp.Conv7x4(h, w, dt, bias, inInner, filterInner, A)
+        ))
+      }))
+
+    case gap8.CopyToL1(dt, input) =>
+      con(input)(λ(ExpType(dt, read))(i =>
+        gap8Imp.DmaCopy(L2toL1)(dt, i, A)
+      ))
+
+    case gap8.CopyToL2(dt, input) =>
+      con(input)(λ(ExpType(dt, read))(i =>
+        gap8Imp.DmaCopy(L1toL2)(dt, i, A)
+      ))
+
+    case gap8.Copy2DOffsetToL1(dt, h, w, offsetH, offsetW, input) =>
+      con(input)(λ(ExpType(h`.`w`.`dt, read))(i =>
+        // set larger output to 0
+        gap8Imp.MemorySet((h+2*offsetH)`.`(w+2*offsetW)`.`dt, Literal(IntData(0)), A) `;`
+          // copy smaller input into output with offset
+          gap8Imp.Dma2DOffsetCopy(L2toL1)(dt, h, w, offsetH, offsetW, i, A)
+      ))
+
+
     case r@shine.GAP8.primitives.functional.Run(cores) => {
       ???
     }
