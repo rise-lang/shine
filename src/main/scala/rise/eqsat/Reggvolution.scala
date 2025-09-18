@@ -35,7 +35,7 @@ object Reggvolution {
       case cp: PatternApplier => reggvolve(cp.pattern)
       case _ => throw new Exception(s"could not reggvolve applier: ${rw.applier.getClass()}")
     }
-    s"""rewrite!("${rw.name}", "${lhs}" => "${rhs}")"""
+    s"""rewrite!("${rw.name}"; "${lhs}" => "${rhs}")"""
   }
 
   def reggvolve(pat: Pattern): String =
