@@ -264,16 +264,20 @@ object mm {
     
     println(Reggvolution.reggvolve(Expr.fromNamed(mm)))
     println("---- RULES ----")
+    var visited = Set[Rewrite]()
     var success = 0
     var fail = 0
     def tryReggvolveRule(r: Rewrite) = {
-      try {
-        println(Reggvolution.reggvolve(r))
-        success = success + 1
-      } catch {
-        case e: Exception =>
-          fail = fail + 1
-          println(s"could not reggvolve rule ${r.name}: ${e}")
+      if (!visited.contains(r)) {
+        visited = visited + r
+        try {
+          println(Reggvolution.reggvolve(r))
+          success = success + 1
+        } catch {
+          case e: Exception =>
+            fail = fail + 1
+            println(s"could not reggvolve rule ${r.name}: ${e}")
+        }
       }
     }
     splitStepBENF.rules.foreach(tryReggvolveRule)
