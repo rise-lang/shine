@@ -45,13 +45,13 @@ object nbody {
   private val calcAccScal = foreignFun("calcAcc",
     Seq("p1", "p2", "mass2", "espSqr"),
     """|{
-       |  float rx = p1._fst - p2._fst;
-       |  float ry = p1._snd._fst - p2._snd._fst;
-       |  float rz = p1._snd._snd - p2._snd._snd;
-       |  float distSqr = rx + ry + rz;
+       |  float rx = p2._fst - p1._fst;
+       |  float ry = p2._snd._fst - p1._snd._fst;
+       |  float rz = p2._snd._snd - p1._snd._snd;
+       |  float distSqr = rx*rx + ry*ry + rz*rz;
        |  float invDist = 1.0f / sqrt(distSqr + espSqr);
        |  float invDistCube = invDist * invDist * invDist;
-       |  float s = invDistCube * mass;
+       |  float s = invDistCube * mass2;
        |  Tuple acc = {s * rx, s * ry, s * rz};
        |  return acc;
        |}
