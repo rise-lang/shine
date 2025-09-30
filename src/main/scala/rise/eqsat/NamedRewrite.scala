@@ -37,12 +37,11 @@ object NamedRewrite {
     }
   }
 
-  def init(name: String,
-           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
-           parameters: Seq[NamedRewrite.Parameter] = Seq(),
-          ): Rewrite = {
+  def typeRule(
+    rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+    parameters: Seq[NamedRewrite.Parameter]
+  ): (rc.Expr, Map[String, rct.ExprType], Set[rct.Kind.Identifier], rc.Expr) = {
     import rise.core.DSL.infer
-    import arithexpr.{arithmetic => ae}
 
     val (lhs, rhs) = rule
     val untypedFreeV = infer.collectFreeEnv(lhs).map { case (name, t) =>
@@ -61,15 +60,48 @@ object NamedRewrite {
     }
     val freeV = freeV1 ++ freeV2
     val typedRhs = infer(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
+    (typedLhs, freeV, freeT, typedRhs)
+  }
 
-    trait PatVarStatus
-    case object Unknown extends PatVarStatus
-    case object Known extends PatVarStatus
-    // both known and coherent with other shifts
-    case object ShiftCoherent extends PatVarStatus
+  trait PatVarStatus
+  case object Unknown extends PatVarStatus
+  case object Known extends PatVarStatus
+  // both known and coherent with other shifts
+  case object ShiftCoherent extends PatVarStatus
 
-    // from var name to var index and a status depending on local index shift
-    type PatternVarMap[S, V] = HashMap[String, HashMap[S, (V, PatVarStatus)]]
+  // from var name to var index and a status depending on local index shift
+  type PatternVarMap[S, V] = HashMap[String, HashMap[S, (V, PatVarStatus)]]
+
+  def makePatVar[S, V](
+    name: String,
+    shift: S,
+    pvm: PatternVarMap[S, V],
+    constructor: Int => V,
+    status: PatVarStatus
+  ): V = {
+    val shiftMap = pvm.getOrElseUpdate(name, HashMap())
+    val (pv, previousStatus) = shiftMap.getOrElseUpdate(shift, {
+      val pvCount = pvm.values.map(m => m.size).sum
+      (constructor(pvCount), Unknown)
+    })
+    val updatedStatus = (previousStatus, status) match {
+      case (Unknown, s) => s
+      case (s, Unknown) => s
+      case (Known, Known) => Known
+      case t => throw new Exception(s"did not expect $t")
+    }
+    shiftMap(shift) = (pv, updatedStatus)
+    pv
+  }
+
+  def init(name: String,
+           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+           parameters: Seq[NamedRewrite.Parameter] = Seq(),
+          ): Rewrite = {
+    import arithexpr.{arithmetic => ae}
+
+    val (typedLhs, freeV, freeT, typedRhs) = typeRule(rule, parameters)
+
     val patVars: PatternVarMap[Expr.Shift, PatternVar] = HashMap()
     val natPatVars: PatternVarMap[Nat.Shift, NatPatternVar] = HashMap()
     val dataTypePatVars: PatternVarMap[Type.Shift, DataTypePatternVar] = HashMap()
@@ -80,26 +112,6 @@ object NamedRewrite {
     val natsToPivot = Vec[(rct.Nat, rct.NatIdentifier, Nat.Shift, NatPatternVar)]()
 
     val boundVarToShift = HashMap[String, Expr.Shift]()
-
-    def makePatVar[S, V](name: String,
-                         shift: S,
-                         pvm: PatternVarMap[S, V],
-                         constructor: Int => V,
-                         status: PatVarStatus): V = {
-      val shiftMap = pvm.getOrElseUpdate(name, HashMap())
-      val (pv, previousStatus) = shiftMap.getOrElseUpdate(shift, {
-        val pvCount = pvm.values.map(m => m.size).sum
-        (constructor(pvCount), Unknown)
-      })
-      val updatedStatus = (previousStatus, status) match {
-        case (Unknown, s) => s
-        case (s, Unknown) => s
-        case (Known, Known) => Known
-        case t => throw new Exception(s"did not expect $t")
-      }
-      shiftMap(shift) = (pv, updatedStatus)
-      pv
-    }
 
     def makePat(expr: rc.Expr,
                 bound: Expr.Bound,
@@ -502,12 +514,7 @@ object NamedRewrite {
             case ((s, _, _, _, _), (pv, Known)) => (s, pv)
           }.get
           val nfIndex = iS - nfShift // >= 0 because iS >= nfShift
-          (a: Applier) => (new ConditionalApplier(Set(iPV), (Set(FreeAnalysis), Set()), acc(a)) {
-            def cond(egraph: EGraph, eclass: EClassId, shc: Substs)(subst: shc.Subst): Boolean = {
-              val freeOf = egraph.getAnalysis(FreeAnalysis)
-              !freeOf(shc.get(iPV, subst)).free.contains(nfIndex)
-            }
-          })
+          (a: Applier) => NotFreeInApplier(iPV, nfIndex, acc(a))
         case VectorizeScalarFun(f, n, fV) =>
           val (nPV, nST) = natPatVars(n)(0, 0)
           assert(nST == Known)

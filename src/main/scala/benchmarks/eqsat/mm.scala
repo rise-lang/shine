@@ -261,33 +261,6 @@ object mm {
 
   private def baseline(): GuidedSearch.Result = {
     val start = mm
-    
-    println(Reggvolution.reggvolve(Expr.fromNamed(mm)))
-    println("---- RULES ----")
-    var visited = Set[Rewrite]()
-    var success = 0
-    var fail = 0
-    def tryReggvolveRule(r: Rewrite) = {
-      if (!visited.contains(r)) {
-        visited = visited + r
-        try {
-          println(Reggvolution.reggvolve(r))
-          success = success + 1
-        } catch {
-          case e: Exception =>
-            fail = fail + 1
-            println(s"could not reggvolve rule ${r.name}: ${e}")
-        }
-      }
-    }
-    splitStepBENF.rules.foreach(tryReggvolveRule)
-    reorderStepBENF.rules.foreach(tryReggvolveRule)
-    copyStep.rules.foreach(tryReggvolveRule)
-    loweringStep.rules.foreach(tryReggvolveRule)
-    println("----")
-    println(s"translated: ${success}/${success+fail}")
-
-    throw new Exception("done")
 
     val steps = Seq(
       emptyStep withRules Seq(rules.reduceSeq, rules.reduceSeqMapFusion)
@@ -648,6 +621,7 @@ object mm {
   }
 
   def main(args: Array[String]): Unit = {
+    Reggvolve.init_rules()
     // val names = Set(args(0))
     // fs.filter { case (k, _) => names(k) }
 
@@ -688,5 +662,178 @@ object mm {
       println(s"$status after ${util.prettyTime(t)}")
       r.printReport()
     }
+  }
+}
+
+object Reggvolve {
+  def init_rules(): Unit = {
+    import rise.core.{primitives => rcp}
+    import rise.core.types.{Nat, DataType, AddressSpace}
+    import NamedRewriteDSL._
+
+    println(Reggvolution.reggvolve(Expr.fromNamed(benchmarks.eqsat.mm.mm)))
+
+    println("---- RULES ----")
+
+    println(Reggvolution.reggvolveNamedRewrite("map-fission",
+      app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
+        -->
+      lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in"))),
+      Seq("f" notFree "x")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("reduce-seq",
+      reduce --> rcp.reduceSeq.primitive
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("eliminate-map-identity",
+      app(map, lam("x", "x"))
+        -->
+      lam("y", "y")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("reduce-seq-map-fusion",
+      app(app(app(rcp.reduceSeq.primitive, "f"), "init"), app(app(map, "g"), "in"))
+        -->
+      app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("x",
+        app(app("f", "acc"), app("g", "x"))))), "init"), "in")
+    ))
+    def splitJoin(n: Int) = Reggvolution.reggvolveNamedRewrite(s"split-join-$n",
+      app(app(map, "f"), "in")
+        -->
+      app(join, app(app(map, app(map, "f")), app(nApp(split, n), "in")))
+    )
+    println(splitJoin(32))
+    def splitJoin2M(n: Int) = Reggvolution.reggvolveNamedRewrite(s"split-join-2m-$n",
+      app(app(map, app(map, app(map, "f"))), "in")
+        -->
+      app(app(map, app(map, join)), app(app(map, app(map, app(map, app(map, "f")))), app(app(map, app(map, nApp(split, n))), "in")))
+    )
+    println(splitJoin2M(32))
+    def blockedReduce(n: Int) = Reggvolution.reggvolveNamedRewrite(s"blocked-reduce-$n",
+      app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
+        -->
+      app(app(app(rcp.reduceSeq.primitive,
+        lam("acc", lam("y", app(app("op", "acc"),
+          app(app(app(reduce, "op"), "init"), "y"))))),
+        "init"), app(nApp(split, n), "arg"))
+    )
+    println(blockedReduce(4))
+    println(Reggvolution.reggvolveNamedRewrite("split-before-map",
+      app(nApp(split, "n"), app(app(map, "f"), "in"))
+        -->
+      app(app(map, app(map, "f")), app(nApp(split, "n"), "in"))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("reduce-seq-map-fission",
+      app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+        app(app("op", "acc"), "gy" :: ("dt": DataType))))), "init")
+        -->
+        lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
+          app(app(map, lam("y", "gy")), "in"))),
+      Seq("op" notFree "y")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("lift-reduce-seq",
+      app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
+        -->
+      lam("in",
+        app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+          app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+            app(app(zip, "acc"), "y"))
+        ))), app(rcp.generate.primitive, lam("i", "init"))),
+        app(transpose, "in")))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("lift-reduce-seq-2",
+      app(map, lam("x", app(app(add, app(fst, "x")),
+        app(app(app(rcp.reduceSeq.primitive, "op"), lf32(0)), app(snd, "x")))))
+        -->
+      lam("in", app(lam("uz",
+        app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+          app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+            app(app(zip, "acc"), "y"))
+        ))), app(fst, "uz")), app(transpose, app(snd, "uz")))),
+        app(unzip, "in")))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("lift-reduce-seq-3",
+      (app(map, lam("x",
+        app(app(app(rcp.reduceSeq.primitive, "op"), app(fst, app(unzip, "x"))),
+          app(transpose, app(snd, app(unzip, "x")))))))
+        -->
+      lam("in",
+        app(app(app(rcp.reduceSeq.primitive, lam("acc", lam("y",
+          app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+            app(app(zip, "acc"), "y"))
+        ))), app(fst, app(unzip, app(app(map, unzip), "in")))),
+        app(transpose, app(app(map, transpose), app(snd, app(unzip, app(app(map, unzip), "in"))))))),
+      Seq("op" notFree "x")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("transpose-around-map-map-f-1m",
+      app(app(map, app(map, app(map, "f"))), "in")
+        -->
+      app(app(map, transpose), app(app(map, app(map, app(map, "f"))), app(app(map, transpose), "in")))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("store-to-mem",
+      ("in" :: ("dt": DataType))
+        -->
+      app(app(rcp.let.primitive, app(rcp.toMem.primitive, "in")), lam("x", "x"))
+    ))
+    def splitJoin2(n: Int) = Reggvolution.reggvolveNamedRewrite(s"split-join-2-$n",
+      ("in" :: (`?n``.``?dt`))
+        -->
+      app(join, app(nApp(split, n), "in"))
+    )
+    splitJoin2(32)
+    println(Reggvolution.reggvolveNamedRewrite("map-array",
+      ("x" :: (`?n``.``?dt`))
+        -->
+      app(app(map, lam("y", "y")), "x")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("map-fusion",
+      app(app(map, "f"), app(app(map, "g"), "in"))
+        -->
+      app(app(map, lam("x", app("f", app("g", "x")))), "in")
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("map-eta-abstraction",
+      app(map, "f") --> lam("x", app(app(map, "f"), "x"))
+    ))
+    object vectorize {
+      def after(n: Int, dt: DataType) = Reggvolution.reggvolveNamedRewrite(s"vec-$n-after-$dt",
+        // TODO: if m % n == 0 ?
+        ("e" :: (("m": Nat)`.`dt))
+          -->
+        app(asScalar, app(nApp(asVector, n), "e"))
+      )
+    }
+    println(vectorize.after(32, f32))
+    println(vectorize.after(32, f32 x f32))
+    println(vectorize.after(32, f32 x (f32 x f32)))
+    println(Reggvolution.reggvolveNamedRewrite("vec-before-map-f32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: f32 ->: f32), ("in": Pattern)))
+        -->
+      app(app(map, "fV"), app(nApp(asVector, "n"), "in")),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("vec-before-map-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x f32) ->: f32), ("in": Pattern)))
+        -->
+      app(app(map, "fV"),
+        app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+                      app(nApp(asVector, "n"), app(snd, app(unzip, "in"))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("vec-before-map-f32x-f32xf32",
+      app(nApp(asVector, "n"), app(app(map, "f" :: (f32 x (f32 x f32)) ->: f32), ("in": Pattern)))
+        -->
+        app(app(map, "fV"),
+          app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, "in")))),
+            app(app(zip, app(nApp(asVector, "n"), app(fst, app(unzip, app(snd, app(unzip, "in")))))),
+                          app(nApp(asVector, "n"), app(snd, app(unzip, app(snd, app(unzip, "in")))))))),
+      Seq(vectorizeScalarFun("f", "n", "fV"))
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("reduce-seq-unroll",
+      rcp.reduceSeq.primitive --> rcp.reduceSeqUnroll.primitive
+    ))
+    println(Reggvolution.reggvolveNamedRewrite("map-par",
+      map --> rise.openMP.primitives.mapPar.primitive
+    ))
+
+    println("----")
+    throw new Exception("done")
   }
 }
