@@ -975,6 +975,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.natAsIndex() | rp.take() | rp.drop() => Seq(
             nFunT(read ->: read)
           )
+          case rp.reduce() => Seq()
           case rp.reduceSeq() | rp.reduceSeqUnroll() => Seq(
             (read ->: read ->: write) ->: write ->: read ->: read
           )

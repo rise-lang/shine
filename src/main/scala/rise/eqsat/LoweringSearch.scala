@@ -48,7 +48,7 @@ class LoweringSearch(var filter: Predicate) {
     println("---- lowering")
     val egraph = EGraph.empty()
     val normBeam = startBeam.map(normalForm.normalize)
-    println(s"normalized: $normBeam")
+    // println(s"normalized: $normBeam")
 
     val expectedAnnotations = annotations match {
       case Some(annotations) => annotations
