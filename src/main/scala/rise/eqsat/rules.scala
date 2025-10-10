@@ -530,6 +530,12 @@ object rules {
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
   )
 
+  val toMem = NamedRewrite.init("to-mem",
+    ("in" :: ("dt": DataType))
+      -->
+    app(rcp.toMem.primitive, "in")
+  )
+
   val storeToMem = NamedRewrite.init("store-to-mem",
     ("in" :: ("dt": DataType))
       -->

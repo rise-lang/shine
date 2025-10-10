@@ -633,6 +633,10 @@ object BeamExtractRW {
   {
     override def toString: String = node.toString()
   }
+  // TODO: could also keep track of:
+  // - arrays that can only be indexed with constants
+  // - streams that require stream translation
+  // that would require a per-array-dimension annotation
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
   {
