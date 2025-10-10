@@ -176,7 +176,7 @@ object HighLevelConstructs {
   }
 
   def reverse: ToBeTyped[Expr] = impl{ n: Nat =>
-    reorder(n)(n2nFun(i => n - i - 1))(n2nFun(i => i + 1 - n))
+    reorder(n)(n2nFun(i => n - i - 1))(n2nFun(i => n - i - 1))
   }
 
   def length = impl{ n: Nat => impl{ dt: DataType =>
