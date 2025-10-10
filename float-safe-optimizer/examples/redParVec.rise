@@ -1,0 +1,14 @@
+fun((32768`.`f32) ->: f32)(in =>
+  split(8192)(in) |> // read
+  map( // read -> write
+    asVectorAligned(4) >> // read
+    reduceSeq(add)(vectorFromScalar(lf32(0))) >> // read : vector -> write
+    makeArray(1) >> // read
+    mapSeqUnroll(fun(x => x)) >> // read -> write
+    toMem >> // write -> read
+    asScalar >> // read
+    reduceSeq(add)(lf32(0)) // read : scalar -> write
+  ) |>
+  toMem |> // write -> read
+  reduceSeq(add)(lf32(0)) // read : scalar -> write
+)

@@ -56,35 +56,43 @@ case object DataTypePatternAny extends DataTypePattern {
 }
 
 object Type {
-  /** Shift nat and datatype indices */
-  type Shift = (Int, Int)
+  /** Shift nat, datatype and natToNat indices */
+  type Shift = (Int, Int, Int)
 
-  def fromNamed(t: rct.ExprType, bound: Expr.Bound = Expr.Bound.empty): Type = {
+  def fromNamed(t: rct.ExprType, scope: Expr.Scope = Expr.Bound.empty): Type = {
     Type(t match {
-      case dt: rct.DataType => DataType.fromNamed(dt, bound).node
-      case rct.FunType(a, b) => FunType(fromNamed(a, bound), fromNamed(b, bound))
-      case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) => NatFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(rct.DataKind, x: rcdt.DataTypeIdentifier, t) => DataFunType(fromNamed(t, bound + x))
-      case rct.DepFunType(rct.AddressSpaceKind, x: rct.AddressSpaceIdentifier, t) => AddrFunType(fromNamed(t, bound + x))
+      case dt: rct.DataType => DataType.fromNamed(dt, scope).node
+      case rct.FunType(a, b) => FunType(fromNamed(a, scope), fromNamed(b, scope))
+      case rct.DepFunType(rct.NatKind, x: rct.NatIdentifier, t) =>
+        NatFunType(fromNamed(t, scope + x))
+      case rct.DepFunType(rct.DataKind, x: rcdt.DataTypeIdentifier, t) =>
+        DataFunType(fromNamed(t, scope + x))
+      case rct.DepFunType(rct.AddressSpaceKind, x: rct.AddressSpaceIdentifier, t) =>
+        AddrFunType(fromNamed(t, scope + x))
+      case rct.DepFunType(rct.NatToNatKind, x: rct.NatToNatIdentifier, t) => 
+        NatToNatFunType(fromNamed(t, scope + x))
       case rct.DepFunType(_, _, _) => ???
       case rct.TypePlaceholder | rct.TypeIdentifier(_) =>
         throw new Exception(s"did not expect $t")
     })
   }
 
-  def toNamed(t: Type, bound: Expr.Bound = Expr.Bound.empty): rct.ExprType = {
+  def toNamed(t: Type, scope: Expr.Scope = Expr.Bound.empty): rct.ExprType = {
     t.node match {
-      case dt: DataTypeNode[Nat, DataType] => DataType.toNamed(DataType(dt), bound)
-      case FunType(a, b) => rct.FunType(toNamed(a, bound), toNamed(b, bound))
+      case dt: DataTypeNode[Nat, DataType] => DataType.toNamed(DataType(dt), scope)
+      case FunType(a, b) => rct.FunType(toNamed(a, scope), toNamed(b, scope))
       case NatFunType(t) =>
-        val i = rct.NatIdentifier(s"n${bound.nat.size}")
-        rct.DepFunType(rct.NatKind, i, toNamed(t, bound + i))
+        val (i, scope2) = scope.bindNat()
+        rct.DepFunType(rct.NatKind, i, toNamed(t, scope2))
       case DataFunType(t) =>
-        val i = rcdt.DataTypeIdentifier(s"n${bound.data.size}")
-        rct.DepFunType(rct.DataKind, i, toNamed(t, bound + i))
+        val (i, scope2) = scope.bindData()
+        rct.DepFunType(rct.DataKind, i, toNamed(t, scope2))
       case AddrFunType(t) =>
-        val i = rct.AddressSpaceIdentifier(s"a${bound.data.size}")
-        rct.DepFunType(rct.AddressSpaceKind, i, toNamed(t, bound + i))
+        val (i, scope2) = scope.bindAddr()
+        rct.DepFunType(rct.AddressSpaceKind, i, toNamed(t, scope2))
+      case NatToNatFunType(t) =>
+        val (i, scope2) = scope.bindN2N()
+        rct.DepFunType(rct.NatToNatKind, i, toNamed(t, scope2))
     }
   }
 
@@ -93,30 +101,30 @@ object Type {
 }
 
 object DataType {
-  def fromNamed(dt: rct.DataType, bound: Expr.Bound = Expr.Bound.empty): DataType = {
+  def fromNamed(dt: rct.DataType, scope: Expr.Scope = Expr.Bound.empty): DataType = {
     DataType(dt match {
-      case i: rcdt.DataTypeIdentifier => DataTypeVar(bound.indexOf(i))
+      case i: rcdt.DataTypeIdentifier => DataTypeVar(scope.indexOf(i))
       case s: rcdt.ScalarType => ScalarType(s)
       case rcdt.NatType => NatType
-      case rcdt.VectorType(s, et) => VectorType(Nat.fromNamed(s, bound), fromNamed(et, bound))
-      case rcdt.IndexType(s) => IndexType(Nat.fromNamed(s, bound))
-      case rcdt.PairType(dt1, dt2) => PairType(fromNamed(dt1, bound), fromNamed(dt2, bound))
-      case rcdt.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, bound), fromNamed(et, bound))
+      case rcdt.VectorType(s, et) => VectorType(Nat.fromNamed(s, scope), fromNamed(et, scope))
+      case rcdt.IndexType(s) => IndexType(Nat.fromNamed(s, scope))
+      case rcdt.PairType(dt1, dt2) => PairType(fromNamed(dt1, scope), fromNamed(dt2, scope))
+      case rcdt.ArrayType(s, et) => ArrayType(Nat.fromNamed(s, scope), fromNamed(et, scope))
       case _: rcdt.DepArrayType | _: rcdt.DepPairType[_, _] |
            _: rcdt.NatToDataApply | _: rcdt.FragmentType | _: rcdt.ManagedBufferType | _: rcdt.OpaqueType =>
         throw new Exception(s"did not expect $dt")
     })
   }
 
-  def toNamed(dt: DataType, bound: Expr.Bound = Expr.Bound.empty): rct.DataType = {
+  def toNamed(dt: DataType, scope: Expr.Scope = Expr.Bound.empty): rct.DataType = {
     dt.node match {
-      case DataTypeVar(index) => bound.getData(index)
+      case DataTypeVar(index) => scope.getData(index)
       case ScalarType(s) => s
       case NatType => rcdt.NatType
-      case VectorType(s, et) => rcdt.VectorType(Nat.toNamed(s, bound), toNamed(et, bound))
-      case IndexType(s) => rcdt.IndexType(Nat.toNamed(s, bound))
-      case PairType(dt1, dt2) => rcdt.PairType(toNamed(dt1, bound), toNamed(dt2, bound))
-      case ArrayType(s, et) => rcdt.ArrayType(Nat.toNamed(s, bound), toNamed(et, bound))
+      case VectorType(s, et) => rcdt.VectorType(Nat.toNamed(s, scope), toNamed(et, scope))
+      case IndexType(s) => rcdt.IndexType(Nat.toNamed(s, scope))
+      case PairType(dt1, dt2) => rcdt.PairType(toNamed(dt1, scope), toNamed(dt2, scope))
+      case ArrayType(s, et) => rcdt.ArrayType(Nat.toNamed(s, scope), toNamed(et, scope))
     }
   }
 
@@ -147,6 +155,7 @@ sealed trait TypeNode[+T, +N, +DT] {
       case NatFunType(t) => NatFunType(ft(t))
       case DataFunType(t) => DataFunType(ft(t))
       case AddrFunType(t) => AddrFunType(ft(t))
+      case NatToNatFunType(t) => NatToNatFunType(ft(t))
       case dt: DataTypeNode[N, DT] => dt.map(fn, fdt)
     }
 
@@ -168,6 +177,9 @@ final case class DataFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
 }
 final case class AddrFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
   override def toString: String = s"(addr) -> $t"
+}
+final case class NatToNatFunType[T](t: T) extends TypeNode[T, Nothing, Nothing] {
+  override def toString: String = s"(n2n) -> $t"
 }
 
 sealed trait DataTypeNode[+N, +DT] extends TypeNode[Nothing, N, DT] {
@@ -211,6 +223,7 @@ object TypeNode {
     case NatFunType(t) => Seq(t)
     case DataFunType(t) => Seq(t)
     case AddrFunType(t) => Seq(t)
+    case NatToNatFunType(t) => Seq(t)
     case dt: DataTypeNode[T, T] => DataTypeNode.collect(dt)
   }
 }

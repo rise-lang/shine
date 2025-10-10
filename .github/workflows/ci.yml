@@ -4,17 +4,35 @@ on:
   workflow_dispatch:
   pull_request:
 
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
 jobs:
   compile-and-test:
-
     runs-on: ubuntu-latest
-
-    container: michelsteuwer/docker-scala-opencl:latest
-
     steps:
-      - uses: actions/checkout@v2
-      - name: Checkout submodules
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Checkout code (submodules)
         run: git submodule update --init --recursive
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
+      - name: Setup SBT (cache)
+        uses: coursier/cache-action@v6
+      - name: Setup C++ and JNI dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake clang libc++-dev libc++abi-dev libxtst6 libxi6 libxrender1 libxext6
+      - name: Setup OpenCL
+        run: |
+          sudo apt update
+          sudo apt install -y ocl-icd-opencl-dev opencl-headers
+          sudo apt install -y libpocl-dev pocl-opencl-icd
       - name: Compile
         run: sbt compile
       - name: Run tests

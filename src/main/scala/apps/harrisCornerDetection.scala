@@ -12,6 +12,13 @@ import shine.OpenCL.KernelExecutor._
 
 import scala.reflect.ClassTag
 
+/** This version of Harris follows from the following paper:
+  * https://dl.acm.org/doi/abs/10.1145/2568058.2568067
+  *
+  * Compared to Halide's version:
+  * - it starts from grayscale images instead of color images
+  * - it uses a binomial filter instead of a box filter
+  */
 object harrisCornerDetection {
   private val C2D = separableConvolution2D
   private val id = C2D.id

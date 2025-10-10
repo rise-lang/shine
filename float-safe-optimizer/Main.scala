@@ -16,7 +16,7 @@ object Main {
     println("typedExpr", typedExpr)
     val optimizedExpr = Optimize(typedExpr)
     println("optimizedExpr", optimizedExpr)
-    val code_tail = gen.openmp.function.asStringFromExpr(optimizedExpr)
+    val code_tail = gen.openmp.function(name).asStringFromExpr(optimizedExpr)
 
     // add math.h include since this is needed in many applications
     val code = s"""

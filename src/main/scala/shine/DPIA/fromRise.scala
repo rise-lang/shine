@@ -2,7 +2,7 @@ package shine.DPIA
 
 import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
-import rise.core.types.{AddressSpaceKind, DataKind, DataType, NatKind, NatToNatKind, NatToNatLambda, read, write}
+import rise.core.types.{AddressSpaceKind, DataKind, DataType, NatKind, NatToNatKind, NatToNatLambda, TypeIdentifier, TypePlaceholder, read, write}
 import rise.core.DSL.Type._
 import rise.core.types.DataType._
 import rise.elevate.Rise
@@ -12,7 +12,10 @@ import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.primitives.functional._
+import util.monads
 
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.collection.mutable
 
 object fromRise {
@@ -22,8 +25,128 @@ object fromRise {
       throw new Exception(s"expression is not in closed form: $expr\n\n with type ${expr.t}\n free vars: $fV\n free type vars: $fT\n\n")
     }
     val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
-    val rwMap = inferAccess(bnfExpr)
-    expression(bnfExpr, rwMap)
+    val nExpr = normalizeEqualNats(bnfExpr)
+    val rwMap = inferAccess(nExpr)
+    expression(nExpr, rwMap)
+  }
+
+  // NOTE: this is required because unify(nat1, nat2) can succeed while
+  // normalize(nat1) != normalize(nat2)
+  private def normalizeEqualNats(e: r.Expr): r.Expr = {
+    // inspired from union find algorithm
+    var map = mutable.Map[Nat, Nat]()
+
+    @tailrec
+    def getBest(n: Nat): Nat = {
+      val n2 = map.getOrElse(n, n)
+      if (n == n2) { return n }
+      val n3 = map.getOrElse(n2, n2)
+      map(n) = n3
+      getBest(n3)
+    }
+
+    r.traverse.traverse(e, new r.traverse.PureTraversal {
+      override def expr: r.Expr => util.monads.Pure[r.Expr] = { e =>
+        e match {
+          case r.App(f, arg) =>
+            val ft = f.t.asInstanceOf[rt.FunType[_ <: rt.ExprType, _ <: rt.ExprType]]
+            sameType(arg.t, ft.inT)
+            sameType(e.t, ft.outT)
+          case _ => ()
+        }
+        super.expr(e)
+      }
+
+      private def sameType(a: rt.ExprType, b: rt.ExprType): Unit = {
+        def unwrapb(f: PartialFunction[rt.ExprType, Unit]): Unit = {
+          f.lift(b) match {
+            case Some(()) => ()
+            case None => throw new Exception(s"Unexpected type for $b")
+          }
+        }
+        a match {
+          case TypePlaceholder | TypeIdentifier(_) =>
+            throw new Exception("this should not happen")
+          case rt.FunType(inT, outT) => unwrapb {
+            case rt.FunType(inT2, outT2) =>
+                sameType(inT, inT2)
+                sameType(outT, outT2)
+            }
+          case rt.DepFunType(kind, x, t) => unwrapb {
+            case rt.DepFunType(kind2, x2, t2) =>
+              assert(kind == kind2)
+              assert(x == x2)
+              sameType(t, t2)
+          }
+          case dataType: DataType => dataType match {
+            case DataTypeIdentifier(_) => ()
+            case scalarType: ScalarType => ()
+            case DataType.NatType => ()
+            case OpaqueType(_) => ()
+            case VectorType(size, elemType) => unwrapb {
+              case VectorType(size2, elemType2) =>
+                sameNat(size, size2)
+                sameType(elemType, elemType2)
+            }
+            case IndexType(size) => unwrapb {
+              case IndexType(size2) =>
+                sameNat(size, size2)
+            }
+            case PairType(dt1, dt2) => unwrapb {
+              case PairType(dt12, dt22) =>
+                sameType(dt1, dt12)
+                sameType(dt2, dt22)
+            }
+            case FragmentType(rows, columns, d3, dataType, fragmentKind, layout) => unwrapb {
+              case FragmentType(_, _, d32, dataType2, _, _) =>
+                sameNat(d3, d32)
+                sameType(dataType, dataType2)
+            }
+            case ManagedBufferType(dt) => unwrapb {
+              case ManagedBufferType(dt2) =>
+                sameType(dt, dt2)
+            }
+            case DepPairType(kind, x, t) => unwrapb {
+              case DepPairType(kind2, x2, t2) =>
+                assert(kind == kind2)
+                assert(x == x2)
+                sameType(t, t2)
+            }
+            case apply: NatToDataApply => ???
+            case ArrayType(size, elemType) => unwrapb {
+              case ArrayType(size2, elemType2) =>
+                sameNat(size, size2)
+                sameType(elemType, elemType2)
+            }
+            case DepArrayType(size, fdt) => ???
+          }
+        }
+      }
+
+      private def sameNat(a: Nat, b: Nat): Unit = {
+        val bestA = getBest(a)
+        val bestB = getBest(b)
+        if (bestA != bestB) {
+          println(s"WARNING: $bestA != $bestB")
+          val best = if (natSize(bestA) < natSize(bestB)) { bestA } else { bestB }
+          println(s" --> assuming they are equal and using $best")
+          map(bestA) = best
+          map(bestB) = best
+        }
+      }
+    })
+
+    r.traverse.traverse(e, new r.traverse.PureTraversal {
+      override def nat: Nat => monads.Pure[Nat] = n => return_(getBest(n))
+    })
+  }
+
+  private def natSize(n: Nat): Int = {
+    var i = 0
+    arithexpr.arithmetic.ArithExpr.visit(n, {
+      _ => i += 1
+    })
+    i
   }
 
   def expression(

@@ -9,6 +9,7 @@ package object eqsat {
   type ENode = Node[EClassId, NatId, DataTypeId, Address]
   type PNode = Node[Pattern, NatPattern, DataTypePattern, AddressPattern]
   type Address = AddressNode
+  type NatToNat = NatToNatNode[Nat]
 
   /** A key to identify [[EClass]]es within an [[EGraph]] */
   case class EClassId(i: Int)
@@ -36,6 +37,13 @@ package object eqsat {
     val normalizeCountRewrites: Expr => (Expr, Long)
     val rules: Seq[Rewrite]
     val directedRules: Seq[RewriteDirected]
+  }
+
+  object NONF extends NF {
+    override val normalize: Expr => Expr = e => e
+    override val normalizeCountRewrites: Expr => (Expr, Long) = e => (e, 0)
+    override val rules: Seq[Rewrite] = Seq()
+    override val directedRules: Seq[RewriteDirected] = Seq()
   }
 
   object BENF extends NF {

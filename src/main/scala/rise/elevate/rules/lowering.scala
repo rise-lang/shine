@@ -151,6 +151,17 @@ object lowering {
       Success((preserveType(a) |> p.toMem) !: a.t)
   }
 
+  @rule def letScalarToMem: Strategy[Rise] = {
+    case expr@App(p.let(), App(p.toMem(), _)) => Failure(letScalarToMem)
+    case expr@App(p.let(), value ::: (_: ScalarType)) =>
+      Success((p.let(preserveType(value) |> p.toMem)) !: expr.t)
+  }
+
+  @rule def letBetaRedex: Strategy[Rise] = {
+    case expr@App(Lambda(x, b ::: (_: DataType)), value ::: (_: DataType)) =>
+      Success((p.let(value)(lambda(ToBeTyped(x), preserveType(b)))) !: expr.t)
+  }
+
   // Lowerings used in PLDI submission
 
   // adds copy after every generate
@@ -184,6 +195,18 @@ object lowering {
     case c@App(App(p.mapSeq(), id), etaInput) if isId(id) => Success(c)
     case App(App(p.mapSeq(), Lambda(_, f)), etaInput) => isCopy(f)
     case c@App(id, _) if isId(id) => Success(c)
+  }
+
+  @scala.annotation.tailrec
+  protected def isMakeArray(e: Expr): Boolean = e match {
+    case p.makeArray(_) => true
+    case App(f, _) => isMakeArray(f)
+    case _ => false
+  }
+
+  @rule def makeArrayUnrollToMem: Strategy[Rise] = {
+    case mka ::: (dt: DataType) if isMakeArray(mka) =>
+      Success((preserveType(mka) |> p.mapSeqUnroll(fun(x => x)) |> p.toMem) !: mka.t)
   }
 
   @rule def isId: Strategy[Rise] = {

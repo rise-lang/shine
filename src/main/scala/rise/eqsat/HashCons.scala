@@ -42,6 +42,9 @@ case class HashConses(
         case NatPow(b, e) => idToNamed(b).pow(idToNamed(e))
         case NatMod(a, b) => idToNamed(a) % idToNamed(b)
         case NatIntDiv(a, b) => idToNamed(a) / idToNamed(b)
+        case NatToNatApp(NatToNatVar(index), n) => rct.NatToNatApply(rct.NatToNatIdentifier(s"n2n$index"), idToNamed(n))
+        case NatToNatApp(NatToNatLambda(e), n) => ???
+        // TODO: rct.NatToNatApply(rct.NatToNatLambda(idToNamed(e)), idToNamed(n))
       }
 
     def idToNamed(id: NatId): rct.Nat =
