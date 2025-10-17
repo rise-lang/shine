@@ -694,7 +694,7 @@ object BeamExtractRW {
             subtype(aOut, aOutT, bOut, bOutT, egraph)
           case _ => throw new Exception("this should not happen")
         }
-      case _ => throw new Exception("this should not happen")
+      case _ => throw new Exception(s"this should not happen: $a, ${rise.eqsat.Type.toNamed(ExprWithHashCons.`type`(egraph)(at))}, $b, ${ExprWithHashCons.`type`(egraph)(bt)}")
     }
     // println(s"subtype: $a : ${egraph(at)} <= $b : ${egraph(bt)} ? $res")
     res
@@ -707,6 +707,28 @@ object BeamExtractRW {
       case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
+    }
+  }
+  
+  def allPossibleAnnots(t: TypeId, egraph: EGraph): Seq[TypeAnnotation] = {
+    import RWAnnotationDSL._
+
+    egraph(t) match {
+      case _: DataTypeNode[_, _] =>
+        Seq(read, write)
+      case FunType(inT, outT) =>
+        for {
+          a <- allPossibleAnnots(inT, egraph)
+          b <- allPossibleAnnots(outT, egraph)
+        } yield { a ->: b }
+      case NatFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { nFunT(a) }
+      case DataFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { dtFunT(a) }
+      case AddrFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { aFunT(a) }
+      case NatToNatFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { n2nFunT(a) }
     }
   }
 }
@@ -749,7 +771,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
       case Var(index) =>
         val cost = cf.cost(egraph, enode, t, Map.empty)
         val expr = ExprWithHashCons(enode.mapChildren(Map.empty), t)
-        Seq(read, write).map { annotation =>
+        BeamExtractRW.allPossibleAnnots(t, egraph).map { annotation =>
           (annotation, Map(index -> annotation)) -> Seq((cost, expr))
         }.toMap
       case App(f, e) =>
