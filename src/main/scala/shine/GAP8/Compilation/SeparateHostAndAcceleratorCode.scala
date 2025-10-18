@@ -2,7 +2,7 @@ package shine.GAP8.Compilation
 
 import arithexpr.arithmetic.ArithExpr.toInt
 import arithexpr.arithmetic.NamedVar
-import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind}
+import rise.core.types.{DataKind, DataType, NatIdentifier, NatKind, NatToNat, NatToNatLambda}
 import rise.core.types.DataType._
 import shine.DPIA.Compilation.FunDef
 import shine.DPIA.Phrases._
@@ -107,6 +107,12 @@ object SeparateHostAndAcceleratorCode {
         case DepLambda(DataKind, x: DataTypeIdentifier, _) =>
           Continue(p, this.copy(boundT = boundT + x))
         case _ => Continue(p, this)
+      }
+
+      override def natToNat(ft: NatToNat): NatToNat = ft match {
+        case NatToNatLambda(x, b) =>
+          NatToNatLambda(x, this.copy(boundN = boundN + x).nat(b))
+        case _ => super.natToNat(ft)
       }
 
       override def nat[N <: Nat](n: N): N = {

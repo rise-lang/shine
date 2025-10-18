@@ -88,6 +88,18 @@ object Module {
         ))
     }
 
+    //TODO: Recheck, this is not needed if HWCE is not used. (Move to AcceleratorCodeGenerator?)
+    /**
+      * Sets the corresponding bit in the event mask to 1. This is presumably necessary to enable the logic needed
+      * to work with HWCE
+      * */
+    val setEventMaskStmt = C.AST.ExprStmt(C.AST.FunCall(
+      C.AST.DeclRef("eu_evt_maskSet"),
+      Seq(
+        C.AST.Literal("1 << ARCHI_CL_EVT_ACC0")
+      )
+    ))
+
     val wrappedFunction = C.AST.Function(
       code =
         C.AST.FunDecl(
@@ -95,7 +107,8 @@ object Module {
           returnType = C.AST.Type.void,
           params = Seq(C.AST.ParamDecl("args", C.AST.PointerType(C.AST.Type.void))),
           body = C.AST.Block(
-            Seq(structCastDecl)
+            Seq(setEventMaskStmt)
+              ++ Seq(structCastDecl)
               ++ unpackingStmts
               ++ accFunction.map(f => Seq(f)).getOrElse(Seq()).map(_.code.body)
           )
