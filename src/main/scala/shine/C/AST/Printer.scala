@@ -121,7 +121,7 @@ class CPrinter extends Printer {
     case c: Code => printCode(c)
     case e: ExprStmt =>
       printExpr(e.expr, parenthesize = false)
-      print(";")
+      println(";")
   }
 
   def printFunSig(f: FunDecl): Unit = {
@@ -204,19 +204,13 @@ class CPrinter extends Printer {
   }
 
   private def printStmts(s: Stmts): Unit = {
-    s.stmts.foreach { (s: Stmt) =>
-      printStmt(s)
-      println("")
-    }
+    s.stmts.foreach(printStmt)
   }
 
   private def printBlock(b: Block): Unit = {
     indent += 1
     println("{")
-    b.body.foreach( (s: Stmt) => {
-      printStmt(s)
-      println("")
-    })
+    b.body.foreach(printStmt)
     indent -= 1
     moveCursorBack(tabSize)
     println("}")
@@ -224,8 +218,8 @@ class CPrinter extends Printer {
 
   private def printForLoop(f: ForLoop): Unit = {
     print("for (")
-    printDeclStmt(f.init)
-    print(" ")
+    printDecl(f.init.decl)
+    print("; ")
     printExpr(f.cond, parenthesize = false)
     print("; ")
     printExpr(f.increment, parenthesize = false)
@@ -274,15 +268,15 @@ class CPrinter extends Printer {
 
   private def printDeclStmt(d: DeclStmt): Unit = {
     printDecl(d.decl)
-    print(";")
+    println(";")
   }
 
   private def printComment(c: Comment): Unit = {
-    print(s"/* ${c.string} */")
+    println(s"/* ${c.string} */")
   }
 
   private def printCode(c: Code): Unit = {
-    print(c.string)
+    println(c.string)
   }
 
   // Exprs

@@ -346,6 +346,9 @@ class CodeGenerator(
 
     case uop@UnaryOp(op, e) => uop.t.dataType match {
       case _: ScalarType => path match {
+        case Nil if isMPFRType(typ(uop.t.dataType)) =>
+          e |> exp(env, Nil, e =>
+            MPFRCodeGen.codeGenUnaryOp(op, e, cont))
         case Nil => e |> exp(env, Nil, e =>
           cont(CCodeGen.codeGenUnaryOp(op, e)))
         case _ => error(s"Expected path to be empty")
@@ -914,6 +917,12 @@ class CodeGenerator(
                                    env: Environment,
                                    cont: Expr => Stmt): Stmt =
     {
+      if (useMPFR.isDefined) {
+        if ((outT +: inTs).exists(dt => isMPFRType(typ(dt)))) {
+          return MPFRCodeGen.codeGenForeignFunctionCall(funDecl, inTs, outT, args, env, cont)
+        }
+      }
+
       funDecl.definition match {
         case Some(funDef) =>
           addDeclaration(
@@ -1097,8 +1106,8 @@ class CodeGenerator(
           // FIXME: factorize with CCodeGen.codeGenFor ?
           C.AST.ForLoop(
             C.AST.DeclStmt(C.AST.VarDecl(i, C.AST.Type.int, Some(C.AST.Literal("0")))),
-            C.AST.BinaryExpr(C.AST.DeclRef("i"), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(size)),
-            C.AST.Assignment(C.AST.DeclRef("i"), C.AST.BinaryExpr(C.AST.DeclRef("i"), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
+            C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(size)),
+            C.AST.Assignment(C.AST.DeclRef(i), C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
             C.AST.Block(immutable.Seq(body))
           )
         }
@@ -1171,6 +1180,25 @@ class CodeGenerator(
       }
     }
 
+    def codegenOp(mpfrFunc: String, args: immutable.Seq[Expr], cont: Expr => Stmt): Stmt =
+      withTmpVar { tmpVar => C.AST.Stmts(
+        C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(mpfrFunc),
+          tmpVar +: args :+ rounding)),
+        cont(tmpVar)
+      ) }
+
+    def codeGenUnaryOp(
+      op: Operators.Unary.Value, e: Expr,
+      cont: Expr => Stmt
+    ): Stmt = {
+      val mpfrFunc = op match {
+        case Operators.Unary.NEG => "mpfr_neg"
+        case _ =>
+          error(s"Unsupported MPFR unary operation: $op")
+      }
+      codegenOp(mpfrFunc, immutable.Seq(e), cont)
+    }
+
     def codeGenBinaryOp(
       op: Operators.Binary.Value, e1: Expr, e2: Expr,
       cont: Expr => Stmt
@@ -1183,11 +1211,46 @@ class CodeGenerator(
         case _ =>
           error(s"Unsupported MPFR binary operation: $op")
       }
-      withTmpVar { tmpVar => C.AST.Stmts(
-        C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(mpfrFunc),
-          immutable.Seq(tmpVar, e1, e2, rounding))),
-        cont(tmpVar)
-      ) }
+      codegenOp(mpfrFunc, immutable.Seq(e1, e2), cont)
+    }
+
+    def codeGenForeignFunctionCall(
+      funDecl: rise.core.ForeignFunction.Decl,
+      inTs: collection.Seq[DataType],
+      outT: DataType,
+      args: collection.Seq[Phrase[ExpType]],
+      env: Environment,
+      cont: Expr => Stmt
+    ): Stmt = {
+      // FIXME: improve this mapping, builtin functions or user extensions ?
+      val mpfrFunc = (funDecl.name, inTs, outT) match {
+        case ("sqrt" | "sqrt_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_sqrt"
+        case ("sqrt" | "sqrt_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_sqrt"
+        case ("cos" | "cos_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_cos"
+        case ("cos" | "cos_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_cos"
+        case ("sin" | "sin_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_sin"
+        case ("sin" | "sin_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_sin"
+        case ("tan" | "tan_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_tan"
+        case ("tan" | "tan_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_tan"
+        case _ => throw new Exception(s"MPFR codegen does not support ${funDecl}")
+      }
+
+      def iter(args: collection.Seq[Phrase[ExpType]], res: VectorBuilder[Expr]): Stmt = {
+        args match {
+          case a +: rest => a |> exp(env, Nil, a => iter(rest, res += a))
+          case Nil => codegenOp(mpfrFunc, res.result(), cont)
+        }
+      }
+
+      iter(args, new VectorBuilder())
     }
 
     def codeGenCast(t1: Type, t2: Type, e: Expr, cont: Expr => Stmt): Stmt = {
