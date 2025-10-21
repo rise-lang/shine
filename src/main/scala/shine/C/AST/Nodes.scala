@@ -74,7 +74,7 @@ abstract class Block(val body: Seq[Stmt] = Seq()) extends Stmt {
   def add(s: Seq[Stmt]): Block
 }
 
-abstract class Stmts(val fst: Stmt, val snd: Stmt) extends Stmt
+abstract class Stmts(val stmts: Seq[Stmt] = Seq()) extends Stmt
 
 abstract class ForLoop(val init: DeclStmt, val cond: Expr, val increment: Expr, val body: Block) extends Stmt
 
@@ -229,8 +229,9 @@ object Block {
 }
 
 object Stmts {
-  def apply(fst: Stmt, snd: Stmt): Stmts = DefaultImplementations.Stmts(fst, snd)
-  def unapply(arg: Stmts): Option[(Stmt, Stmt)] = Some((arg.fst, arg.snd))
+  def apply(seq: Seq[Stmt]): Stmts = DefaultImplementations.Stmts(seq)
+  def apply(fst: Stmt, snd: Stmt): Stmts = DefaultImplementations.Stmts(Seq(fst, snd))
+  def unapply(arg: Stmts): Option[Seq[Stmt]] = Some(arg.stmts)
 }
 
 object ForLoop {
@@ -415,18 +416,21 @@ object DefaultImplementations {
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Block = {
       // We cannot simply map, as later blocks may be dependent on the contents previous blocks.
       // Instead, we must merge everything into one resulting block
-      body.foldLeft(Block(Seq()))((currentBlock, stmt) => {
-        Block(currentBlock.body :+ VisitAndGenerateStmt(stmt, v))
-      })
+      Block(body.foldLeft(Seq[Stmt]())((currentSeq, stmt) => {
+        currentSeq :+ VisitAndGenerateStmt(stmt, v)
+      }))
     }
   }
 
-  case class Stmts(override val fst: Stmt, override val snd: Stmt)
-    extends C.AST.Stmts(fst, snd)
+  case class Stmts(override val stmts: Seq[Stmt])
+    extends C.AST.Stmts(stmts)
   {
-    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Stmts = Stmts(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Stmts = Stmts(stmts.map(VisitAndRebuild(_, v)))
 
-    override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = Stmts(VisitAndGenerateStmt(fst, v), VisitAndGenerateStmt(snd, v))
+    override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =       
+      Stmts(stmts.foldLeft(Seq[Stmt]())((currentSeq, stmt) => {
+        currentSeq :+ VisitAndGenerateStmt(stmt, v)
+      }))
   }
 
   case class ForLoop(override val init: C.AST.DeclStmt,

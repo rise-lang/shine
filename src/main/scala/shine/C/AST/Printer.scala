@@ -203,11 +203,11 @@ class CPrinter extends Printer {
     println("};")
   }
 
-  // Smts
   private def printStmts(s: Stmts): Unit = {
-    printStmt(s.fst)
-    println("")
-    printStmt(s.snd)
+    s.stmts.foreach { (s: Stmt) =>
+      printStmt(s)
+      println("")
+    }
   }
 
   private def printBlock(b: Block): Unit = {

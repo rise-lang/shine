@@ -40,6 +40,22 @@ object gen {
     }
   }
 
+  object mpfr {
+    object function {
+      def fromExpr: Expr => CModule = gen.mpfr.function().fromExpr
+      def asStringFromExpr: Expr => String = gen.mpfr.function().asStringFromExpr
+      def asString: CModule => String = gen.functionAsString
+    }
+
+    case class function(name: String = "foo", precision: Int = 256) {
+      def fromExpr: Expr => CModule =
+        gen.functionFromExpr(name, CCodeGenerator(useMPFR = Some(precision)))
+
+      def asStringFromExpr: Expr => String =
+        gen.functionAsStringFromExpr(name, CCodeGenerator(useMPFR = Some(precision)))
+    }
+  }
+
   private def funDefToFunction(name: String,
                                gen: CCodeGenerator): Phrase => CModule =
     (FunDef(name, _)) andThen
