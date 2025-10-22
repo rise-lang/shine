@@ -346,7 +346,7 @@ class CodeGenerator(
 
     case uop@UnaryOp(op, e) => uop.t.dataType match {
       case _: ScalarType => path match {
-        case Nil if isMPFRType(typ(uop.t.dataType)) =>
+        case Nil if containsMPFRDataType(immutable.Seq(uop.t.dataType, e.t.dataType)) =>
           e |> exp(env, Nil, e =>
             MPFRCodeGen.codeGenUnaryOp(op, e, cont))
         case Nil => e |> exp(env, Nil, e =>
@@ -358,7 +358,7 @@ class CodeGenerator(
 
     case bop@BinOp(op, e1, e2) => bop.t.dataType match {
       case _: ScalarType | NatType => path match {
-        case Nil if isMPFRType(typ(bop.t.dataType)) =>
+        case Nil if containsMPFRDataType(immutable.Seq(bop.t.dataType, e1.t.dataType, e2.t.dataType)) =>
           e1 |> exp(env, Nil, e1 =>
             e2 |> exp(env, Nil, e2 =>
               MPFRCodeGen.codeGenBinaryOp(op, e1, e2, cont)))
@@ -372,7 +372,7 @@ class CodeGenerator(
     }
 
     case Cast(dt1, dt2, e) => path match {
-      case Nil if isMPFRType(typ(dt1)) || isMPFRType(typ(dt2)) =>
+      case Nil if containsMPFRDataType(immutable.Seq(dt1, dt2)) =>
         e |> exp(env, Nil, e =>
           MPFRCodeGen.codeGenCast(typ(dt1), typ(dt2), e, cont))
       case Nil =>
@@ -918,7 +918,7 @@ class CodeGenerator(
                                    cont: Expr => Stmt): Stmt =
     {
       if (useMPFR.isDefined) {
-        if ((outT +: inTs).exists(dt => isMPFRType(typ(dt)))) {
+        if (containsMPFRDataType(outT +: inTs)) {
           return MPFRCodeGen.codeGenForeignFunctionCall(funDecl, inTs, outT, args, env, cont)
         }
       }
@@ -1070,6 +1070,14 @@ class CodeGenerator(
     t == C.AST.Type.mpfr_t
   }
 
+  protected def containsMPFRCType(it: Iterable[C.AST.Type]): Boolean = {
+    it.exists(isMPFRType(_))
+  }
+
+  protected def containsMPFRDataType(it: Iterable[DataType]): Boolean = {
+    containsMPFRCType(it.map(typ))
+  }
+
   protected object MPFRCodeGen {
     private val rounding = C.AST.DeclRef("MPFR_RNDN")
 
@@ -1164,13 +1172,7 @@ class CodeGenerator(
 
     def codeGenLiteral(d: Data, cont: Expr => Stmt): Stmt = {
       d match {
-        case FloatData(f) => 
-          withTmpVar { tmpVar => C.AST.Stmts(
-            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set_f"),
-              immutable.Seq(tmpVar, C.AST.Literal(f.toString), rounding))),
-            cont(tmpVar)
-          ) }
-        case DoubleData(d) =>
+        case FloatData(_) | DoubleData(_) =>
           withTmpVar { tmpVar => C.AST.Stmts(
             C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set_d"),
               immutable.Seq(tmpVar, C.AST.Literal(d.toString), rounding))),
@@ -1180,19 +1182,27 @@ class CodeGenerator(
       }
     }
 
-    def codegenOp(mpfrFunc: String, args: immutable.Seq[Expr], cont: Expr => Stmt): Stmt =
-      withTmpVar { tmpVar => C.AST.Stmts(
-        C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(mpfrFunc),
-          tmpVar +: args :+ rounding)),
-        cont(tmpVar)
-      ) }
+    // Boolean stands for whether the function writes its result into an an MPFR variable or not
+    def codegenOp(mpfrFunc: (String, Boolean), args: immutable.Seq[Expr], cont: Expr => Stmt): Stmt = {
+      val (funcName, writesToMPFRVar) = mpfrFunc
+      if (writesToMPFRVar) {
+        withTmpVar { tmpVar => C.AST.Stmts(
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(funcName),
+            tmpVar +: args :+ rounding)),
+          cont(tmpVar)
+        ) }
+      } else {
+        cont(C.AST.FunCall(C.AST.DeclRef(funcName),
+          args))
+      }
+    }
 
     def codeGenUnaryOp(
       op: Operators.Unary.Value, e: Expr,
       cont: Expr => Stmt
     ): Stmt = {
       val mpfrFunc = op match {
-        case Operators.Unary.NEG => "mpfr_neg"
+        case Operators.Unary.NEG => ("mpfr_neg", true)
         case _ =>
           error(s"Unsupported MPFR unary operation: $op")
       }
@@ -1204,10 +1214,14 @@ class CodeGenerator(
       cont: Expr => Stmt
     ): Stmt = {
       val mpfrFunc = op match {
-        case Operators.Binary.ADD => "mpfr_add"
-        case Operators.Binary.SUB => "mpfr_sub"
-        case Operators.Binary.MUL => "mpfr_mul"
-        case Operators.Binary.DIV => "mpfr_div"
+        case Operators.Binary.ADD => ("mpfr_add", true)
+        case Operators.Binary.SUB => ("mpfr_sub", true)
+        case Operators.Binary.MUL => ("mpfr_mul", true)
+        case Operators.Binary.DIV => ("mpfr_div", true)
+        // TODO? case Operators.Binary.MOD => "mpfr_mod"
+        case Operators.Binary.EQ => ("mpfr_equal_p", false)
+        case Operators.Binary.GT => ("mpfr_greater_p", false)
+        case Operators.Binary.LT => ("mpfr_less_p", false)
         case _ =>
           error(s"Unsupported MPFR binary operation: $op")
       }
@@ -1223,7 +1237,9 @@ class CodeGenerator(
       cont: Expr => Stmt
     ): Stmt = {
       // FIXME: improve this mapping, builtin functions or user extensions ?
-      val mpfrFunc = (funDecl.name, inTs, outT) match {
+      val mpfrFuncName = (funDecl.name, inTs, outT) match {
+        // TODO? mpfr_sqr, mpfr_rec_sqrt, mpfr_cbrt, mpfr_root, mpfr_abs, mpfr_fma, mpfr_cmp
+        // TODO? log, exp, pow, cosh, sinh, tang, ...
         case ("sqrt" | "sqrt_f32", immutable.Seq(`f32`), `f32`) =>
           "mpfr_sqrt"
         case ("sqrt" | "sqrt_f64", immutable.Seq(`f64`), `f64`) =>
@@ -1246,7 +1262,7 @@ class CodeGenerator(
       def iter(args: collection.Seq[Phrase[ExpType]], res: VectorBuilder[Expr]): Stmt = {
         args match {
           case a +: rest => a |> exp(env, Nil, a => iter(rest, res += a))
-          case Nil => codegenOp(mpfrFunc, res.result(), cont)
+          case Nil => codegenOp((mpfrFuncName, true), res.result(), cont)
         }
       }
 
@@ -1256,6 +1272,7 @@ class CodeGenerator(
     def codeGenCast(t1: Type, t2: Type, e: Expr, cont: Expr => Stmt): Stmt = {
       import C.AST.Type._
       (t1, t2) match {
+        case (`mpfr_t`, `mpfr_t`) => cont(e)
         case (`i8` | `i16` | `i32` | `i64` | `int`, `mpfr_t`) => withTmpVar { tmpVar => C.AST.Stmts(
           C.AST.ExprStmt(
             C.AST.FunCall(C.AST.DeclRef("mpfr_set_si"),

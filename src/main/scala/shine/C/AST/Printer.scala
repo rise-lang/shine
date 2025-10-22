@@ -198,7 +198,6 @@ class CPrinter extends Printer {
     decl.fields.foreach(field => {
       print("  ")
       printDeclStmt(DeclStmt(field))
-      println("")
     })
     println("};")
   }
