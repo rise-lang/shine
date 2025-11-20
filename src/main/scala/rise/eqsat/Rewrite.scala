@@ -133,6 +133,15 @@ abstract class ConditionalApplier(condPatternVars: Set[Any],
   }
 }
 
+case class NotFreeInApplier(
+  iPV: PatternVar, nfIndex: Int, applier: Applier
+) extends ConditionalApplier(Set(iPV), (Set(FreeAnalysis), Set()), applier) {
+  override def cond(egraph: EGraph, eclass: EClassId, shc: Substs)(subst: shc.Subst): Boolean = {
+    val freeOf = egraph.getAnalysis(FreeAnalysis)
+    !freeOf(shc.get(iPV, subst)).free.contains(nfIndex)
+  }
+}
+
 /** An [[Applier]] that shifts the DeBruijn indices of a variable */
 case class ShiftedApplier(v: PatternVar, newV: PatternVar,
                           shift: Expr.Shift, cutoff: Expr.Shift,
@@ -155,10 +164,11 @@ case class ShiftedApplier(v: PatternVar, newV: PatternVar,
 /** An [[Applier]] that shifts the DeBruijn indices of a variable.
   * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
   */
-case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
-                                 shift: Expr.Shift, cutoff: Expr.Shift,
-                                 applier: Applier)
-  extends Applier {
+case class ShiftedExtractApplier(
+  v: PatternVar, newV: PatternVar,
+  shift: Expr.Shift, cutoff: Expr.Shift,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] =
     applier.patternVars() - newV + v
 
@@ -180,26 +190,26 @@ case class ShiftedExtractApplier(v: PatternVar, newV: PatternVar,
 /** An [[Applier]] that checks whether a shifted variable is equal to another
   * @note It works by extracting an expression from the [[EGraph]] in order to shift it.
   */
-object ShiftedCheckApplier {
-  def apply(v: PatternVar, v2: PatternVar,
-            shift: Expr.Shift, cutoff: Expr.Shift,
-            applier: Applier): Applier =
-    new ConditionalApplier(Set(v, v2), (Set(SmallestSizeAnalysis), Set()), applier) {
-      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
-        val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
-        val extract = smallestOf(substs.get(v, subst))._1
-        val shifted = extract.shifted(egraph, shift, cutoff)
-        val expected = smallestOf(substs.get(v2, subst))._1
-        shifted == expected
-      }
-    }
+case class ShiftedCheckApplier(
+  v: PatternVar, v2: PatternVar,
+  shift: Expr.Shift, cutoff: Expr.Shift,
+  applier: Applier
+) extends ConditionalApplier(Set(v, v2), (Set(SmallestSizeAnalysis), Set()), applier) {
+  override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+    val smallestOf = egraph.getAnalysis(SmallestSizeAnalysis)
+    val extract = smallestOf(substs.get(v, subst))._1
+    val shifted = extract.shifted(egraph, shift, cutoff)
+    val expected = smallestOf(substs.get(v2, subst))._1
+    shifted == expected
+  }
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a nat variable */
-case class ShiftedNatApplier(v: NatPatternVar, newV: NatPatternVar,
-                                         shift: Nat.Shift, cutoff: Nat.Shift,
-                                         applier: Applier)
-  extends Applier {
+case class ShiftedNatApplier(
+  v: NatPatternVar, newV: NatPatternVar,
+  shift: Nat.Shift, cutoff: Nat.Shift,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] =
     applier.patternVars() - newV + v
 
@@ -218,25 +228,25 @@ case class ShiftedNatApplier(v: NatPatternVar, newV: NatPatternVar,
 }
 
 /** An [[Applier]] that checks whether a shifted nat variable is equal to another */
-object ShiftedNatCheckApplier {
-  def apply(v: NatPatternVar, v2: NatPatternVar,
-            shift: Nat.Shift, cutoff: Nat.Shift,
-            applier: Applier): Applier =
-    new ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
-      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
-        val nat = substs.get(v, subst)
-        val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
-        val expected = substs.get(v2, subst)
-        shifted == expected
-      }
-    }
+case class ShiftedNatCheckApplier(
+  v: NatPatternVar, v2: NatPatternVar,
+  shift: Nat.Shift, cutoff: Nat.Shift,
+  applier: Applier
+) extends ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
+  override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+    val nat = substs.get(v, subst)
+    val shifted = NodeSubs.Nat.shifted(egraph, nat, shift, cutoff)
+    val expected = substs.get(v2, subst)
+    shifted == expected
+  }
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a data type variable */
-case class ShiftedDataTypeApplier(v: DataTypePatternVar, newV: DataTypePatternVar,
-                                              shift: Type.Shift, cutoff: Type.Shift,
-                                              applier: Applier)
-  extends Applier {
+case class ShiftedDataTypeApplier(
+  v: DataTypePatternVar, newV: DataTypePatternVar,
+  shift: Type.Shift, cutoff: Type.Shift,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] =
     applier.patternVars() - newV + v
 
@@ -255,25 +265,25 @@ case class ShiftedDataTypeApplier(v: DataTypePatternVar, newV: DataTypePatternVa
 }
 
 /** An [[Applier]] that checks whether a shifted nat variable is equal to another */
-object ShiftedDataTypeCheckApplier {
-  def apply(v: DataTypePatternVar, v2: DataTypePatternVar,
-            shift: Type.Shift, cutoff: Type.Shift,
-            applier: Applier): Applier =
-    new ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
-      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
-        val dt = substs.get(v, subst)
-        val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
-        val expected = substs.get(v2, subst)
-        shifted == expected
-      }
-    }
+case class ShiftedDataTypeCheckApplier(
+  v: DataTypePatternVar, v2: DataTypePatternVar,
+  shift: Type.Shift, cutoff: Type.Shift,
+  applier: Applier
+) extends ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
+  override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+    val dt = substs.get(v, subst)
+    val shifted = NodeSubs.DataType.shifted(egraph, dt, shift, cutoff)
+    val expected = substs.get(v2, subst)
+    shifted == expected
+  }
 }
 
 /** An [[Applier]] that shifts the DeBruijn indices of a type variable */
-case class ShiftedTypeApplier(v: TypePatternVar, newV: TypePatternVar,
-                                          shift: Type.Shift, cutoff: Type.Shift,
-                                          applier: Applier)
-  extends Applier {
+case class ShiftedTypeApplier(
+  v: TypePatternVar, newV: TypePatternVar,
+  shift: Type.Shift, cutoff: Type.Shift,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] =
     applier.patternVars() - newV + v
 
@@ -292,18 +302,17 @@ case class ShiftedTypeApplier(v: TypePatternVar, newV: TypePatternVar,
 }
 
 /** An [[Applier]] that checks whether a shifted nat variable is equal to another */
-object ShiftedTypeCheckApplier {
-  def apply(v: TypePatternVar, v2: TypePatternVar,
-            shift: Type.Shift, cutoff: Type.Shift,
-            applier: Applier): Applier =
-    new ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
-      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
-        val t = substs.get(v, subst)
-        val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
-        val expected = substs.get(v2, subst)
-        shifted == expected
-      }
-    }
+case class ShiftedTypeCheckApplier(
+  v: TypePatternVar, v2: TypePatternVar,
+  shift: Type.Shift, cutoff: Type.Shift,
+  applier: Applier
+) extends ConditionalApplier(Set(v, v2), (Set(), Set()), applier) {
+  override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+    val t = substs.get(v, subst)
+    val shifted = NodeSubs.Type.shifted(egraph, t, shift, cutoff)
+    val expected = substs.get(v2, subst)
+    shifted == expected
+  }
 }
 
 /** An [[Applier]] that performs beta-reduction.
@@ -389,21 +398,21 @@ case class BetaNatExtractApplier(body: PatternVar, subs: NatPatternVar)
 }
 
 /** An [[Applier]] that checks whether a nat variable is equal to a nat pattern */
-object ComputeNatCheckApplier {
-  def apply(v: NatPatternVar, expected: NatPattern,
-                        applier: Applier): Applier =
-    new ConditionalApplier(expected.patternVars() + v, (Set(), Set()), applier) {
-      override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
-        // TODO: can we be more efficient here?
-        ComputeNat.toNamed(egraph, v, substs)(subst) == ComputeNat.toNamed(egraph, expected, substs)(subst)
-      }
-    }
+case class ComputeNatCheckApplier(
+  v: NatPatternVar, expected: NatPattern,
+  applier: Applier
+) extends ConditionalApplier(expected.patternVars() + v, (Set(), Set()), applier) {
+  override def cond(egraph: EGraph, id: EClassId, substs: Substs)(subst: substs.Subst): Boolean = {
+    // TODO: can we be more efficient here?
+    ComputeNat.toNamed(egraph, v, substs)(subst) == ComputeNat.toNamed(egraph, expected, substs)(subst)
+  }
 }
 
 /** An [[Applier]] that computes a nat variable according to a nat pattern */
-case class ComputeNatApplier(v: NatPatternVar, value: NatPattern,
-                                         applier: Applier) extends Applier {
-
+case class ComputeNatApplier(
+  v: NatPatternVar, value: NatPattern,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] =
     applier.patternVars() - v ++ value.patternVars()
 
@@ -502,9 +511,10 @@ private object ComputeNat {
 /** An [[Applier]] that vectorizes a scalar function.
   * @note It works by extracting an expression from the [[EGraph]] in order to vectorize it.
   */
-case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV: PatternVar,
-                                            applier: Applier)
-  extends Applier {
+case class VectorizeScalarFunExtractApplier(
+  f: PatternVar, n: NatPatternVar, fV: PatternVar,
+  applier: Applier
+) extends Applier {
   override def patternVars(): Set[Any] = applier.patternVars() - fV
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =

@@ -148,6 +148,10 @@ class GuidedSearch(
           (0L, Seq())
         }
 
+        for (e <- newBeam) {
+          println(Reggvolution.reggvolve(e))
+        }
+
         val totalIterationsTime = runner.iterations.iterator.map(_.totalTime).sum
         stats += GuidedSearch.Stats(
           initializeTime = initializeTime,
