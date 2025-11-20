@@ -587,7 +587,7 @@ object mm {
           containsMap(k,
             containsMap(cst(1)`.`vecT(cst(32), f32), ?)))))))
 
-  private def parallel_SRCL(): GuidedSearch.Result = {
+  def parallel_SRCL(): GuidedSearch.Result = {
     val start = mm
     // val start = apps.tvmGemm.arrayPacking(mm).get
 
@@ -650,8 +650,12 @@ object mm {
     )
     val rs = fs.map { case (n, f) =>
       System.gc() // hint garbage collection to get more precise memory usage statistics
+      println(s"---- running $n search")
       (n, util.time(f()))
     }
+
+    throw new Exception("Reggvolution done")
+
     rs.foreach { case (n, (_, r)) =>
       r.exprs.headOption.foreach(codegen(n, _))
     }
@@ -834,6 +838,5 @@ object Reggvolve {
     ))
 
     println("----")
-    throw new Exception("done")
   }
 }
