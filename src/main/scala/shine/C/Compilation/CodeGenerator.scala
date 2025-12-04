@@ -616,7 +616,7 @@ class CodeGenerator(
             case SndMember => ("_snd", rt.dt2)
           }
           generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env, cont)
-        case _ => throw new Exception("expected tuple type")
+        case _ => throw new Exception(s"expected tuple type, found ${dt}")
       }
       case (_: CIntExpr) :: _ =>
         dt match {
@@ -1079,7 +1079,7 @@ class CodeGenerator(
   }
 
   protected object MPFRCodeGen {
-    private val rounding = C.AST.DeclRef("MPFR_RNDN")
+    val rounding = C.AST.DeclRef("MPFR_RNDN")
 
     private def init(ptr: Expr): Stmt = {
       val precision = useMPFR.get
@@ -1092,10 +1092,15 @@ class CodeGenerator(
         immutable.Seq(ptr)))
     }
 
+    private val nothing = C.AST.Stmts(immutable.Seq())
+    def noScalarCode(ptr: Expr, dt: DataType): Stmt =
+      nothing
+
     def codeGenNewMayInitClear(
       dt: DataType, ptr: Expr, path: Path,
+      initCode: (Expr, DataType) => Stmt = noScalarCode,
+      exitCode: (Expr, DataType) => Stmt = noScalarCode,
     ): (Stmt, Stmt) = {
-      val nothing = C.AST.Stmts(immutable.Seq())
       val env = shine.DPIA.Compilation.CodeGenerator.Environment(
         immutable.Map(), immutable.Map(), immutable.Map(), immutable.Map())
 
@@ -1121,19 +1126,23 @@ class CodeGenerator(
         }
       }
 
-      def rec(current_dt: DataType, path: Path): (Stmt, Stmt) = {
+      def rec(current_dt: DataType, rev_path: Path): (Stmt, Stmt) = {
         current_dt match {
           case _: ScalarType if (isMPFRType(typ(current_dt))) =>
-            (generateAccess(dt, ptr, path, env, init), generateAccess(dt, ptr, path, env, clear))
+            (generateAccess(dt, ptr, rev_path.reverse, env, ptr =>
+              C.AST.Stmts(immutable.Seq(init(ptr), initCode(ptr, current_dt)))),
+              generateAccess(dt, ptr, rev_path.reverse, env, ptr =>
+                C.AST.Stmts(immutable.Seq(exitCode(ptr, current_dt), clear(ptr)))))
           case _: ScalarType | NatType | _: IndexType | rise.core.types.DataType.OpaqueType(_) =>
-            (nothing, nothing)
+            (generateAccess(dt, ptr, rev_path.reverse, env, initCode(_, current_dt)), generateAccess(dt, ptr, rev_path.reverse, env, exitCode(_, current_dt)))
           case PairType(dt1, dt2) =>
-            val (i1, c1) = rec(dt1, FstMember :: path)
-            val (i2, c2) = rec(dt2, SndMember :: path)
+            println(s"${dt1}, ${dt2}")
+            val (i1, c1) = rec(dt1, FstMember :: rev_path)
+            val (i2, c2) = rec(dt2, SndMember :: rev_path)
             (seq_maybe_nothing(i1, i2), seq_maybe_nothing(c1, c2))
           case ArrayType(size, elemType) =>
             val i = freshName("i")
-            val (inner_i, inner_c) = rec(elemType, CIntExpr(NatIdentifier(i)) :: path)
+            val (inner_i, inner_c) = rec(elemType, CIntExpr(NatIdentifier(i)) :: rev_path)
             (for_maybe_nothing(i, size, inner_i), for_maybe_nothing(i, size, inner_c))
           case _: VectorType | _: DepArrayType | _: DepPairType[_, _]
             | _: rise.core.types.DataType.FragmentType
@@ -1148,7 +1157,7 @@ class CodeGenerator(
         }
       }
 
-      rec(dt, path)
+      rec(dt, path.reverse)
     }
 
     private def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {

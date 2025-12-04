@@ -13,7 +13,7 @@ object gen {
   type Expr     = rise.core.Expr
   type Phrase   = DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType]
 
-  private def exprToPhrase: Expr => Phrase =
+  def exprToPhrase: Expr => Phrase =
     shine.DPIA.fromRise(_)(default.RiseTraversable)
 
   type CModule  = C.Module
@@ -56,7 +56,7 @@ object gen {
     }
   }
 
-  private def funDefToFunction(name: String,
+  def funDefToFunction(name: String,
                                gen: CCodeGenerator): Phrase => CModule =
     (FunDef(name, _)) andThen
       CModuleGenerator.funDefToModule(gen)

@@ -43,4 +43,8 @@ package object AST {
     case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
     case _ => throw new Exception("This should not happen")
   }
+
+  def StringLiteral(str: String): C.AST.Literal = {
+    C.AST.Literal(s""""${str}"""")
+  }
 }
