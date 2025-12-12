@@ -1136,7 +1136,6 @@ class CodeGenerator(
           case _: ScalarType | NatType | _: IndexType | rise.core.types.DataType.OpaqueType(_) =>
             (generateAccess(dt, ptr, rev_path.reverse, env, initCode(_, current_dt)), generateAccess(dt, ptr, rev_path.reverse, env, exitCode(_, current_dt)))
           case PairType(dt1, dt2) =>
-            println(s"${dt1}, ${dt2}")
             val (i1, c1) = rec(dt1, FstMember :: rev_path)
             val (i2, c2) = rec(dt2, SndMember :: rev_path)
             (seq_maybe_nothing(i1, i2), seq_maybe_nothing(c1, c2))
