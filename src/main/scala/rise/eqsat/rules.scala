@@ -177,6 +177,18 @@ object rules {
       "init"), app(nApp(split, n), "arg"))
   )
 
+  // same as blockedReduce, but keeping parallelism through fission
+  def splitReduce(n: Int) = NamedRewrite.init(s"split-reduce-$n",
+    app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")),
+        app(nApp(split, n), "arg")))
+  )
+
+  // reduce op init arg
+  // reduce op init (split n arg)
+
   val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
     app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
       -->
@@ -231,7 +243,7 @@ object rules {
       -->
       lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
         app(app(map, lam("y", "gy")), "in"))),
-    Seq("op" notFree "y")
+    Seq("op" notFree "y", "op" notFree "acc", "gy" notFree "acc")
   )
 
   val undoReduceSeqForAdd = NamedRewrite.init("undo-reduce-seq-for-add",
