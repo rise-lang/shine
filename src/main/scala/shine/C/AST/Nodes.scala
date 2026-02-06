@@ -148,7 +148,7 @@ abstract class Cast(val t: Type, val e: Expr) extends Expr
 
 abstract class Literal(val code: String) extends Expr
 
-abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
+abstract class ArrayLiteral(val t: Option[ArrayType], val inits: Seq[Expr]) extends Expr
 
 abstract class RecordLiteral(val t: Type, val fst: Expr, val snd: Expr) extends Expr
 
@@ -338,8 +338,9 @@ object Literal {
 }
 
 object ArrayLiteral {
-  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(t, inits)
-  def unapply(arg: ArrayLiteral): Option[(ArrayType, Seq[Expr])] = Some((arg.t, arg.inits))
+  def apply(inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(None, inits)
+  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(Some(t), inits)
+  def unapply(arg: ArrayLiteral): Option[(Option[ArrayType], Seq[Expr])] = Some((arg.t, arg.inits))
 }
 
 object RecordLiteral {
@@ -629,9 +630,9 @@ object DefaultImplementations {
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
   }
 
-  case class ArrayLiteral(override val t: ArrayType, override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
+  case class ArrayLiteral(override val t: Option[ArrayType], override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArrayLiteral =
-      ArrayLiteral(v(t).asInstanceOf[ArrayType], inits.map(VisitAndRebuild(_, v)))
+      ArrayLiteral(t.map(v(_).asInstanceOf[ArrayType]), inits.map(VisitAndRebuild(_, v)))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = {
      def rec(toProcess:Seq[Expr], accum:Seq[Expr]):Stmt = {

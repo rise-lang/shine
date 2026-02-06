@@ -344,13 +344,18 @@ class CPrinter extends Printer {
   }
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
-    print("(")
-    if (al.t.const) { print("const ") }
-    print(s"${typeName(al.t.getBaseType)}[${ al.t.getSizes match {
-      case None => ""
-      case Some(s) => printArithExpr(s, parenthesize = false)
-    } }]")
-    print("){")
+    al.t match {
+      case None => ()
+      case Some(t) =>
+        print("(")
+        if (t.const) { print("const ") }
+        print(s"${typeName(t.getBaseType)}[${ t.getSizes match {
+          case None => ""
+          case Some(s) => printArithExpr(s, parenthesize = false)
+        } }]")
+        print(")")
+    }
+    print("{")
     var first = true
     al.inits.foreach { e =>
       if (first) { first = false  }

@@ -1092,14 +1092,14 @@ class CodeGenerator(
         immutable.Seq(ptr)))
     }
 
-    private val nothing = C.AST.Stmts(immutable.Seq())
-    def noScalarCode(ptr: Expr, dt: DataType): Stmt =
+    val nothing = C.AST.Stmts(immutable.Seq())
+    def noScalarCode(ptr: Expr, dt: DataType, path: Path): Stmt =
       nothing
 
     def codeGenNewMayInitClear(
       dt: DataType, ptr: Expr, path: Path,
-      initCode: (Expr, DataType) => Stmt = noScalarCode,
-      exitCode: (Expr, DataType) => Stmt = noScalarCode,
+      initCode: (Expr, DataType, Path) => Stmt = noScalarCode,
+      exitCode: (Expr, DataType, Path) => Stmt = noScalarCode,
     ): (Stmt, Stmt) = {
       val env = shine.DPIA.Compilation.CodeGenerator.Environment(
         immutable.Map(), immutable.Map(), immutable.Map(), immutable.Map())
@@ -1129,12 +1129,14 @@ class CodeGenerator(
       def rec(current_dt: DataType, rev_path: Path): (Stmt, Stmt) = {
         current_dt match {
           case _: ScalarType if (isMPFRType(typ(current_dt))) =>
-            (generateAccess(dt, ptr, rev_path.reverse, env, ptr =>
-              C.AST.Stmts(immutable.Seq(init(ptr), initCode(ptr, current_dt)))),
-              generateAccess(dt, ptr, rev_path.reverse, env, ptr =>
-                C.AST.Stmts(immutable.Seq(exitCode(ptr, current_dt), clear(ptr)))))
+            val path = rev_path.reverse
+            (generateAccess(dt, ptr, path, env, ptr =>
+              C.AST.Stmts(immutable.Seq(init(ptr), initCode(ptr, current_dt, path)))),
+              generateAccess(dt, ptr, path, env, ptr =>
+                C.AST.Stmts(immutable.Seq(exitCode(ptr, current_dt, path), clear(ptr)))))
           case _: ScalarType | NatType | _: IndexType | rise.core.types.DataType.OpaqueType(_) =>
-            (generateAccess(dt, ptr, rev_path.reverse, env, initCode(_, current_dt)), generateAccess(dt, ptr, rev_path.reverse, env, exitCode(_, current_dt)))
+            val path = rev_path.reverse
+            (generateAccess(dt, ptr, path, env, initCode(_, current_dt, path)), generateAccess(dt, ptr, path, env, exitCode(_, current_dt, path)))
           case PairType(dt1, dt2) =>
             val (i1, c1) = rec(dt1, FstMember :: rev_path)
             val (i2, c2) = rec(dt2, SndMember :: rev_path)
