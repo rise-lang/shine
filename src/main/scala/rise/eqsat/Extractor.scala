@@ -21,6 +21,58 @@ object Extractor {
     rec(id)
   }
 
+/* INEFFECTIVE:
+
+  object MandatoryNodesAnalysis extends SemiLatticeAnalysis {
+    type Data = Set[EClassId]
+
+    override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+
+    override def make(egraph: EGraph, enode: ENode, t: TypeId, analysisOf: EClassId => Data): Data = {
+      enode.children().flatMap(analysisOf).toSet + egraph.lookup(enode, t)._2.get
+    }
+
+    override def merge(a: Data, b: Data): MergeResult = {
+      val res = a intersect b
+      MergeResult(res, res != a, res != b)
+    }
+  }
+
+  val mandatoryNodes = Analysis.oneShot(MandatoryNodesAnalysis, egraph)
+
+  val viableNodes = eclass.nodes.filter { n => n.children().forall(id => visited.intersect(mandatoryNodes(id)).isEmpty) }
+*/
+
+  def cycleAvoidingRandomOf(egraph: EGraph, id: EClassId, amount: Int): Seq[ExprWithHashCons] = {
+    val random = new scala.util.Random
+
+    def rec(id: EClassId, visited: Set[EClassId]): Option[ExprWithHashCons] = {
+      if (visited.contains(id) && (random.nextBoolean())) {
+        // half-chance to reject taking cyclic path
+        return None
+      }
+      
+      val nowVisited = visited + id
+      val eclass = egraph.get(id)
+      val node = eclass.nodes(random.nextInt(eclass.nodes.length))
+      val recNode = node.mapChildren(id => rec(id, nowVisited))
+      if (recNode.children().forall(_.isDefined)) {
+        Some(ExprWithHashCons(recNode.mapChildren(_.get), eclass.t))
+      } else {
+        None
+      }
+    }
+
+    var res = Seq[ExprWithHashCons]()
+    var attempts = 0
+    while (res.length < amount) {
+      res = res ++ rec(id, Set())
+      attempts += 1
+    }
+    println(s"took ${attempts} attempts to sample ${amount} terms.")
+    res
+  }
+
   def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
     for (_ <- 0 until n) {
       println(Expr.toNamed(

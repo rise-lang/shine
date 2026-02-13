@@ -6,12 +6,12 @@ object LoweringSearch {
   )
 
   def extract_rw_safe[Cost](
-    egraph: EGraph, 
-    rootId: EClassId,
+    egraph: EGraph,
     costFunction: CostFunction[Cost],
+    allAnalysisResult: HashMap[EClassId, BeamExtractRW.Data[Cost]],
+    rootId: EClassId,
     expectedAnnotations: (BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation])
   ): Option[Expr] = {
-    val allAnalysisResult = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)
     // : Map[
     //   (BeamExtractRW.TypeAnnotation, Map[Int,BeamExtractRW.TypeAnnotation]),
     //   Seq[(Cost, ExprWithHashCons)]]
@@ -94,6 +94,6 @@ class LoweringSearch(var filter: Predicate) {
       .run(egraph, filter, loweringRules, Seq()/*normalForm.directedRules*/, Seq(rootId))
     r.printReport()
 
-    util.printTime("lowered extraction time", LoweringSearch.extract_rw_safe(egraph, rootId, costFunction, expectedAnnotations))
+    util.printTime("lowered extraction time", LoweringSearch.extract_rw_safe(egraph, costFunction, Analysis.oneShot(BeamExtractRW(1, costFunction), egraph), rootId, expectedAnnotations))
   }
 }
