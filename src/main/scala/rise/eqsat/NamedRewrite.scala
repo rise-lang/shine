@@ -19,6 +19,12 @@ object NamedRewrite {
                                 n: String, // free nat variable in lhs
                                 fV: String, // free variable in rhs
                                ) extends Parameter
+  case class StripMineChoices(
+    mapFunVar: String, // free variable in lhs
+    mapSizeVar: String, // free nat variable in lhs
+    stripSizeVar: String, // generated nat variable in rhs
+    applyStripMineChoice: (PatternVar, NatPatternVar, NatPatternVar, Applier) => Applier
+  ) extends Parameter
 
   private def vectorizeScalarFunType(n: rct.Nat, t: rct.ExprType): rct.ExprType = {
     t match {
@@ -49,17 +55,30 @@ object NamedRewrite {
       assert(t == rct.TypePlaceholder)
       name -> rct.TypeIdentifier("t" + name)
     }
-    val typedLhs = infer(lhs, untypedFreeV, Set())
+    val preserveTV: Set[rct.Kind.Identifier] = parameters.flatMap {
+      case StripMineChoices(_, n, _, _) =>
+        Some(rct.NatKind.IDWrapper(rct.NatIdentifier(n)))
+      case VectorizeScalarFun(_, _, _) | NotFreeIn(_, _) => None
+    }.to(Set)
+    val typedLhs = infer(lhs, untypedFreeV, preserveTV)
     val freeV1 = infer.collectFreeEnv(typedLhs)
-    val freeT = rise.core.IsClosedForm.freeVars(typedLhs)._2.set
+    val freeT1 = rise.core.IsClosedForm.freeVars(typedLhs)._2.set
     val freeV2 = parameters.flatMap {
-      case NotFreeIn(_, _) => None
       case VectorizeScalarFun(f, n, fV) =>
         assert(!freeV1.contains(fV))
         val np = NamedRewriteDSL.stringAsNatPattern(n)
         Some(fV -> vectorizeScalarFunType(np, freeV1(f)))
+      case NotFreeIn(_, _) | StripMineChoices(_, _, _, _) => None
+    }
+    val freeT2 = parameters.flatMap {
+      case StripMineChoices(_, _, prod, _) =>
+        val id = rct.NatKind.IDWrapper(rct.NatIdentifier(prod))
+        assert(!freeT1.contains(id))
+        Some(id)
+      case NotFreeIn(_, _) | VectorizeScalarFun(_, _, _) => None
     }
     val freeV = freeV1 ++ freeV2
+    val freeT = freeT1 ++ freeT2
     val typedRhs = infer(rc.TypeAnnotation(rhs, typedLhs.t), freeV, freeT)
 
     trait PatVarStatus
@@ -515,6 +534,13 @@ object NamedRewrite {
           assert(fST == Known)
           val fVPV = makePatVar(fV, (0, 0, 0, 0, 0), patVars, PatternVar, Known)
           (a: Applier) => VectorizeScalarFunExtractApplier(fPV, nPV, fVPV, acc(a))
+        case StripMineChoices(f, n, m, mkApplier) =>
+          val (nPV, nST) = natPatVars(n)(0, 0)
+          assert(nST == Known)
+          val (fPV, fST) = patVars(f)((0, 0, 0, 0, 0))
+          assert(fST == Known)
+          val mPV = makePatVar(m, (0, 0), natPatVars, NatPatternVar, Known)
+          (a: Applier) => mkApplier(fPV, nPV, mPV, a)
       }
     }
     val shiftPV = shiftAppliers(patVars, patMkShift, patMkShiftCheck)

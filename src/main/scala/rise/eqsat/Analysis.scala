@@ -1172,3 +1172,27 @@ case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
       mayNotBeB = r.best != b.best || r.bestNoComp != b.bestNoComp)
   }
 }
+
+object DefinitelyComputeAnalysis extends SemiLatticeAnalysis {
+  type Data = Boolean
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId, analysisOf: EClassId => Data): Data = {
+    import rise.core.{primitives => rcp}
+    
+    enode match {
+      case Primitive(p) => p match {
+        case rcp.neg() | rcp.add() | rcp.sub() | rcp.mul() | rcp.div() | rcp.mod() |
+          rcp.not() | rcp.gt() | rcp.lt() | rcp.equal() | rcp.foreignFunction(_, _) => true
+        case _ => false
+      }
+      case _ => enode.children().exists(analysisOf)
+    }
+  }
+
+  override def merge(a: Data, b: Data): MergeResult = {
+    val res = a || b
+    MergeResult(res, res != a, res != b)
+  }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+}
