@@ -55,7 +55,11 @@ object Extractor {
     }
   }
 
-  def cycleAvoidingRandomOf(egraph: EGraph, id: EClassId, amount: Int): Seq[ExprWithHashCons] = {
+  trait CycleAvoidingRandomOf {
+    def next(id: EClassId): ExprWithHashCons
+  }
+
+  def cycleAvoidingRandomOf(egraph: EGraph): CycleAvoidingRandomOf = {
     val random = new scala.util.Random
     val mandatoryChildren = Analysis.oneShot(MandatoryChildrenAnalysis, egraph)
 
@@ -74,7 +78,12 @@ object Extractor {
       ExprWithHashCons(node.mapChildren(rec(_, nowVisited)), eclass.t)
     }
 
-    Seq.fill(amount)(rec(id, Set()))
+    object Impl extends CycleAvoidingRandomOf {
+      override def next(id: EClassId): ExprWithHashCons =
+        rec(id, Set())
+    }
+
+    Impl
   }
 
   def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
