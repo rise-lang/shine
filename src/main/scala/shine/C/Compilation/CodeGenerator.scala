@@ -602,11 +602,13 @@ class CodeGenerator(
     }
   }
 
-  override def generateAccess(dt: DataType,
-                              expr: Expr,
-                              path: Path,
-                              env: Environment,
-                              cont: Expr => Stmt): Stmt = {
+  override def generateAccess(
+    dt: DataType,
+    expr: Expr,
+    path: Path,
+    env: Environment,
+    cont: Expr => Stmt
+  ): Stmt = {
     path match {
       case Nil => cont(expr)
       case (xj: PairAccess) :: ps => dt match {
@@ -717,7 +719,7 @@ class CodeGenerator(
       val va = Identifier(s"${v.name}_a", v.t.t2)
       val vC = C.AST.DeclRef(v.name)
 
-      val (initStmt, clearStmt) = MPFRCodeGen.codeGenNewMayInitClear(dt, vC, Nil)
+      val (initStmt, clearStmt) = MPFRCodeGen.codeGenNewMayInitClear(dt, vC)
 
       C.AST.Block(immutable.Seq(
         C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
@@ -1097,8 +1099,18 @@ class CodeGenerator(
       nothing
 
     def codeGenNewMayInitClear(
-      dt: DataType, ptr: Expr, path: Path,
-      initCode: (Expr, DataType, Path) => Stmt = noScalarCode,
+      dt: DataType, ptr: Expr,
+    ): (Stmt, Stmt) = {
+      def enterCode(ptr: Expr, dt: DataType, path: Path) =
+        if (isMPFRType(typ(dt))) { init(ptr) } else { nothing }
+      def exitCode(ptr: Expr, dt: DataType, path: Path) =
+        if (isMPFRType(typ(dt))) { clear(ptr) } else { nothing }
+      codeGenEnterExitEveryScalar(dt, ptr, enterCode, exitCode)
+    }
+
+    def codeGenEnterExitEveryScalar(
+      dt: DataType, ptr: Expr,
+      enterCode: (Expr, DataType, Path) => Stmt = noScalarCode,
       exitCode: (Expr, DataType, Path) => Stmt = noScalarCode,
     ): (Stmt, Stmt) = {
       val env = shine.DPIA.Compilation.CodeGenerator.Environment(
@@ -1128,15 +1140,10 @@ class CodeGenerator(
 
       def rec(current_dt: DataType, rev_path: Path): (Stmt, Stmt) = {
         current_dt match {
-          case _: ScalarType if (isMPFRType(typ(current_dt))) =>
-            val path = rev_path.reverse
-            (generateAccess(dt, ptr, path, env, ptr =>
-              C.AST.Stmts(immutable.Seq(init(ptr), initCode(ptr, current_dt, path)))),
-              generateAccess(dt, ptr, path, env, ptr =>
-                C.AST.Stmts(immutable.Seq(exitCode(ptr, current_dt, path), clear(ptr)))))
           case _: ScalarType | NatType | _: IndexType | rise.core.types.DataType.OpaqueType(_) =>
             val path = rev_path.reverse
-            (generateAccess(dt, ptr, path, env, initCode(_, current_dt, path)), generateAccess(dt, ptr, path, env, exitCode(_, current_dt, path)))
+            (generateAccess(dt, ptr, path, env, ptr => enterCode(ptr, current_dt, path)),
+              generateAccess(dt, ptr, path, env, ptr => exitCode(ptr, current_dt, path)))
           case PairType(dt1, dt2) =>
             val (i1, c1) = rec(dt1, FstMember :: rev_path)
             val (i2, c2) = rec(dt2, SndMember :: rev_path)
@@ -1158,7 +1165,7 @@ class CodeGenerator(
         }
       }
 
-      rec(dt, path.reverse)
+      rec(dt, Nil)
     }
 
     private def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
