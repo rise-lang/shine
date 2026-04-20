@@ -1181,10 +1181,10 @@ class CodeGenerator(
     }
 
     def codeGenAssign(a: Expr, e: Expr): Stmt = {
-      withTmpVar { tmpVar =>
+      // withTmpVar { tmpVar =>
         C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set"),
           immutable.Seq(a, e, rounding)))
-      }
+      // }
     }
 
     def codeGenLiteral(d: Data, cont: Expr => Stmt): Stmt = {
