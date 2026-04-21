@@ -27,6 +27,9 @@ def natAsIndex: (n: nat) -> natType -> idx[n]
 def   let: {s: data} -> {t: data} -> s -> (s -> t) -> t
 def toMem: {t: data} -> t -> t
 
+// FIXME: hack for cost function, need better software engineering solution for this:
+def letToMem: {s: data} -> {t: data} -> s -> (s -> t) -> t
+
 // foreign functions
 def foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int):
     n*((inTs: data) ->) (outT: data) -> n*(*inTs ->) outT

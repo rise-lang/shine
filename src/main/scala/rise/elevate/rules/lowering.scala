@@ -157,9 +157,15 @@ object lowering {
       Success((p.let(preserveType(value) |> p.toMem)) !: expr.t)
   }
 
-  @rule def letBetaRedex: Strategy[Rise] = {
-    case expr@App(Lambda(x, b ::: (_: DataType)), value ::: (_: DataType)) =>
-      Success((p.let(value)(lambda(ToBeTyped(x), preserveType(b)))) !: expr.t)
+  // FIXME: hack for cost function, need better software engineering solution for this:
+  @rule def letToMemElim: Strategy[Rise] = {
+    case expr@App(p.letToMem(), value  ::: (_: ScalarType)) =>
+      Success(p.let(p.toMem(preserveType(value))) !: expr.t)
+  }
+
+  @rule def letToMemBetaRedex: Strategy[Rise] = {
+    case expr@App(Lambda(x, b ::: (_: DataType)), value ::: (_: ScalarType)) =>
+      Success((p.let(p.toMem(preserveType(value)))(lambda(ToBeTyped(x), preserveType(b)))) !: expr.t)
   }
 
   // Lowerings used in PLDI submission
