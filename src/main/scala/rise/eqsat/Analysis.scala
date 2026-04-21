@@ -983,8 +983,8 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             read ->: (read ->: write) ->: write,
           )
           case rp.letToMem() => Seq(
-            read ->: (read ->: read) ->: read,
-            read ->: (read ->: write) ->: write,
+            write ->: (read ->: read) ->: read,
+            write ->: (read ->: write) ->: write,
           )
           case rp.split() | rp.asVector() => Seq(
             nFunT(read ->: read),

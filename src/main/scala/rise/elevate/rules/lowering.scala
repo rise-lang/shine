@@ -159,7 +159,7 @@ object lowering {
 
   // FIXME: hack for cost function, need better software engineering solution for this:
   @rule def letToMemElim: Strategy[Rise] = {
-    case expr@App(p.letToMem(), value  ::: (_: ScalarType)) =>
+    case expr@App(p.letToMem(), value  ::: (_: DataType)) =>
       Success(p.let(p.toMem(preserveType(value))) !: expr.t)
   }
 
