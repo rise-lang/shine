@@ -215,6 +215,11 @@ object lowering {
       Success((preserveType(mka) |> p.mapSeqUnroll(fun(x => x)) |> p.toMem) !: mka.t)
   }
 
+  @rule def makeArrayUnrollLetToMem: Strategy[Rise] = {
+    case mka ::: (dt: DataType) if isMakeArray(mka) =>
+      Success((p.let(preserveType(mka) |> p.mapSeqUnroll(fun(x => x)) |> p.toMem)(fun(x => x))) !: mka.t)
+  }
+
   @rule def isId: Strategy[Rise] = {
     case l@Lambda(x1, x2) if x1 =~= x2 => Success(l)
   }
