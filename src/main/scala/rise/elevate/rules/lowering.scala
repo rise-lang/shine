@@ -220,6 +220,21 @@ object lowering {
       Success((p.let(preserveType(mka) |> p.mapSeqUnroll(fun(x => x)) |> p.toMem)(fun(x => x))) !: mka.t)
   }
 
+  protected def transformMakeArrayWrite(e: Expr): Option[ToBeTyped[Rise]] = e match {
+    case p.makeArrayWrite(n) => Some(p.makeArray(n))
+    case App(f, e) => transformMakeArrayWrite(f).map(f => f(e))
+    case _ => None
+  }
+
+  @rule def makeArrayWriteUnroll: Strategy[Rise] = {
+    case e ::: (dt: DataType) => transformMakeArrayWrite(e) match {
+      case Some(mka) =>
+        Success((mka |> p.mapSeqUnroll(fun(x => x))) !: e.t)
+      case None =>
+        Failure(makeArrayWriteUnroll)
+    }
+  }
+
   @rule def isId: Strategy[Rise] = {
     case l@Lambda(x1, x2) if x1 =~= x2 => Success(l)
   }

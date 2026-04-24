@@ -37,6 +37,9 @@ def foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int):
 // array ops
 def makeArray(n: Int): {dt: data} -> n*(dt ->) n.dt
 
+// FIXME: hack for eqsat code generation, need better software engineering solution for this:
+def makeArrayWrite(n: Int): {dt: data} -> n*(dt ->) n.dt
+
 def generate: {n: nat} -> {t: data} -> (idx[n] -> t) -> n.t
 def idx: {n: nat} -> {t: data} -> idx[n] -> n.t -> t
 

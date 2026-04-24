@@ -1048,6 +1048,15 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
               }
             }
             Seq(rec(n))
+          case rp.makeArrayWrite(n) =>
+            def rec(n: Int): TypeAnnotation = {
+              if (n > 0) {
+                read ->: rec(n - 1)
+              } else {
+                write
+              }
+            }
+            Seq(rec(n))
           case rp.id() =>
             // FIXME: only supports non-functional values
             Seq(read ->: read, write ->: write)
