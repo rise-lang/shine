@@ -730,17 +730,26 @@ class CodeGenerator(
                    env: Environment): Stmt = {
       val ve = Identifier(s"${v.name}_e", v.t.t1)
       val va = Identifier(s"${v.name}_a", v.t.t2)
-      val vC = C.AST.DeclRef(v.name)
 
-      val (initStmt, clearStmt) = MPFRCodeGen.codeGenNewMayInitClear(dt, vC)
+      dt match {
+        case _: ScalarType if isMPFRType(typ(dt)) =>
+          // NOTE: hacky code path enabling reuse over new MPFR scalars
+          MPFRCodeGen.withTmpVar(vC =>
+            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
+                updatedIdentEnv (va -> vC)))
+        case _ =>
+          val vC = C.AST.DeclRef(v.name)
 
-      C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
-        initStmt,
-        Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
-            updatedIdentEnv (va -> vC)),
-        clearStmt
-      ))
+          val (initStmt, clearStmt) = MPFRCodeGen.codeGenNewMayInitClear(dt, vC)
+
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
+            initStmt,
+            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
+                updatedIdentEnv (va -> vC)),
+            clearStmt
+          ))
+      }
     }
 
     def codeGenNewDoubleBuffer(dt: ArrayType,
@@ -1190,7 +1199,7 @@ class CodeGenerator(
       rec(dt, Nil)
     }
 
-    private def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
+    def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
       // done at top-level: 
       // C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t)),
       // init(tmpVar),
