@@ -237,12 +237,12 @@ class CPrinter extends Printer {
     print("if (")
     printExpr(i.cond, parenthesize = false)
     print(") ")
-    printStmt(i.trueBody)
+    printBlock(i.trueBody)
 
     i.falseBody match {
       case Some(falseBody) =>
         print(" else ")
-        printStmt(falseBody)
+        printBlock(falseBody)
       case None =>
     }
   }

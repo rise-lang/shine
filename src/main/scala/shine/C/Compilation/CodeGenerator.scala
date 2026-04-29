@@ -48,6 +48,7 @@ class CodeGenerator(
   val decls: CodeGenerator.Declarations,
   val ranges: CodeGenerator.Ranges,
   val useMPFR: Option[Int] = None,
+  val mpfrDeadTmpVars: scala.collection.mutable.Stack[String] = scala.collection.mutable.Stack()
 ) extends DPIA.Compilation.CodeGenerator {
 
   import CodeGenerator._
@@ -76,12 +77,22 @@ class CodeGenerator(
     key: String,
     value: arithexpr.arithmetic.Range,
   ): CodeGenerator =
-    new CodeGenerator(decls, ranges.updated(key, value), useMPFR)
+    new CodeGenerator(decls, ranges.updated(key, value), useMPFR, mpfrDeadTmpVars)
 
   override def generate(topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                         env: Environment): Phrase[CommType] => (immutable.Seq[Decl], Stmt) = phrase => {
     val stmt = generateWithFunctions(topLevelDefinitions, env)(phrase)
-    (decls.toSeq, stmt)
+    val stmt2 = if (mpfrDeadTmpVars.nonEmpty) {
+      val vars = mpfrDeadTmpVars.toSeq
+      mpfrDeadTmpVars.clear()
+      val decls = C.AST.Stmts(vars.map(tmpName => C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t))))
+      val inits = C.AST.Stmts(vars.map(tmpName => MPFRCodeGen.init(C.AST.DeclRef(tmpName))))
+      val clears = C.AST.Stmts(vars.map(tmpName => MPFRCodeGen.clear(C.AST.DeclRef(tmpName))))
+      C.AST.Stmts(immutable.Seq(decls, inits, stmt, clears))
+    } else {
+      stmt
+    }
+    (decls.toSeq, stmt2)
   }
 
   def generateWithFunctions(topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
@@ -98,7 +109,9 @@ class CodeGenerator(
     visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         cond |> exp(env, Nil, cond =>
-          C.AST.IfThenElse(cond, cmd(env)(thenP), Some(cmd(env)(elseP))))
+          C.AST.IfThenElse(cond,
+            C.AST.Block(immutable.Seq(cmd(env)(thenP))),
+            Some(C.AST.Block(immutable.Seq(cmd(env)(elseP))))))
 
       case i: Identifier[CommType] => env.commEnv(i)
 
@@ -1083,13 +1096,22 @@ class CodeGenerator(
   protected object MPFRCodeGen {
     val rounding = C.AST.DeclRef("MPFR_RNDN")
 
-    private def init(ptr: Expr): Stmt = {
+    // TODO: static or dynamic reuse of MPFR alloc/init/clear
+    // mpfr_t* ptr = shine_mpfr_alloc_init(n)
+    // --> mpfr_init2(ptr[0:n], precision)
+    // shine_mpfr_clear_free(n, ptr)
+    // --> mpfr_clear(ptr[0:n])
+    // ...
+    //
+    // for now, simply allocate fresh temporary MPFR variables at the outermost (parallel) section.
+
+    def init(ptr: Expr): Stmt = {
       val precision = useMPFR.get
       C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_init2"),
         immutable.Seq(ptr, C.AST.Literal(precision.toString))))
     }
 
-    private def clear(ptr: Expr): Stmt = {
+    def clear(ptr: Expr): Stmt = {
       C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_clear"),
         immutable.Seq(ptr)))
     }
@@ -1169,15 +1191,19 @@ class CodeGenerator(
     }
 
     private def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
-      val tmpName = freshName("mpfr_tmp")
+      // done at top-level: 
+      // C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t)),
+      // init(tmpVar),
+      // clear(tmpVar)
+      val tmpName = if (mpfrDeadTmpVars.nonEmpty) {
+        mpfrDeadTmpVars.pop()
+      } else {
+        freshName("mpfr_tmp")
+      }
       val tmpVar = C.AST.DeclRef(tmpName)
-
-      C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t)),
-        init(tmpVar),
-        cont(tmpVar),
-        clear(tmpVar)
-      ))
+      val res = cont(tmpVar)
+      mpfrDeadTmpVars.push(tmpName)
+      res
     }
 
     def codeGenAssign(a: Expr, e: Expr): Stmt = {

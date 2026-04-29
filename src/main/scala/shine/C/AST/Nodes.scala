@@ -80,7 +80,7 @@ abstract class ForLoop(val init: DeclStmt, val cond: Expr, val increment: Expr, 
 
 abstract class WhileLoop(val cond: Expr, val body: Stmt) extends Stmt
 
-abstract class IfThenElse(val cond: Expr, val trueBody: Stmt, val falseBody: Option[Stmt]) extends Stmt
+abstract class IfThenElse(val cond: Expr, val trueBody: Block, val falseBody: Option[Block]) extends Stmt
 
 abstract class GOTO(val label: String) extends Stmt
 
@@ -245,7 +245,7 @@ object WhileLoop {
 }
 
 object IfThenElse {
-  def apply(cond: Expr, trueBody: Stmt, falseBody: Option[Stmt]): IfThenElse = DefaultImplementations.IfThenElse(cond, trueBody, falseBody)
+  def apply(cond: Expr, trueBody: Block, falseBody: Option[Block]): IfThenElse = DefaultImplementations.IfThenElse(cond, trueBody, falseBody)
   def unapply(arg: IfThenElse): Option[(Expr, Stmt, Option[Stmt])] = Some((arg.cond, arg.trueBody, arg.falseBody))
 }
 
@@ -463,15 +463,18 @@ object DefaultImplementations {
   }
 
   case class IfThenElse(override val cond: Expr,
-                        override val trueBody: Stmt,
-                        override val falseBody: Option[Stmt])
+                        override val trueBody: C.AST.Block,
+                        override val falseBody: Option[C.AST.Block])
     extends C.AST.IfThenElse(cond, trueBody, falseBody)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): IfThenElse =
       IfThenElse(VisitAndRebuild(cond, v), VisitAndRebuild(trueBody, v), falseBody.map(VisitAndRebuild(_, v)))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =
-      VisitAndGenerateStmt(cond, v, condE => IfThenElse(condE, VisitAndGenerateStmt(trueBody, v), falseBody.map(VisitAndGenerateStmt(_, v))))
+      VisitAndGenerateStmt(cond, v, condE =>
+        IfThenElse(condE,
+          VisitAndGenerateStmt(trueBody, v).asInstanceOf[Block],
+          falseBody.map(VisitAndGenerateStmt(_, v).asInstanceOf[Block])))
   }
 
   case class GOTO(override val label: String)
