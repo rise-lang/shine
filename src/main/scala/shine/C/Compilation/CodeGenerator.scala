@@ -1199,6 +1199,7 @@ class CodeGenerator(
       rec(dt, Nil)
     }
 
+    // TODO: technically, could reuse more often and even eliminate some 'set' operations with a more elaborate scheme
     def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
       // done at top-level: 
       // C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t)),
@@ -1216,15 +1217,15 @@ class CodeGenerator(
     }
 
     def codeGenAssign(a: Expr, e: Expr): Stmt = {
-      // withTmpVar { tmpVar =>
-        C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set"),
-          immutable.Seq(a, e, rounding)))
-      // }
+      C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set"),
+        immutable.Seq(a, e, rounding)))
     }
 
     def codeGenLiteral(d: Data, cont: Expr => Stmt): Stmt = {
       d match {
         case FloatData(_) | DoubleData(_) =>
+          // TODO: could hoist MPFR constants at the top-level to avoid reloading them many times,
+          // could also be done at the functional level using letToMem.
           withTmpVar { tmpVar => C.AST.Stmts(
             C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set_d"),
               immutable.Seq(tmpVar, C.AST.Literal(d.toString), rounding))),
