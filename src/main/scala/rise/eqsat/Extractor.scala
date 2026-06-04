@@ -2,6 +2,8 @@ package rise.eqsat
 import rise.core
 import rise.core.traverse
 
+import scala.util.Random
+
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
     Analysis.oneShot(
@@ -9,9 +11,7 @@ object Extractor {
       egraph)(egraph.find(id))
   }
 
-  def randomOf(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    val random = new scala.util.Random
-
+  def randomOf(egraph: EGraph, id: EClassId, random: Random): ExprWithHashCons = {
     def rec(id: EClassId): ExprWithHashCons = {
       val eclass = egraph.get(id)
       val node = eclass.nodes(random.nextInt(eclass.nodes.length))
@@ -23,9 +23,7 @@ object Extractor {
 
   // this algorithm does not guarantee that it won't take cycles,
   // but it will always prioritize not taking cycles on every choice.
-  def cycleAvoidingRandomOf_old(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    val random = new scala.util.Random
-
+  def cycleAvoidingRandomOf_old(egraph: EGraph, id: EClassId, random: Random): ExprWithHashCons = {
     def rec(id: EClassId, visited: Set[EClassId]): ExprWithHashCons = {
       val nowVisited = visited + id
       val eclass = egraph.get(id)
@@ -59,8 +57,7 @@ object Extractor {
     def next(id: EClassId): ExprWithHashCons
   }
 
-  def cycleAvoidingRandomOf(egraph: EGraph): CycleAvoidingRandomOf = {
-    val random = new scala.util.Random
+  def cycleAvoidingRandomOf(egraph: EGraph, random: Random): CycleAvoidingRandomOf = {
     val mandatoryChildren = Analysis.oneShot(MandatoryChildrenAnalysis, egraph)
 
     def rec(id: EClassId, visited: Set[EClassId]): ExprWithHashCons = {
@@ -86,10 +83,10 @@ object Extractor {
     Impl
   }
 
-  def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
+  def printRandom(egraph: EGraph, id: EClassId, n: Int, random: Random = new Random): Unit = {
     for (_ <- 0 until n) {
       println(Expr.toNamed(
-        ExprWithHashCons.expr(egraph)(randomOf(egraph, id)),
+        ExprWithHashCons.expr(egraph)(randomOf(egraph, id, random)),
         Expr.Bound.empty.copy(allowFreeIndices = true)))
     }
   }
