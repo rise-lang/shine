@@ -1309,6 +1309,14 @@ class CodeGenerator(
           "mpfr_tan"
         case ("tan" | "tan_f64", immutable.Seq(`f64`), `f64`) =>
           "mpfr_tan"
+        case ("min" | "min_f32", immutable.Seq(`f32`, `f32`), `f32`) =>
+          "mpfr_min"
+        case ("min" | "min_f64", immutable.Seq(`f64`, `f64`), `f64`) =>
+          "mpfr_min"
+        case ("max" | "max_f32", immutable.Seq(`f32`, `f32`), `f32`) =>
+          "mpfr_max"
+        case ("max" | "max_f64", immutable.Seq(`f64`, `f64`), `f64`) =>
+          "mpfr_max"
         case _ => throw new Exception(s"MPFR codegen does not support ${funDecl}")
       }
 
