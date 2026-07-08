@@ -29,6 +29,7 @@ def toMem: {t: data} -> t -> t
 
 // FIXME: hack for cost function, need better software engineering solution for this:
 def letToMem: {s: data} -> {t: data} -> s -> (s -> t) -> t
+def genMapSeq: {n: nat} -> {s: data} -> {t: data} -> (s -> t) -> n.s -> n.t
 
 // foreign functions
 def foreignFunction(funDecl: rise.core.ForeignFunction.Decl, n: Int):

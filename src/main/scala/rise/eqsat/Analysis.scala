@@ -947,7 +947,8 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
                | rocup.mapGlobal(_) | rocup.mapBlock(_) | rocup.mapThreads(_)
                | rocup.mapWarp(_) | rocup.mapLane(_) | rompp.mapPar()
-               | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => Seq(
+               | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream()
+               | rp.genMapSeq() => Seq(
             (read ->: write) ->: read ->: write
           )
           case rp.map() | rp.mapFst() | rp.mapSnd() => Seq(
