@@ -17,6 +17,12 @@ object LoweringSearch {
     //   Seq[(Cost, ExprWithHashCons)]]
 
     val analysisResult = allAnalysisResult(egraph.find(rootId))
+    /* DEBUG println("----")
+    for { (foundAnnot, foundBeam) <- analysisResult } {
+      println(foundAnnot)
+    }
+    println("expected: ", expectedAnnotations)
+    println("----") */
     val validResults = analysisResult
       .map { case (foundAnnot, foundBeam) => (foundAnnot, foundBeam.head) }
       // first, filter correct subtypes on annotations
@@ -60,7 +66,11 @@ object LoweringSearch {
     val (aOut, aIns) = aAnnot
     val (bOut, bIns) = bAnnot
     BeamExtractRW.subtype(aOut, typ, bOut, typ, egraph) &&
-    aIns == bIns // TODO: could use subtype here as well in contravariant fashion
+    // NOTE:
+    // - it is acceptable if b constrains an input that a does not constrain, 
+    //   which is why `aIns == bIns` is not used.
+    // - could use subtype here as well in contravariant fashion
+    aIns.forall { case (i, annot) => bIns(i) == annot }
   }
 }
 
