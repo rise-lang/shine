@@ -168,6 +168,10 @@ object lowering {
       Success((p.let(p.toMem(preserveType(value)))(lambda(ToBeTyped(x), preserveType(b)))) !: expr.t)
   }
 
+  @rule def genMapSeqElim: Strategy[Rise] = {
+    case expr@p.genMapSeq() => Success(p.mapSeq !: expr.t)
+  }
+
   // Lowerings used in PLDI submission
 
   // adds copy after every generate
