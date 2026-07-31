@@ -2,6 +2,7 @@ package rise.eqsat
 
 import PatternDSL._
 import rise.core.{primitives => rcp}
+import rise.eqsat.NamedRewrite.NotJustVar
 
 object rules {
   // -- reduction --
@@ -119,7 +120,9 @@ object rules {
     app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
     lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in"))),
-    Seq("f" notFree "x")
+    Seq("f" notFree "x", "gx" notJustVar "x"),
+    // notJustVar is an optimization to avoid creating
+    // useless identity lambdas 
   )
 
   def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",

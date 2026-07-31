@@ -12,13 +12,19 @@ object NamedRewrite {
   //  (1) infer these constraints from the rule
   //  (2) check that such a constraint is not missing
   //      for the rule to be well-formed
-  case class NotFreeIn(notFree: String, // bound variable in named pattern
-                       in: String // free variable in named pattern
-                      ) extends Parameter
-  case class VectorizeScalarFun(f: String, // free variable in lhs
-                                n: String, // free nat variable in lhs
-                                fV: String, // free variable in rhs
-                               ) extends Parameter
+  case class NotFreeIn(
+    notFree: String, // bound variable in named pattern
+    in: String // free variable in named pattern
+  ) extends Parameter
+  case class NotJustVar(
+    f: String, // free variable in named pattern
+    v: String, // bound variable in named pattern
+  ) extends Parameter
+  case class VectorizeScalarFun(
+    f: String, // free variable in lhs
+    n: String, // free nat variable in lhs
+    fV: String, // free variable in rhs
+  ) extends Parameter
   case class StripMineChoices(
     mapFunVar: String, // free variable in lhs
     mapSizeVar: String, // free nat variable in lhs
@@ -58,7 +64,7 @@ object NamedRewrite {
     val preserveTV: Set[rct.Kind.Identifier] = parameters.flatMap {
       case StripMineChoices(_, n, _, _) =>
         Some(rct.NatKind.IDWrapper(rct.NatIdentifier(n)))
-      case VectorizeScalarFun(_, _, _) | NotFreeIn(_, _) => None
+      case VectorizeScalarFun(_, _, _) | NotFreeIn(_, _) | NotJustVar(_, _) => None
     }.to(Set)
     val typedLhs = infer(lhs, untypedFreeV, preserveTV)
     val freeV1 = infer.collectFreeEnv(typedLhs)
@@ -68,14 +74,14 @@ object NamedRewrite {
         assert(!freeV1.contains(fV))
         val np = NamedRewriteDSL.stringAsNatPattern(n)
         Some(fV -> vectorizeScalarFunType(np, freeV1(f)))
-      case NotFreeIn(_, _) | StripMineChoices(_, _, _, _) => None
+      case NotFreeIn(_, _) | NotJustVar(_, _) | StripMineChoices(_, _, _, _) => None
     }
     val freeT2 = parameters.flatMap {
       case StripMineChoices(_, _, prod, _) =>
         val id = rct.NatKind.IDWrapper(rct.NatIdentifier(prod))
         assert(!freeT1.contains(id))
         Some(id)
-      case NotFreeIn(_, _) | VectorizeScalarFun(_, _, _) => None
+      case NotFreeIn(_, _) | NotJustVar(_, _) | VectorizeScalarFun(_, _, _) => None
     }
     val freeV = freeV1 ++ freeV2
     val freeT = freeT1 ++ freeT2
@@ -527,6 +533,26 @@ object NamedRewrite {
               !freeOf(shc.get(iPV, subst)).free.contains(nfIndex)
             }
           })
+        case NotJustVar(f, v) =>
+          val vShift = boundVarToShift.getOrElse(v, (0, 0, 0, 0, 0))._1
+          // all left-hand-side uses of `f` may contain `v`
+          assert(patVars(f).forall {
+            case ((shift, _, _, _, _), (_, status)) =>
+              shift >= vShift || status != Known
+          })
+          // pick one of these uses
+          val (iS, iPV) = patVars(f).collectFirst {
+            case ((s, _, _, _, _), (pv, Known)) => (s, pv)
+          }.get
+          val vIndex = iS - vShift
+          (a: Applier) => (new ConditionalApplier(Set(iPV), (Set(), Set()), acc(a)) {
+            def cond(egraph: EGraph, eclass: EClassId, shc: Substs)(subst: shc.Subst): Boolean = {
+              egraph.get(shc.get(iPV, subst)).nodes match {
+                case Seq(Var(idx)) => idx != vIndex
+                case _ => true
+              }
+            }
+          })
         case VectorizeScalarFun(f, n, fV) =>
           val (nPV, nST) = natPatVars(n)(0, 0)
           assert(nST == Known)
@@ -668,9 +694,12 @@ object NamedRewriteDSL {
       rcdt.PairType(a, b)
   }
 
-  implicit final class NotFreeIn(private val in: String) extends AnyVal {
+  implicit final class StringParam(private val lhs: String) extends AnyVal {
     @inline def notFree(notFree: String): NamedRewrite.Parameter =
-      NamedRewrite.NotFreeIn(notFree, in)
+      NamedRewrite.NotFreeIn(notFree, lhs)
+
+    @inline def notJustVar(v: String): NamedRewrite.Parameter =
+      NamedRewrite.NotJustVar(lhs, v)
   }
   def vectorizeScalarFun(f: String, n: String, fV: String): NamedRewrite.Parameter =
     NamedRewrite.VectorizeScalarFun(f, n, fV)
