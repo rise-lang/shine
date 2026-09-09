@@ -192,6 +192,25 @@ object rules {
   // reduce op init arg
   // reduce op init (split n arg)
 
+  // NOTE: interestingly, split/join intro + joinReduce = splitReduce
+  def joinReduce = NamedRewrite.init("join-reduce",
+    app(app(app(reduce, "op"), "init"), app(join, "in"))
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")), "in"))
+  )
+
+  val liftReduce = NamedRewrite.init("lift-reduce",
+    app(map, app(app(reduce, "op"), "init"))
+      -->
+    lam("in",
+      app(app(app(reduce, lam("acc", lam("y",
+        app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+          app(app(zip, "acc"), "y"))
+      ))), app(rcp.generate.primitive, lam("i", "init"))),
+      app(transpose, "in")))
+  )
+
   val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
     app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
       -->
