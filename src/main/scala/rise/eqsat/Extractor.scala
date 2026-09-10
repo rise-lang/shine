@@ -168,7 +168,9 @@ object AstSize extends CostFunction[Int] {
   def ofNamedExpr(e: rise.core.Expr): Int = {
     rise.core.traverse.traverse(e, new traverse.PureAccumulatorTraversal[Int] {
       override val accumulator = util.monads.AddMonoid
-      override def expr: core.Expr => Pair[core.Expr] = super.expr
+      override def `type`[T <: rise.core.types.ExprType] : T => Pair[T] = return_
+      override def expr: core.Expr => Pair[core.Expr] =
+        e => bind(super.expr(e))(accumulate(1)(_))
     })._1
   }
 
