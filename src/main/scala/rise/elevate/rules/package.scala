@@ -20,7 +20,7 @@ package object rules {
   }
 
   //TODO @rule
-  def containsAtLeast(n: Int, x: Rise)(implicit ev: Traversable[Rise]): Strategy[Rise] =
+  def containsMoreThan(n: Int, x: Rise)(implicit ev: Traversable[Rise]): Strategy[Rise] =
     skip(n)(isEqualTo(x))
 
   // TODO: express as a combination of strategies
@@ -30,7 +30,7 @@ package object rules {
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case App(Lambda(x, b), v @ App(App(primitives.makePair(), _), _)) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
-    case App(Lambda(x, b), v) if !containsAtLeast(1, x)(ev)(b) =>
+    case App(Lambda(x, b), v) if !(containsMoreThan(1, x)(ev)(b)) =>
       Success(substitute.exprInExpr(v, `for` = x, in = b))
     case DepApp(k1, DepLambda(k2, x, b), v) if k1 == k2 =>
       Success(substitute.kindInExpr(k2, v, `for` = x, in = b))
