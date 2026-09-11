@@ -633,6 +633,10 @@ object BeamExtractRW {
   {
     override def toString: String = node.toString()
   }
+  // TODO: could also keep track of:
+  // - arrays that can only be indexed with constants
+  // - streams that require stream translation
+  // that would require a per-array-dimension annotation
   case class DataTypeAnnotation(access: rct.Access)
     extends TypeAnnotation
   {
@@ -690,7 +694,7 @@ object BeamExtractRW {
             subtype(aOut, aOutT, bOut, bOutT, egraph)
           case _ => throw new Exception("this should not happen")
         }
-      case _ => throw new Exception("this should not happen")
+      case _ => throw new Exception(s"this should not happen: $a, ${rise.eqsat.Type.toNamed(ExprWithHashCons.`type`(egraph)(at))}, $b, ${ExprWithHashCons.`type`(egraph)(bt)}")
     }
     // println(s"subtype: $a : ${egraph(at)} <= $b : ${egraph(bt)} ? $res")
     res
@@ -703,6 +707,28 @@ object BeamExtractRW {
       case ScalarType(_) | NatType | VectorType(_, _) |  IndexType(_) => true
       case PairType(dt1, dt2) => notContainingArrayType(dt1, egraph) && notContainingArrayType(dt2, egraph)
       case ArrayType(_, _) => false
+    }
+  }
+  
+  def allPossibleAnnots(t: TypeId, egraph: EGraph): Seq[TypeAnnotation] = {
+    import RWAnnotationDSL._
+
+    egraph(t) match {
+      case _: DataTypeNode[_, _] =>
+        Seq(read, write)
+      case FunType(inT, outT) =>
+        for {
+          a <- allPossibleAnnots(inT, egraph)
+          b <- allPossibleAnnots(outT, egraph)
+        } yield { a ->: b }
+      case NatFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { nFunT(a) }
+      case DataFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { dtFunT(a) }
+      case AddrFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { aFunT(a) }
+      case NatToNatFunType(t) =>
+        for { a <- allPossibleAnnots(t, egraph) } yield { n2nFunT(a) }
     }
   }
 }
@@ -745,7 +771,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
       case Var(index) =>
         val cost = cf.cost(egraph, enode, t, Map.empty)
         val expr = ExprWithHashCons(enode.mapChildren(Map.empty), t)
-        Seq(read, write).map { annotation =>
+        BeamExtractRW.allPossibleAnnots(t, egraph).map { annotation =>
           (annotation, Map(index -> annotation)) -> Seq((cost, expr))
         }.toMap
       case App(f, e) =>
@@ -921,7 +947,8 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case roclp.mapGlobal(_) | roclp.mapWorkGroup(_) | roclp.mapLocal(_)
                | rocup.mapGlobal(_) | rocup.mapBlock(_) | rocup.mapThreads(_)
                | rocup.mapWarp(_) | rocup.mapLane(_) | rompp.mapPar()
-               | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream() => Seq(
+               | rp.mapSeq() | rp.mapSeqUnroll() | rp.iterateStream()
+               | rp.genMapSeq() => Seq(
             (read ->: write) ->: read ->: write
           )
           case rp.map() | rp.mapFst() | rp.mapSnd() => Seq(
@@ -956,6 +983,10 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
             read ->: (read ->: read) ->: read,
             read ->: (read ->: write) ->: write,
           )
+          case rp.letToMem() => Seq(
+            write ->: (read ->: read) ->: read,
+            write ->: (read ->: write) ->: write,
+          )
           case rp.split() | rp.asVector() => Seq(
             nFunT(read ->: read),
             nFunT(write ->: write),
@@ -975,6 +1006,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
           case rp.natAsIndex() | rp.take() | rp.drop() => Seq(
             nFunT(read ->: read)
           )
+          case rp.reduce() => Seq()
           case rp.reduceSeq() | rp.reduceSeqUnroll() => Seq(
             (read ->: read ->: write) ->: write ->: read ->: read
           )
@@ -1014,6 +1046,15 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
                 read ->: rec(n - 1)
               } else {
                 read
+              }
+            }
+            Seq(rec(n))
+          case rp.makeArrayWrite(n) =>
+            def rec(n: Int): TypeAnnotation = {
+              if (n > 0) {
+                read ->: rec(n - 1)
+              } else {
+                write
               }
             }
             Seq(rec(n))
@@ -1144,4 +1185,28 @@ case class AvoidCompositionAssoc1Extract[Cost](cf: CostFunction[Cost])
       mayNotBeA = r.best != a.best || r.bestNoComp != a.bestNoComp,
       mayNotBeB = r.best != b.best || r.bestNoComp != b.bestNoComp)
   }
+}
+
+object DefinitelyComputeAnalysis extends SemiLatticeAnalysis {
+  type Data = Boolean
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId, analysisOf: EClassId => Data): Data = {
+    import rise.core.{primitives => rcp}
+    
+    enode match {
+      case Primitive(p) => p match {
+        case rcp.neg() | rcp.add() | rcp.sub() | rcp.mul() | rcp.div() | rcp.mod() |
+          rcp.not() | rcp.gt() | rcp.lt() | rcp.equal() | rcp.foreignFunction(_, _) => true
+        case _ => false
+      }
+      case _ => enode.children().exists(analysisOf)
+    }
+  }
+
+  override def merge(a: Data, b: Data): MergeResult = {
+    val res = a || b
+    MergeResult(res, res != a, res != b)
+  }
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
 }

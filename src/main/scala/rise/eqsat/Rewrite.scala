@@ -508,7 +508,8 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
   override def patternVars(): Set[Any] = applier.patternVars() - fV
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
-    (Set(SmallestSizeAnalysis), Set())
+    Analysis.mergeRequired(applier.requiredAnalyses(),
+      (Set(SmallestSizeAnalysis), Set()))
 
   override def applyOne(egraph: EGraph,
                         eclass: EClassId,

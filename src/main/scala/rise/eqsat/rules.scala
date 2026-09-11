@@ -2,6 +2,7 @@ package rise.eqsat
 
 import PatternDSL._
 import rise.core.{primitives => rcp}
+import rise.eqsat.NamedRewrite.NotJustVar
 
 object rules {
   // -- reduction --
@@ -119,7 +120,9 @@ object rules {
     app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
     lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in"))),
-    Seq("f" notFree "x")
+    Seq("f" notFree "x", "gx" notJustVar "x"),
+    // notJustVar is an optimization to avoid creating
+    // useless identity lambdas 
   )
 
   def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",
@@ -177,6 +180,37 @@ object rules {
       "init"), app(nApp(split, n), "arg"))
   )
 
+  // same as blockedReduce, but keeping parallelism through fission
+  def splitReduce(n: Int) = NamedRewrite.init(s"split-reduce-$n",
+    app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")),
+        app(nApp(split, n), "arg")))
+  )
+
+  // reduce op init arg
+  // reduce op init (split n arg)
+
+  // NOTE: interestingly, split/join intro + joinReduce = splitReduce
+  def joinReduce = NamedRewrite.init("join-reduce",
+    app(app(app(reduce, "op"), "init"), app(join, "in"))
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")), "in"))
+  )
+
+  val liftReduce = NamedRewrite.init("lift-reduce",
+    app(map, app(app(reduce, "op"), "init"))
+      -->
+    lam("in",
+      app(app(app(reduce, lam("acc", lam("y",
+        app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+          app(app(zip, "acc"), "y"))
+      ))), app(rcp.generate.primitive, lam("i", "init"))),
+      app(transpose, "in")))
+  )
+
   val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
     app(map, app(app(rcp.reduceSeq.primitive, "op"), "init"))
       -->
@@ -231,7 +265,7 @@ object rules {
       -->
       lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
         app(app(map, lam("y", "gy")), "in"))),
-    Seq("op" notFree "y")
+    Seq("op" notFree "y", "op" notFree "acc", "gy" notFree "acc")
   )
 
   val undoReduceSeqForAdd = NamedRewrite.init("undo-reduce-seq-for-add",
@@ -528,6 +562,12 @@ object rules {
     app(app(rcp.mapSeq.primitive, "f"), "in")
       -->
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
+  )
+
+  val toMem = NamedRewrite.init("to-mem",
+    ("in" :: ("dt": DataType))
+      -->
+    app(rcp.toMem.primitive, "in")
   )
 
   val storeToMem = NamedRewrite.init("store-to-mem",
