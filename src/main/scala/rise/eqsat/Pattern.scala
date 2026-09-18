@@ -199,6 +199,9 @@ object PatternDSL {
     @inline def >>(g: Pattern): Pattern = (f: Pattern) >> g
   }
 
+  def floatRefinement(a: Pattern, b: Pattern, t: TypePattern): Pattern =
+    Pattern(PatternNode(FloatRefinement(a, b)), t)
+
   def `?n`(index: Int): NatPatternVar = NatPatternVar(index)
   val `?n`: NatPattern = NatPatternAny
   def `%n`(index: Int): NatPattern = NatPatternNode(NatVar(index))

@@ -1077,6 +1077,7 @@ case class BeamExtractRW[Cost](beamSize: Int, cf: CostFunction[Cost])
         ))
         annotations.map { a => (a, Map.empty[Int, TypeAnnotation]) -> beam }.toMap
       case Composition(f, g) => ???
+      case FloatRefinement(a, b) => ???
     }
     generatedData.map { case (at, beam) => at -> beam.sortBy(_._1)(cf.ordering).distinct.take(beamSize) }
   }
@@ -1209,4 +1210,62 @@ object DefinitelyComputeAnalysis extends SemiLatticeAnalysis {
   }
 
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+}
+
+// Given Refinement(A, B) nodes and the rules:
+// - congruence: f(Refinement(A, B)) = Refinement(f(A), f(B))
+// - transitivity: Refinement(A, Refinement(B, C)) = Refinement(A, C)
+//
+// We want to keep track of all the "B"s that refine an e-class "A",
+// while propagating congruence, but we do not want to explicitly
+// propagate transitivity, because it would create more nodes for no
+// clear benefit.
+object FloatRefinementCongruence extends SemiLatticeAnalysis {
+  // this "A" is refined by this set of "B"s
+  type Data = Set[EClassId]
+
+  override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) =
+    (Set(), Set())
+
+  override def make(egraph: EGraph, enode: ENode, t: TypeId,
+                    refinedBy: EClassId => Data): Data = {
+    enode match {
+      // Refinement(A, B) means that A is refined by B,
+      // as well as by everything that refines B (transitivity),
+      // although this is not explicitly encoded
+      case FloatRefinement(a, b) => Set(b) // + refinedBy(b)
+      // f(A) is refined by all f(B) such that A is refined by B
+      case _ =>
+        val childrenRefinedBy = enode.children().map(c => (c, refinedBy(c))).toSeq
+        val id = egraph.memo((enode, t))
+        
+        def rec(remaining: Seq[(EClassId, Data)],
+                selected: Map[EClassId, EClassId]): Set[EClassId] =
+        {
+          remaining match {
+            case Nil =>
+              // NOTE: using egraph.add/union here could be dangerous,
+              // or at least trigger re-analysing the eclass that we
+              // just extended (inefficient ?).
+              val refined_by = egraph.add(enode.mapChildren(selected), t)
+              // there existed Refinement(A, B) for every child,
+              // we want to reify Refinement(f(A), f(B)).
+              val reified = egraph.add(FloatRefinement(id, refined_by), t)
+              egraph.union(id, reified)
+              Set(refined_by)
+            case (child, childRefinedBy) +: rest =>
+              childRefinedBy.flatMap { x =>
+                rec(rest, selected + (child -> x))
+              }
+          }
+        }
+
+        rec(childrenRefinedBy, Map.empty)
+    }
+  }
+
+  override def merge(a: Data, b: Data): MergeResult = {
+    val res = a.union(b)
+    MergeResult(res, mayNotBeA = (res != a), mayNotBeB = (res != b))
+  }
 }

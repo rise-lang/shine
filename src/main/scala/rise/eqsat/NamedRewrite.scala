@@ -49,10 +49,20 @@ object NamedRewrite {
     }
   }
 
-  def init(name: String,
-           rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
-           parameters: Seq[NamedRewrite.Parameter] = Seq(),
-          ): Rewrite = {
+  def floatRefinement(
+    name: String,
+    rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+    parameters: Seq[NamedRewrite.Parameter] = Seq()
+  ): Rewrite = {
+    init(name, rule, parameters, floatRefinement = true)
+  }
+
+  def init(
+    name: String,
+    rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),
+    parameters: Seq[NamedRewrite.Parameter] = Seq(),
+    floatRefinement: Boolean = false
+  ): Rewrite = {
     import rise.core.DSL.infer
     import arithexpr.{arithmetic => ae}
 
@@ -276,7 +286,14 @@ object NamedRewrite {
       }
 
     val lhsPat = makePat(typedLhs, Expr.Bound.empty, isRhs = false)
-    val rhsPat = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
+    val rhsPatTmp = makePat(typedRhs, Expr.Bound.empty, isRhs = true)
+    val rhsPat = if (floatRefinement) {
+      Pattern(PatternNode(FloatRefinement(
+        makePat(typedLhs, Expr.Bound.empty, isRhs = true),
+        rhsPatTmp)), rhsPatTmp.t)
+    } else {
+      rhsPatTmp
+    }
 
     def shiftAppliers[S, V](pvm: PatternVarMap[S, V],
                             mkShift: (S, V) => (S, V) => Applier => Applier,

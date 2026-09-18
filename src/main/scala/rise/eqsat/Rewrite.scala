@@ -566,6 +566,7 @@ case class VectorizeScalarFunExtractApplier(f: PatternVar, n: NatPatternVar, fV:
             eg(fv.t).asInstanceOf[FunType[TypeId]].inT,
             eg(gv.t).asInstanceOf[FunType[TypeId]].outT,
           )))
+      case FloatRefinement(a, b) => ???
     }
   }
 

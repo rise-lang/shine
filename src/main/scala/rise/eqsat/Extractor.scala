@@ -281,6 +281,7 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
         val gd = costs(g)
         Data(fd.redexes + gd.redexes, fd.free ++ gd.free,
           isEtaApp = false, isLam = false, isNatLam = false)
+      case FloatRefinement(_, _) => ???
     }
 
     // TODO: freeOfType(t) for free nat/data
