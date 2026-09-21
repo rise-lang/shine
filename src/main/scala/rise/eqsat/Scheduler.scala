@@ -124,6 +124,13 @@ object SamplingScheduler {
     lastSampledIteration = -1,
     random = new Random(seed)
   )
+
+  def initWithRandom(random: Random): SamplingScheduler = new SamplingScheduler(
+    defaultLimit = 1_000,
+    limits = HashMap.empty,
+    lastSampledIteration = -1,
+    random = random
+  )
 }
 
 /** A [`Scheduler`] that implements rule sampling.
@@ -149,6 +156,7 @@ extends Scheduler {
     val matches = rewrite.search(egraph, shc)
     if (matches.size > limit) {
       println(s"sampled $limit from ${matches.size} matches")
+      // TODO: could use more efficient reservoir sampling
       random.shuffle(matches).take(limit)
     } else {
       matches

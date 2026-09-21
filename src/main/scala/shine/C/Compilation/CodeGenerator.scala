@@ -36,13 +36,20 @@ object CodeGenerator {
   type Declarations = mutable.ListBuffer[C.AST.Decl]
   type Ranges = immutable.Map[String, arithexpr.arithmetic.Range]
 
-  def apply(): CodeGenerator =
-    new CodeGenerator(mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, arithexpr.arithmetic.Range]())
+  def apply(useMPFR: Option[Int] = None): CodeGenerator =
+    new CodeGenerator(
+      mutable.ListBuffer[C.AST.Decl](),
+      immutable.Map[String, arithexpr.arithmetic.Range](),
+      useMPFR
+    )
 }
 
-class CodeGenerator(val decls: CodeGenerator.Declarations,
-                    val ranges: CodeGenerator.Ranges)
-  extends DPIA.Compilation.CodeGenerator {
+class CodeGenerator(
+  val decls: CodeGenerator.Declarations,
+  val ranges: CodeGenerator.Ranges,
+  val useMPFR: Option[Int] = None,
+  val mpfrDeadTmpVars: scala.collection.mutable.Stack[String] = scala.collection.mutable.Stack()
+) extends DPIA.Compilation.CodeGenerator {
 
   import CodeGenerator._
 
@@ -66,14 +73,26 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-
-  def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(decls, ranges.updated(key, value))
+  def updatedRanges(
+    key: String,
+    value: arithexpr.arithmetic.Range,
+  ): CodeGenerator =
+    new CodeGenerator(decls, ranges.updated(key, value), useMPFR, mpfrDeadTmpVars)
 
   override def generate(topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
                         env: Environment): Phrase[CommType] => (immutable.Seq[Decl], Stmt) = phrase => {
     val stmt = generateWithFunctions(topLevelDefinitions, env)(phrase)
-    (decls.toSeq, stmt)
+    val stmt2 = if (mpfrDeadTmpVars.nonEmpty) {
+      val vars = mpfrDeadTmpVars.toSeq
+      mpfrDeadTmpVars.clear()
+      val decls = C.AST.Stmts(vars.map(tmpName => C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t))))
+      val inits = C.AST.Stmts(vars.map(tmpName => MPFRCodeGen.init(C.AST.DeclRef(tmpName))))
+      val clears = C.AST.Stmts(vars.map(tmpName => MPFRCodeGen.clear(C.AST.DeclRef(tmpName))))
+      C.AST.Stmts(immutable.Seq(decls, inits, stmt, clears))
+    } else {
+      stmt
+    }
+    (decls.toSeq, stmt2)
   }
 
   def generateWithFunctions(topLevelDefinitions: immutable.Seq[(LetNatIdentifier, Phrase[ExpType])],
@@ -90,7 +109,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         cond |> exp(env, Nil, cond =>
-          C.AST.IfThenElse(cond, cmd(env)(thenP), Some(cmd(env)(elseP))))
+          C.AST.IfThenElse(cond,
+            C.AST.Block(immutable.Seq(cmd(env)(thenP))),
+            Some(C.AST.Block(immutable.Seq(cmd(env)(elseP))))))
 
       case i: Identifier[CommType] => env.commEnv(i)
 
@@ -106,9 +127,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Seq(p1, p2) => C.AST.Stmts(p1 |> cmd(env), p2 |> cmd(env))
 
       case Assign(_, a, e) =>
+        val aType = typ(a.t.dataType) // = typ(e.t.dataType)
         e |> exp(env, Nil, e =>
           a |> acc(env, Nil, a =>
-            C.AST.ExprStmt(C.AST.Assignment(a, e))))
+            if (isMPFRType(aType)) {
+              MPFRCodeGen.codeGenAssign(a, e)
+            } else {
+              C.AST.ExprStmt(C.AST.Assignment(a, e))
+            }))
 
       case New(dt, Lambda(v, p)) => CCodeGen.codeGenNew(dt, v, p, env)
 
@@ -309,14 +335,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     case Phrases.Literal(n) => path match {
       case Nil =>
         n.dataType match {
-          case _: IndexType => cont(CCodeGen.codeGenLiteral(n))
-          case _: ScalarType => cont(CCodeGen.codeGenLiteral(n))
+          case _: IndexType => CCodeGen.codeGenLiteral(n, typ(n.dataType), cont)
+          case _: ScalarType => CCodeGen.codeGenLiteral(n, typ(n.dataType), cont)
           case _ => error("Expected an IndexType or ScalarType.")
         }
       case (i: CIntExpr) :: ps =>
         (n, n.dataType) match {
           case (ArrayData(elems), ArrayType(_, et)) => try {
-            generateAccess(et, CCodeGen.codeGenLiteral(elems(i.eval)), ps, env, cont)
+            CCodeGen.codeGenLiteral(elems(i.eval), typ(et), elem =>
+              generateAccess(et, elem, ps, env, cont))
           } catch {
             case NotEvaluableException() => error(s"could not evaluate $i")
           }
@@ -332,6 +359,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case uop@UnaryOp(op, e) => uop.t.dataType match {
       case _: ScalarType => path match {
+        case Nil if containsMPFRDataType(immutable.Seq(uop.t.dataType, e.t.dataType)) =>
+          e |> exp(env, Nil, e =>
+            MPFRCodeGen.codeGenUnaryOp(op, e, cont))
         case Nil => e |> exp(env, Nil, e =>
           cont(CCodeGen.codeGenUnaryOp(op, e)))
         case _ => error(s"Expected path to be empty")
@@ -341,6 +371,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     case bop@BinOp(op, e1, e2) => bop.t.dataType match {
       case _: ScalarType | NatType => path match {
+        case Nil if containsMPFRDataType(immutable.Seq(bop.t.dataType, e1.t.dataType, e2.t.dataType)) =>
+          e1 |> exp(env, Nil, e1 =>
+            e2 |> exp(env, Nil, e2 =>
+              MPFRCodeGen.codeGenBinaryOp(op, e1, e2, cont)))
         case Nil =>
           e1 |> exp(env, Nil, e1 =>
             e2 |> exp(env, Nil, e2 =>
@@ -350,10 +384,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => error(s"Expected scalar types, but ${bop.t.dataType} found")
     }
 
-    case Cast(_, dt, e) => path match {
+    case Cast(dt1, dt2, e) => path match {
+      case Nil if containsMPFRDataType(immutable.Seq(dt1, dt2)) =>
+        e |> exp(env, Nil, e =>
+          MPFRCodeGen.codeGenCast(typ(dt1), typ(dt2), e, cont))
       case Nil =>
         e |> exp(env, Nil, e =>
-          cont(C.AST.Cast(typ(dt), e)))
+          cont(C.AST.Cast(typ(dt2), e)))
       case _ => error(s"Expected path to be empty")
     }
 
@@ -550,8 +587,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case rise.core.types.DataType.i32 => C.AST.Type.i32
         case rise.core.types.DataType.i64 => C.AST.Type.i64
         case rise.core.types.DataType.f16 => throw new Exception("f16 not supported")
-        case rise.core.types.DataType.f32 => C.AST.Type.float
-        case rise.core.types.DataType.f64 => C.AST.Type.double
+        case rise.core.types.DataType.f32 =>
+          if (useMPFR.isDefined) C.AST.Type.mpfr_t else C.AST.Type.float
+        case rise.core.types.DataType.f64 =>
+          if (useMPFR.isDefined) C.AST.Type.mpfr_t else C.AST.Type.double
       }
       case rise.core.types.DataType.NatType => C.AST.Type.int
       case _: rise.core.types.DataType.IndexType => C.AST.Type.int
@@ -576,11 +615,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  override def generateAccess(dt: DataType,
-                              expr: Expr,
-                              path: Path,
-                              env: Environment,
-                              cont: Expr => Stmt): Stmt = {
+  override def generateAccess(
+    dt: DataType,
+    expr: Expr,
+    path: Path,
+    env: Environment,
+    cont: Expr => Stmt
+  ): Stmt = {
     path match {
       case Nil => cont(expr)
       case (xj: PairAccess) :: ps => dt match {
@@ -590,7 +631,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case SndMember => ("_snd", rt.dt2)
           }
           generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env, cont)
-        case _ => throw new Exception("expected tuple type")
+        case _ => throw new Exception(s"expected tuple type, found ${dt}")
       }
       case (_: CIntExpr) :: _ =>
         dt match {
@@ -689,12 +730,26 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    env: Environment): Stmt = {
       val ve = Identifier(s"${v.name}_e", v.t.t1)
       val va = Identifier(s"${v.name}_a", v.t.t2)
-      val vC = C.AST.DeclRef(v.name)
 
-      C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
-        Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
-            updatedIdentEnv (va -> vC))))
+      dt match {
+        case _: ScalarType if isMPFRType(typ(dt)) =>
+          // NOTE: hacky code path enabling reuse over new MPFR scalars
+          MPFRCodeGen.withTmpVar(vC =>
+            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
+                updatedIdentEnv (va -> vC)))
+        case _ =>
+          val vC = C.AST.DeclRef(v.name)
+
+          val (initStmt, clearStmt) = MPFRCodeGen.codeGenNewMayInitClear(dt, vC)
+
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
+            initStmt,
+            Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p) |> cmd(env updatedIdentEnv (ve -> vC)
+                updatedIdentEnv (va -> vC)),
+            clearStmt
+          ))
+      }
     }
 
     def codeGenNewDoubleBuffer(dt: ArrayType,
@@ -762,10 +817,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
         // iteration count is 1 => no loop
         case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
+          C.AST.Stmts(immutable.Seq(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            p |> updatedGen.cmd(env updatedIdentEnv (i -> cI)))
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))),
+            p |> updatedGen.cmd(env updatedIdentEnv (i -> cI))
+          ))
 
         case _ =>
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
@@ -795,10 +851,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
         // iteration count is 1 => no loop
         case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
+          C.AST.Stmts(immutable.Seq(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            p |> updatedGen.cmd(env))
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))),
+            p |> updatedGen.cmd(env)
+          ))
 
         case _ =>
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
@@ -827,6 +884,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             a |> acc(env, CIntExpr(arithVar) :: ps, cont)
           ))
       })
+    }
+
+    def codeGenLiteral(d: Data, ty: Type, cont: Expr => Stmt): Stmt = {
+      if (isMPFRType(ty)) {
+        MPFRCodeGen.codeGenLiteral(d, cont)
+      } else {
+        cont(codeGenLiteral(d))
+      }
     }
 
     def codeGenLiteral(d: Data): Expr = {
@@ -876,6 +941,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                    env: Environment,
                                    cont: Expr => Stmt): Stmt =
     {
+      if (useMPFR.isDefined) {
+        if (containsMPFRDataType(outT +: inTs)) {
+          return MPFRCodeGen.codeGenForeignFunctionCall(funDecl, inTs, outT, args, env, cont)
+        }
+      }
+
       funDecl.definition match {
         case Some(funDef) =>
           addDeclaration(
@@ -1016,6 +1087,267 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       import C.AST._
       DeclStmt(
         VarDecl(name, PointerType(typ(elemType)), Some(expr)))
+    }
+  }
+
+  protected def isMPFRType(t: C.AST.Type): Boolean = {
+    t == C.AST.Type.mpfr_t
+  }
+
+  protected def containsMPFRCType(it: Iterable[C.AST.Type]): Boolean = {
+    it.exists(isMPFRType(_))
+  }
+
+  protected def containsMPFRDataType(it: Iterable[DataType]): Boolean = {
+    containsMPFRCType(it.map(typ))
+  }
+
+  protected object MPFRCodeGen {
+    val rounding = C.AST.DeclRef("MPFR_RNDN")
+
+    // TODO: static or dynamic reuse of MPFR alloc/init/clear
+    // mpfr_t* ptr = shine_mpfr_alloc_init(n)
+    // --> mpfr_init2(ptr[0:n], precision)
+    // shine_mpfr_clear_free(n, ptr)
+    // --> mpfr_clear(ptr[0:n])
+    // ...
+    //
+    // for now, simply allocate fresh temporary MPFR variables at the outermost (parallel) section.
+
+    def init(ptr: Expr): Stmt = {
+      val precision = useMPFR.get
+      C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_init2"),
+        immutable.Seq(ptr, C.AST.Literal(precision.toString))))
+    }
+
+    def clear(ptr: Expr): Stmt = {
+      C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_clear"),
+        immutable.Seq(ptr)))
+    }
+
+    val nothing = C.AST.Stmts(immutable.Seq())
+    def noScalarCode(ptr: Expr, dt: DataType, path: Path): Stmt =
+      nothing
+
+    def codeGenNewMayInitClear(
+      dt: DataType, ptr: Expr,
+    ): (Stmt, Stmt) = {
+      def enterCode(ptr: Expr, dt: DataType, path: Path) =
+        if (isMPFRType(typ(dt))) { init(ptr) } else { nothing }
+      def exitCode(ptr: Expr, dt: DataType, path: Path) =
+        if (isMPFRType(typ(dt))) { clear(ptr) } else { nothing }
+      codeGenEnterExitEveryScalar(dt, ptr, enterCode, exitCode)
+    }
+
+    def codeGenEnterExitEveryScalar(
+      dt: DataType, ptr: Expr,
+      enterCode: (Expr, DataType, Path) => Stmt = noScalarCode,
+      exitCode: (Expr, DataType, Path) => Stmt = noScalarCode,
+    ): (Stmt, Stmt) = {
+      val env = shine.DPIA.Compilation.CodeGenerator.Environment(
+        immutable.Map(), immutable.Map(), immutable.Map(), immutable.Map())
+
+      def seq_maybe_nothing(t1: Stmt, t2: Stmt): Stmt = {
+        if (t1 == nothing && t2 == nothing) {
+          nothing
+        } else {
+          C.AST.Stmts(t1, t2)
+        }
+      }
+
+      def for_maybe_nothing(i: String, size: ArithExpr, body: Stmt): Stmt = {
+        if (body == nothing) {
+          nothing
+        } else {
+          // FIXME: factorize with CCodeGen.codeGenFor ?
+          C.AST.ForLoop(
+            C.AST.DeclStmt(C.AST.VarDecl(i, C.AST.Type.int, Some(C.AST.Literal("0")))),
+            C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(size)),
+            C.AST.Assignment(C.AST.DeclRef(i), C.AST.BinaryExpr(C.AST.DeclRef(i), C.AST.BinaryOperator.+, C.AST.Literal("1"))),
+            C.AST.Block(immutable.Seq(body))
+          )
+        }
+      }
+
+      def rec(current_dt: DataType, rev_path: Path): (Stmt, Stmt) = {
+        current_dt match {
+          case _: ScalarType | NatType | _: IndexType | rise.core.types.DataType.OpaqueType(_) =>
+            val path = rev_path.reverse
+            (generateAccess(dt, ptr, path, env, ptr => enterCode(ptr, current_dt, path)),
+              generateAccess(dt, ptr, path, env, ptr => exitCode(ptr, current_dt, path)))
+          case PairType(dt1, dt2) =>
+            val (i1, c1) = rec(dt1, FstMember :: rev_path)
+            val (i2, c2) = rec(dt2, SndMember :: rev_path)
+            (seq_maybe_nothing(i1, i2), seq_maybe_nothing(c1, c2))
+          case ArrayType(size, elemType) =>
+            val i = freshName("i")
+            val (inner_i, inner_c) = rec(elemType, CIntExpr(NatIdentifier(i)) :: rev_path)
+            (for_maybe_nothing(i, size, inner_i), for_maybe_nothing(i, size, inner_c))
+          case _: VectorType | _: DepArrayType | _: DepPairType[_, _]
+            | _: rise.core.types.DataType.FragmentType
+            | _: rise.core.types.DataType.DataTypeIdentifier
+            | _: rise.core.types.DataType.NatToDataApply
+            | rise.core.types.DataType.ManagedBufferType(_) =>
+            if (useMPFR.isDefined) {
+              throw new Exception(s"${current_dt} type not supported when MPFR is enabled")
+            } else {
+              (nothing, nothing)
+            }
+        }
+      }
+
+      rec(dt, Nil)
+    }
+
+    // TODO: technically, could reuse more often and even eliminate some 'set' operations with a more elaborate scheme
+    def withTmpVar[T](cont: C.AST.DeclRef => Stmt): Stmt = {
+      // done at top-level: 
+      // C.AST.DeclStmt(C.AST.VarDecl(tmpName, C.AST.Type.mpfr_t)),
+      // init(tmpVar),
+      // clear(tmpVar)
+      val tmpName = if (mpfrDeadTmpVars.nonEmpty) {
+        mpfrDeadTmpVars.pop()
+      } else {
+        freshName("mpfr_tmp")
+      }
+      val tmpVar = C.AST.DeclRef(tmpName)
+      val res = cont(tmpVar)
+      mpfrDeadTmpVars.push(tmpName)
+      res
+    }
+
+    def codeGenAssign(a: Expr, e: Expr): Stmt = {
+      C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set"),
+        immutable.Seq(a, e, rounding)))
+    }
+
+    def codeGenLiteral(d: Data, cont: Expr => Stmt): Stmt = {
+      d match {
+        case FloatData(_) | DoubleData(_) =>
+          // TODO: could hoist MPFR constants at the top-level to avoid reloading them many times,
+          // could also be done at the functional level using letToMem.
+          withTmpVar { tmpVar => C.AST.Stmts(
+            C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef("mpfr_set_d"),
+              immutable.Seq(tmpVar, C.AST.Literal(d.toString), rounding))),
+            cont(tmpVar)
+          ) }
+        case _ => throw new Exception(s"unsupported MPFR literal ${d}")
+      }
+    }
+
+    // Boolean stands for whether the function writes its result into an an MPFR variable or not
+    def codegenOp(mpfrFunc: (String, Boolean), args: immutable.Seq[Expr], cont: Expr => Stmt): Stmt = {
+      val (funcName, writesToMPFRVar) = mpfrFunc
+      if (writesToMPFRVar) {
+        withTmpVar { tmpVar => C.AST.Stmts(
+          C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(funcName),
+            tmpVar +: args :+ rounding)),
+          cont(tmpVar)
+        ) }
+      } else {
+        cont(C.AST.FunCall(C.AST.DeclRef(funcName),
+          args))
+      }
+    }
+
+    def codeGenUnaryOp(
+      op: Operators.Unary.Value, e: Expr,
+      cont: Expr => Stmt
+    ): Stmt = {
+      val mpfrFunc = op match {
+        case Operators.Unary.NEG => ("mpfr_neg", true)
+        case _ =>
+          error(s"Unsupported MPFR unary operation: $op")
+      }
+      codegenOp(mpfrFunc, immutable.Seq(e), cont)
+    }
+
+    def codeGenBinaryOp(
+      op: Operators.Binary.Value, e1: Expr, e2: Expr,
+      cont: Expr => Stmt
+    ): Stmt = {
+      val mpfrFunc = op match {
+        case Operators.Binary.ADD => ("mpfr_add", true)
+        case Operators.Binary.SUB => ("mpfr_sub", true)
+        case Operators.Binary.MUL => ("mpfr_mul", true)
+        case Operators.Binary.DIV => ("mpfr_div", true)
+        // TODO? case Operators.Binary.MOD => "mpfr_mod"
+        case Operators.Binary.EQ => ("mpfr_equal_p", false)
+        case Operators.Binary.GT => ("mpfr_greater_p", false)
+        case Operators.Binary.LT => ("mpfr_less_p", false)
+        case _ =>
+          error(s"Unsupported MPFR binary operation: $op")
+      }
+      codegenOp(mpfrFunc, immutable.Seq(e1, e2), cont)
+    }
+
+    def codeGenForeignFunctionCall(
+      funDecl: rise.core.ForeignFunction.Decl,
+      inTs: collection.Seq[DataType],
+      outT: DataType,
+      args: collection.Seq[Phrase[ExpType]],
+      env: Environment,
+      cont: Expr => Stmt
+    ): Stmt = {
+      // FIXME: improve this mapping, builtin functions or user extensions ?
+      val mpfrFuncName = (funDecl.name, inTs, outT) match {
+        // TODO? mpfr_sqr, mpfr_rec_sqrt, mpfr_cbrt, mpfr_root, mpfr_abs, mpfr_fma, mpfr_cmp
+        // TODO? log, exp, pow, cosh, sinh, tang, ...
+        case ("sqrt" | "sqrt_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_sqrt"
+        case ("sqrt" | "sqrt_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_sqrt"
+        case ("cos" | "cos_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_cos"
+        case ("cos" | "cos_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_cos"
+        case ("sin" | "sin_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_sin"
+        case ("sin" | "sin_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_sin"
+        case ("tan" | "tan_f32", immutable.Seq(`f32`), `f32`) =>
+          "mpfr_tan"
+        case ("tan" | "tan_f64", immutable.Seq(`f64`), `f64`) =>
+          "mpfr_tan"
+        case ("min" | "min_f32", immutable.Seq(`f32`, `f32`), `f32`) =>
+          "mpfr_min"
+        case ("min" | "min_f64", immutable.Seq(`f64`, `f64`), `f64`) =>
+          "mpfr_min"
+        case ("max" | "max_f32", immutable.Seq(`f32`, `f32`), `f32`) =>
+          "mpfr_max"
+        case ("max" | "max_f64", immutable.Seq(`f64`, `f64`), `f64`) =>
+          "mpfr_max"
+        case _ => throw new Exception(s"MPFR codegen does not support ${funDecl}")
+      }
+
+      def iter(args: collection.Seq[Phrase[ExpType]], res: VectorBuilder[Expr]): Stmt = {
+        args match {
+          case a +: rest => a |> exp(env, Nil, a => iter(rest, res += a))
+          case Nil => codegenOp((mpfrFuncName, true), res.result(), cont)
+        }
+      }
+
+      iter(args, new VectorBuilder())
+    }
+
+    def codeGenCast(t1: Type, t2: Type, e: Expr, cont: Expr => Stmt): Stmt = {
+      import C.AST.Type._
+      (t1, t2) match {
+        case (`mpfr_t`, `mpfr_t`) => cont(e)
+        case (`i8` | `i16` | `i32` | `i64` | `int`, `mpfr_t`) => withTmpVar { tmpVar => C.AST.Stmts(
+          C.AST.ExprStmt(
+            C.AST.FunCall(C.AST.DeclRef("mpfr_set_si"),
+              immutable.Seq(tmpVar, e, rounding))),
+          cont(tmpVar)
+        ) }
+        case (`u8` | `u16` | `u32` | `u64`, `mpfr_t`) => withTmpVar { tmpVar => C.AST.Stmts(
+          C.AST.ExprStmt(
+            C.AST.FunCall(C.AST.DeclRef("mpfr_set_ui"),
+              immutable.Seq(tmpVar, e, rounding))),
+          cont(tmpVar)
+        ) }
+        case _ => throw new Exception(s"unsupported MPFR cast from ${t1} to MPFR ${t2}")
+      }
     }
   }
 
@@ -1207,13 +1539,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                      )
                    )
 
-                   C.AST.Stmts(
-                     C.AST.Stmts(
-                        C.AST.DeclStmt(accumVar),
-                        forLoop
-                     ),
+                   C.AST.Stmts(immutable.Seq(
+                     C.AST.DeclStmt(accumVar),
+                     forLoop,
                      cont(C.AST.DeclRef(accumVar.name))
-                   )
+                   ))
                  })
                })
              })

@@ -25,6 +25,7 @@ object lowering {
     })
   }
 
+  
 
   def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise)
                 (implicit ev: Traversable[Rise]): Strategy[Rise] =

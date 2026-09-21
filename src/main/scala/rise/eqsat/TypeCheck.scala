@@ -122,6 +122,10 @@ object TypeCheck {
             val (gInT, gOutT) = unwrapFunType(egraph.get(g).t)
             assertSameType(fOutT, gInT)
             assertSameType(t, egraph.add(FunType(fInT, gOutT)))
+
+          case FloatRefinement(a, b) =>
+            assertSameType(t, egraph.get(a).t)
+            assertSameType(t, egraph.get(b).t)
         }
       }
     }

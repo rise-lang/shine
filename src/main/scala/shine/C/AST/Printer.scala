@@ -121,7 +121,7 @@ class CPrinter extends Printer {
     case c: Code => printCode(c)
     case e: ExprStmt =>
       printExpr(e.expr, parenthesize = false)
-      print(";")
+      println(";")
   }
 
   def printFunSig(f: FunDecl): Unit = {
@@ -198,25 +198,18 @@ class CPrinter extends Printer {
     decl.fields.foreach(field => {
       print("  ")
       printDeclStmt(DeclStmt(field))
-      println("")
     })
     println("};")
   }
 
-  // Smts
   private def printStmts(s: Stmts): Unit = {
-    printStmt(s.fst)
-    println("")
-    printStmt(s.snd)
+    s.stmts.foreach(printStmt)
   }
 
   private def printBlock(b: Block): Unit = {
     indent += 1
     println("{")
-    b.body.foreach( (s: Stmt) => {
-      printStmt(s)
-      println("")
-    })
+    b.body.foreach(printStmt)
     indent -= 1
     moveCursorBack(tabSize)
     println("}")
@@ -224,8 +217,8 @@ class CPrinter extends Printer {
 
   private def printForLoop(f: ForLoop): Unit = {
     print("for (")
-    printDeclStmt(f.init)
-    print(" ")
+    printDecl(f.init.decl)
+    print("; ")
     printExpr(f.cond, parenthesize = false)
     print("; ")
     printExpr(f.increment, parenthesize = false)
@@ -244,12 +237,12 @@ class CPrinter extends Printer {
     print("if (")
     printExpr(i.cond, parenthesize = false)
     print(") ")
-    printStmt(i.trueBody)
+    printBlock(i.trueBody)
 
     i.falseBody match {
       case Some(falseBody) =>
         print(" else ")
-        printStmt(falseBody)
+        printBlock(falseBody)
       case None =>
     }
   }
@@ -274,15 +267,15 @@ class CPrinter extends Printer {
 
   private def printDeclStmt(d: DeclStmt): Unit = {
     printDecl(d.decl)
-    print(";")
+    println(";")
   }
 
   private def printComment(c: Comment): Unit = {
-    print(s"/* ${c.string} */")
+    println(s"/* ${c.string} */")
   }
 
   private def printCode(c: Code): Unit = {
-    print(c.string)
+    println(c.string)
   }
 
   // Exprs
@@ -351,13 +344,18 @@ class CPrinter extends Printer {
   }
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
-    print("(")
-    if (al.t.const) { print("const ") }
-    print(s"${typeName(al.t.getBaseType)}[${ al.t.getSizes match {
-      case None => ""
-      case Some(s) => printArithExpr(s, parenthesize = false)
-    } }]")
-    print("){")
+    al.t match {
+      case None => ()
+      case Some(t) =>
+        print("(")
+        if (t.const) { print("const ") }
+        print(s"${typeName(t.getBaseType)}[${ t.getSizes match {
+          case None => ""
+          case Some(s) => printArithExpr(s, parenthesize = false)
+        } }]")
+        print(")")
+    }
+    print("{")
     var first = true
     al.inits.foreach { e =>
       if (first) { first = false  }

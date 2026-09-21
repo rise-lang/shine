@@ -4,10 +4,41 @@ object LoweringSearch {
   def init(): LoweringSearch = new LoweringSearch(
     filter = StandardConstraintsPredicate
   )
-}
 
-// TODO: enable giving a sketch, maybe merge with GuidedSearch?
-class LoweringSearch(var filter: Predicate) {
+  def extract_rw_safe[Cost](
+    egraph: EGraph,
+    costFunction: CostFunction[Cost],
+    allAnalysisResult: HashMap[EClassId, BeamExtractRW.Data[Cost]],
+    rootId: EClassId,
+    expectedAnnotations: (BeamExtractRW.TypeAnnotation, Map[Int, BeamExtractRW.TypeAnnotation])
+  ): Option[Expr] = {
+    // : Map[
+    //   (BeamExtractRW.TypeAnnotation, Map[Int,BeamExtractRW.TypeAnnotation]),
+    //   Seq[(Cost, ExprWithHashCons)]]
+
+    val analysisResult = allAnalysisResult(egraph.find(rootId))
+    /* DEBUG println("----")
+    for { (foundAnnot, foundBeam) <- analysisResult } {
+      println(foundAnnot)
+    }
+    println("expected: ", expectedAnnotations)
+    println("----") */
+    val validResults = analysisResult
+      .map { case (foundAnnot, foundBeam) => (foundAnnot, foundBeam.head) }
+      // first, filter correct subtypes on annotations
+      .filter { case (foundAnnot, found) =>
+        topLevelSubtype(foundAnnot, expectedAnnotations, found._2.t, egraph)
+      }
+    validResults
+      // then, get the best option
+      .minByOption { case (_, found) => found._1 }(costFunction.ordering)
+      .map { case (_, found) => ExprWithHashCons.expr(egraph)(found._2) }
+    /* without taking subtyping into account:
+    tmp.get(expectedAnnotations)
+      .map { beam => ExprWithHashCons.expr(egraph)(beam.head._2) }
+    */
+  }
+
   private def topLevelAnnotation(t: Type): BeamExtractRW.TypeAnnotation = {
     import RWAnnotationDSL._
     t.node match {
@@ -35,9 +66,16 @@ class LoweringSearch(var filter: Predicate) {
     val (aOut, aIns) = aAnnot
     val (bOut, bIns) = bAnnot
     BeamExtractRW.subtype(aOut, typ, bOut, typ, egraph) &&
-    aIns == bIns // TODO: could use subtype here as well in contravariant fashion
+    // NOTE:
+    // - it is acceptable if b constrains an input that a does not constrain, 
+    //   which is why `aIns == bIns` is not used.
+    // - could use subtype here as well in contravariant fashion
+    aIns.forall { case (i, annot) => bIns(i) == annot }
   }
+}
 
+// TODO: enable giving a sketch, maybe merge with GuidedSearch?
+class LoweringSearch(var filter: Predicate) {
   def run[Cost](
     normalForm: NF,
     costFunction: CostFunction[Cost],
@@ -48,11 +86,11 @@ class LoweringSearch(var filter: Predicate) {
     println("---- lowering")
     val egraph = EGraph.empty()
     val normBeam = startBeam.map(normalForm.normalize)
-    println(s"normalized: $normBeam")
+    // println(s"normalized: $normBeam")
 
     val expectedAnnotations = annotations match {
       case Some(annotations) => annotations
-      case None => (topLevelAnnotation(normBeam.head.t), Map.empty[Int, BeamExtractRW.TypeAnnotation])
+      case None => (LoweringSearch.topLevelAnnotation(normBeam.head.t), Map.empty[Int, BeamExtractRW.TypeAnnotation])
     }
 
     val rootId = normBeam.map(egraph.addExpr)
@@ -66,37 +104,6 @@ class LoweringSearch(var filter: Predicate) {
       .run(egraph, filter, loweringRules, Seq()/*normalForm.directedRules*/, Seq(rootId))
     r.printReport()
 
-    util.printTime("lowered extraction time", {
-      val allAnalysisResult = Analysis.oneShot(BeamExtractRW(1, costFunction), egraph)
-      // : Map[
-      //   (BeamExtractRW.TypeAnnotation, Map[Int,BeamExtractRW.TypeAnnotation]),
-      //   Seq[(Cost, ExprWithHashCons)]]
-
-      /* DEBUG: 
-      println("allAnalysisResult")
-      allAnalysisResult.foreach { case (id, map) =>
-        println(id, ";", egraph.classes(id).nodes, ":", map)
-      }
-      println("----------") */
-      
-      val analysisResult = allAnalysisResult(egraph.find(rootId))
-      // DEBUG: println("analysisResult", analysisResult)
-      // DEBUG: println("expectedAnnotations", expectedAnnotations)
-      val validResults = analysisResult
-        .map { case (foundAnnot, foundBeam) => (foundAnnot, foundBeam.head) }
-        // first, filter correct subtypes on annotations
-        .filter { case (foundAnnot, found) =>
-          topLevelSubtype(foundAnnot, expectedAnnotations, found._2.t, egraph)
-        }
-      // DEBUG: println("validResults", validResults)
-      validResults
-        // then, get the best option
-        .minByOption { case (_, found) => found._1 }(costFunction.ordering)
-        .map { case (_, found) => ExprWithHashCons.expr(egraph)(found._2) }
-      /* without taking subtyping into account:
-      tmp.get(expectedAnnotations)
-        .map { beam => ExprWithHashCons.expr(egraph)(beam.head._2) }
-      */
-    })
+    util.printTime("lowered extraction time", LoweringSearch.extract_rw_safe(egraph, costFunction, Analysis.oneShot(BeamExtractRW(1, costFunction), egraph), rootId, expectedAnnotations))
   }
 }

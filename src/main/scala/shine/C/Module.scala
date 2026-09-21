@@ -19,7 +19,7 @@ object Module {
 
   def translateToString(m: Module): String =
     s"""
-       |${m.includes.map(_.toString).mkString("\n")}
+       |${m.includes.map(include => s"${include.toString}\n").mkString("")}
        |${m.decls.map(C.AST.Printer(_)).mkString("\n")}
        |${m.functions.map(f => C.AST.Printer(f.code)).mkString("\n")}
        |""".stripMargin

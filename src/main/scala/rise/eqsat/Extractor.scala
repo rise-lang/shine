@@ -2,6 +2,8 @@ package rise.eqsat
 import rise.core
 import rise.core.traverse
 
+import scala.util.Random
+
 object Extractor {
   def findBestOf[C](egraph: EGraph, costFunction: CostFunction[C], id: EClassId): (ExprWithHashCons, C) = {
     Analysis.oneShot(
@@ -9,9 +11,7 @@ object Extractor {
       egraph)(egraph.find(id))
   }
 
-  def randomOf(egraph: EGraph, id: EClassId): ExprWithHashCons = {
-    val random = new scala.util.Random
-
+  def randomOf(egraph: EGraph, id: EClassId, random: Random): ExprWithHashCons = {
     def rec(id: EClassId): ExprWithHashCons = {
       val eclass = egraph.get(id)
       val node = eclass.nodes(random.nextInt(eclass.nodes.length))
@@ -21,10 +21,82 @@ object Extractor {
     rec(id)
   }
 
-  def printRandom(egraph: EGraph, id: EClassId, n: Int): Unit = {
+  // this algorithm does not guarantee that it won't take cycles,
+  // but it will always prioritize not taking cycles on every choice.
+  def cycleAvoidingRandomOf_old(egraph: EGraph, id: EClassId, random: Random): ExprWithHashCons = {
+    def rec(id: EClassId, visited: Set[EClassId]): ExprWithHashCons = {
+      val nowVisited = visited + id
+      val eclass = egraph.get(id)
+
+      val noCycleENodes = eclass.nodes.filterNot(_.children().exists(nowVisited(_)))
+      val candidates = if (noCycleENodes.nonEmpty) { noCycleENodes } else { eclass.nodes }
+
+      val node = candidates(random.nextInt(candidates.length))
+      ExprWithHashCons(node.mapChildren(rec(_, nowVisited)), eclass.t)
+    }
+
+    rec(id, Set())
+  }
+
+  object MandatoryChildrenAnalysis extends SemiLatticeAnalysis {
+    type Data = Set[EClassId]
+
+    override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
+
+    override def make(egraph: EGraph, enode: ENode, t: TypeId, analysisOf: EClassId => Data): Data = {
+      enode.children().toSet ++ enode.children().flatMap(analysisOf).toSet
+    }
+
+    override def merge(a: Data, b: Data): MergeResult = {
+      val res = a intersect b
+      MergeResult(res, res != a, res != b)
+    }
+  }
+
+  trait CycleAvoidingRandomOf {
+    def next(id: EClassId): ExprWithHashCons
+  }
+
+  // NOTE: Only extracts one FloatRefinement node at top-level,
+  // otherwise extraction time blows up.
+  // This might also indicate that a "max length" should be taken into account.
+  def cycleAvoidingRandomOf(egraph: EGraph, random: Random): CycleAvoidingRandomOf = {
+    val mandatoryChildren = Analysis.oneShot(MandatoryChildrenAnalysis, egraph)
+
+    def rec(id: EClassId, visited: Set[EClassId]): ExprWithHashCons = {
+      val nowVisited = visited + id
+      val eclass = egraph.get(id)
+
+      val noInnerRefinementENodes = if (visited.isEmpty) {
+        eclass.nodes
+      } else {
+        eclass.nodes.filter {
+          case FloatRefinement(_, _) => false
+          case _ => true
+        }
+      } 
+      val noCycleENodes = noInnerRefinementENodes.filter { n =>
+        n.children().forall(id => mandatoryChildren(id).intersect(nowVisited).isEmpty) 
+      }
+      assert(noCycleENodes.nonEmpty)
+      val candidates = noCycleENodes
+
+      val node = candidates(random.nextInt(candidates.length))
+      ExprWithHashCons(node.mapChildren(rec(_, nowVisited)), eclass.t)
+    }
+
+    object Impl extends CycleAvoidingRandomOf {
+      override def next(id: EClassId): ExprWithHashCons =
+        rec(id, Set())
+    }
+
+    Impl
+  }
+
+  def printRandom(egraph: EGraph, id: EClassId, n: Int, random: Random = new Random): Unit = {
     for (_ <- 0 until n) {
       println(Expr.toNamed(
-        ExprWithHashCons.expr(egraph)(randomOf(egraph, id)),
+        ExprWithHashCons.expr(egraph)(randomOf(egraph, id, random)),
         Expr.Bound.empty.copy(allowFreeIndices = true)))
     }
   }
@@ -106,7 +178,9 @@ object AstSize extends CostFunction[Int] {
   def ofNamedExpr(e: rise.core.Expr): Int = {
     rise.core.traverse.traverse(e, new traverse.PureAccumulatorTraversal[Int] {
       override val accumulator = util.monads.AddMonoid
-      override def expr: core.Expr => Pair[core.Expr] = super.expr
+      override def `type`[T <: rise.core.types.ExprType] : T => Pair[T] = return_
+      override def expr: core.Expr => Pair[core.Expr] =
+        e => bind(super.expr(e))(accumulate(1)(_))
     })._1
   }
 
@@ -216,6 +290,11 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
         val fd = costs(f)
         val gd = costs(g)
         Data(fd.redexes + gd.redexes, fd.free ++ gd.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
+      case FloatRefinement(a, b) =>
+        val ad = costs(a)
+        val bd = costs(b)
+        Data(ad.redexes + bd.redexes, ad.free ++ ad.free,
           isEtaApp = false, isLam = false, isNatLam = false)
     }
 

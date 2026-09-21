@@ -341,13 +341,14 @@ class KernelCodeGenerator(override val decls: CCodeGenerator.Declarations,
           case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
           // iteration count is 1 => no loop
           case Cst(1) =>
-            C.AST.Stmts(C.AST.Stmts(
+            C.AST.Stmts(immutable.Seq(
               C.AST.Comment("iteration count is exactly 1, no loop emitted"),
               C.AST.DeclStmt(
                 C.AST.VarDecl(
                   cI.name, C.AST.Type.int,
-                  init = Some(C.AST.ArithmeticExpr(f.init))))),
-              p |> updatedGen.cmd(env))
+                  init = Some(C.AST.ArithmeticExpr(f.init)))),
+              p |> updatedGen.cmd(env)
+            ))
             /* FIXME?
           case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
                     (range.numVals.min == NegInf

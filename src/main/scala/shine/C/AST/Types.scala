@@ -119,6 +119,8 @@ object Type {
   val double = BasicType("double")
   val const_double = BasicType("double", const = true)
 
+  val mpfr_t = OpaqueType("mpfr_t")
+
 //  def fromDataType(dt: idealised.DPIA.Types.DataType): Type = {
 //    dt match {
 //      case b: idealised.DPIA.Types.BasicType => b match {

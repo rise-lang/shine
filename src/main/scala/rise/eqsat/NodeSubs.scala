@@ -45,6 +45,9 @@ object NodeSubs {
 
       case Composition(f, g) =>
         Composition(shiftedE(f, shift, cutoff), shiftedE(g, shift, cutoff))
+
+      case FloatRefinement(a, b) =>
+        FloatRefinement(shiftedE(a, shift, cutoff), shiftedE(b, shift, cutoff))
     }
 
   def replace[E](n: Node[E, NatId, DataTypeId, Address], index: Int, subs: E)
@@ -89,6 +92,8 @@ object NodeSubs {
 
       case Composition(f, g) =>
         makeE(Composition(replaceE(f, index, subs), replaceE(g, index, subs)))
+      case FloatRefinement(a, b) =>
+        makeE(FloatRefinement(replaceE(a, index, subs), replaceE(b, index, subs)))
     }
 
   def replace[E, ED, ND, TD](egraph: EGraph, n: Node[E, NatId, DataTypeId, Address],
@@ -127,6 +132,8 @@ object NodeSubs {
 
       case Composition(f, g) =>
         Composition(replaceE(f, index, subs), replaceE(g, index, subs))
+      case FloatRefinement(a, b) =>
+        FloatRefinement(replaceE(a, index, subs), replaceE(b, index, subs))
     }
 
   object Nat {

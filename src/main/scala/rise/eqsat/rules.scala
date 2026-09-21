@@ -2,6 +2,7 @@ package rise.eqsat
 
 import PatternDSL._
 import rise.core.{primitives => rcp}
+import rise.eqsat.NamedRewrite.NotJustVar
 
 object rules {
   // -- reduction --
@@ -43,6 +44,87 @@ object rules {
       -->
     BetaNatExtractApplier(?(0), `?n`(0))
   )
+/* NOT USED
+  // congruence and transitivity
+  val floatRefinementCongTrans = Rewrite.init("float-refinement-cong-trans",
+    new Searcher {
+      override def patternVars() = Set()
+
+      override def search(egraph: EGraph, shc: Substs): Vec[SearchMatches[shc.Subst]] = Vec()
+
+      override def searchEClass(
+        egraph: EGraph,
+        shc: Substs,
+        eclass: EClassId,
+      ): Option[SearchMatches[shc.Subst]] = None
+      /*
+        egraph.classesByMatch.get(FloatRefinement((), ()).matchHash()) {
+          case None => Vec.empty
+          case Some(ids) => ematching.forEachMatchingNode(egraph.get(eclass),
+            FloatRefinement((), ()),
+          {
+            case FloatRefinement(a, b) =>
+              substs += shc.create(
+                Iterator(PatternVar(0) -> a, (PatternVar(1) -> b)),
+                Iterator(), Iterator(), Iterator(), Iterator()
+              )
+            case _ => ()
+          }
+        })
+        if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
+        */
+    } ->
+    new Applier {
+      override def patternVars() = Set()
+
+      override def requiredAnalyses() = (Set(FloatRefinementAnalysis), Set())
+
+      override def applyOne(
+        egraph: EGraph,
+        eclass: EClassId,
+        shc: Substs)(
+        subst: shc.Subst
+      ): Vec[EClassId] = ???
+
+      override def applyMatches(
+        egraph: EGraph,
+        shc: Substs)(
+        matches: Vec[SearchMatches[shc.Subst]]
+      ): Vec[EClassId] = {
+        val added = Vec.empty[EClassId]
+        val analysis = egraph.getAnalysis(FloatRefinementAnalysis)
+        val ids = egraph.classes.keys.toSeq
+        // FIXME: this might waste a lot of operations,
+        // might want to make it incremental
+        for (id <- ids) {
+          val eclass = egraph.get(id)
+          for (refinedBy <- analysis(id)) {
+            val frid = egraph.add(FloatRefinement(id, refinedBy), eclass.t)
+            val (to, didSomething) = egraph.union(id, frid)
+            if (didSomething) { added += to }
+          }
+        }
+        added
+      }
+    }
+  )
+
+  val floatRefinementTransitivity1 = Rewrite.init("float-refinement-trans1",
+    floatRefinement(?(0),
+      floatRefinement(?(1), ?(2), TypePatternVar(0)),
+      TypePatternVar(0)).compile()
+      -->
+    floatRefinement(?(0), ?(2), TypePatternVar(0))
+  )
+  val floatRefinementTransitivity2 = Rewrite.init("float-refinement-trans2",
+    floatRefinement(
+      floatRefinement(?(0), ?(1), TypePatternVar(0)),
+      ?(2),
+      TypePatternVar(0)).compile()
+      -->
+    floatRefinement(?(0), ?(2), TypePatternVar(0))
+  )
+  */
 
   import rise.core.types.{Nat, DataType, AddressSpace}
   import NamedRewriteDSL._
@@ -119,7 +201,9 @@ object rules {
     app(map, lam("x", app("f", "gx" :: ("dt": DataType))))
       -->
     lam("in", app(app(map, "f"), app(app(map, lam("x", "gx")), "in"))),
-    Seq("f" notFree "x")
+    Seq("f" notFree "x", "gx" notJustVar "x"),
+    // notJustVar is an optimization to avoid creating
+    // useless identity lambdas 
   )
 
   def splitJoin2(n: Int) = NamedRewrite.init(s"split-join-2-$n",
@@ -168,6 +252,7 @@ object rules {
     app(app(map, app(map, app(map, app(map, app(map, app(map, join)))))), app(app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))), app(app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))), "in")))
   )
 
+  // WARNING: this should be a floatRefinement
   def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-$n",
     app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
       -->
@@ -175,6 +260,40 @@ object rules {
       lam("acc", lam("y", app(app("op", "acc"),
         app(app(app(reduce, "op"), "init"), "y"))))),
       "init"), app(nApp(split, n), "arg"))
+  )
+
+  // same as blockedReduce, but keeping parallelism through fission
+  def splitReduce(n: Int) = NamedRewrite.floatRefinement(s"split-reduce-$n",
+    app(app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init"), "arg")
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")),
+        app(nApp(split, n), "arg")))
+  )
+
+  // reduce op init arg
+  // reduce op init (split n arg)
+
+  // NOTE: interestingly, split/join intro + joinReduce = splitReduce
+  def joinReduce = NamedRewrite.floatRefinement("join-reduce",
+    app(app(app(reduce, "op"), "init"), app(join, "in"))
+      -->
+    app(app(app(reduce, "op"), "init"),
+      app(app(map, app(app(reduce, "op"), "init")), "in"))
+  )
+
+  // NOTE: interestingly, each output cell receives the result of a parallel
+  // reduction before and after the rewrite, so this is not a float refinement
+  // but a float equivalence.
+  val liftReduce = NamedRewrite.init("lift-reduce",
+    app(map, app(app(reduce, "op"), "init"))
+      -->
+    lam("in",
+      app(app(app(reduce, lam("acc", lam("y",
+        app(app(map, lam("z", app(app("op", app(fst, "z")), app(snd, "z")))),
+          app(app(zip, "acc"), "y"))
+      ))), app(rcp.generate.primitive, lam("i", "init"))),
+      app(transpose, "in")))
   )
 
   val liftReduceSeq = NamedRewrite.init("lift-reduce-seq",
@@ -231,9 +350,10 @@ object rules {
       -->
       lam("in", app(app(app(rcp.reduceSeq.primitive, "op"), "init"),
         app(app(map, lam("y", "gy")), "in"))),
-    Seq("op" notFree "y")
+    Seq("op" notFree "y", "op" notFree "acc", "gy" notFree "acc")
   )
 
+  // WARNING: this is neither float equivalence nor refinement (the opposite)
   val undoReduceSeqForAdd = NamedRewrite.init("undo-reduce-seq-for-add",
     app(rcp.reduceSeq.primitive, add) --> app(reduce, add)
   )
@@ -512,6 +632,7 @@ object rules {
 
   // -- lowering --
 
+  // WARNING: this should be a float refinement
   val reduceSeq = NamedRewrite.init("reduce-seq",
     reduce --> rcp.reduceSeq.primitive
   )
@@ -528,6 +649,12 @@ object rules {
     app(app(rcp.mapSeq.primitive, "f"), "in")
       -->
     app(rcp.toMem.primitive, app(app(rcp.mapSeq.primitive, "f"), "in"))
+  )
+
+  val toMem = NamedRewrite.init("to-mem",
+    ("in" :: ("dt": DataType))
+      -->
+    app(rcp.toMem.primitive, "in")
   )
 
   val storeToMem = NamedRewrite.init("store-to-mem",
@@ -647,6 +774,7 @@ object rules {
     )
 
     // TODO: may also have a non-ocl reduceSeq on lhs
+    // WARNING: this should be a float refinement
     def reduceSeq(a: AddressSpace) = NamedRewrite.init(s"ocl-reduce-seq-$a",
       reduce --> aApp(roclp.oclReduceSeq.primitive, a)
     )
@@ -700,6 +828,7 @@ object rules {
     )
 
     // TODO: generalize over data type (this rule will actually not work for e.g. tuples)
+    // NOTE: should this be a float refinement ?
     val beforeMapReduce = NamedRewrite.init("vec-before-map-reduce",
       app(nApp(asVector, "n"), app(app(map, app(app(reduce, "f"), "init")), "in"))
         -->
@@ -820,6 +949,8 @@ object rules {
         -->
       (app(map, app(map, app(map, app(map, app(map, app(map, nApp(split, n))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, app(map, app(map, "f")))))))) >> app(map, app(map, app(map, app(map, app(map, app(map, join)))))))
     )
+
+    // WARNING: this should be a float refinement
     def blockedReduce(n: Int) = NamedRewrite.init(s"blocked-reduce-cnf-$n",
       app(app(reduce, "op" :: ("a" ->: "a" ->: t("a"))), "init")
         -->
