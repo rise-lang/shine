@@ -74,7 +74,7 @@ object SemiLatticeAnalysis {
             analysisPending ++= eclass.parents
             node_data
           case Some(existing) =>
-            val result = analysis.merge(existing, node_data)
+            val result = analysis.merge(egraph, existing, node_data)
             if (result.mayNotBeA) {
               analysisPending ++= eclass.parents
             }
@@ -100,7 +100,11 @@ trait SemiLatticeAnalysis extends Analysis {
   // The result is a `MergeResult(result, mayNotBeA, mayNotBeB)` indicating whether
   // the merged result may be different from `a` and `b` respectively,
   // where `a` denotes `a` before it might have been mutated.
-  def merge(a: Data, b: Data): MergeResult
+  def merge(egraph: EGraph, a: Data, b: Data): MergeResult = {
+    merge(a, b)
+  }
+
+  def merge(a: Data, b: Data): MergeResult = ???
 
   // mayNotBe == !mustBe
   case class MergeResult(result: Data, mayNotBeA: Boolean, mayNotBeB: Boolean)
@@ -136,7 +140,7 @@ trait SemiLatticeAnalysis extends Analysis {
       case PendingMakeAnalysis(enode, id, t) =>
         dataMap += id -> this.make(egraph, enode, t, dataMap)
       case PendingMergeAnalysis(a, aParents, b, bParents) =>
-        val result = this.merge(dataMap(a), dataMap(b))
+        val result = this.merge(egraph, dataMap(a), dataMap(b))
         if (result.mayNotBeA) {
           analysisPending ++= aParents
         }
@@ -148,6 +152,7 @@ trait SemiLatticeAnalysis extends Analysis {
     }
 
     resolvePendingAnalysis(egraph, this)(dataMap0, analysisPending)
+
   }
 }
 
@@ -1264,8 +1269,8 @@ object FloatRefinementCongruence extends SemiLatticeAnalysis {
     }
   }
 
-  override def merge(a: Data, b: Data): MergeResult = {
-    val res = a.union(b)
-    MergeResult(res, mayNotBeA = (res != a), mayNotBeB = (res != b))
+  override def merge(egraph: EGraph, a: Data, b: Data): MergeResult = {
+    val res = a.map(egraph.find).union(b.map(egraph.find))
+    MergeResult(res, mayNotBeA = (res.size != a.size), mayNotBeB = (res.size != b.size))
   }
 }

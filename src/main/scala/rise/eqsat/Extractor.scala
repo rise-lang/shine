@@ -57,6 +57,9 @@ object Extractor {
     def next(id: EClassId): ExprWithHashCons
   }
 
+  // NOTE: Only extracts one FloatRefinement node at top-level,
+  // otherwise extraction time blows up.
+  // This might also indicate that a "max length" should be taken into account.
   def cycleAvoidingRandomOf(egraph: EGraph, random: Random): CycleAvoidingRandomOf = {
     val mandatoryChildren = Analysis.oneShot(MandatoryChildrenAnalysis, egraph)
 
@@ -64,10 +67,17 @@ object Extractor {
       val nowVisited = visited + id
       val eclass = egraph.get(id)
 
-      val noCycleENodes = eclass.nodes.filter { n =>
-        n.children().forall(id => mandatoryChildren(id).intersect(nowVisited).isEmpty)
+      val noInnerRefinementENodes = if (visited.isEmpty) {
+        eclass.nodes
+      } else {
+        eclass.nodes.filter {
+          case FloatRefinement(_, _) => false
+          case _ => true
+        }
+      } 
+      val noCycleENodes = noInnerRefinementENodes.filter { n =>
+        n.children().forall(id => mandatoryChildren(id).intersect(nowVisited).isEmpty) 
       }
-      // val candidates = if (noCycleENodes.nonEmpty) { noCycleENodes } else { eclass.nodes }
       assert(noCycleENodes.nonEmpty)
       val candidates = noCycleENodes
 
@@ -281,7 +291,11 @@ case class BENFRedexCount(/*egraph: EGraph*/) extends CostFunction[BENFRedexCoun
         val gd = costs(g)
         Data(fd.redexes + gd.redexes, fd.free ++ gd.free,
           isEtaApp = false, isLam = false, isNatLam = false)
-      case FloatRefinement(_, _) => ???
+      case FloatRefinement(a, b) =>
+        val ad = costs(a)
+        val bd = costs(b)
+        Data(ad.redexes + bd.redexes, ad.free ++ ad.free,
+          isEtaApp = false, isLam = false, isNatLam = false)
     }
 
     // TODO: freeOfType(t) for free nat/data
