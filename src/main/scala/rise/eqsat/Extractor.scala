@@ -57,9 +57,8 @@ object Extractor {
     def next(id: EClassId): ExprWithHashCons
   }
 
-  // NOTE: Only extracts one FloatRefinement node at top-level,
-  // otherwise extraction time blows up.
-  // This might also indicate that a "max length" should be taken into account.
+  // NOTE: to reduce extraction time, extracts FloatRefinement(a, b) into FloatRefinement(b, b),
+  //   to avoid sampling from 'a'.
   def cycleAvoidingRandomOf(egraph: EGraph, random: Random): CycleAvoidingRandomOf = {
     val mandatoryChildren = Analysis.oneShot(MandatoryChildrenAnalysis, egraph)
 
@@ -67,22 +66,19 @@ object Extractor {
       val nowVisited = visited + id
       val eclass = egraph.get(id)
 
-      val noInnerRefinementENodes = if (visited.isEmpty) {
-        eclass.nodes
-      } else {
-        eclass.nodes.filter {
-          case FloatRefinement(_, _) => false
-          case _ => true
-        }
-      } 
-      val noCycleENodes = noInnerRefinementENodes.filter { n =>
+      val noCycleENodes = eclass.nodes.filter { n =>
         n.children().forall(id => mandatoryChildren(id).intersect(nowVisited).isEmpty) 
       }
       assert(noCycleENodes.nonEmpty)
       val candidates = noCycleENodes
 
       val node = candidates(random.nextInt(candidates.length))
-      ExprWithHashCons(node.mapChildren(rec(_, nowVisited)), eclass.t)
+      ExprWithHashCons(node match {
+        case FloatRefinement(a, b) =>
+          val ex = rec(b, nowVisited)
+          FloatRefinement(ex, ex)
+        case _ => node.mapChildren(rec(_, nowVisited))
+      }, eclass.t)
     }
 
     object Impl extends CycleAvoidingRandomOf {

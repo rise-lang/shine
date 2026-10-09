@@ -32,13 +32,13 @@ class Rewrite(val name: String,
     applier.requiredAnalyses()
 
   def search(egraph: EGraph,
-             shc: Substs): Vec[SearchMatches[shc.Subst]] =
+             shc: Substs): Vec[SearchMatches[(shc.Subst, Boolean)]] =
     searcher.search(egraph, shc)
 
   // the substitution insides `matches` may be modified
   def apply(egraph: EGraph,
             shc: Substs)(
-            matches: Vec[SearchMatches[shc.Subst]]): Vec[EClassId] =
+            matches: Vec[SearchMatches[(shc.Subst, Boolean)]]): Vec[EClassId] =
     applier.applyMatches(egraph, shc)(matches)
 }
 
@@ -51,12 +51,14 @@ trait Searcher {
   def patternVars(): Set[Any]
 
   // search one eclass, returning None if no matches can be found
+  // the boolean besides the substitution indicates whether the match went through a refinement node
   def searchEClass(egraph: EGraph,
                    shc: Substs,
-                   eclass: EClassId): Option[SearchMatches[shc.Subst]]
+                   eclass: EClassId): Option[SearchMatches[(shc.Subst, Boolean)]]
 
   // search the whole egraph, returning all matches
-  def search(egraph: EGraph, shc: Substs): Vec[SearchMatches[shc.Subst]] = {
+  // the boolean besides the substitution indicates whether the match went through a refinement node
+  def search(egraph: EGraph, shc: Substs): Vec[SearchMatches[(shc.Subst, Boolean)]] = {
     egraph.classes.keys.flatMap(id => searchEClass(egraph, shc, id)).to(Vec)
   }
 }
@@ -88,13 +90,16 @@ trait Applier {
   // the substitutions inside `matches` may be modified
   def applyMatches(egraph: EGraph,
                    shc: Substs)(
-                   matches: Vec[SearchMatches[shc.Subst]]): Vec[EClassId] = {
+                   matches: Vec[SearchMatches[(shc.Subst, Boolean)]]): Vec[EClassId] = {
     val added = Vec.empty[EClassId]
     for (mat <- matches) {
-      for (subst <- mat.substs) {
+      for ((subst, refinement) <- mat.substs) {
         val res = applyOne(egraph, mat.eclass, shc)(subst)
         added ++= res.iterator.flatMap { id =>
-          val (to, didSomething) = egraph.union(id, mat.eclass)
+          val id2 = if (!refinement) { id } else {
+            egraph.add(FloatRefinement(mat.eclass, id), egraph.get(mat.eclass).t)
+          }
+          val (to, didSomething) = egraph.union(id2, mat.eclass)
           if (didSomething) { Some(to) } else { None }
         }
       }

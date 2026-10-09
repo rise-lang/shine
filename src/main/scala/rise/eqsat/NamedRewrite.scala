@@ -49,6 +49,8 @@ object NamedRewrite {
     }
   }
 
+  // NOTE: there is a boolean for float refinement maintained during e-matching, and this boolean in the right hand side,
+  //  which could result in generating two nested refinement nodes even though a single node would suffice.
   def floatRefinement(
     name: String,
     rule: (NamedRewriteDSL.Pattern, NamedRewriteDSL.Pattern),

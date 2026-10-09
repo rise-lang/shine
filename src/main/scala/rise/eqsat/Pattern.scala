@@ -113,7 +113,7 @@ object CompiledPattern {
 
     override def search(egraph: EGraph,
                         shc: Substs,
-                       ): Vec[SearchMatches[shc.Subst]] = {
+                       ): Vec[SearchMatches[(shc.Subst, Boolean)]] = {
       cpat.pat.p match {
         case PatternNode(node) =>
           egraph.classesByMatch.get(node.matchHash()) match {
@@ -129,7 +129,7 @@ object CompiledPattern {
     override def searchEClass(egraph: EGraph,
                               shc: Substs,
                               eclass: EClassId,
-                             ): Option[SearchMatches[shc.Subst]] = {
+                             ): Option[SearchMatches[(shc.Subst, Boolean)]] = {
       val substs = cpat.prog.run(egraph, eclass, shc)
       if (substs.isEmpty) { None } else { Some(SearchMatches(eclass, substs)) }
     }

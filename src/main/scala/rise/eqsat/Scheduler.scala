@@ -14,14 +14,14 @@ trait Scheduler {
   def searchRewrite(iteration: Int,
                     egraph: EGraph,
                     shc: Substs,
-                    rewrite: Rewrite): Vec[SearchMatches[shc.Subst]]
+                    rewrite: Rewrite): Vec[SearchMatches[(shc.Subst, Boolean)]]
 
   // returns the number of applications
   def applyRewrite(iteration: Int,
                    egraph: EGraph,
                    shc: Substs,
                    rewrite: Rewrite)(
-                   matches: Vec[SearchMatches[shc.Subst]]): Int =
+                   matches: Vec[SearchMatches[(shc.Subst, Boolean)]]): Int =
     rewrite.apply(egraph, shc)(matches).size
 }
 
@@ -31,7 +31,7 @@ object SimpleScheduler extends Scheduler {
   override def searchRewrite(iteration: Int,
                              egraph: EGraph,
                              shc: Substs,
-                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] =
+                             rewrite: Rewrite): Vec[SearchMatches[(shc.Subst, Boolean)]] =
     rewrite.search(egraph, shc)
 }
 
@@ -151,7 +151,7 @@ extends Scheduler {
 
   override def canSaturate(iteration: Int): Boolean = iteration > lastSampledIteration
 
-  override def searchRewrite(iteration: Int, egraph: EGraph, shc: Substs, rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
+  override def searchRewrite(iteration: Int, egraph: EGraph, shc: Substs, rewrite: Rewrite): Vec[SearchMatches[(shc.Subst, Boolean)]] = {
     val limit = limits.getOrElse(rewrite, defaultLimit)
     val matches = rewrite.search(egraph, shc)
     if (matches.size > limit) {
@@ -240,7 +240,7 @@ class BackoffScheduler(var defaultMatchLimit: Int,
   override def searchRewrite(iteration: Int,
                              egraph: EGraph,
                              shc: Substs,
-                             rewrite: Rewrite): Vec[SearchMatches[shc.Subst]] = {
+                             rewrite: Rewrite): Vec[SearchMatches[(shc.Subst, Boolean)]] = {
     val rs = ruleStats(rewrite)
 
     if (iteration < rs.bannedUntil) {

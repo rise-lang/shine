@@ -1217,6 +1217,7 @@ object DefinitelyComputeAnalysis extends SemiLatticeAnalysis {
   override def requiredAnalyses(): (Set[Analysis], Set[TypeAnalysis]) = (Set(), Set())
 }
 
+/* DEPRECATED: too expensive, may get into infinite loops as well, wait for refinement e-graphs
 // Given Refinement(A, B) nodes and the rules:
 // - congruence: f(Refinement(A, B)) = Refinement(f(A), f(B))
 // - transitivity: Refinement(A, Refinement(B, C)) = Refinement(A, C)
@@ -1234,15 +1235,15 @@ object FloatRefinementCongruence extends SemiLatticeAnalysis {
 
   override def make(egraph: EGraph, enode: ENode, t: TypeId,
                     refinedBy: EClassId => Data): Data = {
-    enode match {
+    val res = enode match {
       // Refinement(A, B) means that A is refined by B,
       // as well as by everything that refines B (transitivity),
       // although this is not explicitly encoded
-      case FloatRefinement(a, b) => Set(b) // + refinedBy(b)
+      case FloatRefinement(a, b) => Set(egraph.find(b)) // + refinedBy(b)
       // f(A) is refined by all f(B) such that A is refined by B
       case _ =>
         val childrenRefinedBy = enode.children().map(c => (c, refinedBy(c))).toSeq
-        val id = egraph.memo((enode, t))
+        val id = egraph.find(egraph.memo((enode, t)))
         
         def rec(remaining: Seq[(EClassId, Data)],
                 selected: Map[EClassId, EClassId]): Set[EClassId] =
@@ -1259,7 +1260,7 @@ object FloatRefinementCongruence extends SemiLatticeAnalysis {
               egraph.union(id, reified)
               Set(refined_by)
             case (child, childRefinedBy) +: rest =>
-              childRefinedBy.flatMap { x =>
+              childRefinedBy.map(egraph.find).flatMap { x =>
                 rec(rest, selected + (child -> x))
               }
           }
@@ -1267,10 +1268,16 @@ object FloatRefinementCongruence extends SemiLatticeAnalysis {
 
         rec(childrenRefinedBy, Map.empty)
     }
+
+    println(s"make ${res.size}.")
+
+    res
   }
 
   override def merge(egraph: EGraph, a: Data, b: Data): MergeResult = {
     val res = a.map(egraph.find).union(b.map(egraph.find))
+    println(s"merge ${a.size} and ${b.size} into ${res.size}.")
     MergeResult(res, mayNotBeA = (res.size != a.size), mayNotBeB = (res.size != b.size))
   }
 }
+*/
