@@ -174,9 +174,6 @@ object ematching {
 
   // NOTE: returns a Boolean indicating whether the match traversed a refinement node.
   def forEachMatchingNodeThroughRefinement(egraph: EGraph, eclass: EClass, node: MNode, f: (ENode, Boolean) => Unit): Unit = {
-    import scala.math.Ordering.Implicits._
-    import Node.{ordering, eclassIdOrdering, natIdOrdering, dataTypeIdOrdering, addressOrdering}
-
     // First, try regular matching
     forEachMatchingNode(eclass, node, e => f(e, false))
 
