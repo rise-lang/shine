@@ -135,8 +135,8 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return end() }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
-      val half_second = 500_000_000L
-      if (iter.totalTime > half_second) {
+      val two_seconds = 2_000_000_000L
+      if (iter.totalTime > two_seconds) {
         println(iter)
       }
 
