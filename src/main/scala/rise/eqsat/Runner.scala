@@ -120,7 +120,7 @@ class Runner(var iterations: Vec[Iteration],
     iterations += iteration0
 
     def end(): Runner = {
-      println(s"nodes removed by directed rewriting: $totalRemoved")
+      // println(s"nodes removed by directed rewriting: $totalRemoved")
       egraph.releaseAnalyses(filter.requiredAnalyses())
       rules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
       normRules.foreach(r => egraph.releaseAnalyses(r.requiredAnalyses()))
@@ -135,7 +135,10 @@ class Runner(var iterations: Vec[Iteration],
       if (stopReasons.nonEmpty) { return end() }
 
       val iter = runOne(egraph, roots, filter, rules, normRules)
-      println(iter)
+      val two_seconds = 2_000_000_000L
+      if (iter.totalTime > two_seconds) {
+        println(iter)
+      }
 
       if (iter.applied.isEmpty &&
         scheduler.canSaturate(iterations.size)) {

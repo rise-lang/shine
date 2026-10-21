@@ -383,6 +383,20 @@ object cameraPipelineRewrite {
   }
 
   def letHoist: Strategy[Rise] = {
+    // Current cases (may benefit from a more principled set of cases):
+    // 1. f (let v \x. b) y --> (let v \x. f b y) | over datatypes
+    // 2. f y (let v \x. b) --> (let v \x. f y b) | over datatypes
+    // 3. f (let v \x. b) --> (let v \x. f b) | over datatypes
+    //    note: different from 1. because of datatype constraint
+    // 4. map (\y. (let v \x. b)) in | y fresh in v
+    //    --> (let v \x. map (\y. b) in)
+    // 5. curried case of 4.
+    // 6. mapSeq case of 4.
+    // 7. mapSeq case of 6.
+    // 8. (\y. a) (let v \x. b) --> (let v \x. ((\y. a) b)) | over datatypes
+    // 9. case 8. where a is a function over datatypes:
+    //    (\y. (\z. a)) (let v \x. b) --> (\z. (let v \x. ((\y. a) b))) | over datatypes
+    // TODO: generlize case 8 and 9 to arbitrary arity
     case expr @ App(App(f, App(App(p.let(), v), Lambda(x, b))), y) if (f.t match {
       // reason: let only works for functions over datatypes
       case rct.FunType(_: rct.DataType, rct.FunType(_, _: rct.DataType)) => true
@@ -422,6 +436,16 @@ object cameraPipelineRewrite {
       Success(fun(in =>
         let(v) be (lambda(eraseType(x), p.mapSeq(lambda(eraseType(y), b))(in)))
       ) !: expr.t)
+    case expr @ App(Lambda(y, a), App(App(p.let(), v), Lambda(x, b))) if (a.t match {
+      case _: rct.DataType => true
+      case _ => false
+    }) =>
+      Success(let(v) be (lambda(eraseType(x), lambda(eraseType(y), a)(b))) !: expr.t)
+    case expr @ App(Lambda(y, Lambda(z, a)), App(App(p.let(), v), Lambda(x, b))) if (a.t match {
+      case _: rct.DataType => true
+      case _ => false
+    }) =>
+      Success(lambda(eraseType(z), let(v) be (lambda(eraseType(x), lambda(eraseType(y), a)(b)))) !: expr.t)
     case _ => Failure(letHoist)
   }
 

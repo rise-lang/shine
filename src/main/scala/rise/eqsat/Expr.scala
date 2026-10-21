@@ -17,6 +17,13 @@ object ExprWithHashCons {
   def expr(egraph: EGraph)(e: ExprWithHashCons): Expr =
     Expr(e.node.map(expr(egraph), nat(egraph), dataType(egraph), a => a), `type`(egraph)(e.t))
 
+  def exprForgettingFloatRefinement(egraph: EGraph)(e: ExprWithHashCons): Expr = {
+    e.node match {
+      case FloatRefinement(a, b) => exprForgettingFloatRefinement(egraph)(b)
+      case _ => Expr(e.node.map(exprForgettingFloatRefinement(egraph), nat(egraph), dataType(egraph), a => a), `type`(egraph)(e.t))
+    }
+  }
+
   def fromExpr(egraph: EGraph)(e: Expr): ExprWithHashCons =
     ExprWithHashCons(e.node.map(fromExpr(egraph), egraph.addNat, egraph.addDataType, a => a),
       egraph.addType(e.t))
@@ -309,6 +316,9 @@ object Expr {
           NamedRewriteDSL.Composition(rct.FunType(ft, rct.FunType(gt, t))),
           toNamed(f, scope))(rct.FunType(gt, t)),
           toNamed(g, scope)) _
+
+      case FloatRefinement(a, b) =>
+        throw new Exception("The FloatRefinement concept only exists in the eqsat world to encode a different equivalence relation, it needs to be erased or dealt with before going back to regular Rise expressions.")
     })(Type.toNamed(expr.t, scope))
   }
 

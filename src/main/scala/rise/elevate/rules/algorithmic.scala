@@ -14,6 +14,7 @@ import rise.core.types._
 import rise.elevate._
 import rise.elevate.strategies.normalForm.DFNF
 import rise.elevate.strategies.predicate._
+import rise.eqsat.FloatRefinement
 
 // noinspection MutatorLikeMethodIsParameterless
 object algorithmic {

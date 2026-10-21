@@ -58,22 +58,44 @@ object showScala {
     }
   }
 
+// NOTE: generating one-liners breaks Scala typechecking times,
+// so we break lines with multiple 'val e: Expr = ...'
   def expr(e: Expr): String = {
-    e match {
-      case Identifier(name) => s"""Identifier("$name")(${`type`(e.t)})"""
-      case p: Primitive => s"${p.name}.primitive"
-      case TypeAnnotation(e, t) => s"TypeAnnotation(${expr(e)}, ${`type`(t)})"
-      case TypeAssertion(e, t) => s"TypeAssertion(${expr(e)}, ${`type`(t)})"
-      case Opaque(e, t) => s"Opaque(${expr(e)}, ${`type`(t)})"
-      case Literal(d) => s"Literal(${data(d)})"
-      case App(f, a) => s"App(${expr(f)}, ${expr(a)})(${`type`(e.t)})"
-      case Lambda(x, b) => s"Lambda(${expr(x)}, ${expr(b)})(${`type`(e.t)})"
-      case DepApp(NatKind, f, v: Nat) =>
-        s"DepApp(NatKind, ${expr(f)}, $v)(${`type`(e.t)})"
-      case DepApp(AddressSpaceKind, f, v: AddressSpace) =>
-        s"DepApp(AddressSpaceKind, ${expr(f)}, $v)(${`type`(e.t)})"
-      case DepApp(_, _, _) => ???
-      case DepLambda(k, x, b) => s"DepLambda(${kindIdent(Kind.toIdentifier(k, x))}, ${expr(b)})(${`type`(e.t)})"
+    import scala.collection.mutable.StringBuilder
+
+    var counter: Int = 0
+    val res = new StringBuilder()
+
+    def rec(e: Expr): String = {
+      val v = e match {
+        case Identifier(name) => s"""Identifier("$name")(${`type`(e.t)})"""
+        case rise.core.primitives.makeArray(n) => s"makeArray($n).primitive"
+        case p: Primitive => s"${p.name}.primitive"
+        case TypeAnnotation(e, t) => s"TypeAnnotation(${rec(e)}, ${`type`(t)})"
+        case TypeAssertion(e, t) => s"TypeAssertion(${rec(e)}, ${`type`(t)})"
+        case Opaque(e, t) => s"Opaque(${rec(e)}, ${`type`(t)})"
+        case Literal(d) => s"Literal(${data(d)})"
+        case App(f, a) => s"App(${rec(f)}, ${rec(a)})(${`type`(e.t)})"
+        case Lambda(x, b) => s"Lambda(${rec(x)}, ${rec(b)})(${`type`(e.t)})"
+        case DepApp(NatKind, f, v: Nat) =>
+          s"DepApp(NatKind, ${rec(f)}, $v)(${`type`(e.t)})"
+        case DepApp(AddressSpaceKind, f, v: AddressSpace) =>
+          s"DepApp(AddressSpaceKind, ${rec(f)}, $v)(${`type`(e.t)})"
+        case DepApp(DataKind, f, v: DataType) =>
+          s"DepApp(DataKind, ${rec(f)}, $v)(${`type`(e.t)})"
+        case DepApp(_, _, _) => ???
+        case DepLambda(k, x, b) => s"DepLambda(${kindIdent(Kind.toIdentifier(k, x))}, ${rec(b)})(${`type`(e.t)})"
+      }
+      e match {
+        case _: Identifier | _: Primitive => v
+        case _ =>
+          counter += 1
+          res ++= s"val e${counter}: Expr = ${v}\n"
+          s"e${counter}"
+      }
     }
+
+    res ++= rec(e)
+    res.result()
   }
 }

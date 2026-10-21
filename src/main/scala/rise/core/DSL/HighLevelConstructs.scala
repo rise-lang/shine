@@ -162,4 +162,24 @@ object HighLevelConstructs {
 
   def slideVectors(n: Nat): ToBeTyped[Expr] =
     slide(n)(1) >> join >> asVector(n)
+
+  def min: ToBeTyped[Expr] = fun(x =>
+    x |> drop(1) |> reduceSeq(fun(x => fun(y => select(lt(x)(y))(x)(y))))(x |> element(0))
+  )
+
+  def max: ToBeTyped[Expr] = fun(x =>
+    x |> drop(1) |> reduceSeq(fun(x => fun(y => select(gt(x)(y))(x)(y))))(x |> element(0))
+  )
+
+  def element(i: Nat): ToBeTyped[Expr] = impl{ n: Nat =>
+    rise.core.primitives.idx(lidx(i, n))
+  }
+
+  def reverse: ToBeTyped[Expr] = impl{ n: Nat =>
+    reorder(n)(n2nFun(i => n - i - 1))(n2nFun(i => n - i - 1))
+  }
+
+  def length = impl{ n: Nat => impl{ dt: DataType =>
+    fun(n`.`dt)(x => l(n))
+  }}
 }

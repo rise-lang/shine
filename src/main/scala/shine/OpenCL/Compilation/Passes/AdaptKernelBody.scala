@@ -87,9 +87,10 @@ object AdaptKernelBody {
       }
 
       val block = C.AST.Nodes.VisitAndRebuild(body, Visitor)
-      val localVarDecls = localVars.foldLeft[C.AST.Stmt](C.AST.Comment("Start of moved local vars")) { (stmts, v) =>
-        Stmts(stmts, DeclStmt(v))
-      }
+      val localVarDecls = C.AST.Stmts(
+        C.AST.Comment("Start of moved local vars") +:
+        localVars.toSeq.map(DeclStmt(_))
+      )
       Block(localVarDecls +: C.AST.Comment("End of moved local vars") +: block.body)
     }
   }

@@ -31,6 +31,7 @@ sealed trait Node[+E, +N, +DT, +A] {
     case IndexLiteral(i, n) => IndexLiteral(fn(i), fn(n))
 
     case Composition(f, g) => Composition(fe(f), fe(g))
+    case FloatRefinement(a, b) => FloatRefinement(fe(a), fe(b))
   }
 
   def mapChildren[OE](fc: E => OE): Node[OE, N, DT, A] =
@@ -50,6 +51,7 @@ sealed trait Node[+E, +N, +DT, +A] {
     case LambdaNatToNat(e) => Iterator(e)
 
     case Composition(f, g) => Iterator(f, g)
+    case FloatRefinement(a, b) => Iterator(a, b)
   }
   def childrenCount(): Int =
     children().length
@@ -92,6 +94,7 @@ sealed trait Node[+E, +N, +DT, +A] {
     case Primitive(p) => 19 * p.setType(rct.TypePlaceholder).hashCode()
 
     case Composition(_, _) => 11
+    case FloatRefinement(a, b) => 31 * (a, b).hashCode()
   }
 
   // Returns true if this enode matches another enode.
@@ -114,6 +117,7 @@ sealed trait Node[+E, +N, +DT, +A] {
       p1.setType(rct.TypePlaceholder) == p2.setType(rct.TypePlaceholder)
 
     case (Composition(_, _), Composition(_, _)) => true
+    case (FloatRefinement(__, _), FloatRefinement(_, _)) => true
     case _ => false
   }
 }
@@ -146,6 +150,11 @@ case class Composition[E](f: E, g: E) extends Node[E, Nothing, Nothing, Nothing]
   override def toString: String = s"$f >> $g"
 }
 
+// NOTE: hack to encode float-refinement equivalence relation
+case class FloatRefinement[E](a: E, b: E) extends Node[E, Nothing, Nothing, Nothing] {
+  override def toString: String = s"floatRefinement($a, $b)"
+}
+
 object Node {
   import math.Ordering.Implicits.seqOrdering
 
@@ -167,6 +176,7 @@ object Node {
     case Primitive(_) => Seq()
 
     case Composition(f, g) => Seq(f, g)
+    case FloatRefinement(a, b) => Seq(a, b)
   }
 
   implicit val natIdOrdering: Ordering[NatId] = new Ordering[NatId] {
@@ -328,6 +338,11 @@ object Node {
           implicitly[Ordering[(E, E)]].compare((f1, g1), (f2, g2))
         case (Composition(_, _), _) => -1
         case (_, Composition(_, _)) => 1
+
+        case (FloatRefinement(a1, b1), FloatRefinement(a2, b2)) =>
+          implicitly[Ordering[(E, E)]].compare((a1, b1), (a2, b2))
+        case (FloatRefinement(_, _), _) => -1
+        case (_, FloatRefinement(_, _)) => 1
 
         // FIXME: does not work for mapGlobal(dim)
         case (Primitive(p1), Primitive(p2)) => p1.name compare p2.name

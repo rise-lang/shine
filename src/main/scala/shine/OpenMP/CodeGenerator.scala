@@ -188,15 +188,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
         // iteration count is 1 => no loop
         case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
+          C.AST.Stmts(immutable.Seq(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            p |> updatedGen.cmd(env))
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))),
+            p |> updatedGen.cmd(env)
+          ))
         // default case
-        case _ =>C.AST.Stmts(
-        C.AST.Code("#pragma omp parallel for"),
-        C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-          C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env)))))
+        case _ => C.AST.Stmts(
+          C.AST.Code("#pragma omp parallel for"),
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            C.AST.Block(immutable.Seq(p |> updatedGen.cmd(env)))))
       }))})
     }
 

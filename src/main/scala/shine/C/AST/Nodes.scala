@@ -74,13 +74,13 @@ abstract class Block(val body: Seq[Stmt] = Seq()) extends Stmt {
   def add(s: Seq[Stmt]): Block
 }
 
-abstract class Stmts(val fst: Stmt, val snd: Stmt) extends Stmt
+abstract class Stmts(val stmts: Seq[Stmt] = Seq()) extends Stmt
 
 abstract class ForLoop(val init: DeclStmt, val cond: Expr, val increment: Expr, val body: Block) extends Stmt
 
 abstract class WhileLoop(val cond: Expr, val body: Stmt) extends Stmt
 
-abstract class IfThenElse(val cond: Expr, val trueBody: Stmt, val falseBody: Option[Stmt]) extends Stmt
+abstract class IfThenElse(val cond: Expr, val trueBody: Block, val falseBody: Option[Block]) extends Stmt
 
 abstract class GOTO(val label: String) extends Stmt
 
@@ -148,7 +148,7 @@ abstract class Cast(val t: Type, val e: Expr) extends Expr
 
 abstract class Literal(val code: String) extends Expr
 
-abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
+abstract class ArrayLiteral(val t: Option[ArrayType], val inits: Seq[Expr]) extends Expr
 
 abstract class RecordLiteral(val t: Type, val fst: Expr, val snd: Expr) extends Expr
 
@@ -229,8 +229,9 @@ object Block {
 }
 
 object Stmts {
-  def apply(fst: Stmt, snd: Stmt): Stmts = DefaultImplementations.Stmts(fst, snd)
-  def unapply(arg: Stmts): Option[(Stmt, Stmt)] = Some((arg.fst, arg.snd))
+  def apply(seq: Seq[Stmt]): Stmts = DefaultImplementations.Stmts(seq)
+  def apply(fst: Stmt, snd: Stmt): Stmts = DefaultImplementations.Stmts(Seq(fst, snd))
+  def unapply(arg: Stmts): Option[Seq[Stmt]] = Some(arg.stmts)
 }
 
 object ForLoop {
@@ -244,7 +245,7 @@ object WhileLoop {
 }
 
 object IfThenElse {
-  def apply(cond: Expr, trueBody: Stmt, falseBody: Option[Stmt]): IfThenElse = DefaultImplementations.IfThenElse(cond, trueBody, falseBody)
+  def apply(cond: Expr, trueBody: Block, falseBody: Option[Block]): IfThenElse = DefaultImplementations.IfThenElse(cond, trueBody, falseBody)
   def unapply(arg: IfThenElse): Option[(Expr, Stmt, Option[Stmt])] = Some((arg.cond, arg.trueBody, arg.falseBody))
 }
 
@@ -337,8 +338,9 @@ object Literal {
 }
 
 object ArrayLiteral {
-  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(t, inits)
-  def unapply(arg: ArrayLiteral): Option[(ArrayType, Seq[Expr])] = Some((arg.t, arg.inits))
+  def apply(inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(None, inits)
+  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(Some(t), inits)
+  def unapply(arg: ArrayLiteral): Option[(Option[ArrayType], Seq[Expr])] = Some((arg.t, arg.inits))
 }
 
 object RecordLiteral {
@@ -415,18 +417,21 @@ object DefaultImplementations {
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Block = {
       // We cannot simply map, as later blocks may be dependent on the contents previous blocks.
       // Instead, we must merge everything into one resulting block
-      body.foldLeft(Block(Seq()))((currentBlock, stmt) => {
-        Block(currentBlock.body :+ VisitAndGenerateStmt(stmt, v))
-      })
+      Block(body.foldLeft(Seq[Stmt]())((currentSeq, stmt) => {
+        currentSeq :+ VisitAndGenerateStmt(stmt, v)
+      }))
     }
   }
 
-  case class Stmts(override val fst: Stmt, override val snd: Stmt)
-    extends C.AST.Stmts(fst, snd)
+  case class Stmts(override val stmts: Seq[Stmt])
+    extends C.AST.Stmts(stmts)
   {
-    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Stmts = Stmts(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Stmts = Stmts(stmts.map(VisitAndRebuild(_, v)))
 
-    override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = Stmts(VisitAndGenerateStmt(fst, v), VisitAndGenerateStmt(snd, v))
+    override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =       
+      Stmts(stmts.foldLeft(Seq[Stmt]())((currentSeq, stmt) => {
+        currentSeq :+ VisitAndGenerateStmt(stmt, v)
+      }))
   }
 
   case class ForLoop(override val init: C.AST.DeclStmt,
@@ -458,15 +463,18 @@ object DefaultImplementations {
   }
 
   case class IfThenElse(override val cond: Expr,
-                        override val trueBody: Stmt,
-                        override val falseBody: Option[Stmt])
+                        override val trueBody: C.AST.Block,
+                        override val falseBody: Option[C.AST.Block])
     extends C.AST.IfThenElse(cond, trueBody, falseBody)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): IfThenElse =
       IfThenElse(VisitAndRebuild(cond, v), VisitAndRebuild(trueBody, v), falseBody.map(VisitAndRebuild(_, v)))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =
-      VisitAndGenerateStmt(cond, v, condE => IfThenElse(condE, VisitAndGenerateStmt(trueBody, v), falseBody.map(VisitAndGenerateStmt(_, v))))
+      VisitAndGenerateStmt(cond, v, condE =>
+        IfThenElse(condE,
+          VisitAndGenerateStmt(trueBody, v).asInstanceOf[Block],
+          falseBody.map(VisitAndGenerateStmt(_, v).asInstanceOf[Block])))
   }
 
   case class GOTO(override val label: String)
@@ -625,9 +633,9 @@ object DefaultImplementations {
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
   }
 
-  case class ArrayLiteral(override val t: ArrayType, override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
+  case class ArrayLiteral(override val t: Option[ArrayType], override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArrayLiteral =
-      ArrayLiteral(v(t).asInstanceOf[ArrayType], inits.map(VisitAndRebuild(_, v)))
+      ArrayLiteral(t.map(v(_).asInstanceOf[ArrayType]), inits.map(VisitAndRebuild(_, v)))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = {
      def rec(toProcess:Seq[Expr], accum:Seq[Expr]):Stmt = {

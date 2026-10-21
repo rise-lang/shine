@@ -43,7 +43,7 @@ lazy val riseAndShine = (project in file("."))
         // json
         "com.typesafe.play" %% "play-json" % "2.9.1",
         // subprocess communication
-        "com.lihaoyi" %% "os-lib" % "0.7.3"
+        "com.lihaoyi" %% "os-lib" % "0.7.3",
     ),
 
     compile := ((compile in Compile) dependsOn (generateRISEPrimitives, clap)).value,

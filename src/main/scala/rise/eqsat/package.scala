@@ -39,6 +39,13 @@ package object eqsat {
     val directedRules: Seq[RewriteDirected]
   }
 
+  object NONF extends NF {
+    override val normalize: Expr => Expr = e => e
+    override val normalizeCountRewrites: Expr => (Expr, Long) = e => (e, 0)
+    override val rules: Seq[Rewrite] = Seq()
+    override val directedRules: Seq[RewriteDirected] = Seq()
+  }
+
   object BENF extends NF {
     val extractAnalysis: SmallestCostAnalysis[(BENFRedexCount.Data, Int)] =
       SmallestCostAnalysis(LexicographicCost(BENFRedexCount(), AstSize))

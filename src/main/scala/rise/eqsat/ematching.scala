@@ -27,14 +27,15 @@ object ematching {
 
     def run[ED, ND, TD](egraph: EGraph,
                         instructions: Seq[Instruction],
-                        yieldFn: () => Unit): Unit = {
+                        matchedThroughRefinement: Boolean,
+                        yieldFn: (Boolean) => Unit): Unit = {
       var instrs = instructions
       while (instrs.nonEmpty) {
         instrs.head match {
           case PushType(i) =>
             tRegs += egraph.get(reg(i)).t
           case Bind(node, i, out, nOut, tOut, aOut) =>
-            forEachMatchingNode(egraph.get(reg(i)), node, { matched =>
+            forEachMatchingNodeThroughRefinement(egraph, egraph.get(reg(i)), node, { (matched, refinement) =>
               regs.remove(out.n, regs.size - out.n)
               nRegs.remove(nOut.n, nRegs.size - nOut.n)
               tRegs.remove(tOut.n, tRegs.size - tOut.n)
@@ -45,7 +46,7 @@ object ematching {
                 dt => tRegs += dt,
                 a => aRegs += a,
               )
-              run(egraph, instrs.tail, yieldFn)
+              run(egraph, instrs.tail, refinement || matchedThroughRefinement, yieldFn)
             })
             return
           case Compare(i, j) =>
@@ -94,7 +95,7 @@ object ematching {
         instrs = instrs.tail
       }
 
-      yieldFn()
+      yieldFn(matchedThroughRefinement)
     }
   }
 
@@ -127,20 +128,20 @@ object ematching {
                 var a2r: HashMap[AddressPatternVar, AddrReg]) {
     def run[ED, ND, TD](egraph: EGraph,
                         eclass: EClassId,
-                        substs: Substs): Vec[substs.Subst] = {
+                        substs: Substs): Vec[(substs.Subst, Boolean)] = {
       assert(egraph.clean)
 
       val machine = AbstractMachine.init(eclass)
 
-      val ss = Vec.empty[substs.Subst]
-      val yieldFn = { () =>
+      val ss = Vec.empty[(substs.Subst, Boolean)]
+      val yieldFn = { matchedThroughRefinement: Boolean =>
         assert(v2r.iterator.forall { case (_, reg) => {
           val id = machine.reg(reg)
           egraph.find(id) == id
         }})
         // TODO: use ordered hashmaps to maximize sharing?
         //  first register to be picked should be the deepest in the list
-        ss += substs.create(
+        val s: (substs.Subst, Boolean) = (substs.create(
           v2r.iterator.map { case (v, reg) => (v, machine.reg(reg)) },
           n2r.iterator.map { case (v, reg) => (v, machine.nReg(reg)) },
           t2r.iterator.map { case (v, reg) => (v, machine.tReg(reg)) },
@@ -148,10 +149,11 @@ object ematching {
             (v, machine.tReg(reg).asInstanceOf[DataTypeId])
           },
           a2r.iterator.map { case (v, reg) => (v, machine.aReg(reg)) }
-        )
+        ), matchedThroughRefinement)
+        ss += s
         ()
       }
-      machine.run(egraph, instructions.toSeq, yieldFn)
+      machine.run(egraph, instructions.toSeq, false, yieldFn)
 
       ss
     }
@@ -167,6 +169,21 @@ object ematching {
   type MNode = Node[Unit, Unit, Unit, Unit]
   type MNatNode = NatNode[Unit]
   type MTypeNode = TypeNode[Unit, Unit, Unit]
+
+  val RefinementMNode = FloatRefinement((), ())
+
+  // NOTE: returns a Boolean indicating whether the match traversed a refinement node.
+  def forEachMatchingNodeThroughRefinement(egraph: EGraph, eclass: EClass, node: MNode, f: (ENode, Boolean) => Unit): Unit = {
+    // First, try regular matching
+    forEachMatchingNode(eclass, node, e => f(e, false))
+
+    // Second, also try to match through refinement nodes
+    forEachMatchingNode(eclass, RefinementMNode, {
+      case FloatRefinement(_, b) =>
+        forEachMatchingNodeThroughRefinement(egraph, egraph.get(b), node, { case (enode, _) => f(enode, true) })
+      case _ => throw new Exception("this should never happen")
+    })
+  }
 
   def forEachMatchingNode(eclass: EClass, node: MNode, f: ENode => Unit): Unit = {
     import scala.math.Ordering.Implicits._

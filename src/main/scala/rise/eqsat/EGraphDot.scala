@@ -119,6 +119,7 @@ case class EGraphDot(egraph: EGraph,
       case IndexLiteral(i, n) => s"idx($i, $n)"
       case Primitive(p) => s"${p.toString.trim}"
       case Composition(_, _) => ">>"
+      case FloatRefinement(a, b) => s"floatRefinement($a, $b)"
     }
   }
 }

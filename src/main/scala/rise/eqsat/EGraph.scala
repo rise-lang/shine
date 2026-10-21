@@ -12,6 +12,7 @@ object EGraph {
       unionFind = UnionFind.empty,
       pending = Vec.empty,
       analysisPending = Vec.empty[PendingAnalysis],
+      analysisPendingNext = Vec.empty[PendingAnalysis],
       classesByMatch = HashMap.empty,
       hashConses = HashConses.empty(),
       clean = true,
@@ -38,6 +39,9 @@ class EGraph(
 
   var pending: Vec[(ENode, EClassId)],
   var analysisPending: Vec[PendingAnalysis],
+  // NOTE: allows double-buffering pending analyses,
+  // for analyses that mutate graph
+  var analysisPendingNext: Vec[PendingAnalysis],
 
   var memo: HashMap[(ENode, TypeId), EClassId],
   var unionFind: UnionFind,
@@ -181,7 +185,7 @@ class EGraph(
       }
 
       pending += enode -> id // TODO: is this needed?
-      analysisPending += PendingMakeAnalysis(enode, id, t)
+      analysisPendingNext += PendingMakeAnalysis(enode, id, t)
       classes += id -> eclass
       assert(!memo.contains(enode, t))
       memo += (enode, t) -> id
@@ -266,7 +270,7 @@ class EGraph(
     assert(class2.t == class1.t)
 
     pending ++= class2.parents
-    analysisPending += PendingMergeAnalysis(
+    analysisPendingNext += PendingMergeAnalysis(
       id1, class1.parents.toSeq, id2, class2.parents.toSeq)
 
     class1.nodes ++= class2.nodes
@@ -297,13 +301,14 @@ class EGraph(
       // TODO: assert more? its bad if clean flag is wrong
       assert(pending.isEmpty)
       assert(analysisPending.isEmpty)
+      assert(analysisPendingNext.isEmpty)
       0
     }
   }
 
   private def processUnions(): Int = {
     var nUnions = 0
-    while (pending.nonEmpty || analysisPending.nonEmpty) {
+    while (pending.nonEmpty || analysisPendingNext.nonEmpty) {
       while (pending.nonEmpty) {
         val (node, eclass) = pending.remove(pending.size - 1)
         val t = get(eclass).t
@@ -324,6 +329,10 @@ class EGraph(
       // NOTE: analysis dependencies should be respected if topological order is maintained,
       //       but pending analyses need to be propagated along the dependency paths
       // TODO: update could also be on-demand / lazy
+      assert(analysisPending.isEmpty)
+      val tmp = analysisPending
+      analysisPending = analysisPendingNext
+      analysisPendingNext = tmp
       typeAnalyses.keysIterator.foreach(ta => TypeAnalysis.update(this, ta))
       analyses.keysIterator.foreach(t => t.update(this))
       analysisPending.clear()
@@ -331,6 +340,7 @@ class EGraph(
 
     assert(pending.isEmpty)
     assert(analysisPending.isEmpty)
+    assert(analysisPendingNext.isEmpty)
 
     nUnions
   }
@@ -416,6 +426,7 @@ class EGraph(
                      roots: Seq[EClassId]): (Int, Int) = {
     assert(pending.isEmpty)
     assert(analysisPending.isEmpty)
+    assert(analysisPendingNext.isEmpty)
 
     val rootsCanonical = roots.map(findMut).toSet
     def isRoot(id: EClassId): Boolean = rootsCanonical(id)
