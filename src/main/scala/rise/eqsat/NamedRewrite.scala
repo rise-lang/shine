@@ -77,7 +77,12 @@ object NamedRewrite {
       case StripMineChoices(_, n, _, _) =>
         Some(rct.NatKind.IDWrapper(rct.NatIdentifier(n)))
       case VectorizeScalarFun(_, _, _) | NotFreeIn(_, _) | NotJustVar(_, _) => None
-    }.to(Set)
+    }.to(Set) ++ rise.core.IsClosedForm.freeVars(lhs)._2.set.filter {
+      // NOTE: preserve user-specified nats on LHS,
+      // to avoid failing during nat unification
+      case rct.NatKind.IDWrapper(id) => true
+      case _ => false
+    }
     val typedLhs = infer(lhs, untypedFreeV, preserveTV)
     val freeV1 = infer.collectFreeEnv(typedLhs)
     val freeT1 = rise.core.IsClosedForm.freeVars(typedLhs)._2.set

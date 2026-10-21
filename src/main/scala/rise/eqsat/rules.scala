@@ -521,7 +521,9 @@ object rules {
   )
   // TODO: what if step != 1?
   def slideBeforeSplit = NamedRewrite.init("slide-before-split",
-    app(nApp(split, "k"), app(nApp(nApp(slide, "n"), 1), "y"))
+    app(nApp(split, "k"), app(nApp(nApp(slide, "n"), 1), "y" ::
+      // (x+1)*k + n - 1
+      (((("x": Nat) + 1) * ("k": Nat)) + ("n": Nat) - 1)`.`("s": DataType)))
      -->
     app(app(map, nApp(nApp(slide, "n"), 1)),
       app(nApp(nApp(slide, ("k": Nat) + ("n": Nat) - (1: Nat)), "k"), "y"))
